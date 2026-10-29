@@ -50,17 +50,26 @@ def invisible_slot(public_schedule_event):
         return slot
 
 
-def test_schedule_list_anonymous_sees_only_current(client, public_schedule_event):
+def test_schedule_anonymous_reads(client, public_schedule_event):
     event, _ = public_schedule_event
     with scopes_disabled():
         assert event.schedules.count() >= 2
+        schedule = event.current_schedule
 
-    response = client.get(event.api_urls.schedules, follow=True)
+    listing = client.get(event.api_urls.schedules, follow=True)
+    detail = client.get(event.api_urls.schedules + f"{schedule.pk}/", follow=True)
+    latest = client.get(event.api_urls.schedules + "latest/")
+    wip = client.get(event.api_urls.schedules + "wip/")
 
-    assert response.status_code == 200
-    data = response.json()
-    assert data["count"] == 1
-    assert data["results"][0]["version"] is not None
+    assert listing.status_code == 200
+    assert [s["id"] for s in listing.json()["results"]] == [schedule.pk]
+    assert listing.json()["results"][0]["version"] == "v1"
+    assert detail.status_code == 200
+    assert detail.json()["id"] == schedule.pk
+    assert detail.json()["version"] == "v1"
+    assert latest.status_code == 200
+    assert latest.json()["version"] == "v1"
+    assert wip.status_code == 404
 
 
 def test_schedule_list_anonymous_cannot_see_when_not_public(client):
@@ -71,84 +80,34 @@ def test_schedule_list_anonymous_cannot_see_when_not_public(client):
     assert response.status_code == 401
 
 
-def test_schedule_list_orga_sees_all(client, orga_read_token, public_schedule_event):
+def test_schedule_orga_reads(client, orga_write_token, public_schedule_event):
     event, _ = public_schedule_event
     with scopes_disabled():
         total_schedules = event.schedules.count()
         assert total_schedules >= 2
+    # Exporters count as actions, so they need the write token.
+    headers = {"Authorization": f"Token {orga_write_token.token}"}
 
-    response = client.get(
-        event.api_urls.schedules,
-        follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+    listing = client.get(event.api_urls.schedules, follow=True, headers=headers)
+    wip = client.get(event.api_urls.schedules + "wip/", headers=headers)
+    latest = client.get(event.api_urls.schedules + "latest/", headers=headers)
+    exported = client.get(
+        event.api_urls.schedules + "latest/exporters/schedule.json/", headers=headers
+    )
+    unknown_exporter = client.get(
+        event.api_urls.schedules + "latest/exporters/nonexistent_format/",
+        headers=headers,
     )
 
-    assert response.status_code == 200
-    data = response.json()
-    assert data["count"] == total_schedules
-
-
-def test_schedule_wip_shortcut_orga_can_access(
-    client, orga_read_token, public_schedule_event
-):
-    event, _ = public_schedule_event
-
-    response = client.get(
-        event.api_urls.schedules + "wip/",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["version"] == "wip"
-
-
-def test_schedule_wip_shortcut_anonymous_cannot_access(client, public_schedule_event):
-    event, _ = public_schedule_event
-
-    response = client.get(event.api_urls.schedules + "wip/")
-
-    assert response.status_code == 404
-
-
-def test_schedule_retrieve_by_pk(client, public_schedule_event):
-    event, _ = public_schedule_event
-    with scopes_disabled():
-        schedule = event.current_schedule
-
-    response = client.get(event.api_urls.schedules + f"{schedule.pk}/", follow=True)
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["id"] == schedule.pk
-    assert data["version"] == schedule.version
-
-
-def test_schedule_latest_shortcut_orga_can_access(
-    client, orga_read_token, public_schedule_event
-):
-    event, _ = public_schedule_event
-
-    response = client.get(
-        event.api_urls.schedules + "latest/",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    with scopes_disabled():
-        assert data["version"] == event.current_schedule.version
-
-
-def test_schedule_latest_shortcut_anonymous_public(client, public_schedule_event):
-    event, _ = public_schedule_event
-
-    response = client.get(event.api_urls.schedules + "latest/")
-
-    assert response.status_code == 200
-    data = response.json()
-    with scopes_disabled():
-        assert data["version"] == event.current_schedule.version
+    assert listing.status_code == 200
+    assert listing.json()["count"] == total_schedules
+    assert wip.status_code == 200
+    assert wip.json()["version"] == "wip"
+    assert latest.status_code == 200
+    assert latest.json()["version"] == "v1"
+    assert exported.status_code == 200
+    assert exported.json()["schedule"]["version"] == "v1"
+    assert unknown_exporter.status_code == 404
 
 
 def test_schedule_latest_shortcut_404_when_no_current_schedule(
@@ -168,97 +127,62 @@ def test_schedule_latest_shortcut_404_when_no_current_schedule(
     assert response.status_code == 404
 
 
-def test_schedule_redirect_version_success(client, public_schedule_event):
+def test_schedule_redirect_version(client, public_schedule_event):
     event, _ = public_schedule_event
-
-    response = client.get(event.api_urls.schedules + "by-version/?version=v1")
-
-    assert response.status_code == 200
-    assert response["Content-Type"] == "text/plain"
-    url = response.content.decode()
+    url = event.api_urls.schedules + "by-version/"
     with scopes_disabled():
-        assert url.endswith(f"/schedules/{event.current_schedule.pk}/")
+        schedule_url_suffix = f"/schedules/{event.current_schedule.pk}/"
+
+    by_version = client.get(url + "?version=v1")
+    by_latest = client.get(url + "?latest=true")
+    nonexistent = client.get(url + "?version=nonexistent")
+    missing = client.get(url)
+
+    assert by_version.status_code == 200
+    assert by_version["Content-Type"] == "text/plain"
+    assert by_version.content.decode().endswith(schedule_url_suffix)
+    assert by_latest.status_code == 200
+    assert by_latest["Content-Type"] == "text/plain"
+    assert by_latest.content.decode().endswith(schedule_url_suffix)
+    assert nonexistent.status_code == 404
+    assert missing.status_code == 404
 
 
-def test_schedule_redirect_version_nonexistent(client, public_schedule_event):
-    event, _ = public_schedule_event
-
-    response = client.get(event.api_urls.schedules + "by-version/?version=nonexistent")
-
-    assert response.status_code == 404
-
-
-def test_schedule_redirect_version_latest_param(client, public_schedule_event):
-    event, _ = public_schedule_event
-
-    response = client.get(event.api_urls.schedules + "by-version/?latest=true")
-
-    assert response.status_code == 200
-    assert response["Content-Type"] == "text/plain"
-    url = response.content.decode()
-    with scopes_disabled():
-        assert url.endswith(f"/schedules/{event.current_schedule.pk}/")
-
-
-def test_schedule_redirect_version_missing_query_param(client, public_schedule_event):
-    event, _ = public_schedule_event
-
-    response = client.get(event.api_urls.schedules + "by-version/")
-
-    assert response.status_code == 404
-
-
-def test_schedule_release_orga_success(client, orga_write_token, public_schedule_event):
+def test_schedule_release_orga(client, orga_write_token, public_schedule_event):
     event, _ = public_schedule_event
     with scopes_disabled():
         initial_count = event.schedules.count()
+    headers = {"Authorization": f"Token {orga_write_token.token}"}
+    url = event.api_urls.schedules + "release/"
 
     response = client.post(
-        event.api_urls.schedules + "release/",
+        url,
         data={"version": "v_new", "comment": "Test comment"},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
+    )
+    duplicate = client.post(
+        url, data={"version": "v1"}, content_type="application/json", headers=headers
+    )
+    missing_version = client.post(
+        url,
+        data={"comment": "No version"},
+        content_type="application/json",
+        headers=headers,
     )
 
     assert response.status_code == 201
-    data = response.json()
-    assert data["version"] == "v_new"
+    assert response.json()["version"] == "v_new"
     with scopes_disabled():
         released = event.schedules.get(version="v_new")
         assert str(released.comment) == "Test comment"
         assert event.schedules.count() == initial_count + 1
-
-
-def test_schedule_release_duplicate_version_fails(
-    client, orga_write_token, public_schedule_event
-):
-    event, _ = public_schedule_event
-
-    response = client.post(
-        event.api_urls.schedules + "release/",
-        data={"version": "v1"},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 400
-    assert "version" in response.json()
-
-
-def test_schedule_release_missing_version_fails(
-    client, orga_write_token, public_schedule_event
-):
-    event, _ = public_schedule_event
-
-    response = client.post(
-        event.api_urls.schedules + "release/",
-        data={"comment": "No version"},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 400
-    assert "version" in response.json()
+    assert duplicate.status_code == 400
+    assert "version" in duplicate.json()
+    assert missing_version.status_code == 400
+    assert "version" in missing_version.json()
+    with scopes_disabled():
+        assert event.schedules.count() == initial_count + 1
 
 
 def test_schedule_release_readonly_token_denied(
@@ -276,64 +200,10 @@ def test_schedule_release_readonly_token_denied(
     assert response.status_code == 403
 
 
-def test_schedule_exporter_orga_access(client, orga_write_token, public_schedule_event):
-    event, _ = public_schedule_event
-
-    response = client.get(
-        event.api_urls.schedules + "latest/exporters/schedule.json/",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    with scopes_disabled():
-        assert data["schedule"]["version"] == event.current_schedule.version
-
-
-def test_schedule_exporter_invalid_name(
-    client, orga_write_token, public_schedule_event
-):
-    event, _ = public_schedule_event
-
-    response = client.get(
-        event.api_urls.schedules + "latest/exporters/nonexistent_format/",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 404
-
-
 def test_schedule_expand_slots(client, public_schedule_event):
     event, slot = public_schedule_event
     with scopes_disabled():
         speaker = slot.submission.speakers.select_related("user").first()
-
-    response = client.get(
-        event.api_urls.schedules
-        + "latest/?expand=slots.room,slots.submission.speakers",
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data["slots"], list)
-    assert len(data["slots"]) == 1
-    expanded = data["slots"][0]
-    assert expanded["id"] == slot.pk
-    assert isinstance(expanded["room"], dict)
-    assert expanded["room"]["id"] == slot.room_id
-    assert expanded["room"]["name"]["en"] == slot.room.name
-    assert isinstance(expanded["submission"], dict)
-    assert expanded["submission"]["code"] == slot.submission.code
-    assert expanded["submission"]["title"] == slot.submission.title
-    assert isinstance(expanded["submission"]["speakers"], list)
-    assert expanded["submission"]["speakers"][0]["code"] == speaker.code
-    assert expanded["submission"]["speakers"][0]["name"] == speaker.get_display_name()
-
-
-def test_schedule_expand_slots_with_track_and_type(client, public_schedule_event):
-    event, slot = public_schedule_event
-    with scopes_disabled():
         track = TrackFactory(event=event)
         slot.submission.track = track
         slot.submission.save()
@@ -342,13 +212,21 @@ def test_schedule_expand_slots_with_track_and_type(client, public_schedule_event
 
     response = client.get(
         event.api_urls.schedules
-        + "latest/?expand=slots.submission.track,slots.submission.submission_type",
+        + "latest/?expand=slots.room,slots.submission.speakers,"
+        + "slots.submission.track,slots.submission.submission_type",
         follow=True,
     )
 
     assert response.status_code == 200
     data = response.json()
-    expanded = next(s for s in data["slots"] if s["id"] == slot.pk)
+    assert [s["id"] for s in data["slots"]] == [slot.pk]
+    expanded = data["slots"][0]
+    assert expanded["room"]["id"] == slot.room_id
+    assert expanded["room"]["name"]["en"] == slot.room.name
+    assert expanded["submission"]["code"] == slot.submission.code
+    assert expanded["submission"]["title"] == slot.submission.title
+    assert [s["code"] for s in expanded["submission"]["speakers"]] == [speaker.code]
+    assert expanded["submission"]["speakers"][0]["name"] == speaker.get_display_name()
     assert expanded["submission"]["track"]["name"]["en"] == track.name
     assert (
         expanded["submission"]["submission_type"]["name"]["en"]
@@ -377,34 +255,56 @@ def test_schedule_list_query_count(
     assert data["count"] == item_count + 1
 
 
-def test_slot_list_anonymous_current_schedule_only(client, public_schedule_event):
+def test_slot_anonymous_reads(client, public_schedule_event):
     event, slot = public_schedule_event
 
-    response = client.get(event.api_urls.slots, follow=True)
+    listing = client.get(event.api_urls.slots, follow=True)
+    detail = client.get(event.api_urls.slots + f"{slot.pk}/", follow=True)
+    ical = client.get(event.api_urls.slots + f"{slot.pk}/ical/", follow=True)
 
-    assert response.status_code == 200
-    data = response.json()
-    assert data["count"] == 1
-    assert data["results"][0]["id"] == slot.pk
+    assert listing.status_code == 200
+    data = listing.json()
+    assert [r["id"] for r in data["results"]] == [slot.pk]
     assert data["results"][0]["submission"] == slot.submission.code
     assert "is_visible" not in data["results"][0]
+    assert detail.status_code == 200
+    assert detail.json()["id"] == slot.pk
+    assert detail.json()["submission"] == slot.submission.code
+    assert "is_visible" not in detail.json()
+    assert ical.status_code == 200
+    assert ical["Content-Type"] == "text/calendar"
+    content = ical.content.decode()
+    assert "BEGIN:VCALENDAR" in content
+    assert slot.submission.code in content
+    assert (
+        ical["Content-Disposition"]
+        == f'attachment; filename="{event.slug}-{slot.submission.code}.ics"'
+    )
 
 
-def test_slot_list_anonymous_only_visible(
-    client, public_schedule_event, invisible_slot
+def test_slot_invisible_hidden_from_anonymous_but_not_orga(
+    client, orga_read_token, public_schedule_event, invisible_slot
 ):
     event, slot = public_schedule_event
     with scopes_disabled():
         visible_pk = (
             event.current_schedule.talks.filter(submission=slot.submission).first().pk
         )
+    url = event.api_urls.slots + f"{invisible_slot.pk}/"
 
-    response = client.get(event.api_urls.slots, follow=True)
+    listing = client.get(event.api_urls.slots, follow=True)
+    detail = client.get(url, follow=True)
+    ical = client.get(url + "ical/", follow=True)
+    orga_detail = client.get(
+        url, follow=True, headers={"Authorization": f"Token {orga_read_token.token}"}
+    )
 
-    assert response.status_code == 200
-    data = response.json()
-    assert data["count"] == 1
-    assert data["results"][0]["id"] == visible_pk
+    assert listing.status_code == 200
+    assert [r["id"] for r in listing.json()["results"]] == [visible_pk]
+    assert detail.status_code == 404
+    assert ical.status_code == 404
+    assert orga_detail.status_code == 200
+    assert orga_detail.json()["id"] == invisible_slot.pk
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -440,83 +340,49 @@ def test_slot_list_orga_default_current_schedule(
     assert {r["id"] for r in data["results"]} == expected_ids
 
 
-def test_slot_list_orga_filter_by_schedule(
-    client, orga_read_token, public_schedule_event
-):
+def test_slot_list_orga_filters(client, orga_read_token, public_schedule_event):
     event, slot = public_schedule_event
     with scopes_disabled():
         current_schedule_id = event.current_schedule.pk
+        wip_pk = event.wip_schedule.pk
+        wip_slot = event.wip_schedule.talks.get(submission=slot.submission)
+        blocker = TalkSlotFactory(
+            submission=None,
+            room=RoomFactory(event=event),
+            schedule=event.wip_schedule,
+            is_visible=True,
+            slot_type="blocker",
+            start=event.datetime_from,
+            end=event.datetime_from,
+        )
+    headers = {"Authorization": f"Token {orga_read_token.token}"}
 
-    response = client.get(
+    by_schedule = client.get(
         f"{event.api_urls.slots}?schedule={current_schedule_id}",
         follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+        headers=headers,
     )
-
-    assert response.status_code == 200
-    data = response.json()
-    with scopes_disabled():
-        expected_count = event.current_schedule.talks.count()
-    assert data["count"] == expected_count
-    assert slot.pk in [r["id"] for r in data["results"]]
-
-
-def test_slot_list_orga_filter_by_submission(
-    client, orga_read_token, public_schedule_event
-):
-    event, slot = public_schedule_event
-
-    response = client.get(
+    by_wip = client.get(
+        f"{event.api_urls.slots}?schedule={wip_pk}", follow=True, headers=headers
+    )
+    by_submission = client.get(
         f"{event.api_urls.slots}?submission={slot.submission.code}",
         follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+        headers=headers,
     )
 
-    assert response.status_code == 200
-    data = response.json()
-    assert data["count"] == 2
-    assert all(r["submission"] == slot.submission.code for r in data["results"])
-
-
-def test_slot_retrieve_anonymous_visible(client, public_schedule_event):
-    event, slot = public_schedule_event
-
-    response = client.get(event.api_urls.slots + f"{slot.pk}/", follow=True)
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["id"] == slot.pk
-    assert data["submission"] == slot.submission.code
-    assert "is_visible" not in data
-
-
-def test_slot_retrieve_anonymous_not_visible(
-    client, public_schedule_event, invisible_slot
-):
-    event, _ = public_schedule_event
-
-    response = client.get(event.api_urls.slots + f"{invisible_slot.pk}/", follow=True)
-
-    assert response.status_code == 404
-
-
-def test_slot_retrieve_orga_sees_invisible(
-    client, orga_read_token, public_schedule_event, invisible_slot
-):
-    event, _ = public_schedule_event
-
-    response = client.get(
-        event.api_urls.slots + f"{invisible_slot.pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+    assert by_schedule.status_code == 200
+    assert [r["id"] for r in by_schedule.json()["results"]] == [slot.pk]
+    assert by_wip.status_code == 200
+    assert {r["id"] for r in by_wip.json()["results"]} == {wip_slot.pk, blocker.pk}
+    assert by_submission.status_code == 200
+    assert {r["id"] for r in by_submission.json()["results"]} == {slot.pk, wip_slot.pk}
+    assert all(
+        r["submission"] == slot.submission.code for r in by_submission.json()["results"]
     )
 
-    assert response.status_code == 200
-    data = response.json()
-    assert data["id"] == invisible_slot.pk
 
-
-def test_slot_retrieve_break_slot_anonymous(client, public_schedule_event):
+def test_slot_break_slot_anonymous(client, public_schedule_event):
     event, _ = public_schedule_event
     with scopes_disabled():
         break_slot = TalkSlotFactory(
@@ -528,13 +394,15 @@ def test_slot_retrieve_break_slot_anonymous(client, public_schedule_event):
             end=event.datetime_from,
         )
 
-    response = client.get(event.api_urls.slots + f"{break_slot.pk}/", follow=True)
+    detail = client.get(event.api_urls.slots + f"{break_slot.pk}/", follow=True)
+    ical = client.get(event.api_urls.slots + f"{break_slot.pk}/ical/", follow=True)
 
-    assert response.status_code == 200
-    data = response.json()
+    assert detail.status_code == 200
+    data = detail.json()
     assert data["id"] == break_slot.pk
     assert data["submission"] is None
     assert data["room"] == break_slot.room_id
+    assert ical.status_code == 404
 
 
 def test_slot_update_readonly_token_denied(
@@ -557,36 +425,34 @@ def test_slot_update_readonly_token_denied(
         assert wip_slot.room_id is not None
 
 
-def test_slot_update_change_room(client, orga_write_token, public_schedule_event):
+def test_slot_update_room_on_wip_schedule(
+    client, orga_write_token, public_schedule_event
+):
     event, slot = public_schedule_event
     with scopes_disabled():
         wip_slot = event.wip_schedule.talks.filter(submission=slot.submission).first()
         other_room = RoomFactory(event=event)
+        assert wip_slot.room_id is not None
+    initial_visibility = wip_slot.is_visible
+    url = event.api_urls.slots + f"{wip_slot.pk}/"
+    headers = {"Authorization": f"Token {orga_write_token.token}"}
 
     response = client.patch(
-        event.api_urls.slots + f"{wip_slot.pk}/",
-        data={"room": other_room.pk},
+        url,
+        data={"room": other_room.pk, "is_visible": not initial_visibility},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
     )
 
     assert response.status_code == 200
+    assert response.json()["is_visible"] == initial_visibility
     with scopes_disabled():
         wip_slot.refresh_from_db()
         assert wip_slot.room_id == other_room.pk
-
-
-def test_slot_update_clear_room(client, orga_write_token, public_schedule_event):
-    event, slot = public_schedule_event
-    with scopes_disabled():
-        wip_slot = event.wip_schedule.talks.filter(submission=slot.submission).first()
-        assert wip_slot.room_id is not None
+        assert wip_slot.is_visible == initial_visibility
 
     response = client.patch(
-        event.api_urls.slots + f"{wip_slot.pk}/",
-        data={"room": None},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        url, data={"room": None}, content_type="application/json", headers=headers
     )
 
     assert response.status_code == 200
@@ -594,45 +460,17 @@ def test_slot_update_clear_room(client, orga_write_token, public_schedule_event)
         wip_slot.refresh_from_db()
         assert wip_slot.room_id is None
 
-
-def test_slot_update_visibility_is_readonly(
-    client, orga_write_token, public_schedule_event
-):
-    event, slot = public_schedule_event
-    with scopes_disabled():
-        wip_slot = event.wip_schedule.talks.filter(submission=slot.submission).first()
-    initial = wip_slot.is_visible
-
-    response = client.patch(
-        event.api_urls.slots + f"{wip_slot.pk}/",
-        data={"is_visible": not initial},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 200
-    assert response.json()["is_visible"] == initial
-    with scopes_disabled():
-        wip_slot.refresh_from_db()
-        assert wip_slot.is_visible == initial
-
-
-def test_slot_update_non_wip_schedule_denied(
-    client, orga_write_token, public_schedule_event
-):
-    event, slot = public_schedule_event
-    with scopes_disabled():
-        other_room = RoomFactory(event=event)
-    assert slot.schedule.version is not None
-
-    response = client.patch(
+    released = client.patch(
         event.api_urls.slots + f"{slot.pk}/",
         data={"room": other_room.pk},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
     )
 
-    assert response.status_code == 403
+    assert released.status_code == 403
+    with scopes_disabled():
+        slot.refresh_from_db()
+        assert slot.room_id != other_room.pk
 
 
 @pytest.mark.parametrize("has_submission", (True, False))
@@ -667,153 +505,42 @@ def test_slot_expand_parameters(client, orga_read_token, public_schedule_event):
     event, slot = public_schedule_event
     with scopes_disabled():
         speaker = slot.submission.speakers.select_related("user").first()
-
-    response = client.get(
-        event.api_urls.slots + f"{slot.pk}/",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert data["submission"] == slot.submission.code
-    assert data["room"] == slot.room_id
-    assert data["schedule"] == slot.schedule_id
-
-    response = client.get(
-        event.api_urls.slots
-        + f"{slot.pk}/?expand=room,schedule,submission,submission.speakers",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-    assert response.status_code == 200
-    data = response.json()
-
-    assert isinstance(data["room"], dict)
-    assert data["room"]["id"] == slot.room_id
-
-    assert isinstance(data["submission"], dict)
-    assert data["submission"]["code"] == slot.submission.code
-
-    assert isinstance(data["submission"]["speakers"], list)
-    assert data["submission"]["speakers"][0]["code"] == speaker.code
-
-
-def test_slot_expand_submission_track_and_type(
-    client, orga_read_token, public_schedule_event
-):
-    event, slot = public_schedule_event
-    with scopes_disabled():
         track = TrackFactory(event=event)
         slot.submission.track = track
         slot.submission.save()
     event.feature_flags["use_tracks"] = True
     event.save()
-
-    response = client.get(
-        event.api_urls.slots + f"{slot.pk}/",
-        {"expand": "submission.track,submission.submission_type"},
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+    headers = {"Authorization": f"Token {orga_read_token.token}"}
+    expand = (
+        "room,schedule,submission,submission.speakers,submission.resources,"
+        "submission.track,submission.submission_type"
     )
 
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data["submission"], dict)
+    plain = client.get(event.api_urls.slots + f"{slot.pk}/", headers=headers)
+    detail = client.get(
+        event.api_urls.slots + f"{slot.pk}/", {"expand": expand}, headers=headers
+    )
+    listing = client.get(event.api_urls.slots, {"expand": expand}, headers=headers)
+
+    assert plain.status_code == 200
+    data = plain.json()
+    assert data["submission"] == slot.submission.code
+    assert data["room"] == slot.room_id
+    assert data["schedule"] == slot.schedule_id
+    assert detail.status_code == 200
+    data = detail.json()
+    assert data["room"]["id"] == slot.room_id
+    assert data["schedule"]["id"] == slot.schedule_id
+    assert data["submission"]["code"] == slot.submission.code
+    assert [s["code"] for s in data["submission"]["speakers"]] == [speaker.code]
     assert data["submission"]["track"]["name"]["en"] == track.name
     assert (
         data["submission"]["submission_type"]["name"]["en"]
         == slot.submission.submission_type.name
     )
-
-
-def test_slot_list_expand_submission_speakers(
-    client, orga_read_token, public_schedule_event
-):
-    event, slot = public_schedule_event
-    with scopes_disabled():
-        speaker = slot.submission.speakers.select_related("user").first()
-
-    response = client.get(
-        event.api_urls.slots,
-        {"expand": "submission.speakers,submission.resources"},
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["count"] == 1
-    result = data["results"][0]
-    assert isinstance(result["submission"], dict)
-    assert result["submission"]["code"] == slot.submission.code
-    assert isinstance(result["submission"]["speakers"], list)
-    assert result["submission"]["speakers"][0]["code"] == speaker.code
-
-
-def test_slot_list_expand_submission_track_and_type(
-    client, orga_read_token, public_schedule_event
-):
-    event, slot = public_schedule_event
-    with scopes_disabled():
-        track = TrackFactory(event=event)
-        slot.submission.track = track
-        slot.submission.save()
-    event.feature_flags["use_tracks"] = True
-    event.save()
-
-    response = client.get(
-        event.api_urls.slots,
-        {"expand": "submission.track,submission.submission_type"},
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    result = next(s for s in data["results"] if s["id"] == slot.pk)
-    assert result["submission"]["track"]["name"]["en"] == track.name
-    assert (
-        result["submission"]["submission_type"]["name"]["en"]
-        == slot.submission.submission_type.name
-    )
-
-
-def test_slot_ical_success(client, public_schedule_event):
-    event, slot = public_schedule_event
-
-    response = client.get(event.api_urls.slots + f"{slot.pk}/ical/", follow=True)
-
-    assert response.status_code == 200
-    assert response["Content-Type"] == "text/calendar"
-    content = response.content.decode()
-    assert "BEGIN:VCALENDAR" in content
-    assert slot.submission.code in content
-    expected_disposition = (
-        f'attachment; filename="{event.slug}-{slot.submission.code}.ics"'
-    )
-    assert response["Content-Disposition"] == expected_disposition
-
-
-def test_slot_ical_not_visible(client, public_schedule_event, invisible_slot):
-    event, _ = public_schedule_event
-
-    response = client.get(
-        event.api_urls.slots + f"{invisible_slot.pk}/ical/", follow=True
-    )
-
-    assert response.status_code == 404
-
-
-def test_slot_ical_no_submission(client, public_schedule_event):
-    event, _ = public_schedule_event
-    with scopes_disabled():
-        break_slot = TalkSlotFactory(
-            submission=None,
-            room=RoomFactory(event=event),
-            schedule=event.current_schedule,
-            is_visible=True,
-            start=event.datetime_from,
-            end=event.datetime_from,
-        )
-
-    response = client.get(event.api_urls.slots + f"{break_slot.pk}/ical/", follow=True)
-
-    assert response.status_code == 404
+    assert listing.status_code == 200
+    assert [r["id"] for r in listing.json()["results"]] == [slot.pk]
+    assert listing.json()["results"][0]["submission"] == data["submission"]
 
 
 def test_slot_orga_sees_blocker_in_wip(client, orga_read_token, event):
@@ -837,8 +564,7 @@ def test_slot_orga_sees_blocker_in_wip(client, orga_read_token, event):
     )
 
     assert response.status_code == 200
-    data = response.json()
-    assert blocker.pk in [r["id"] for r in data["results"]]
+    assert [r["id"] for r in response.json()["results"]] == [blocker.pk]
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -896,7 +622,7 @@ def test_schedule_expanded_submissions_query_count(
 
 
 @pytest.mark.parametrize("token_fixture", ("orga_read_token", "review_token"))
-def test_schedule_expanded_internals_visible_to_orga_and_reviewers(
+def test_expanded_internals_visible_to_orga_and_reviewers(
     client, event, token_fixture, request
 ):
     token = request.getfixturevalue(token_fixture)
@@ -908,43 +634,23 @@ def test_schedule_expanded_internals_visible_to_orga_and_reviewers(
         TalkSlotFactory(submission=submission, is_visible=True)
         with scope(event=event):
             freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+    headers = {"Authorization": f"Token {token.token}"}
 
-    response = client.get(
+    schedule = client.get(
         event.api_urls.schedules + "latest/?expand=slots,slots.submission",
         follow=True,
-        headers={"Authorization": f"Token {token.token}"},
+        headers=headers,
+    )
+    slots = client.get(
+        event.api_urls.slots + "?expand=submission", follow=True, headers=headers
     )
 
-    assert response.status_code == 200
-    data = response.json()["slots"][0]["submission"]
+    assert schedule.status_code == 200
+    data = schedule.json()["slots"][0]["submission"]
     assert data["tags"] == [tag.pk]
     assert data["resources"] == [resource.pk]
-
-
-@pytest.mark.parametrize("token_fixture", ("orga_read_token", "review_token"))
-def test_slot_expanded_internals_visible_to_orga_and_reviewers(
-    client, event, token_fixture, request
-):
-    token = request.getfixturevalue(token_fixture)
-    with scopes_disabled():
-        tag = TagFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        submission.tags.add(tag)
-        resource = ResourceFactory(submission=submission, is_public=False)
-        TalkSlotFactory(submission=submission, is_visible=True)
-        with scope(event=event):
-            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-
-    response = client.get(
-        event.api_urls.slots + "?expand=submission",
-        follow=True,
-        headers={"Authorization": f"Token {token.token}"},
-    )
-
-    assert response.status_code == 200
-    data = response.json()["results"][0]["submission"]
-    assert data["tags"] == [tag.pk]
-    assert data["resources"] == [resource.pk]
+    assert slots.status_code == 200
+    assert slots.json()["results"][0]["submission"] == data
 
 
 def test_schedule_expanded_tags_anonymous_sees_only_public_ones(client, event):

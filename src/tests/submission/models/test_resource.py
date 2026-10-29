@@ -6,7 +6,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from pretalx.submission.models.resource import Resource, resource_path
-from tests.factories import ResourceFactory
+from tests.factories import ResourceFactory, SubmissionFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -50,116 +50,80 @@ def test_resource_str():
     )
 
 
-def test_resource_url_returns_link_when_set():
-    resource = ResourceFactory(link="https://example.com/slides")
-
-    assert resource.url == "https://example.com/slides"
-
-
-def test_resource_url_returns_file_url_when_no_link(settings):
+def test_resource_file_properties(settings):
     settings.SITE_URL = "https://pretalx.example.com"
-    f = SimpleUploadedFile("file.pdf", b"test content")
-    resource = ResourceFactory(link=None, resource=f)
+    submission = SubmissionFactory()
+    linked = ResourceFactory(submission=submission, link="https://example.com/slides")
+    uploaded = ResourceFactory(
+        submission=submission,
+        link=None,
+        resource=SimpleUploadedFile("slides.pdf", b"test content"),
+    )
+    missing = ResourceFactory(
+        submission=submission,
+        link=None,
+        resource=SimpleUploadedFile("gone.pdf", b"test content"),
+    )
+    Path(missing.resource.path).unlink()
+    empty = Resource.objects.select_related("submission__event").get(pk=linked.pk)
+    empty.link = None
+    empty.resource = None
 
-    result = resource.url
-
-    assert result.startswith("https://pretalx.example.com/")
-    assert result.endswith(".pdf")
-
-
-def test_resource_url_returns_none_when_no_link_no_file():
-    resource = ResourceFactory(link=None)
-
-    resource = Resource.objects.select_related("submission__event").get(pk=resource.pk)
-    resource.resource = None
-
-    assert resource.url is None
-
-
-def test_resource_filename_returns_name_for_file():
-    f = SimpleUploadedFile("slides.pdf", b"content")
-    resource = ResourceFactory(link=None, resource=f)
-
-    assert resource.filename.endswith(".pdf")
-    assert "slides" in resource.filename
-
-
-def test_resource_filename_returns_none_when_no_file():
-    resource = ResourceFactory(link="https://example.com")
-
-    resource = Resource.objects.get(pk=resource.pk)
-    resource.resource = None
-
-    assert resource.filename is None
-
-
-def test_resource_size_returns_file_size():
-    f = SimpleUploadedFile("slides.pdf", b"test content")
-    resource = ResourceFactory(link=None, resource=f)
-
-    assert resource.size == len(b"test content")
-
-
-def test_resource_size_returns_none_when_file_missing_from_storage():
-    f = SimpleUploadedFile("slides.pdf", b"test content")
-    resource = ResourceFactory(link=None, resource=f)
-    Path(resource.resource.path).unlink()
-
-    assert resource.size is None
-
-
-def test_resource_size_returns_none_when_no_file():
-    resource = ResourceFactory(link="https://example.com")
-
-    resource = Resource.objects.get(pk=resource.pk)
-
-    assert resource.size is None
+    assert linked.url == "https://example.com/slides"
+    assert uploaded.url.startswith("https://pretalx.example.com/")
+    assert uploaded.url.endswith(".pdf")
+    assert empty.url is None
+    assert uploaded.filename.startswith("slides")
+    assert uploaded.filename.endswith(".pdf")
+    assert empty.filename is None
+    assert uploaded.size == len(b"test content")
+    assert missing.size is None
+    assert empty.size is None
 
 
 def test_resource_delete_removes_file(django_capture_on_commit_callbacks):
     f = SimpleUploadedFile("test_resource.txt", b"test content")
     resource = ResourceFactory(link=None, resource=f)
+    linked = ResourceFactory(submission=resource.submission, link="https://example.com")
     file_path = resource.resource.path
     assert resource.resource.storage.exists(file_path)
 
     with django_capture_on_commit_callbacks(execute=True):
         resource.delete()
+        linked.delete()
 
     assert not resource.resource.storage.exists(file_path)
+    assert not Resource.objects.filter(submission=resource.submission).exists()
 
 
-def test_resource_delete_without_file():
-    resource = ResourceFactory(link="https://example.com")
+def test_resource_as_markdown():
+    submission = SubmissionFactory()
+    resources = [
+        ResourceFactory(
+            submission=submission, link="https://example.com", description="Slides"
+        ),
+        ResourceFactory(
+            submission=submission, link="https://example.com/2", description=""
+        ),
+        ResourceFactory(submission=submission, link="", description="My Slides"),
+        ResourceFactory(
+            submission=submission,
+            resource=SimpleUploadedFile("slides.pdf", b"content"),
+            description="",
+            link=None,
+        ),
+        ResourceFactory(
+            submission=submission, resource=None, description="", link=None
+        ),
+    ]
 
-    pk = resource.pk
-    resource.delete()
+    lines = [resource.as_markdown for resource in resources]
 
-    assert not Resource.objects.filter(pk=pk).exists()
-
-
-def test_resource_as_markdown_link_with_description():
-    resource = ResourceFactory(link="https://example.com", description="Slides")
-    assert resource.as_markdown == "[Slides](https://example.com)"
-
-
-def test_resource_as_markdown_link_only():
-    resource = ResourceFactory(link="https://example.com/2", description="")
-    assert resource.as_markdown == "https://example.com/2"
-
-
-def test_resource_as_markdown_label_only():
-    resource = ResourceFactory(link="", description="My Slides")
-    assert resource.as_markdown == "File: My Slides"
-
-
-def test_resource_as_markdown_filename():
-    f = SimpleUploadedFile("slides.pdf", b"content")
-    resource = ResourceFactory(resource=f, description="", link=None)
-    result = resource.as_markdown
-    assert result.startswith("File: slides_")
-    assert result.endswith(".pdf")
-
-
-def test_resource_as_markdown_no_file_no_link():
-    resource = ResourceFactory(resource=None, description="", link=None)
-    assert resource.as_markdown is None
+    assert lines[:3] == [
+        "[Slides](https://example.com)",
+        "https://example.com/2",
+        "File: My Slides",
+    ]
+    assert lines[3].startswith("File: slides_")
+    assert lines[3].endswith(".pdf")
+    assert lines[4] is None

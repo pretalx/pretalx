@@ -24,273 +24,138 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 @pytest.mark.parametrize(
-    ("version", "expected"),
-    ((None, "wip"), ("v2", "v2")),
-    ids=["none_returns_wip", "returns_version"],
-)
-def test_schedule_version_with_fallback(version, expected):
-    schedule = ScheduleFactory(version=version)
-    assert schedule.version_with_fallback == expected
-
-
-@pytest.mark.parametrize(
-    ("version", "expected"),
-    ((None, "wip"), ("v1", "v1"), ("version 1", "version%201")),
+    ("version", "fallback", "url_version"),
+    (
+        (None, "wip", "wip"),
+        ("v1", "v1", "v1"),
+        ("version 1", "version 1", "version%201"),
+    ),
     ids=["wip", "plain", "encoded"],
 )
-def test_schedule_url_version(version, expected):
+def test_schedule_version_properties(version, fallback, url_version):
     schedule = ScheduleFactory(version=version)
-    assert schedule.url_version == expected
+
+    assert (schedule.version_with_fallback, schedule.url_version) == (
+        fallback,
+        url_version,
+    )
 
 
-def test_schedule_is_archived_no_version(event):
+def test_schedule_release_chain_tracks_previous_schedule_and_changes(event):
+    room = RoomFactory(event=event)
+    moved = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    canceled = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    added = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    TalkSlotFactory(submission=moved, room=room)
+    TalkSlotFactory(submission=canceled, room=room)
+
     with scope(event=event):
-        assert not event.wip_schedule.is_archived
+        wip = event.wip_schedule
+        assert (wip.is_archived, wip.previous_schedule) == (False, None)
 
-
-def test_schedule_is_archived_current(event):
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, name="v1")
+        freeze_schedule(wip, name="v1")
         v1 = Schedule.objects.select_related("event").get(event=event, version="v1")
-        assert not v1.is_archived
+        assert (v1.is_archived, v1.previous_schedule, v1.changes["action"]) == (
+            False,
+            None,
+            "create",
+        )
+        assert event.wip_schedule.previous_schedule == v1
 
-
-def test_schedule_is_archived_old(event):
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, name="v1")
+        moved_slot = event.wip_schedule.talks.get(submission=moved)
+        moved_slot.start = event.datetime_from + dt.timedelta(hours=5)
+        moved_slot.end = event.datetime_from + dt.timedelta(hours=6)
+        moved_slot.save()
+        canceled_slot = event.wip_schedule.talks.get(submission=canceled)
+        canceled_slot.room = None
+        canceled_slot.start = None
+        canceled_slot.end = None
+        canceled_slot.is_visible = False
+        canceled_slot.save()
+        TalkSlotFactory(submission=added, room=room)
         freeze_schedule(event.wip_schedule, name="v2")
         v1 = Schedule.objects.select_related("event").get(event=event, version="v1")
-        assert v1.is_archived
+        v2 = Schedule.objects.select_related("event").get(event=event, version="v2")
+
+        assert (v1.is_archived, v2.is_archived, v2.previous_schedule) == (
+            True,
+            False,
+            v1,
+        )
+        assert v2.changes["action"] == "update"
+        assert [slot.submission for slot in v2.changes["new_talks"]] == [added]
+        assert [slot.submission for slot in v2.changes["canceled_talks"]] == [canceled]
+        assert [move["submission"] for move in v2.changes["moved_talks"]] == [moved]
 
 
-def test_schedule_scheduled_talks_filters_visible(event):
+def test_schedule_slot_collections(event):
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     room = RoomFactory(event=event)
+    start = event.datetime_from
+    end = start + dt.timedelta(hours=1)
     with scope(event=event):
         schedule = event.wip_schedule
-    slot = TalkSlotFactory(
-        submission=submission,
-        schedule=schedule,
-        room=room,
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=1),
-        is_visible=True,
+    visible = TalkSlotFactory(
+        submission=submission, schedule=schedule, room=room, start=start, end=end
     )
     TalkSlotFactory(
         submission=submission,
         schedule=schedule,
         room=room,
-        start=event.datetime_from + dt.timedelta(hours=2),
-        end=event.datetime_from + dt.timedelta(hours=3),
+        start=start,
+        end=end,
         is_visible=False,
     )
-
-    with scope(event=event):
-        result = list(schedule.scheduled_talks)
-
-    assert result == [slot]
-
-
-def test_schedule_scheduled_talks_excludes_no_room(event):
-    submission = SubmissionFactory(event=event)
-    with scope(event=event):
-        schedule = event.wip_schedule
     TalkSlotFactory(
-        submission=submission, schedule=schedule, room=None, is_visible=True
+        submission=submission, schedule=schedule, room=None, start=start, end=end
     )
-
-    with scope(event=event):
-        assert list(schedule.scheduled_talks) == []
-
-
-def test_schedule_scheduled_talks_excludes_no_start(event):
-    submission = SubmissionFactory(event=event)
-    room = RoomFactory(event=event)
-    with scope(event=event):
-        schedule = event.wip_schedule
     TalkSlotFactory(
-        submission=submission,
-        schedule=schedule,
-        room=room,
-        start=None,
-        end=None,
-        is_visible=True,
+        submission=submission, schedule=schedule, room=room, start=None, end=None
     )
-
-    with scope(event=event):
-        assert list(schedule.scheduled_talks) == []
-
-
-def test_schedule_breaks(event):
-    room = RoomFactory(event=event)
-    with scope(event=event):
-        schedule = event.wip_schedule
     break_slot = TalkSlotFactory(
         submission=None,
         schedule=schedule,
         room=room,
         slot_type=SlotType.BREAK,
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=1),
+        start=start,
+        end=end,
     )
-    TalkSlotFactory(
-        submission=SubmissionFactory(event=event), schedule=schedule, room=room
-    )
-
-    with scope(event=event):
-        result = list(schedule.breaks)
-
-    assert result == [break_slot]
-
-
-def test_schedule_blockers(event):
-    room = RoomFactory(event=event)
-    with scope(event=event):
-        schedule = event.wip_schedule
     blocker = TalkSlotFactory(
         submission=None,
         schedule=schedule,
         room=room,
         slot_type=SlotType.BLOCKER,
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=1),
-    )
-    TalkSlotFactory(
-        submission=SubmissionFactory(event=event), schedule=schedule, room=room
+        start=start,
+        end=end,
     )
 
     with scope(event=event):
-        result = list(schedule.blockers)
+        assert list(schedule.scheduled_talks) == [visible]
+        assert list(schedule.breaks) == [break_slot]
+        assert list(schedule.blockers) == [blocker]
+        assert list(schedule.slots) == [submission]
 
-    assert result == [blocker]
 
-
-def test_schedule_slots_returns_submissions(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    room = RoomFactory(event=event)
+def test_schedule_use_room_availabilities(event):
     with scope(event=event):
-        schedule = event.wip_schedule
-    TalkSlotFactory(
-        submission=submission,
-        schedule=schedule,
-        room=room,
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=1),
-        is_visible=True,
-    )
+        without = event.wip_schedule.use_room_availabilities
+        AvailabilityFactory(event=event, room=RoomFactory(event=event))
+        del event.wip_schedule.__dict__["use_room_availabilities"]
+        with_avails = event.wip_schedule.use_room_availabilities
 
-    result = list(schedule.slots)
-
-    assert result == [submission]
+    assert (without, with_avails) == (False, True)
 
 
-def test_schedule_previous_schedule_none(event):
-    with scope(event=event):
-        schedule = event.wip_schedule
-        assert schedule.previous_schedule is None
-
-
-def test_schedule_previous_schedule_returns_last_published(event):
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, name="v1")
-        freeze_schedule(event.wip_schedule, name="v2")
-        v2 = Schedule.objects.select_related("event").get(event=event, version="v2")
-        v1 = Schedule.objects.select_related("event").get(event=event, version="v1")
-        assert v2.previous_schedule == v1
-
-
-def test_schedule_previous_schedule_wip_returns_latest_published(event):
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, name="v1")
-        wip = event.wip_schedule
-        v1 = Schedule.objects.select_related("event").get(event=event, version="v1")
-        assert wip.previous_schedule == v1
-
-
-def test_schedule_use_room_availabilities_false(event):
-    with scope(event=event):
-        assert event.wip_schedule.use_room_availabilities is False
-
-
-def test_schedule_use_room_availabilities_true(event):
-    room = RoomFactory(event=event)
-    AvailabilityFactory(event=event, room=room)
-    with scope(event=event):
-        assert event.wip_schedule.use_room_availabilities is True
-
-
-def test_schedule_changes_create_on_first_release(event):
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, name="v1")
-        v1 = Schedule.objects.select_related("event").get(event=event, version="v1")
-
-    with scope(event=event):
-        assert v1.changes["action"] == "create"
-
-
-def test_schedule_changes_update_with_new_talk(event):
-    room = RoomFactory(event=event)
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, name="v1")
-        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        TalkSlotFactory(submission=submission, room=room)
-        freeze_schedule(event.wip_schedule, name="v2")
-        v2 = Schedule.objects.select_related("event").get(event=event, version="v2")
-
-        assert v2.changes["action"] == "update"
-        assert len(v2.changes["new_talks"]) == 1
-        assert v2.changes["new_talks"][0].submission == submission
-
-
-def test_schedule_changes_canceled_talk(event):
-    room = RoomFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    TalkSlotFactory(submission=submission, room=room)
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, name="v1")
-        wip_slot = event.wip_schedule.talks.get(submission=submission)
-        wip_slot.room = None
-        wip_slot.start = None
-        wip_slot.end = None
-        wip_slot.is_visible = False
-        wip_slot.save()
-        freeze_schedule(event.wip_schedule, name="v2")
-        v2 = Schedule.objects.select_related("event").get(event=event, version="v2")
-
-        assert v2.changes["action"] == "update"
-        assert len(v2.changes["canceled_talks"]) == 1
-
-
-def test_schedule_changes_moved_talk(event):
-    room = RoomFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    TalkSlotFactory(submission=submission, room=room)
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, name="v1")
-        wip_slot = event.wip_schedule.talks.get(submission=submission)
-        wip_slot.start = event.datetime_from + dt.timedelta(hours=5)
-        wip_slot.end = event.datetime_from + dt.timedelta(hours=6)
-        wip_slot.save()
-        freeze_schedule(event.wip_schedule, name="v2")
-        v2 = Schedule.objects.select_related("event").get(event=event, version="v2")
-
-        assert v2.changes["action"] == "update"
-        assert len(v2.changes["moved_talks"]) == 1
-        assert v2.changes["moved_talks"][0]["submission"] == submission
-
-
-def test_schedule_unique_event_version():
+def test_schedule_version_unique_per_event():
     event = EventFactory()
     ScheduleFactory(event=event, version="v1")
-    with pytest.raises(IntegrityError):
-        ScheduleFactory(event=event, version="v1")
-
-
-def test_schedule_clean_rejects_duplicate_version():
-    event = EventFactory()
-    ScheduleFactory(event=event, version="v1")
-    schedule = Schedule(event=event, version="v1")
 
     with pytest.raises(ValidationError) as exc_info:
-        schedule.clean()
-    assert "version" in exc_info.value.message_dict
+        Schedule(event=event, version="v1").clean()
+    assert exc_info.value.message_dict == {
+        "version": [
+            "This schedule version was used already, please choose a different one."
+        ]
+    }
+    with pytest.raises(IntegrityError):
+        ScheduleFactory(event=event, version="v1")

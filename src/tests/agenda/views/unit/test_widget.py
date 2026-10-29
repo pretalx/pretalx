@@ -26,17 +26,18 @@ def test_style_etag_is_style_version(event):
     assert result == event.style_version
 
 
-def test_widget_js_etag_returns_checksum(event, django_assert_num_queries):
+def test_widget_js_etag_returns_stable_checksum(event, django_assert_num_queries):
     widget_module.WIDGET_JS_CHECKSUM = None
     widget_module.WIDGET_JS_CONTENT = None
 
     request = make_request(event)
 
     with django_assert_num_queries(0):
-        result = widget_js_etag(request)
+        first = widget_js_etag(request)
+        second = widget_js_etag(request)
 
-    assert result is not None
-    assert len(result) == 32  # MD5 hex digest length
+    assert len(first) == 32  # MD5 hex digest length
+    assert first == second
 
 
 def test_widget_js_etag_missing_bundle_raises(event, monkeypatch):
@@ -48,45 +49,28 @@ def test_widget_js_etag_missing_bundle_raises(event, monkeypatch):
         widget_js_etag(make_request(event))
 
 
-def test_widget_js_etag_stable_across_calls(event):
-    widget_module.WIDGET_JS_CHECKSUM = None
-    widget_module.WIDGET_JS_CONTENT = None
-
-    request = make_request(event)
-    first = widget_js_etag(request)
-    second = widget_js_etag(request)
-
-    assert first == second
-
-
-def test_is_public_and_versioned_wip_returns_false(event):
+@pytest.mark.parametrize("version", (None, "wip"), ids=["unreleased", "wip"])
+def test_is_public_and_versioned_false_without_public_schedule(event, version):
     request = make_request(event)
 
-    result = is_public_and_versioned(request, event, version="wip")
+    with scope(event=event):
+        result = is_public_and_versioned(request, event, version=version)
 
     assert result is False
 
 
-def test_is_public_and_versioned_no_version_visible_schedule(
-    event, django_assert_num_queries
+@pytest.mark.parametrize("version", (None, "v1"), ids=["current", "explicit"])
+def test_is_public_and_versioned_true_for_released_schedule(
+    event, version, django_assert_num_queries
 ):
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1")
     request = make_request(event)
 
     with scope(event=event), django_assert_num_queries(1):
-        result = is_public_and_versioned(request, event)
+        result = is_public_and_versioned(request, event, version=version)
 
     assert result is True
-
-
-def test_is_public_and_versioned_not_visible(event):
-    request = make_request(event)
-
-    with scope(event=event):
-        result = is_public_and_versioned(request, event)
-
-    assert result is False
 
 
 def test_is_public_and_versioned_widget_always_visible():
@@ -95,17 +79,6 @@ def test_is_public_and_versioned_widget_always_visible():
 
     with scope(event=event):
         result = is_public_and_versioned(request, event)
-
-    assert result is True
-
-
-def test_is_public_and_versioned_with_version(event):
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, "v1")
-    request = make_request(event)
-
-    with scope(event=event):
-        result = is_public_and_versioned(request, event, version="v1")
 
     assert result is True
 

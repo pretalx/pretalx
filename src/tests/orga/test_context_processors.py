@@ -17,87 +17,53 @@ SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
 pytestmark = pytest.mark.unit
 
 
-def test_collect_signal_returns_list_responses():
+@pytest.mark.parametrize(
+    ("response", "expected"),
+    (
+        ([{"label": "A"}, {"label": "B"}], [{"label": "A"}, {"label": "B"}]),
+        ({"label": "Single"}, [{"label": "Single"}]),
+        ([{"label": "Good"}, ValueError("bad")], [{"label": "Good"}]),
+    ),
+    ids=("list", "scalar", "list-with-exception"),
+)
+def test_collect_signal_collects_responses(response, expected):
     signal = Signal()
-    items = [{"label": "A"}, {"label": "B"}]
 
     def handler(signal, sender, **kwargs):
-        return items
+        return response
 
     signal.connect(handler)
     try:
-        result = collect_signal(signal, {"sender": None})
-        assert result == items
+        assert collect_signal(signal, {"sender": None}) == expected
     finally:
         signal.disconnect(handler)
 
 
-def test_collect_signal_returns_scalar_responses():
+def test_collect_signal_drops_raising_handlers():
     signal = Signal()
 
-    def handler(signal, sender, **kwargs):
-        return {"label": "Single"}
-
-    signal.connect(handler)
-    try:
-        result = collect_signal(signal, {"sender": None})
-        assert result == [{"label": "Single"}]
-    finally:
-        signal.disconnect(handler)
-
-
-def test_collect_signal_filters_exceptions_from_list():
-    signal = Signal()
-
-    def handler(signal, sender, **kwargs):
-        return [{"label": "Good"}, ValueError("bad")]
-
-    signal.connect(handler)
-    try:
-        result = collect_signal(signal, {"sender": None})
-        assert result == [{"label": "Good"}]
-    finally:
-        signal.disconnect(handler)
-
-
-def test_collect_signal_filters_exception_responses():
-    signal = Signal()
+    assert collect_signal(signal, {"sender": None}) == []
 
     def handler(signal, sender, **kwargs):
         raise RuntimeError("boom")
 
     signal.connect(handler)
     try:
-        result = collect_signal(signal, {"sender": None})
-        assert result == []
+        assert collect_signal(signal, {"sender": None}) == []
     finally:
         signal.disconnect(handler)
 
 
-def test_collect_signal_empty_when_no_receivers():
-    signal = Signal()
-    result = collect_signal(signal, {"sender": None})
-    assert result == []
+def test_orga_events_outside_orga_or_unauthenticated():
+    non_orga = make_request(event=None, path="/agenda/talk/")
+    anonymous = make_request(event=None, path="/orga/login/")
+    anonymous.user = AnonymousUser()
+    no_user = make_request(event=None, path="/orga/login/")
+    del no_user.user
 
-
-def test_orga_events_returns_empty_for_non_orga_path():
-    request = make_request(event=None, path="/agenda/talk/")
-    result = orga_events(request)
-    assert result == {}
-
-
-def test_orga_events_returns_settings_for_unauthenticated_user():
-    request = make_request(event=None, path="/orga/login/")
-    request.user = AnonymousUser()
-    result = orga_events(request)
-    assert result == {"settings": settings}
-
-
-def test_orga_events_returns_settings_for_no_user_attr():
-    request = make_request(event=None, path="/orga/login/")
-    del request.user
-    result = orga_events(request)
-    assert result == {"settings": settings}
+    assert orga_events(non_orga) == {}
+    assert orga_events(anonymous) == {"settings": settings}
+    assert orga_events(no_user) == {"settings": settings}
 
 
 @pytest.mark.django_db
@@ -106,84 +72,49 @@ def test_orga_events_returns_nav_global_without_event(register_signal_handler):
     request = make_request(event=None, path="/orga/")
     request.user = user
     del request.event
-
     entry = {"label": "Global Nav", "url": "/orga/admin/"}
 
     def handler(signal, sender, **kwargs):
-        return [entry]
+        return [None, entry, ""]
 
     register_signal_handler(nav_global, handler)
     result = orga_events(request)
 
-    assert result["settings"] is settings
-    assert entry in result["nav_global"]
+    assert result == {"settings": settings, "nav_global": [entry]}
 
 
 @pytest.mark.django_db
-def test_orga_events_nav_global_filters_falsy_entries(register_signal_handler):
-    user = UserFactory()
-    request = make_request(event=None, path="/orga/")
-    request.user = user
-    del request.event
-
-    real_entry = {"label": "Real", "url": "/orga/"}
-
-    def handler(signal, sender, **kwargs):
-        return [None, real_entry, ""]
-
-    register_signal_handler(nav_global, handler)
-    result = orga_events(request)
-    assert real_entry in result["nav_global"]
-    assert None not in result["nav_global"]
-    assert "" not in result["nav_global"]
-
-
-@pytest.mark.django_db
-def test_orga_events_with_event_returns_nav_and_pagination():
+def test_orga_events_with_event_collects_nav_and_html_head(register_signal_handler):
     event = EventFactory()
     user = UserFactory()
     request = make_request(event, user=user, path="/orga/event/test/")
     request.session = SimpleSession()
 
-    result = orga_events(request)
+    assert orga_events(request) == {
+        "settings": settings,
+        "nav_event": [],
+        "nav_settings": [],
+        "nav_settings_expanded": False,
+        "html_head": "",
+        "pagination_sizes": [50, 100, 250],
+    }
 
-    assert result["settings"] is settings
-    assert result["nav_event"] == []
-    assert result["nav_settings"] == []
-    assert result["nav_settings_expanded"] is False
-    assert result["html_head"] == ""
-    assert result["pagination_sizes"] == [50, 100, 250]
-
-
-@pytest.mark.django_db
-def test_orga_events_nav_event_collects_list_responses(register_signal_handler):
-    event = EventFactory()
-    user = UserFactory()
-    request = make_request(event, user=user, path="/orga/event/test/")
-    request.session = SimpleSession()
     entry = {"label": "Plugin Nav", "url": "/orga/event/test/plugin/"}
-
-    def handler(signal, sender, **kwargs):
-        return [entry]
-
-    register_signal_handler(nav_event, handler)
+    register_signal_handler(nav_event, lambda signal, sender, **kwargs: [entry])
+    register_signal_handler(
+        nav_event, lambda signal, sender, **kwargs: {"label": "Scalar"}
+    )
+    register_signal_handler(
+        html_head, lambda signal, sender, **kwargs: mark_safe("<link>")
+    )
+    register_signal_handler(
+        html_head, lambda signal, sender, **kwargs: "<script>alert(1)</script>"
+    )
+    register_signal_handler(html_head, lambda signal, sender, **kwargs: None)
     result = orga_events(request)
+
     assert result["nav_event"] == [entry]
-
-
-@pytest.mark.django_db
-def test_orga_events_nav_event_ignores_non_list_responses(register_signal_handler):
-    event = EventFactory()
-    user = UserFactory()
-    request = make_request(event, user=user, path="/orga/event/test/")
-    request.session = SimpleSession()
-
-    def handler(signal, sender, **kwargs):
-        return {"label": "Scalar"}
-
-    register_signal_handler(nav_event, handler)
-    result = orga_events(request)
-    assert result["nav_event"] == []
+    assert result["html_head"] == "<link>&lt;script&gt;alert(1)&lt;/script&gt;"
 
 
 @pytest.mark.django_db
@@ -219,128 +150,64 @@ def test_orga_events_nav_settings_expanded(
 
     register_signal_handler(nav_event_settings, handler)
     result = orga_events(request)
+    assert result["nav_settings"] == [entry]
     assert result["nav_settings_expanded"] is expected
 
 
 @pytest.mark.django_db
-def test_orga_events_html_head_concatenates_safe_strings(register_signal_handler):
-    event = EventFactory()
-    user = UserFactory()
-    request = make_request(event, user=user, path="/orga/event/test/")
-    request.session = SimpleSession()
-
-    def handler1(signal, sender, **kwargs):
-        return mark_safe("<link>")
-
-    def handler2(signal, sender, **kwargs):
-        return mark_safe("<script>")
-
-    register_signal_handler(html_head, handler1)
-    register_signal_handler(html_head, handler2)
-    result = orga_events(request)
-    assert result["html_head"] == "<link><script>"
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize(
-    ("response", "expected"),
+    ("is_public", "team_kwargs"),
     (
+        pytest.param(False, {}, id="private-organiser"),
         pytest.param(
-            "<script>alert(1)</script>",
-            "&lt;script&gt;alert(1)&lt;/script&gt;",
-            id="plain_string_escaped",
+            True,
+            {"can_change_submissions": False, "is_reviewer": True},
+            id="public-reviewer",
         ),
-        pytest.param(None, "", id="none_dropped"),
     ),
 )
-def test_orga_events_html_head_escapes_unsafe_responses(
-    register_signal_handler, response, expected
+def test_orga_events_creates_and_reuses_child_session_for_custom_domain(
+    is_public, team_kwargs
 ):
-    event = EventFactory()
-    user = UserFactory()
-    request = make_request(event, user=user, path="/orga/event/test/")
-    request.session = SimpleSession()
-
-    def handler(signal, sender, **kwargs):
-        return response
-
-    register_signal_handler(html_head, handler)
-    result = orga_events(request)
-    assert result["html_head"] == expected
-
-
-@pytest.mark.django_db
-@pytest.mark.parametrize("is_public", (True, False))
-@pytest.mark.parametrize(
-    "team_kwargs",
-    (
-        pytest.param({}, id="organiser"),
-        pytest.param(
-            {"can_change_submissions": False, "is_reviewer": True}, id="reviewer"
-        ),
-    ),
-)
-def test_orga_events_creates_child_session_for_custom_domain(is_public, team_kwargs):
     event = EventFactory(
         is_public=is_public, custom_domain="https://custom.example.com"
     )
     user = make_orga_user(event, all_events=True, **team_kwargs)
-
     request = make_request(event, user=user, path="/orga/event/test/")
     request.session = SimpleSession()
     request.session.session_key = "parent-session-key"
 
-    result = orga_events(request)
+    new_session_key = orga_events(request)["new_session"]
 
-    child_session_key = f"child_session_{event.pk}"
-    new_session_key = result["new_session"]
-    assert request.session[child_session_key] == new_session_key
-    assert SessionStore().exists(new_session_key)
-
-
-@pytest.mark.django_db
-def test_orga_events_reuses_existing_child_session():
-    event = EventFactory(is_public=False, custom_domain="https://custom.example.com")
-    user = make_orga_user(event)
-
-    store = SessionStore()
-    store.create()
-    existing_key = store.session_key
-
-    request = make_request(event, user=user, path="/orga/event/test/")
-    request.session = SimpleSession()
-    request.session.session_key = "parent-session-key"
-    request.session[f"child_session_{event.pk}"] = existing_key
-
-    result = orga_events(request)
-
-    assert result["new_session"] == existing_key
+    assert request.session[f"child_session_{event.pk}"] == new_session_key
+    store = SessionStore(session_key=new_session_key)
+    assert store.exists(new_session_key)
+    assert store[f"pretalx_event_access_{event.pk}"] == "parent-session-key"
+    assert orga_events(request)["new_session"] == new_session_key
 
 
 @pytest.mark.django_db
-def test_orga_events_no_child_session_without_custom_domain():
-    event = EventFactory(is_public=False, custom_domain="")
-    user = make_orga_user(event)
-
-    request = make_request(event, user=user, path="/orga/event/test/")
+@pytest.mark.parametrize(
+    ("is_public", "custom_domain", "make_user"),
+    (
+        pytest.param(False, "", make_orga_user, id="no-custom-domain"),
+        pytest.param(
+            False,
+            "https://custom.example.com",
+            lambda event: UserFactory(),
+            id="private-without-permission",
+        ),
+        pytest.param(
+            True,
+            "https://custom.example.com",
+            lambda event: UserFactory(),
+            id="public-without-permission",
+        ),
+    ),
+)
+def test_orga_events_no_child_session(is_public, custom_domain, make_user):
+    event = EventFactory(is_public=is_public, custom_domain=custom_domain)
+    request = make_request(event, user=make_user(event), path="/orga/event/test/")
     request.session = SimpleSession()
 
-    result = orga_events(request)
-
-    assert "new_session" not in result
-
-
-@pytest.mark.django_db
-@pytest.mark.parametrize("is_public", (True, False))
-def test_orga_events_no_child_session_without_permissions(is_public):
-    event = EventFactory(
-        is_public=is_public, custom_domain="https://custom.example.com"
-    )
-    user = UserFactory()
-
-    request = make_request(event, user=user, path="/orga/event/test/")
-    request.session = SimpleSession()
-
-    result = orga_events(request)
-
-    assert "new_session" not in result
+    assert "new_session" not in orga_events(request)

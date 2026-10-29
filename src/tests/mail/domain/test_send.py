@@ -4,7 +4,8 @@
 # This file contains Apache-2.0 licensed contributions copyrighted by the following contributors:
 # SPDX-FileContributor: Raphael Michel
 
-from unittest.mock import MagicMock, patch
+import datetime as dt
+from unittest.mock import patch
 
 import pytest
 from django.core import mail as djmail
@@ -12,12 +13,13 @@ from django.core.exceptions import ValidationError
 from django.core.mail import mailers
 from django.test import override_settings
 from django.utils.safestring import mark_safe
-from django.utils.timezone import now as tz_now
 from django_scopes import scopes_disabled
 from i18nfield.strings import LazyI18nString
 
 from pretalx.common.exceptions import SendMailException
+from pretalx.common.models.log import ActivityLog
 from pretalx.mail import tasks as mail_tasks
+from pretalx.mail.domain.render import render_template_to_mail
 from pretalx.mail.domain.send import (
     get_send_mail_exceptions,
     send_draft,
@@ -27,7 +29,6 @@ from pretalx.mail.domain.send import (
 from pretalx.mail.domain.smtp import (
     _format_email,
     build_message,
-    deliver_persisted,
     filter_recipients,
     resolve_envelope,
 )
@@ -38,10 +39,18 @@ from pretalx.mail.signals import (
     queuedmail_pre_send,
     request_pre_send,
 )
-from tests.factories import EventFactory, QueuedMailFactory, SpeakerFactory, UserFactory
+from tests.factories import (
+    EventFactory,
+    MailTemplateFactory,
+    QueuedMailFactory,
+    SpeakerFactory,
+    UserFactory,
+)
 from tests.utils import make_request
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
+
+SENT_AT = dt.datetime(2024, 1, 1, tzinfo=dt.UTC)
 
 
 @pytest.mark.parametrize("state", (QueuedMailStates.SENT, QueuedMailStates.SENDING))
@@ -51,66 +60,42 @@ def test_send_draft_non_draft_raises(event, state):
         send_draft(mail)
 
 
-def test_send_draft_delivers_email(event):
+def test_send_draft_delivers_to_addresses_and_reachable_speakers(event):
     djmail.outbox = []
     with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-    mail = QueuedMailFactory(event=event, to="test@pretalx.org")
-    mail.to_speakers.add(speaker)
+        account = SpeakerFactory(event=event)
+        contact_override = SpeakerFactory(event=event, email="contact@example.com")
+        cleared_override = SpeakerFactory(event=event, email="")
+        managed_without_email = SpeakerFactory(event=event, user=None, email=None)
+    mail = QueuedMailFactory(
+        event=event,
+        to="a@example.com,b@example.com",
+        error_data={"error": "previous failure"},
+        error_timestamp="2024-01-01T00:00:00Z",
+    )
+    mail.to_speakers.add(
+        account, contact_override, cleared_override, managed_without_email
+    )
+    assert mail.has_error is True
 
     send_draft(mail)
     mail = QueuedMail.objects.select_related("event").get(pk=mail.pk)
 
     assert mail.state == QueuedMailStates.SENT
     assert mail.sent is not None
+    assert mail.error_data is None
+    assert mail.error_timestamp is None
     assert len(djmail.outbox) == 1
     sent_email = djmail.outbox[0]
-    assert set(sent_email.to) == {"test@pretalx.org", speaker.user.email}
+    assert set(sent_email.to) == {
+        "a@example.com",
+        "b@example.com",
+        account.user.email,
+        "contact@example.com",
+        cleared_override.user.email,
+    }
     assert sent_email.subject == mail.prefixed_subject
     assert mail.text in sent_email.body
-
-
-def test_send_draft_routes_to_contact_email_override(event):
-    djmail.outbox = []
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event, email="contact@example.com")
-    mail = QueuedMailFactory(event=event)
-    mail.to_speakers.add(speaker)
-
-    send_draft(mail)
-
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == ["contact@example.com"]
-
-
-def test_send_draft_falls_back_to_account_email_after_clearing_override(event):
-    djmail.outbox = []
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event, email="")
-    mail = QueuedMailFactory(event=event)
-    mail.to_speakers.add(speaker)
-
-    send_draft(mail)
-
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == [speaker.user.email]
-
-
-def test_send_transient_delivers_email(event):
-    djmail.outbox = []
-    mail = QueuedMail(
-        event=event,
-        to="test@pretalx.org",
-        subject=mark_safe("Test"),
-        text=mark_safe("Body"),
-        locale="en",
-    )
-
-    send_transient(mail)
-
-    assert mail.state == QueuedMailStates.SENT
-    assert mail.sent is not None
-    assert len(djmail.outbox) == 1
 
 
 def test_send_draft_without_event_delivers_email():
@@ -124,47 +109,39 @@ def test_send_draft_without_event_delivers_email():
     assert len(djmail.outbox) == 1
 
 
-def test_send_draft_skips_when_signal_sets_sent(event, register_signal_handler):
-
-    def mark_as_sent(signal, sender, mail, **kwargs):
-        mail.sent = tz_now()
-
-    register_signal_handler(queuedmail_pre_send, mark_as_sent)
-    djmail.outbox = []
-    mail = QueuedMailFactory(event=event, to="test@pretalx.org")
-
-    send_draft(mail)
-    mail.refresh_from_db()
-
-    assert mail.state == QueuedMailStates.SENT
-    assert mail.sent is not None
-    assert len(djmail.outbox) == 0
-
-
-@pytest.mark.parametrize("state", (QueuedMailStates.SENT, QueuedMailStates.SENDING))
-def test_send_draft_skips_when_signal_sets_state(event, register_signal_handler, state):
-
-    def mark_as_sent(signal, sender, mail, **kwargs):
-        mail.state = state
-
-    register_signal_handler(queuedmail_pre_send, mark_as_sent)
-    djmail.outbox = []
-    mail = QueuedMailFactory(event=event, to="test@pretalx.org")
-
-    send_draft(mail)
-
-    assert mail.state == state
-    assert len(djmail.outbox) == 0
-
-
-@pytest.mark.parametrize("state", (QueuedMailStates.SENT, QueuedMailStates.SENDING))
-def test_send_draft_skips_when_signal_sets_sent_and_state(
-    event, register_signal_handler, state
+@pytest.mark.parametrize(
+    ("updates", "expected_state", "expected_db_state"),
+    (
+        ({"sent": SENT_AT}, QueuedMailStates.SENT, QueuedMailStates.SENT),
+        (
+            {"sent": SENT_AT, "state": QueuedMailStates.SENT},
+            QueuedMailStates.SENT,
+            QueuedMailStates.DRAFT,
+        ),
+        (
+            {"sent": SENT_AT, "state": QueuedMailStates.SENDING},
+            QueuedMailStates.SENT,
+            QueuedMailStates.SENT,
+        ),
+        (
+            {"state": QueuedMailStates.SENT},
+            QueuedMailStates.SENT,
+            QueuedMailStates.DRAFT,
+        ),
+        (
+            {"state": QueuedMailStates.SENDING},
+            QueuedMailStates.SENDING,
+            QueuedMailStates.DRAFT,
+        ),
+    ),
+    ids=("sent", "sent+SENT", "sent+SENDING", "SENT", "SENDING"),
+)
+def test_send_draft_skips_when_signal_handler_sends(
+    event, register_signal_handler, updates, expected_state, expected_db_state
 ):
-
     def mark_as_sent(signal, sender, mail, **kwargs):
-        mail.sent = tz_now()
-        mail.state = state
+        for attr, value in updates.items():
+            setattr(mail, attr, value)
 
     register_signal_handler(queuedmail_pre_send, mark_as_sent)
     djmail.outbox = []
@@ -172,11 +149,13 @@ def test_send_draft_skips_when_signal_sets_sent_and_state(
 
     send_draft(mail)
 
-    assert mail.state == QueuedMailStates.SENT
+    assert mail.state == expected_state
+    assert mail.sent == updates.get("sent")
+    assert QueuedMail.objects.get(pk=mail.pk).state == expected_db_state
     assert len(djmail.outbox) == 0
 
 
-def test_send_draft_broker_failure_marks_failed(event, monkeypatch):
+def test_send_draft_broker_failure_marks_failed_without_log(event, monkeypatch):
     def broken_broker(*args, **kwargs):
         raise OSError("Broker unavailable")
 
@@ -188,25 +167,11 @@ def test_send_draft_broker_failure_marks_failed(event, monkeypatch):
 
     assert mail.state == QueuedMailStates.DRAFT
     assert mail.has_error is True
-    assert "Broker unavailable" in mail.error_data["error"]
-
-
-def test_send_draft_logs_after_dispatch_succeeds(event):
-    from pretalx.common.models.log import ActivityLog  # noqa: PLC0415
-
-    mail = QueuedMailFactory(event=event, to="test@pretalx.org")
-
-    with patch.object(
-        mail_tasks.task_send_draft, "apply_async", side_effect=OSError("broker down")
-    ):
-        send_draft(mail)
-
+    assert mail.error_data == {"error": "Broker unavailable", "type": "OSError"}
     with scopes_disabled():
         assert not ActivityLog.objects.filter(
             action_type="pretalx.mail.sent", object_id=mail.pk
         ).exists()
-    mail.refresh_from_db()
-    assert mail.has_error is True
 
 
 def test_send_draft_requires_persisted_mail(event):
@@ -228,11 +193,10 @@ def test_send_transient_rejects_persisted_mail(event):
 
 
 def test_send_transient_broker_failure_logs_and_swallows(event, caplog, monkeypatch):
-    monkeypatch.setattr(
-        mail_tasks.task_send_transient,
-        "apply_async",
-        MagicMock(side_effect=OSError("Broker unavailable")),
-    )
+    def broken_broker(*args, **kwargs):
+        raise OSError("Broker unavailable")
+
+    monkeypatch.setattr(mail_tasks.task_send_transient, "apply_async", broken_broker)
     djmail.outbox = []
     mail = QueuedMail(
         event=event,
@@ -250,174 +214,108 @@ def test_send_transient_broker_failure_logs_and_swallows(event, caplog, monkeypa
     assert mail.state == QueuedMailStates.DRAFT
 
 
-def test_send_transient_forwards_bcc_from_template(event):
-    from pretalx.mail.domain.render import render_template_to_mail  # noqa: PLC0415
-    from tests.factories import MailTemplateFactory  # noqa: PLC0415
-
+@pytest.mark.parametrize(
+    ("force_global_backend", "expected_from", "expected_reply_to"),
+    (
+        (False, "{event_name} <orga@orga.org>", ["{event_name} <{event_email}>"]),
+        (True, "pretalx <orga@orga.org>", []),
+    ),
+    ids=("event_backend", "global_backend"),
+)
+@override_settings(MAIL_FROM="orga@orga.org")
+def test_send_transient_delivers_through_event_or_global_backend(
+    event, force_global_backend, expected_from, expected_reply_to
+):
+    djmail.outbox = []
     template = MailTemplateFactory(
         event=event, subject="Hi", text="Body", bcc="watch@example.org"
     )
     mail = render_template_to_mail(template)
     mail.to = "test@pretalx.org"
 
-    with patch.object(mail_tasks.task_send_transient, "apply_async") as mock:
-        send_transient(mail)
+    send_transient(mail, force_global_backend=force_global_backend)
 
-    forwarded = mock.call_args.kwargs["kwargs"]
-    assert forwarded["bcc"] == ["watch@example.org"]
-
-
-def test_send_transient_forwards_event_id_by_default(event):
-    mail = QueuedMail(
-        event=event,
-        to="user@example.org",
-        subject=mark_safe("S"),
-        text=mark_safe("B"),
-        locale="en",
-    )
-
-    with patch.object(mail_tasks.task_send_transient, "apply_async") as mock:
-        send_transient(mail)
-
-    assert mock.call_args.kwargs["kwargs"]["event_id"] == event.pk
-
-
-def test_send_transient_force_global_backend_strips_event_id(event):
-    mail = QueuedMail(
-        event=event,
-        to="user@example.org",
-        subject=mark_safe("S"),
-        text=mark_safe("B"),
-        locale="en",
-    )
-
-    with patch.object(mail_tasks.task_send_transient, "apply_async") as mock:
-        send_transient(mail, force_global_backend=True)
-
-    assert mock.call_args.kwargs["kwargs"]["event_id"] is None
-
-
-def test_send_draft_after_failure_clears_error(event):
-    djmail.outbox = []
-    mail = QueuedMailFactory(
-        event=event,
-        to="test@pretalx.org",
-        error_data={"error": "previous failure"},
-        error_timestamp="2024-01-01T00:00:00Z",
-    )
-    assert mail.has_error is True
-
-    send_draft(mail)
-    mail.refresh_from_db()
-
+    assert mail.pk is None
     assert mail.state == QueuedMailStates.SENT
-    assert mail.error_data is None
-    assert mail.error_timestamp is None
-
-
-def test_send_draft_with_comma_separated_to(event):
-    djmail.outbox = []
-    mail = QueuedMailFactory(event=event, to="a@example.com,b@example.com")
-
-    send_draft(mail)
-    mail.refresh_from_db()
-
-    assert mail.state == QueuedMailStates.SENT
+    assert mail.sent is not None
     assert len(djmail.outbox) == 1
-    assert set(djmail.outbox[0].to) == {"a@example.com", "b@example.com"}
-
-
-def test_format_email_with_display_name_preserves_it():
-    assert (
-        _format_email("Custom Name <test@test.org>", "Fallback")
-        == "Custom Name <test@test.org>"
-    )
-
-
-def test_format_email_without_display_name_uses_fallback():
-    assert (
-        _format_email("test@test.org", "Fallback Name")
-        == "Fallback Name <test@test.org>"
-    )
-
-
-def test_filter_recipients_empty_string_returns_empty_list():
-    assert filter_recipients("") == []
-
-
-def test_filter_recipients_wraps_string_into_list():
-    assert filter_recipients("user@test.org") == ["user@test.org"]
-
-
-def test_filter_recipients_drops_empty_addresses_from_list():
-    assert filter_recipients(["", "user@test.org", ""]) == ["user@test.org"]
+    sent_email = djmail.outbox[0]
+    assert sent_email.to == ["test@pretalx.org"]
+    assert sent_email.bcc == ["watch@example.org"]
+    assert sent_email.from_email == expected_from.format(event_name=event.name)
+    assert sent_email.reply_to == [
+        address.format(event_name=event.name, event_email=event.email)
+        for address in expected_reply_to
+    ]
 
 
 @pytest.mark.parametrize(
-    "address", ("user@localhost", "user@example.org", "user@example.com")
-)
-@override_settings(
-    DEBUG=False,
-    MAILERS={"default": {"BACKEND": "django.core.mail.backends.smtp.EmailBackend"}},
-)
-def test_filter_recipients_drops_debug_domains_in_production(address):
-    assert filter_recipients(address) == []
-
-
-@override_settings(
-    DEBUG=True,
-    MAILERS={"default": {"BACKEND": "django.core.mail.backends.locmem.EmailBackend"}},
-)
-def test_filter_recipients_allows_debug_domains_in_debug_mode():
-    assert filter_recipients("user@localhost") == ["user@localhost"]
-
-
-@override_settings(
-    DEBUG=False,
-    MAILERS={"default": {"BACKEND": "django.core.mail.backends.locmem.EmailBackend"}},
-)
-def test_filter_recipients_allows_debug_domains_with_locmem_backend():
-    assert filter_recipients("user@example.com") == ["user@example.com"]
-
-
-@override_settings(MAIL_FROM="orga@orga.org")
-def test_resolve_envelope_event_default_reply_to(event):
-    sender, reply_to, _backend = resolve_envelope(event, None)
-
-    assert sender == f"{event.name} <orga@orga.org>"
-    assert reply_to == [f"{event.name} <{event.email}>"]
-
-
-@pytest.mark.parametrize(
-    ("reply_to_setting", "expected_reply_to"),
+    ("addr", "expected"),
     (
-        ("reply@test.org", "{event_name} <reply@test.org>"),
-        ("Custom Reply <reply@test.org>", "Custom Reply <reply@test.org>"),
+        ("Custom Name <test@test.org>", "Custom Name <test@test.org>"),
+        ("test@test.org", "Fallback <test@test.org>"),
     ),
 )
+def test_format_email_fills_in_missing_display_name(addr, expected):
+    assert _format_email(addr, "Fallback") == expected
+
+
+@pytest.mark.parametrize(
+    ("to", "expected"),
+    (
+        ("", []),
+        ("user@test.org", ["user@test.org"]),
+        (["", "user@test.org", ""], ["user@test.org"]),
+    ),
+)
+def test_filter_recipients_normalises_to_list(to, expected):
+    assert filter_recipients(to) == expected
+
+
+@pytest.mark.parametrize(
+    ("debug", "backend", "address", "expected"),
+    (
+        (False, "smtp", "user@localhost", []),
+        (False, "smtp", "user@example.org", []),
+        (False, "smtp", "user@example.com", []),
+        (True, "locmem", "user@localhost", ["user@localhost"]),
+        (False, "locmem", "user@example.com", ["user@example.com"]),
+    ),
+)
+def test_filter_recipients_drops_debug_domains_only_in_production(
+    debug, backend, address, expected
+):
+    with override_settings(
+        DEBUG=debug,
+        MAILERS={
+            "default": {"BACKEND": f"django.core.mail.backends.{backend}.EmailBackend"}
+        },
+    ):
+        assert filter_recipients(address) == expected
+
+
+@pytest.mark.parametrize(
+    ("reply_to_setting", "reply_to", "expected_reply_to"),
+    (
+        ("", None, ["{event_name} <{event_email}>"]),
+        ("reply@test.org", None, ["{event_name} <reply@test.org>"]),
+        ("Custom Reply <reply@test.org>", None, ["Custom Reply <reply@test.org>"]),
+        ("event-reply@test.org", "caller@test.org", ["caller@test.org"]),
+        ("", "a@test.org,b@test.org", ["a@test.org", "b@test.org"]),
+    ),
+    ids=("event_default", "setting", "setting_with_name", "caller", "caller_list"),
+)
 @override_settings(MAIL_FROM="orga@orga.org")
-def test_resolve_envelope_event_custom_reply_to(reply_to_setting, expected_reply_to):
+def test_resolve_envelope_event_reply_to(reply_to_setting, reply_to, expected_reply_to):
     event = EventFactory(mail_settings={"reply_to": reply_to_setting})
 
-    _sender, reply_to, _backend = resolve_envelope(event, None)
+    sender, resolved_reply_to, _backend = resolve_envelope(event, reply_to)
 
-    assert reply_to == [expected_reply_to.format(event_name=event.name)]
-
-
-@override_settings(MAIL_FROM="orga@orga.org")
-def test_resolve_envelope_caller_reply_to_overrides_event():
-    event = EventFactory(mail_settings={"reply_to": "event-reply@test.org"})
-
-    _sender, reply_to, _backend = resolve_envelope(event, "caller@test.org")
-
-    assert reply_to == ["caller@test.org"]
-
-
-@override_settings(MAIL_FROM="orga@orga.org")
-def test_resolve_envelope_reply_to_comma_separated_string(event):
-    _sender, reply_to, _backend = resolve_envelope(event, "a@test.org,b@test.org")
-
-    assert reply_to == ["a@test.org", "b@test.org"]
+    assert sender == f"{event.name} <orga@orga.org>"
+    assert resolved_reply_to == [
+        address.format(event_name=event.name, event_email=event.email)
+        for address in expected_reply_to
+    ]
 
 
 @pytest.mark.parametrize(
@@ -499,20 +397,7 @@ def test_build_message_inlines_html_alternative():
     assert 'style="color: red' in content
 
 
-def test_build_message_without_html_attaches_no_alternative():
-    email = build_message(
-        to=["user@test.org"],
-        subject="S",
-        body="Body",
-        html=None,
-        reply_to=[],
-        sender="pretalx <orga@orga.org>",
-    )
-
-    assert email.alternatives == []
-
-
-def test_build_message_with_cc_and_bcc():
+def test_build_message_sets_envelope_fields_without_html():
     email = build_message(
         to=["user@test.org"],
         subject="S",
@@ -522,23 +407,12 @@ def test_build_message_with_cc_and_bcc():
         sender="pretalx <orga@orga.org>",
         cc=["cc@test.org"],
         bcc=["bcc@test.org"],
-    )
-
-    assert email.cc == ["cc@test.org"]
-    assert email.bcc == ["bcc@test.org"]
-
-
-def test_build_message_with_custom_headers():
-    email = build_message(
-        to=["user@test.org"],
-        subject="S",
-        body="Body",
-        html=None,
-        reply_to=[],
-        sender="pretalx <orga@orga.org>",
         headers={"X-Custom": "value"},
     )
 
+    assert email.alternatives == []
+    assert email.cc == ["cc@test.org"]
+    assert email.bcc == ["bcc@test.org"]
     assert email.extra_headers == {"X-Custom": "value"}
 
 
@@ -547,116 +421,57 @@ def test_send_system_mail_dispatches_without_event():
 
     send_system_mail(
         subject="Account update",
-        text="Hi {name}, your account is fine.",
+        text="Hi {name}, click {url}",
         to="user@example.org",
         context_kwargs={"user": UserFactory(name="Alex")},
+        safe_extra_context={"url": mark_safe("https://example.org/reset/abc")},
     )
 
     assert len(djmail.outbox) == 1
     sent = djmail.outbox[0]
     assert sent.to == ["user@example.org"]
     assert sent.subject == "Account update"
-    assert "Hi Alex" in sent.body
+    assert "Hi Alex, click https://example.org/reset/abc" in sent.body
 
 
-def test_send_system_mail_routes_via_transient_task():
-    with patch.object(mail_tasks.task_send_transient, "apply_async") as mock:
-        send_system_mail(subject="Reset", text="Body", to="user@example.org")
-
-    mock.assert_called_once()
-    forwarded = mock.call_args.kwargs["kwargs"]
-    assert forwarded["to"] == ["user@example.org"]
-    assert forwarded["event_id"] is None
-
-
-def test_send_system_mail_does_not_persist(event):
-    djmail.outbox = []
-    before = QueuedMail.objects.count()
-
-    send_system_mail(
-        subject="System notice",
-        text="Body for {event_name}.",
-        to="user@example.org",
-        event=event,
-    )
-
-    assert QueuedMail.objects.count() == before
-    assert len(djmail.outbox) == 1
-
-
-def test_send_system_mail_renders_event_placeholders(event):
-    djmail.outbox = []
-
-    send_system_mail(
-        subject="Hello",
-        text="Greetings from {event_name}.",
-        to="user@example.org",
-        event=event,
-    )
-
-    assert str(event.name) in djmail.outbox[0].body
-
-
-def test_send_system_mail_uses_event_signature_in_body(event):
-    event.mail_settings = {**event.mail_settings, "signature": "-- \nThe team"}
-    event.save()
-    djmail.outbox = []
-
-    send_system_mail(subject="Hi", text="Body.", to="user@example.org", event=event)
-
-    assert "The team" in djmail.outbox[0].body
-
-
-def test_send_system_mail_ignores_event_smtp(event):
+def test_send_system_mail_with_event_renders_context_but_ignores_event_smtp(
+    event, register_signal_handler
+):
     event.mail_settings = {
         **event.mail_settings,
+        "signature": "-- \nThe team",
         "smtp_use_custom": True,
         "mail_from": "event-smtp@example.org",
         "reply_to": "event-replyto@example.org",
     }
     event.save()
+    signals_fired = []
+    register_signal_handler(
+        queuedmail_pre_send, lambda **kwargs: signals_fired.append(kwargs)
+    )
+    register_signal_handler(
+        queuedmail_post_send, lambda **kwargs: signals_fired.append(kwargs)
+    )
     djmail.outbox = []
+    before = QueuedMail.objects.count()
 
-    send_system_mail(subject="Hi", text="Body.", to="user@example.org", event=event)
+    send_system_mail(
+        subject=LazyI18nString({"en": "Hello", "de": "Hallo"}),
+        text="Greetings from {event_name}.",
+        to="user@example.org",
+        event=event,
+        locale="de",
+    )
 
+    assert QueuedMail.objects.count() == before
+    assert signals_fired == []
+    assert len(djmail.outbox) == 1
     sent = djmail.outbox[0]
+    assert sent.subject.endswith("Hallo")
+    assert f"Greetings from {event.name}." in sent.body
+    assert "The team" in sent.body
     assert "event-smtp@example.org" not in sent.from_email
     assert sent.reply_to == []
-
-
-def test_send_system_mail_does_not_fire_signals(event, register_signal_handler):
-    handler = MagicMock()
-    register_signal_handler(queuedmail_pre_send, handler)
-    register_signal_handler(queuedmail_post_send, handler)
-    djmail.outbox = []
-
-    send_system_mail(subject="Hi", text="Body.", to="user@example.org", event=event)
-
-    handler.assert_not_called()
-
-
-def test_send_system_mail_collapses_lazy_i18n_with_locale(event):
-    subject = LazyI18nString({"en": "Hello", "de": "Hallo"})
-    djmail.outbox = []
-
-    send_system_mail(
-        subject=subject, text="Body.", to="user@example.org", event=event, locale="de"
-    )
-
-    assert djmail.outbox[0].subject.endswith("Hallo")
-
-
-def test_send_system_mail_safe_extra_context_renders():
-    djmail.outbox = []
-
-    send_system_mail(
-        subject="Reset",
-        text="Click {url}",
-        to="user@example.org",
-        safe_extra_context={"url": mark_safe("https://example.org/reset/abc")},
-    )
-
-    assert "https://example.org/reset/abc" in djmail.outbox[0].body
 
 
 def test_send_system_mail_empty_recipient_raises():
@@ -668,32 +483,15 @@ def test_send_system_mail_empty_recipient_raises():
     assert djmail.outbox == []
 
 
-def test_get_send_mail_exceptions_returns_none_without_handlers(event):
+def test_get_send_mail_exceptions_collects_handler_errors(
+    event, register_signal_handler
+):
     request = make_request(event)
-
     assert get_send_mail_exceptions(request) is None
 
-
-def test_get_send_mail_exceptions_returns_errors(event, register_signal_handler):
     def raise_exception(signal, sender, **kwargs):
         raise SendMailException("Blocked!")
 
     register_signal_handler(request_pre_send, raise_exception)
-    request = make_request(event)
 
     assert get_send_mail_exceptions(request) == ["Blocked!"]
-
-
-def test_deliver_persisted_skips_speaker_without_email(event):
-    djmail.outbox = []
-    with scopes_disabled():
-        reachable = SpeakerFactory(event=event)
-        managed = SpeakerFactory(event=event, user=None, email=None)
-    mail = QueuedMailFactory(event=event)
-    mail.to_speakers.add(reachable, managed)
-
-    with scopes_disabled():
-        deliver_persisted(mail)
-
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == [reachable.user.email]

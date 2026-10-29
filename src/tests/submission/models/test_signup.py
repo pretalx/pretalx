@@ -13,42 +13,27 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_attendee_signup_str():
-    signup = AttendeeSignupFactory()
-
-    expected = (
-        f"AttendeeSignup(submission={signup.submission.code}, "
-        f"attendee={signup.attendee}, state={signup.state})"
-    )
-    assert str(signup) == expected
-
-
-def test_attendee_signup_log_action_routes_content_object_to_submission():
-    signup = AttendeeSignupFactory()
-
-    with scope(event=signup.submission.event):
-        log = signup.log_action(".signup")
-
-    assert log.content_object == signup.submission
-    assert log.event == signup.submission.event
-
-
-def test_attendee_signup_event_resolves_through_submission():
-    signup = AttendeeSignupFactory()
-
-    assert signup.event == signup.submission.event
-    assert signup.log_parent == signup.submission
-
-
-def test_attendee_signup_delete_logs_on_parent_submission():
+def test_attendee_signup_logs_on_parent_submission():
     signup = AttendeeSignupFactory()
     submission = signup.submission
 
     with scope(event=submission.event):
+        log = signup.log_action(".signup")
         signup.delete()
-        logs = list(submission.logged_actions())
+        action_types = [log.action_type for log in submission.logged_actions()]
 
-    assert any(log.action_type == "pretalx.submission.signup.delete" for log in logs)
+    assert str(signup) == (
+        f"AttendeeSignup(submission={submission.code}, "
+        f"attendee={signup.attendee}, state={signup.state})"
+    )
+    assert signup.event == submission.event
+    assert signup.log_parent == submission
+    assert log.content_object == submission
+    assert log.event == submission.event
+    assert action_types == [
+        "pretalx.submission.signup.delete",
+        "pretalx.submission.signup.signup",
+    ]
 
 
 def test_attendee_signup_logged_actions_filters_submission_log_by_attendee():

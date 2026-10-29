@@ -67,32 +67,29 @@ def test_preferences_set(initial, path, value, expected_at_path):
     assert prefs.get(path) == expected_at_path
 
 
-def test_preferences_set_raises_on_overwrite_dict_with_non_dict():
-    prefs = UserEventPreferencesFactory(preferences={"tables": {"SubmissionTable": {}}})
+@pytest.mark.parametrize(
+    ("initial", "path", "value"),
+    (
+        ({"tables": {"SubmissionTable": {}}}, "tables", "flat_value"),
+        ({"tables": "flat_value"}, "tables.SubmissionTable.columns", ["title"]),
+    ),
+    ids=["dict_with_non_dict", "intermediate_leaf"],
+)
+def test_preferences_set_raises_on_type_conflict(initial, path, value):
+    prefs = UserEventPreferencesFactory(preferences=initial)
     with pytest.raises(TypeError):
-        prefs.set("tables", "flat_value")
+        prefs.set(path, value)
 
 
-def test_preferences_set_raises_on_intermediate_leaf():
-    prefs = UserEventPreferencesFactory(preferences={"tables": "flat_value"})
-    with pytest.raises(TypeError):
-        prefs.set("tables.SubmissionTable.columns", ["title"])
-
-
-def test_preferences_set_with_commit(event):
+@pytest.mark.parametrize(
+    ("commit", "expected"), ((True, {"color": "green"}), (False, {}))
+)
+def test_preferences_set_commit_controls_persistence(event, commit, expected):
     prefs = UserEventPreferencesFactory(event=event, preferences={})
-    prefs.set("color", "green", commit=True)
+    prefs.set("color", "green", commit=commit)
 
     prefs.refresh_from_db()
-    assert prefs.preferences["color"] == "green"
-
-
-def test_preferences_set_without_commit_does_not_persist(event):
-    prefs = UserEventPreferencesFactory(event=event, preferences={})
-    prefs.set("color", "green", commit=False)
-
-    prefs.refresh_from_db()
-    assert prefs.preferences == {}
+    assert prefs.preferences == expected
 
 
 @pytest.mark.parametrize(
@@ -122,20 +119,15 @@ def test_preferences_clear(initial, path, expected_remaining):
     assert prefs.preferences == expected_remaining
 
 
-def test_preferences_clear_with_commit(event):
+@pytest.mark.parametrize(
+    ("commit", "expected"), ((True, {}), (False, {"color": "blue"}))
+)
+def test_preferences_clear_commit_controls_persistence(event, commit, expected):
     prefs = UserEventPreferencesFactory(event=event, preferences={"color": "blue"})
-    prefs.clear("color", commit=True)
+    prefs.clear("color", commit=commit)
 
     prefs.refresh_from_db()
-    assert "color" not in prefs.preferences
-
-
-def test_preferences_clear_without_commit_does_not_persist(event):
-    prefs = UserEventPreferencesFactory(event=event, preferences={"color": "blue"})
-    prefs.clear("color", commit=False)
-
-    prefs.refresh_from_db()
-    assert prefs.preferences["color"] == "blue"
+    assert prefs.preferences == expected
 
 
 def test_preferences_unique_constraint():

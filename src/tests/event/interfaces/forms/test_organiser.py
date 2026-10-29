@@ -8,175 +8,111 @@ from tests.factories import EventFactory, OrganiserFactory, TeamFactory, TrackFa
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_team_form_init_new_team_uses_organiser_events(event):
+def test_team_form_init_new_team_scopes_events_and_tracks_to_organiser(event):
     EventFactory()  # other organiser's event, should not appear
-    organiser = event.organiser
-    form = TeamForm(organiser=organiser)
-
-    assert list(form.fields["limit_events"].queryset) == [event]
-
-
-def test_team_form_init_existing_team_uses_instance_organiser(event):
-    EventFactory()  # other organiser's event, should not appear
-    team = TeamFactory(organiser=event.organiser, all_events=True)
-
-    form = TeamForm(instance=team, organiser=event.organiser)
-
-    assert list(form.fields["limit_events"].queryset) == [event]
-
-
-def test_team_form_init_limit_tracks_with_all_events(event):
-    organiser = event.organiser
     track = TrackFactory(event=event)
     TrackFactory()  # track on another organiser's event, should not appear
 
-    form = TeamForm(organiser=organiser)
+    form = TeamForm(organiser=event.organiser)
 
+    assert list(form.fields["limit_events"].queryset) == [event]
     assert list(form.fields["limit_tracks"].queryset) == [track]
 
 
-def test_team_form_init_limit_tracks_scoped_to_limit_events(event):
-    organiser = event.organiser
+def test_team_form_init_existing_team_scopes_tracks_to_limit_events(event):
+    EventFactory()  # other organiser's event, should not appear
     track = TrackFactory(event=event)
-    other_event = EventFactory(organiser=organiser)
+    other_event = EventFactory(organiser=event.organiser)
     TrackFactory(event=other_event)
-
-    team = TeamFactory(organiser=organiser, all_events=False)
+    team = TeamFactory(organiser=event.organiser, all_events=False)
     team.limit_events.add(event)
 
-    form = TeamForm(instance=team, organiser=organiser)
+    form = TeamForm(instance=team, organiser=event.organiser)
 
+    assert set(form.fields["limit_events"].queryset) == {event, other_event}
     assert list(form.fields["limit_tracks"].queryset) == [track]
-
-
-def test_team_form_save_sets_organiser(event):
-    organiser = event.organiser
-    data = {
-        "name": "New Team",
-        "all_events": True,
-        "can_change_submissions": True,
-        "limit_events": [],
-        "limit_tracks": [],
-    }
-
-    form = TeamForm(data=data, organiser=organiser)
-    assert form.is_valid(), form.errors
-
-    team = form.save()
-
-    assert team.organiser == organiser
-    assert team.name == "New Team"
-
-
-def test_team_form_clean_rejects_no_events_and_not_all_events(event):
-    organiser = event.organiser
-    data = {
-        "name": "New Team",
-        "all_events": False,
-        "can_change_submissions": True,
-        "limit_events": [],
-        "limit_tracks": [],
-    }
-
-    form = TeamForm(data=data, organiser=organiser)
-
-    assert not form.is_valid()
-    assert "limit_events" in form.errors
-
-
-def test_team_form_clean_rejects_no_permissions(event):
-    organiser = event.organiser
-    data = {
-        "name": "No Permission Team",
-        "all_events": True,
-        "limit_events": [],
-        "limit_tracks": [],
-    }
-
-    form = TeamForm(data=data, organiser=organiser)
-
-    assert not form.is_valid()
-    assert "__all__" in form.errors
 
 
 @pytest.mark.parametrize(
-    "permission",
+    ("overrides", "errors"),
     (
-        "can_create_events",
-        "can_change_teams",
-        "can_change_organiser_settings",
-        "can_change_event_settings",
-        "can_change_submissions",
-        "is_reviewer",
+        ({}, {}),
+        ({"all_events": False, "limit_events": "event"}, {}),
+        ({"can_change_submissions": False, "can_create_events": True}, {}),
+        ({"can_change_submissions": False, "can_change_teams": True}, {}),
+        ({"can_change_submissions": False, "can_change_organiser_settings": True}, {}),
+        ({"can_change_submissions": False, "can_change_event_settings": True}, {}),
+        ({"can_change_submissions": False, "is_reviewer": True}, {}),
+        (
+            {"all_events": False},
+            {
+                "limit_events": [
+                    "Please either pick some events, or grant access to all your events!"
+                ]
+            },
+        ),
+        (
+            {"can_change_submissions": False},
+            {"__all__": ["Please pick at least one permission for this team!"]},
+        ),
+    ),
+    ids=(
+        "all_events",
+        "limit_events",
+        "only_can_create_events",
+        "only_can_change_teams",
+        "only_can_change_organiser_settings",
+        "only_can_change_event_settings",
+        "only_is_reviewer",
+        "no_events",
+        "no_permissions",
     ),
 )
-def test_team_form_clean_accepts_any_single_permission(event, permission):
-    organiser = event.organiser
-    data = {
-        "name": "Single Perm Team",
-        "all_events": True,
-        permission: True,
-        "limit_events": [],
-        "limit_tracks": [],
-    }
-
-    form = TeamForm(data=data, organiser=organiser)
-
-    assert form.is_valid(), form.errors
-
-
-@pytest.mark.parametrize(
-    ("all_events", "use_limit_events"),
-    ((True, False), (False, True)),
-    ids=("all_events", "limit_events"),
-)
-def test_team_form_clean_accepts_events_via_all_or_limit(
-    event, all_events, use_limit_events
-):
-    organiser = event.organiser
+def test_team_form_clean(event, overrides, errors):
     data = {
         "name": "Team",
-        "all_events": all_events,
+        "all_events": True,
         "can_change_submissions": True,
-        "limit_events": [event.pk] if use_limit_events else [],
+        "limit_events": [],
         "limit_tracks": [],
+        **overrides,
     }
+    if data["limit_events"] == "event":
+        data["limit_events"] = [event.pk]
 
-    form = TeamForm(data=data, organiser=organiser)
+    form = TeamForm(data=data, organiser=event.organiser)
 
-    assert form.is_valid(), form.errors
+    assert form.is_valid() == (not errors)
+    assert form.errors == errors
 
 
-def test_team_form_save_all_events_clears_limit_events(event):
+def test_team_form_save_sets_organiser_and_all_events_clears_limit_events(event):
     organiser = event.organiser
     team = TeamFactory(organiser=organiser, all_events=False)
     team.limit_events.add(event)
     data = {
-        "name": "Team",
+        "name": "New Team",
         "all_events": True,
         "can_change_submissions": True,
         "limit_events": [event.pk],
         "limit_tracks": [],
     }
 
+    created = TeamForm(data=data, organiser=organiser)
+    assert created.is_valid(), created.errors
+    assert created.save().organiser == organiser
+
     form = TeamForm(data=data, instance=team, organiser=organiser)
     assert form.is_valid(), form.errors
     team = form.save()
 
+    assert team.organiser == organiser
+    assert team.name == "New Team"
     assert team.all_events is True
-    assert team.limit_events.count() == 0
+    assert list(team.limit_events.all()) == []
 
 
-def test_team_form_init_read_only_disables_all_fields(event):
-    organiser = event.organiser
-    form = TeamForm(organiser=organiser, read_only=True)
-
-    for field in form.fields.values():
-        assert field.disabled is True
-
-
-def test_team_form_clean_read_only_rejects_changes(event):
-    organiser = event.organiser
+def test_team_form_read_only_disables_fields_and_rejects_changes(event):
     data = {
         "name": "Sneaky Team",
         "all_events": True,
@@ -185,56 +121,39 @@ def test_team_form_clean_read_only_rejects_changes(event):
         "limit_tracks": [],
     }
 
-    form = TeamForm(data=data, organiser=organiser, read_only=True)
+    form = TeamForm(data=data, organiser=event.organiser, read_only=True)
 
+    assert all(field.disabled for field in form.fields.values())
     assert not form.is_valid()
 
 
-def test_team_invite_form_clean_multiple_emails():
-    data = {"emails": "a@example.com\nb@example.com"}
-    form = TeamInviteForm(data=data)
-    assert form.is_valid(), form.errors
+@pytest.mark.parametrize(
+    ("emails", "cleaned", "errors"),
+    (
+        ("test@example.com", ["test@example.com"], {}),
+        ("a@example.com\nb@example.com", ["a@example.com", "b@example.com"], {}),
+        ("  a@example.com  ,  b@example.com  ", ["a@example.com", "b@example.com"], {}),
+        (
+            "valid@example.com\nnot-an-email",
+            None,
+            {"emails": ["Please enter only valid email addresses: not-an-email"]},
+        ),
+        ("", None, {"emails": ["This field is required."]}),
+    ),
+    ids=("single", "multiple", "stripped", "invalid", "empty"),
+)
+def test_team_invite_form_clean_emails(emails, cleaned, errors):
+    form = TeamInviteForm(data={"emails": emails})
 
-    assert form.cleaned_data["emails"] == ["a@example.com", "b@example.com"]
-
-
-def test_team_invite_form_clean_invalid_email_adds_error():
-    data = {"emails": "valid@example.com\nnot-an-email"}
-    form = TeamInviteForm(data=data)
-
-    assert not form.is_valid()
-    assert "emails" in form.errors
-
-
-def test_team_invite_form_clean_requires_at_least_one_email():
-    data = {"emails": ""}
-    form = TeamInviteForm(data=data)
-
-    assert not form.is_valid()
-    assert "emails" in form.errors
-
-
-def test_team_invite_form_clean_accepts_single_email():
-    data = {"emails": "test@example.com"}
-    form = TeamInviteForm(data=data)
-
-    assert form.is_valid(), form.errors
-    assert form.cleaned_data["emails"] == ["test@example.com"]
-
-
-def test_team_invite_form_clean_strips_whitespace():
-    data = {"emails": "  a@example.com  ,  b@example.com  "}
-    form = TeamInviteForm(data=data)
-
-    assert form.is_valid(), form.errors
-    assert form.cleaned_data["emails"] == ["a@example.com", "b@example.com"]
+    assert form.is_valid() == (not errors)
+    assert form.errors == errors
+    assert form.cleaned_data.get("emails") == cleaned
 
 
 def test_team_invite_form_init_read_only_disables_all_fields():
     form = TeamInviteForm(read_only=True)
 
-    for field in form.fields.values():
-        assert field.disabled is True
+    assert all(field.disabled for field in form.fields.values())
 
 
 def test_organiser_form_slug_disabled_on_edit():
@@ -244,17 +163,12 @@ def test_organiser_form_slug_disabled_on_edit():
     assert form.fields["slug"].disabled is True
 
 
-def test_organiser_form_slug_enabled_on_create():
-    form = OrganiserForm()
-
-    assert form.fields["slug"].disabled is False
-
-
-def test_organiser_form_valid_data_saves():
+def test_organiser_form_create_saves_with_editable_slug():
     data = {"name_0": "My Org", "slug": "my-org"}
     form = OrganiserForm(data=data)
-    assert form.is_valid(), form.errors
 
+    assert form.fields["slug"].disabled is False
+    assert form.is_valid(), form.errors
     organiser = form.save()
 
     assert str(organiser.name) == "My Org"

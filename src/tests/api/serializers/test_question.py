@@ -155,107 +155,139 @@ def test_question_orga_serializer_init_without_request_sets_empty_querysets():
     assert serializer.fields["submission_types"].child_relation.queryset.count() == 0
 
 
-def test_question_orga_serializer_create_sets_event():
+@pytest.mark.parametrize(
+    ("options", "expected_options"),
+    (
+        (None, []),
+        ([{"answer": "Option A"}, {"answer": "Option B"}], ["Option A", "Option B"]),
+    ),
+    ids=("without_options", "with_options"),
+)
+def test_question_orga_serializer_create_sets_event_and_options(
+    options, expected_options
+):
     event = EventFactory()
     request = make_api_request(event=event)
-    serializer = QuestionOrgaSerializer(
-        data={
-            "question": "Test question",
-            "variant": QuestionVariant.STRING,
-            "target": QuestionTarget.SUBMISSION,
-        },
-        context={"request": request},
-    )
+    data = {
+        "question": "Test question",
+        "variant": QuestionVariant.CHOICES,
+        "target": QuestionTarget.SUBMISSION,
+    }
+    if options is not None:
+        data["options"] = options
+    serializer = QuestionOrgaSerializer(data=data, context={"request": request})
     assert serializer.is_valid(), serializer.errors
     question = serializer.save()
 
     assert question.event == event
     assert question.question == "Test question"
-
-
-def test_question_orga_serializer_create_with_options():
-    event = EventFactory()
-    request = make_api_request(event=event)
-    serializer = QuestionOrgaSerializer(
-        data={
-            "question": "Choice question",
-            "variant": QuestionVariant.CHOICES,
-            "target": QuestionTarget.SUBMISSION,
-            "options": [{"answer": "Option A"}, {"answer": "Option B"}],
-        },
-        context={"request": request},
+    assert (
+        sorted(str(a) for a in question.options.values_list("answer", flat=True))
+        == expected_options
     )
-    assert serializer.is_valid(), serializer.errors
-    question = serializer.save()
-    options = sorted(str(a) for a in question.options.values_list("answer", flat=True))
-
-    assert options == ["Option A", "Option B"]
 
 
-def test_question_orga_serializer_update_replaces_options():
+@pytest.mark.parametrize(
+    ("data", "expected_question", "expected_options"),
+    (
+        ({"options": [{"answer": "New option"}]}, "Old question", ["New option"]),
+        (
+            {"question": "Updated question text"},
+            "Updated question text",
+            ["Old option"],
+        ),
+    ),
+    ids=("replaces_options", "preserves_options_when_absent"),
+)
+def test_question_orga_serializer_update_options(
+    data, expected_question, expected_options
+):
     event = EventFactory()
-    question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
+    question = QuestionFactory(
+        event=event, variant=QuestionVariant.CHOICES, question="Old question"
+    )
     AnswerOptionFactory(question=question, answer="Old option")
 
     request = make_api_request(event=event)
     serializer = QuestionOrgaSerializer(
-        instance=question,
-        data={"options": [{"answer": "New option"}]},
-        partial=True,
-        context={"request": request},
+        instance=question, data=data, partial=True, context={"request": request}
     )
     assert serializer.is_valid(), serializer.errors
     updated = serializer.save()
-    options = list(updated.options.values_list("answer", flat=True))
 
-    assert options == ["New option"]
-
-
-def test_question_orga_serializer_update_without_options_preserves_existing():
-    event = EventFactory()
-    question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
-    AnswerOptionFactory(question=question, answer="Existing option")
-
-    request = make_api_request(event=event)
-    serializer = QuestionOrgaSerializer(
-        instance=question,
-        data={"question": "Updated question text"},
-        partial=True,
-        context={"request": request},
-    )
-    assert serializer.is_valid(), serializer.errors
-    updated = serializer.save()
-    options = list(updated.options.values_list("answer", flat=True))
-
-    assert updated.question == "Updated question text"
-    assert options == ["Existing option"]
+    assert updated.question == expected_question
+    assert list(updated.options.values_list("answer", flat=True)) == expected_options
 
 
-def test_answer_serializer_validate_rejects_option_count_outside_limits():
+@pytest.mark.parametrize(
+    ("min_options", "max_options", "picks", "error"),
+    (
+        (1, 1, (0, 1), "Please select exactly 1 options. You selected 2 options."),
+        (2, None, (0, 0), "Please select at least 2 options. You selected 1 options."),
+    ),
+    ids=("outside_limits", "repeated_option_counts_once"),
+)
+def test_answer_serializer_validate_rejects_option_count(
+    min_options, max_options, picks, error
+):
     question = QuestionFactory(
         target=QuestionTarget.SUBMISSION,
         variant=QuestionVariant.MULTIPLE,
-        min_options=1,
-        max_options=1,
+        min_options=min_options,
+        max_options=max_options,
     )
     options = [AnswerOptionFactory(question=question) for _ in range(2)]
     submission = SubmissionFactory(event=question.event)
     answer = AnswerFactory(question=question, submission=submission)
-    answer.options.set(options[:1])
 
     serializer = AnswerSerializer(
         instance=answer,
-        data={"options": [option.pk for option in options]},
+        data={"options": [options[index].pk for index in picks]},
         partial=True,
     )
 
     assert not serializer.is_valid()
-    assert [str(error) for error in serializer.errors["options"]] == [
-        "Please select exactly 1 options. You selected 2 options."
-    ]
+    assert serializer.errors == {"options": [error]}
 
 
-def test_question_orga_serializer_rejects_min_options_above_max_options():
+@pytest.mark.parametrize(
+    ("data", "errors"),
+    (
+        (
+            {"min_options": 3, "max_options": 2},
+            {
+                "min_options": [
+                    "Minimum number of options cannot be greater than maximum number of options."
+                ]
+            },
+        ),
+        (
+            {"min_options": 0},
+            {"min_options": ["Ensure this value is greater than or equal to 1."]},
+        ),
+        (
+            {"max_options": 0},
+            {"max_options": ["Ensure this value is greater than or equal to 1."]},
+        ),
+        (
+            {"min_options": 3, "options": [{"answer": "First"}, {"answer": "Second"}]},
+            {
+                "min_options": [
+                    "This custom field only has 2 options, so it cannot require 3 of them."
+                ]
+            },
+        ),
+        ({"min_options": 2}, {}),
+    ),
+    ids=(
+        "min_above_max",
+        "zero_min",
+        "zero_max",
+        "min_above_option_count",
+        "min_without_options",
+    ),
+)
+def test_question_orga_serializer_create_validates_option_limits(data, errors):
     event = EventFactory()
     request = make_api_request(event=event)
     serializer = QuestionOrgaSerializer(
@@ -263,82 +295,38 @@ def test_question_orga_serializer_rejects_min_options_above_max_options():
             "question": "Pick some",
             "variant": QuestionVariant.MULTIPLE,
             "target": QuestionTarget.SUBMISSION,
-            "min_options": 3,
-            "max_options": 2,
+            **data,
         },
         context={"request": request},
     )
 
-    assert not serializer.is_valid()
-    assert [str(error) for error in serializer.errors["min_options"]] == [
-        "Minimum number of options cannot be greater than maximum number of options."
-    ]
+    assert serializer.is_valid() == (not errors)
+    assert serializer.errors == errors
 
 
-def test_answer_serializer_validate_counts_repeated_options_only_once():
-    question = QuestionFactory(
-        target=QuestionTarget.SUBMISSION,
-        variant=QuestionVariant.MULTIPLE,
-        min_options=2,
-    )
-    option = AnswerOptionFactory(question=question)
-    AnswerOptionFactory(question=question)
-    submission = SubmissionFactory(event=question.event)
-    answer = AnswerFactory(question=question, submission=submission)
-
-    serializer = AnswerSerializer(
-        instance=answer, data={"options": [option.pk, option.pk]}, partial=True
-    )
-
-    assert not serializer.is_valid()
-    assert [str(error) for error in serializer.errors["options"]] == [
-        "Please select at least 2 options. You selected 1 options."
-    ]
-
-
-@pytest.mark.parametrize("field", ("min_options", "max_options"))
-def test_question_orga_serializer_rejects_zero_option_limits(field):
-    event = EventFactory()
-    request = make_api_request(event=event)
-    serializer = QuestionOrgaSerializer(
-        data={
-            "question": "Pick some",
-            "variant": QuestionVariant.MULTIPLE,
-            "target": QuestionTarget.SUBMISSION,
-            field: 0,
-        },
-        context={"request": request},
-    )
-
-    assert not serializer.is_valid()
-    assert [str(error) for error in serializer.errors[field]] == [
-        "Ensure this value is greater than or equal to 1."
-    ]
-
-
-def test_question_orga_serializer_rejects_min_options_above_option_count():
-    event = EventFactory()
-    question = QuestionFactory(
-        event=event, variant=QuestionVariant.MULTIPLE, target=QuestionTarget.SUBMISSION
-    )
-    AnswerOptionFactory(question=question)
-    AnswerOptionFactory(question=question)
-    request = make_api_request(event=event)
-
-    serializer = QuestionOrgaSerializer(
-        instance=question,
-        data={"min_options": 3},
-        partial=True,
-        context={"request": request},
-    )
-
-    assert not serializer.is_valid()
-    assert [str(error) for error in serializer.errors["min_options"]] == [
-        "This custom field only has 2 options, so it cannot require 3 of them."
-    ]
-
-
-def test_question_orga_serializer_accepts_min_options_matching_new_options():
+@pytest.mark.parametrize(
+    ("data", "errors"),
+    (
+        (
+            {"min_options": 3},
+            {
+                "min_options": [
+                    "This custom field only has 2 options, so it cannot require 3 of them."
+                ]
+            },
+        ),
+        (
+            {
+                "min_options": 4,
+                "options": [{"answer": f"Option {index}"} for index in range(4)],
+            },
+            {},
+        ),
+        ({"min_options": 3, "variant": QuestionVariant.CHOICES}, {}),
+    ),
+    ids=("above_option_count", "matching_new_options", "ignored_for_other_variant"),
+)
+def test_question_orga_serializer_update_validates_min_options(data, errors):
     event = EventFactory()
     question = QuestionFactory(
         event=event, variant=QuestionVariant.MULTIPLE, target=QuestionTarget.SUBMISSION
@@ -348,83 +336,11 @@ def test_question_orga_serializer_accepts_min_options_matching_new_options():
     request = make_api_request(event=event)
 
     serializer = QuestionOrgaSerializer(
-        instance=question,
-        data={
-            "min_options": 4,
-            "options": [{"answer": f"Option {index}"} for index in range(4)],
-        },
-        partial=True,
-        context={"request": request},
-    )
-    assert serializer.is_valid(), serializer.errors
-    question = serializer.save()
-
-    assert question.min_options == 4
-    assert question.options.count() == 4
-
-
-def test_question_orga_serializer_rejects_create_with_too_few_options():
-    event = EventFactory()
-    request = make_api_request(event=event)
-
-    serializer = QuestionOrgaSerializer(
-        data={
-            "question": "Pick some",
-            "variant": QuestionVariant.MULTIPLE,
-            "target": QuestionTarget.SUBMISSION,
-            "min_options": 3,
-            "options": [{"answer": "First"}, {"answer": "Second"}],
-        },
-        context={"request": request},
+        instance=question, data=data, partial=True, context={"request": request}
     )
 
-    assert not serializer.is_valid()
-    assert [str(error) for error in serializer.errors["min_options"]] == [
-        "This custom field only has 2 options, so it cannot require 3 of them."
-    ]
-
-
-def test_question_orga_serializer_ignores_min_options_for_other_variants():
-    event = EventFactory()
-    question = QuestionFactory(
-        event=event,
-        variant=QuestionVariant.MULTIPLE,
-        target=QuestionTarget.SUBMISSION,
-        min_options=3,
-    )
-    AnswerOptionFactory(question=question)
-    AnswerOptionFactory(question=question)
-    request = make_api_request(event=event)
-
-    serializer = QuestionOrgaSerializer(
-        instance=question,
-        data={"variant": QuestionVariant.CHOICES},
-        partial=True,
-        context={"request": request},
-    )
-    assert serializer.is_valid(), serializer.errors
-    question = serializer.save()
-
-    assert question.variant == QuestionVariant.CHOICES
-
-
-def test_question_orga_serializer_accepts_min_options_on_question_without_options():
-    event = EventFactory()
-    request = make_api_request(event=event)
-    serializer = QuestionOrgaSerializer(
-        data={
-            "question": "Pick some",
-            "variant": QuestionVariant.MULTIPLE,
-            "target": QuestionTarget.SUBMISSION,
-            "min_options": 2,
-        },
-        context={"request": request},
-    )
-
-    assert serializer.is_valid(), serializer.errors
-    question = serializer.save(event=event)
-
-    assert question.min_options == 2
+    assert serializer.is_valid() == (not errors)
+    assert serializer.errors == errors
 
 
 def test_answer_serializer_data():
@@ -471,7 +387,9 @@ def test_answer_create_serializer_validate_requires_options_for_choice_variant(v
     with pytest.raises(exceptions.ValidationError) as exc_info:
         serializer.validate({"question": question, "options": []})
 
-    assert "options" in exc_info.value.detail
+    assert exc_info.value.detail == {
+        "options": "This field is required for choice or multiple-choice question."
+    }
 
 
 def test_answer_create_serializer_validate_options_must_match_question():
@@ -485,122 +403,109 @@ def test_answer_create_serializer_validate_options_must_match_question():
     with pytest.raises(exceptions.ValidationError) as exc_info:
         serializer.validate({"question": question, "options": [wrong_option]})
 
-    assert "options" in exc_info.value.detail
+    assert exc_info.value.detail == {
+        "options": f"Option {wrong_option.pk} does not belong to question {question.pk}."
+    }
 
 
 @pytest.mark.parametrize(
-    ("target", "error_field"),
+    ("target", "fields", "errors"),
     (
-        (QuestionTarget.SUBMISSION, "submission"),
-        (QuestionTarget.REVIEWER, "review"),
-        (QuestionTarget.SPEAKER, "person"),
+        (
+            QuestionTarget.SUBMISSION,
+            (),
+            {"submission": "This field is required for submission questions."},
+        ),
+        (
+            QuestionTarget.REVIEWER,
+            (),
+            {"review": "This field is required for reviewer questions."},
+        ),
+        (
+            QuestionTarget.SPEAKER,
+            (),
+            {"person": "This field is required for speaker questions."},
+        ),
+        (
+            QuestionTarget.SUBMISSION,
+            ("submission", "review"),
+            {"review": "Cannot set review for submission question."},
+        ),
+        (
+            QuestionTarget.REVIEWER,
+            ("review", "submission"),
+            {"submission": "Cannot set submission for reviewer question."},
+        ),
+        (
+            QuestionTarget.SPEAKER,
+            ("speaker", "submission"),
+            {"submission": "Cannot set submission for speaker question."},
+        ),
     ),
 )
-def test_answer_create_serializer_validate_requires_target_field(target, error_field):
+def test_answer_create_serializer_validate_requires_exactly_the_target_field(
+    target, fields, errors
+):
     question = QuestionFactory(target=target)
-
-    serializer = AnswerCreateSerializer()
-    serializer.instance = None
-
-    with pytest.raises(exceptions.ValidationError) as exc_info:
-        serializer.validate({"question": question})
-
-    assert error_field in exc_info.value.detail
-
-
-def test_answer_create_serializer_validate_rejects_review_on_submission_question():
-    question = QuestionFactory(target=QuestionTarget.SUBMISSION)
     submission = SubmissionFactory(event=question.event)
-    review = ReviewFactory(submission=submission)
+    objects = {
+        "submission": submission,
+        "review": ReviewFactory(submission=submission),
+        "speaker": SpeakerFactory(event=question.event),
+    }
 
     serializer = AnswerCreateSerializer()
     serializer.instance = None
 
     with pytest.raises(exceptions.ValidationError) as exc_info:
         serializer.validate(
-            {"question": question, "submission": submission, "review": review}
+            {"question": question, **{field: objects[field] for field in fields}}
         )
 
-    assert "review" in exc_info.value.detail
+    assert exc_info.value.detail == errors
 
 
-def test_answer_create_serializer_validate_rejects_submission_on_reviewer_question():
-    question = QuestionFactory(target=QuestionTarget.REVIEWER)
-    submission = SubmissionFactory(event=question.event)
-    review = ReviewFactory(submission=submission)
-
-    serializer = AnswerCreateSerializer()
-    serializer.instance = None
-
-    with pytest.raises(exceptions.ValidationError) as exc_info:
-        serializer.validate(
-            {"question": question, "review": review, "submission": submission}
-        )
-
-    assert "submission" in exc_info.value.detail
-
-
-def test_answer_create_serializer_validate_rejects_submission_on_speaker_question():
-    question = QuestionFactory(target=QuestionTarget.SPEAKER)
-    speaker = SpeakerFactory(event=question.event)
-    submission = SubmissionFactory(event=question.event)
+@pytest.mark.parametrize(
+    ("target", "field", "factory"),
+    (
+        (QuestionTarget.SUBMISSION, "submission", SubmissionFactory),
+        (QuestionTarget.SPEAKER, "speaker", SpeakerFactory),
+    ),
+)
+def test_answer_create_serializer_validate_accepts_target_field(target, field, factory):
+    question = QuestionFactory(target=target, variant=QuestionVariant.STRING)
+    data = {"question": question, field: factory(event=question.event)}
 
     serializer = AnswerCreateSerializer()
     serializer.instance = None
 
-    with pytest.raises(exceptions.ValidationError) as exc_info:
-        serializer.validate(
-            {"question": question, "speaker": speaker, "submission": submission}
-        )
-
-    assert "submission" in exc_info.value.detail
+    assert serializer.validate(data) == data
 
 
-def test_answer_create_serializer_validate_accepts_valid_submission_answer():
+@pytest.mark.parametrize(
+    ("variant", "min_options", "max_options", "selected"),
+    ((QuestionVariant.CHOICES, None, None, 1), (QuestionVariant.MULTIPLE, 1, 2, 2)),
+)
+def test_answer_create_serializer_validate_accepts_options_within_limits(
+    variant, min_options, max_options, selected
+):
     question = QuestionFactory(
-        target=QuestionTarget.SUBMISSION, variant=QuestionVariant.STRING
+        target=QuestionTarget.SUBMISSION,
+        variant=variant,
+        min_options=min_options,
+        max_options=max_options,
     )
-    submission = SubmissionFactory(event=question.event)
-
-    serializer = AnswerCreateSerializer()
-    serializer.instance = None
-
-    result = serializer.validate({"question": question, "submission": submission})
-
-    assert result["question"] == question
-    assert result["submission"] == submission
-
-
-def test_answer_create_serializer_validate_accepts_valid_speaker_answer():
-    question = QuestionFactory(
-        target=QuestionTarget.SPEAKER, variant=QuestionVariant.STRING
-    )
-    speaker = SpeakerFactory(event=question.event)
-
-    serializer = AnswerCreateSerializer()
-    serializer.instance = None
-
-    result = serializer.validate({"question": question, "speaker": speaker})
-
-    assert result["question"] == question
-    assert result["speaker"] == speaker
-
-
-def test_answer_create_serializer_validate_accepts_valid_choice_answer():
-    question = QuestionFactory(
-        target=QuestionTarget.SUBMISSION, variant=QuestionVariant.CHOICES
-    )
-    option = AnswerOptionFactory(question=question)
+    options = [AnswerOptionFactory(question=question) for _ in range(selected)]
     submission = SubmissionFactory(event=question.event)
 
     serializer = AnswerCreateSerializer()
     serializer.instance = None
 
     result = serializer.validate(
-        {"question": question, "submission": submission, "options": [option]}
+        {"question": question, "submission": submission, "options": options}
     )
 
-    assert result["options"] == [option]
+    assert result["options"] == options
 
 
 @pytest.mark.parametrize(
@@ -633,23 +538,3 @@ def test_answer_create_serializer_validate_rejects_option_count_outside_limits(
         )
 
     assert "options" in exc_info.value.detail
-
-
-def test_answer_create_serializer_validate_accepts_option_count_within_limits():
-    question = QuestionFactory(
-        target=QuestionTarget.SUBMISSION,
-        variant=QuestionVariant.MULTIPLE,
-        min_options=1,
-        max_options=2,
-    )
-    options = [AnswerOptionFactory(question=question) for _ in range(2)]
-    submission = SubmissionFactory(event=question.event)
-
-    serializer = AnswerCreateSerializer()
-    serializer.instance = None
-
-    result = serializer.validate(
-        {"question": question, "submission": submission, "options": options}
-    )
-
-    assert result["options"] == options

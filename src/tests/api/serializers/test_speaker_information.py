@@ -61,6 +61,7 @@ def test_speaker_information_serializer_fields():
     }
     assert data["id"] == info.pk
     assert data["target_group"] == info.target_group
+    assert data["resource"] is None
 
 
 def test_speaker_information_serializer_create_sets_event():
@@ -76,23 +77,6 @@ def test_speaker_information_serializer_create_sets_event():
     assert instance.event == event
     assert instance.pk is not None
     assert not instance.resource
-
-
-def test_speaker_information_serializer_update_with_resource():
-    event = EventFactory()
-    info = SpeakerInformationFactory(event=event)
-
-    resource = SimpleUploadedFile(
-        "new_guide.pdf", b"new-content", content_type="application/pdf"
-    )
-    serializer = SpeakerInformationSerializer(
-        instance=info, context={"request": make_api_request(event=event)}
-    )
-    serializer.update(info, {"resource": resource})
-
-    info.refresh_from_db()
-    assert info.resource
-    assert info.resource.name.endswith(".pdf")
 
 
 def test_speaker_information_serializer_update_replaces_resource_and_cleans_old_file(
@@ -119,6 +103,7 @@ def test_speaker_information_serializer_update_replaces_resource_and_cleans_old_
         serializer.update(info, {"resource": new_resource})
 
     info.refresh_from_db()
+    assert info.resource.name.endswith(".pdf")
     assert Path(info.resource.path).exists()
     assert not old_path.exists()
 
@@ -133,15 +118,3 @@ def test_speaker_information_serializer_update_without_resource():
     result = serializer.update(info, {"title": "Updated Title"})
 
     assert result.title == "Updated Title"
-
-
-def test_speaker_information_serializer_resource_representation_without_value():
-    event = EventFactory()
-    info = SpeakerInformationFactory(event=event)
-
-    serializer = SpeakerInformationSerializer(
-        info, context={"request": make_api_request(event=event)}
-    )
-    data = serializer.data
-
-    assert data["resource"] is None

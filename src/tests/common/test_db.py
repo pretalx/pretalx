@@ -27,30 +27,25 @@ def test_median_aggregate(scores, expected):
     assert result["median_score"] == expected
 
 
-def test_translate_base_template_sqlite_uses_json_extract():
-    template = Translate._BASE_TEMPLATES["sqlite"]
-    assert "json_valid" in template
-    assert "json_extract" in template
-    assert "json_each" in template
+@pytest.mark.parametrize(
+    ("vendor", "fragments", "locale_marker"),
+    (
+        ("sqlite", ("json_valid", "json_extract", "json_each"), "$.{locale}"),
+        (
+            "postgresql",
+            ("IS JSON OBJECT", "::json->>", "json_each_text"),
+            ">>'{locale}'",
+        ),
+    ),
+)
+def test_translate_base_template_uses_vendor_json_access(
+    vendor, fragments, locale_marker
+):
+    template = Translate._BASE_TEMPLATES[vendor]
 
-
-def test_translate_base_template_postgresql_uses_json_operators():
-    template = Translate._BASE_TEMPLATES["postgresql"]
-    assert "IS JSON OBJECT" in template
-    assert "::json->>" in template
-    assert "json_each_text" in template
-
-
-@pytest.mark.parametrize("locale", ("fr", "de"))
-def test_translate_base_template_sqlite_injects_locale(locale):
-    rendered = Translate._BASE_TEMPLATES["sqlite"].format(locale=locale)
-    assert f"$.{locale}" in rendered
-
-
-@pytest.mark.parametrize("locale", ("fr", "de"))
-def test_translate_base_template_postgresql_injects_locale(locale):
-    rendered = Translate._BASE_TEMPLATES["postgresql"].format(locale=locale)
-    assert f">>'{locale}'" in rendered
+    for fragment in fragments:
+        assert fragment in template
+    assert locale_marker.format(locale="fr") in template.format(locale="fr")
 
 
 def _make_translate_lhs():

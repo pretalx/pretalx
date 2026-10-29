@@ -28,7 +28,7 @@ from tests.utils import make_orga_user, make_request, make_view
 pytestmark = pytest.mark.unit
 
 
-def test_paginator_page_returns_only_page_size_objects():
+def test_paginator_page_returns_only_page_size_objects_without_counting():
     paginator = LargeResultSetPaginator(list(range(10)), 3)
 
     page = paginator.page(2)
@@ -38,14 +38,14 @@ def test_paginator_page_returns_only_page_size_objects():
     assert page[0] == 3
     assert page.number == 2
     assert repr(page) == "<Page 2>"
-
-
-def test_paginator_has_no_count_or_num_pages():
-    paginator = LargeResultSetPaginator(list(range(10)), 3)
-
+    assert page.next_page_number() == 3
+    assert page.previous_page_number() == 1
     assert paginator.count is None
     with pytest.raises(Http404):
         paginator.num_pages  # noqa: B018 -- property raises on access
+    with pytest.raises(EmptyPage):
+        paginator.page(1).previous_page_number()
+    assert list(LargeResultSetPaginator([], 3).page(1)) == []
 
 
 @pytest.mark.parametrize(
@@ -69,20 +69,6 @@ def test_paginator_page_navigation(total, number, has_previous, has_next):
     assert page.has_other_pages() is (has_previous or has_next)
 
 
-def test_paginator_page_numbers_of_neighbouring_pages():
-    page = LargeResultSetPaginator(list(range(10)), 3).page(2)
-
-    assert page.next_page_number() == 3
-    assert page.previous_page_number() == 1
-
-
-def test_paginator_first_page_has_no_previous_page_number():
-    page = LargeResultSetPaginator(list(range(10)), 3).page(1)
-
-    with pytest.raises(EmptyPage):
-        page.previous_page_number()
-
-
 @pytest.mark.parametrize(
     ("total", "number", "start_index", "end_index"),
     ((10, 1, 1, 3), (10, 4, 10, 10), (0, 1, 0, 0)),
@@ -96,27 +82,21 @@ def test_paginator_page_indices(total, number, start_index, end_index):
     assert page.end_index() == end_index
 
 
-@pytest.mark.parametrize("number", ("a", None))
-def test_paginator_rejects_non_integer_page(number):
+@pytest.mark.parametrize(
+    ("number", "exception"),
+    (
+        ("a", PageNotAnInteger),
+        (None, PageNotAnInteger),
+        (0, EmptyPage),
+        (-1, EmptyPage),
+        (5, EmptyPage),
+        (9999, EmptyPage),
+    ),
+)
+def test_paginator_rejects_invalid_page_numbers(number, exception):
     paginator = LargeResultSetPaginator(list(range(10)), 3)
 
-    with pytest.raises(PageNotAnInteger):
-        paginator.page(number)
-
-
-@pytest.mark.parametrize("number", (0, -1))
-def test_paginator_rejects_page_below_one(number):
-    paginator = LargeResultSetPaginator(list(range(10)), 3)
-
-    with pytest.raises(EmptyPage):
-        paginator.page(number)
-
-
-@pytest.mark.parametrize("number", (5, 9999))
-def test_paginator_rejects_page_past_the_end(number):
-    paginator = LargeResultSetPaginator(list(range(10)), 3)
-
-    with pytest.raises(EmptyPage):
+    with pytest.raises(exception):
         paginator.page(number)
 
 
@@ -132,14 +112,6 @@ def test_paginator_rejects_page_beyond_upper_bound(per_page, django_assert_num_q
     for number in (bound + 1, 99999999999999999999):
         with django_assert_num_queries(0), pytest.raises(EmptyPage):
             paginator.page(number)
-
-
-def test_paginator_allows_empty_first_page():
-    paginator = LargeResultSetPaginator([], 3)
-
-    page = paginator.page(1)
-
-    assert list(page) == []
 
 
 def render_pagination(page, **context):

@@ -10,36 +10,23 @@ from tests.factories import RoomFactory, SubmissionFactory, TalkSlotFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_quick_schedule_form_init_room_queryset(event):
+def test_quick_schedule_form_init(event):
     room = RoomFactory(event=event)
     RoomFactory()  # room on another event, should not appear
     RoomFactory(event=event, hidden=True)  # hidden room, should not appear
-    submission = SubmissionFactory(event=event)
-    slot = TalkSlotFactory(submission=submission, room=room)
+    scheduled = TalkSlotFactory(submission=SubmissionFactory(event=event), room=room)
+    unscheduled = TalkSlotFactory(
+        submission=SubmissionFactory(event=event), room=None, start=None, end=None
+    )
 
-    form = QuickScheduleForm(event=event, instance=slot)
+    scheduled_form = QuickScheduleForm(event=event, instance=scheduled)
+    unscheduled_form = QuickScheduleForm(event=event, instance=unscheduled)
 
-    assert list(form.fields["room"].queryset) == [room]
-
-
-def test_quick_schedule_form_init_with_existing_start(event):
-    submission = SubmissionFactory(event=event)
-    slot = TalkSlotFactory(submission=submission)
-
-    form = QuickScheduleForm(event=event, instance=slot)
-
-    assert form.fields["start_date"].initial == slot.start.date()
-    assert form.fields["start_time"].initial == slot.start.time()
-
-
-def test_quick_schedule_form_init_without_start(event):
-    submission = SubmissionFactory(event=event)
-    slot = TalkSlotFactory(submission=submission, start=None, end=None)
-
-    form = QuickScheduleForm(event=event, instance=slot)
-
-    assert form.fields["start_date"].initial == event.date_from
-    assert form.fields["start_time"].initial is None
+    assert list(scheduled_form.fields["room"].queryset) == [room]
+    assert scheduled_form.fields["start_date"].initial == scheduled.start.date()
+    assert scheduled_form.fields["start_time"].initial == scheduled.start.time()
+    assert unscheduled_form.fields["start_date"].initial == event.date_from
+    assert unscheduled_form.fields["start_time"].initial is None
 
 
 @pytest.mark.parametrize("explicit_duration", (45, None))

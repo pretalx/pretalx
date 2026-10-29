@@ -65,15 +65,9 @@ def test_serialize_submission():
         "event": str(submission.event.name),
         "exact": False,
     }
-
-
-@pytest.mark.django_db
-def test_serialize_submission_exact_match_on_code():
-    submission = SubmissionFactory()
-
-    result = serialize_submission(submission, query=submission.code.lower())
-
-    assert result["exact"] is True
+    assert (
+        serialize_submission(submission, query=submission.code.lower())["exact"] is True
+    )
 
 
 @pytest.mark.django_db

@@ -8,23 +8,13 @@ from tests.factories import SubmissionFactory, UserFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.parametrize(
-    ("text", "expected_valid"), (("This looks great!", True), ("", False))
-)
-def test_comment_form_validates_text_field(text, expected_valid):
+def test_comment_form_requires_text_and_saves_through_domain():
     submission = SubmissionFactory()
     user = UserFactory()
 
-    form = SubmissionCommentForm(data={"text": text}, submission=submission, user=user)
+    form = SubmissionCommentForm(data={"text": ""}, submission=submission, user=user)
 
-    assert form.is_valid() == expected_valid
-    if not expected_valid:
-        assert "text" in form.errors
-
-
-def test_comment_form_save_delegates_to_submission():
-    submission = SubmissionFactory()
-    user = UserFactory()
+    assert form.errors == {"text": ["This field is required."]}
 
     form = SubmissionCommentForm(
         data={"text": "Needs more detail."}, submission=submission, user=user
@@ -37,3 +27,4 @@ def test_comment_form_save_delegates_to_submission():
     assert comment.submission == submission
     assert comment.user == user
     assert comment.text == "Needs more detail."
+    assert comment.logged_actions().count() == 1

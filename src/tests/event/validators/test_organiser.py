@@ -8,167 +8,103 @@ from tests.factories import EventFactory, OrganiserFactory, TeamFactory, UserFac
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
+ALL_PERMISSIONS = {
+    "can_change_teams": True,
+    "can_create_events": True,
+    "can_change_organiser_settings": True,
+    "can_change_event_settings": True,
+    "all_events": True,
+}
 
-def test_check_access_permissions_raises_when_no_team_can_change_teams():
+
+def test_check_access_permissions_requires_a_member_team_that_can_change_teams():
     organiser = OrganiserFactory()
-    user = UserFactory()
-    team = TeamFactory(
+    TeamFactory(
         organiser=organiser, can_change_teams=False, can_create_events=True
-    )
-    team.members.add(user)
+    ).members.add(UserFactory())
+    empty_team = TeamFactory(organiser=organiser, can_change_teams=True)
 
     with pytest.raises(ValidationError):
         check_access_permissions(organiser)
+
+    empty_team.members.add(UserFactory())
+
+    assert [code for code, _msg in check_access_permissions(organiser)] == [
+        "no_can_change_organiser_settings"
+    ]
+    with pytest.raises(ValidationError):
+        check_access_permissions(organiser, exclude_team=empty_team)
 
 
 @pytest.mark.parametrize(
-    ("missing_perm", "expected_code"),
+    ("team_kwargs", "limit_to_event", "expected_codes"),
     (
-        ("can_create_events", "no_can_create_events"),
-        ("can_change_organiser_settings", "no_can_change_organiser_settings"),
+        ({}, False, []),
+        ({"all_events": False}, True, []),
+        ({"can_create_events": False}, False, ["no_can_create_events"]),
+        (
+            {"can_change_organiser_settings": False},
+            False,
+            ["no_can_change_organiser_settings"],
+        ),
+        ({"can_change_event_settings": False}, False, ["no_can_change_event_settings"]),
+    ),
+    ids=(
+        "all_permissions",
+        "event_covered_by_limit_events",
+        "missing_can_create_events",
+        "missing_can_change_organiser_settings",
+        "missing_can_change_event_settings",
     ),
 )
-def test_check_access_permissions_warns_when_organiser_level_permission_missing(
-    missing_perm, expected_code
+def test_check_access_permissions_warns_about_missing_permissions(
+    team_kwargs, limit_to_event, expected_codes
 ):
     organiser = OrganiserFactory()
-    user = UserFactory()
-    kwargs = {
-        "organiser": organiser,
-        "can_change_teams": True,
-        "can_create_events": True,
-        "can_change_organiser_settings": True,
-    }
-    kwargs[missing_perm] = False
-    team = TeamFactory(**kwargs)
-    team.members.add(user)
-
-    warnings = check_access_permissions(organiser)
-
-    codes = [code for code, _msg in warnings]
-    assert codes == [expected_code]
-
-
-def test_check_access_permissions_raises_when_event_has_no_team_access():
-    organiser = OrganiserFactory()
-    user = UserFactory()
-    team = TeamFactory(
-        organiser=organiser,
-        can_change_teams=True,
-        can_create_events=True,
-        can_change_organiser_settings=True,
-        all_events=False,
-    )
-    team.members.add(user)
-    EventFactory(organiser=organiser)
-
-    with pytest.raises(ValidationError):
-        check_access_permissions(organiser)
-
-
-def test_check_access_permissions_warns_when_event_team_lacks_change_settings():
-    organiser = OrganiserFactory()
-    user = UserFactory()
-    team = TeamFactory(
-        organiser=organiser,
-        can_change_teams=True,
-        can_create_events=True,
-        can_change_organiser_settings=True,
-        can_change_event_settings=False,
-        all_events=True,
-    )
-    team.members.add(user)
-    EventFactory(organiser=organiser)
-
-    warnings = check_access_permissions(organiser)
-
-    codes = [code for code, _msg in warnings]
-    assert codes == ["no_can_change_event_settings"]
-
-
-def test_check_access_permissions_no_warnings_when_all_permissions_present():
-    organiser = OrganiserFactory()
-    user = UserFactory()
-    team = TeamFactory(
-        organiser=organiser,
-        can_change_teams=True,
-        can_create_events=True,
-        can_change_organiser_settings=True,
-        can_change_event_settings=True,
-        all_events=True,
-    )
-    team.members.add(user)
-    EventFactory(organiser=organiser)
-
-    warnings = check_access_permissions(organiser)
-
-    assert warnings == []
-
-
-def test_check_access_permissions_ignores_teams_without_members():
-    organiser = OrganiserFactory()
-    TeamFactory(organiser=organiser, can_change_teams=True)
-
-    with pytest.raises(ValidationError):
-        check_access_permissions(organiser)
-
-
-def test_check_access_permissions_event_covered_by_limit_events():
-    organiser = OrganiserFactory()
-    user = UserFactory()
     event = EventFactory(organiser=organiser)
-    team = TeamFactory(
-        organiser=organiser,
-        can_change_teams=True,
-        can_create_events=True,
-        can_change_organiser_settings=True,
-        can_change_event_settings=True,
-        all_events=False,
-    )
-    team.members.add(user)
-    team.limit_events.add(event)
-
-    warnings = check_access_permissions(organiser)
-
-    assert warnings == []
-
-
-def test_check_access_permissions_exclude_team_raises_when_last_change_teams():
-    organiser = OrganiserFactory()
-    team = TeamFactory(organiser=organiser, can_change_teams=True)
+    team = TeamFactory(organiser=organiser, **{**ALL_PERMISSIONS, **team_kwargs})
     team.members.add(UserFactory())
+    if limit_to_event:
+        team.limit_events.add(event)
 
-    with pytest.raises(ValidationError):
-        check_access_permissions(organiser, exclude_team=team)
+    warnings = check_access_permissions(organiser)
+
+    assert [code for code, _msg in warnings] == expected_codes
 
 
-def test_check_access_permissions_exclude_team_raises_when_event_uncovered():
+def test_check_access_permissions_raises_when_an_event_has_no_team_access():
     organiser = OrganiserFactory()
     event = EventFactory(organiser=organiser)
-    safety = TeamFactory(organiser=organiser, can_change_teams=True, all_events=False)
+    safety = TeamFactory(
+        organiser=organiser, **{**ALL_PERMISSIONS, "all_events": False}
+    )
     safety.members.add(UserFactory())
-    coverage = TeamFactory(organiser=organiser, can_change_teams=True, all_events=False)
+
+    with pytest.raises(ValidationError) as excinfo:
+        check_access_permissions(organiser)
+
+    assert event.name in str(excinfo.value)
+
+    coverage = TeamFactory(
+        organiser=organiser,
+        can_change_teams=True,
+        can_change_event_settings=True,
+        all_events=False,
+    )
     coverage.members.add(UserFactory())
     coverage.limit_events.add(event)
 
+    assert check_access_permissions(organiser) == []
     with pytest.raises(ValidationError) as excinfo:
         check_access_permissions(organiser, exclude_team=coverage)
-
     assert event.name in str(excinfo.value)
 
 
 def test_check_access_permissions_exclude_team_passes_with_backup_team():
     organiser = OrganiserFactory()
-    perms = {
-        "can_change_teams": True,
-        "can_create_events": True,
-        "can_change_organiser_settings": True,
-        "can_change_event_settings": True,
-        "all_events": True,
-    }
-    team = TeamFactory(organiser=organiser, **perms)
+    team = TeamFactory(organiser=organiser, **ALL_PERMISSIONS)
     team.members.add(UserFactory())
-    backup = TeamFactory(organiser=organiser, **perms)
+    backup = TeamFactory(organiser=organiser, **ALL_PERMISSIONS)
     backup.members.add(UserFactory())
 
     assert check_access_permissions(organiser, exclude_team=team) == []
@@ -179,14 +115,7 @@ def test_check_access_permissions_query_count_constant(
     event_count, django_assert_num_queries
 ):
     organiser = OrganiserFactory()
-    team = TeamFactory(
-        organiser=organiser,
-        can_change_teams=True,
-        can_create_events=True,
-        can_change_organiser_settings=True,
-        can_change_event_settings=True,
-        all_events=True,
-    )
+    team = TeamFactory(organiser=organiser, **ALL_PERMISSIONS)
     team.members.add(UserFactory())
     for _i in range(event_count):
         EventFactory(organiser=organiser)

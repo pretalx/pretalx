@@ -35,19 +35,35 @@ def _verify_url(event, token):
     return reverse("cfp:event.verify", kwargs={"event": event.slug, "token": token})
 
 
-def test_verification_page_shows_address_needing_confirmation(client, event):
+def test_verification_page_resends_mail_once_per_cooldown(client, event):
     user = _unverified_user(email="pending-speaker@example.com")
     client.force_login(user)
+    djmail.outbox = []
 
     response = client.get(_page_url(event))
 
     assert response.status_code == 200
     content = response.content.decode()
     assert "pending-speaker@example.com" in content
-    assert "password" in response.context["form"].fields
-    assert "email" in response.context["form"].fields
+    assert {"password", "email"} <= set(response.context["form"].fields)
     assert "email-correction-dialog" in content
     assert not re.search(r"<dialog[^>]*\bopen", content)
+    assert response.context["cooldown"] == 0
+
+    response = client.post(_page_url(event), {"action": "resend"})
+    page = client.get(_page_url(event))
+
+    assert response.status_code == 302
+    assert response.url == _page_url(event)
+    assert [mail.to for mail in djmail.outbox] == [["pending-speaker@example.com"]]
+    assert f"/{event.slug}/verify/" in djmail.outbox[0].body
+    assert page.context["cooldown"] > 0
+    assert "disabled" in page.content.decode()
+
+    response = client.post(_page_url(event), {"action": "resend"}, follow=True)
+
+    assert len(djmail.outbox) == 1
+    assert [message.level_tag for message in response.context["messages"]] == ["danger"]
 
 
 def test_verification_page_redirects_anonymous_to_login(client, event):
@@ -72,6 +88,15 @@ def test_verification_page_redirects_proven_user_away(client, event, state):
     assert response.status_code == 302
     assert response.url == f"/{event.slug}/me/submissions/"
 
+    session = client.session
+    session["verification_next"] = f"/{event.slug}/talk/ABCDEF/#signup"
+    session.save()
+    response = client.get(_page_url(event))
+
+    assert response.status_code == 302
+    assert response.url == f"/{event.slug}/talk/ABCDEF/#signup"
+    assert "verification_next" not in client.session
+
 
 @pytest.mark.parametrize("draft", (True, False))
 def test_verification_page_acknowledges_submission_once(client, event, draft):
@@ -92,37 +117,11 @@ def test_verification_page_acknowledges_submission_once(client, event, draft):
     assert second_response.context["acknowledged_submission"] is None
 
 
-def test_verification_page_resend_sends_mail_and_sets_cooldown(client, event):
-    user = _unverified_user()
-    client.force_login(user)
-    djmail.outbox = []
-
-    response = client.post(_page_url(event), {"action": "resend"})
-    page = client.get(_page_url(event))
-
-    assert response.status_code == 302
-    assert response.url == _page_url(event)
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == [user.email]
-    assert f"/{event.slug}/verify/" in djmail.outbox[0].body
-    assert page.context["cooldown"] > 0
-    assert "disabled" in page.content.decode()
-
-
-def test_verification_page_resend_within_cooldown_sends_nothing(client, event):
-    user = _unverified_user()
-    client.force_login(user)
-    client.post(_page_url(event), {"action": "resend"}, follow=True)
-    djmail.outbox = []
-
-    response = client.post(_page_url(event), {"action": "resend"}, follow=True)
-
-    assert djmail.outbox == []
-    assert [message.level_tag for message in response.context["messages"]] == ["danger"]
-
-
-def test_verification_page_wrong_address_requires_password(client, event):
+def test_verification_page_wrong_address_corrects_with_password_and_kills_old_links(
+    client, event
+):
     user = _unverified_user(email="typo@example.com")
+    old_token = make_verification_token(user, KIND_VERIFY)
     client.force_login(user)
     djmail.outbox = []
 
@@ -136,13 +135,6 @@ def test_verification_page_wrong_address_requires_password(client, event):
     assert re.search(r"<dialog[^>]*\bopen", response.content.decode())
     assert user.email == "typo@example.com"
     assert djmail.outbox == []
-
-
-def test_verification_page_wrong_address_corrects_and_kills_old_links(client, event):
-    user = _unverified_user(email="typo@example.com")
-    old_token = make_verification_token(user, KIND_VERIFY)
-    client.force_login(user)
-    djmail.outbox = []
 
     response = client.post(
         _page_url(event), {"email": "fixed@example.com", "password": "testpassword!"}
@@ -205,7 +197,7 @@ def test_verification_page_wrong_address_taken_in_race_shows_form_error(
     assert djmail.outbox == []
 
 
-def test_verify_link_get_does_not_verify(client, event):
+def test_verify_link_verifies_anonymous_on_post_only_once(client, event):
     user = _unverified_user(email="prefetch@example.com")
     token = make_verification_token(user, KIND_VERIFY)
 
@@ -217,16 +209,19 @@ def test_verify_link_get_does_not_verify(client, event):
     assert response.context["target_email"] == "prefetch@example.com"
     assert user.email_verification_state == EmailVerificationState.UNVERIFIED
 
-
-def test_verify_link_post_verifies_anonymous_and_redirects_to_login(client, event):
-    user = _unverified_user()
-    token = make_verification_token(user, KIND_VERIFY)
-
     response = client.post(_verify_url(event, token))
 
     user.refresh_from_db()
     assert response.status_code == 302
     assert response.url == f"/{event.slug}/login/?next=/{event.slug}/me/submissions/"
+    assert user.email_verification_state == EmailVerificationState.VERIFIED
+
+    for method in ("get", "post"):
+        response = getattr(client, method)(_verify_url(event, token))
+
+        assert response.status_code == 200
+        assert response.context["error"] == "already_verified"
+    user.refresh_from_db()
     assert user.email_verification_state == EmailVerificationState.VERIFIED
 
 
@@ -262,83 +257,30 @@ def test_verify_link_post_redirects_to_stored_destination(client, event):
     assert user.email_verification_state == EmailVerificationState.VERIFIED
 
 
-def test_verification_page_redirects_proven_user_to_stored_destination(client, event):
-    user = UserFactory(email_verification_state=EmailVerificationState.VERIFIED)
-    client.force_login(user)
-    session = client.session
-    session["verification_next"] = f"/{event.slug}/talk/ABCDEF/#signup"
-    session.save()
-
-    response = client.get(_page_url(event))
-
-    assert response.status_code == 302
-    assert response.url == f"/{event.slug}/talk/ABCDEF/#signup"
-    assert "verification_next" not in client.session
-
-
 @pytest.mark.parametrize("method", ("get", "post"))
-def test_verify_link_expired_offers_resend(client, event, method):
-    user = _unverified_user()
+def test_verify_link_rejects_expired_and_stale_tokens(client, event, method):
+    user = _unverified_user(email="before@example.com")
     real_time = time.time()
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(time, "time", lambda: real_time - 25 * 3600)
-        token = make_verification_token(user, KIND_VERIFY)
-
-    response = getattr(client, method)(_verify_url(event, token))
-
-    user.refresh_from_db()
-    assert response.status_code == 200
-    assert response.context["error"] == "expired"
-    assert _page_url(event) in response.content.decode()
-    assert user.email_verification_state == EmailVerificationState.UNVERIFIED
-
-
-@pytest.mark.parametrize("method", ("get", "post"))
-def test_verify_link_stale_after_address_change_is_invalid(client, event, method):
-    user = _unverified_user(email="before@example.com")
-    token = make_verification_token(user, KIND_VERIFY)
+        expired_token = make_verification_token(user, KIND_VERIFY)
+    stale_token = make_verification_token(user, KIND_VERIFY)
     user.email = "after@example.com"
     user.save()
 
-    response = getattr(client, method)(_verify_url(event, token))
+    expired = getattr(client, method)(_verify_url(event, expired_token))
+    stale = getattr(client, method)(_verify_url(event, stale_token))
 
     user.refresh_from_db()
-    assert response.status_code == 200
-    assert response.context["error"] == "invalid"
+    assert expired.status_code == 200
+    assert expired.context["error"] == "expired"
+    assert _page_url(event) in expired.content.decode()
+    assert stale.status_code == 200
+    assert stale.context["error"] == "invalid"
     assert user.email_verification_state == EmailVerificationState.UNVERIFIED
 
 
-@pytest.mark.parametrize("method", ("get", "post"))
-def test_verify_link_already_verified_shows_notice_without_new_log(
-    client, event, method
-):
-    user = UserFactory(email_verification_state=EmailVerificationState.UNVERIFIED)
-    token = make_verification_token(user, KIND_VERIFY)
-    client.post(_verify_url(event, token))
-
-    response = getattr(client, method)(_verify_url(event, token))
-
-    user.refresh_from_db()
-    assert response.status_code == 200
-    assert response.context["error"] == "already_verified"
-    assert user.email_verification_state == EmailVerificationState.VERIFIED
-
-
-def test_verify_change_link_get_shows_pending_address(client, event):
-    user = UserFactory(email_verification_state=EmailVerificationState.VERIFIED)
-    user.pending_email = "new@example.com"
-    user.pending_email_sent = now()
-    user.save()
-    token = make_verification_token(user, KIND_CHANGE)
-
-    response = client.get(_verify_url(event, token))
-
-    assert response.status_code == 200
-    assert response.context["error"] is None
-    assert response.context["target_email"] == "new@example.com"
-
-
-def test_verify_change_link_post_applies_pending_change(client, event):
+def test_verify_change_link_applies_pending_change_on_post(client, event):
     user = UserFactory(
         email="old@example.com", email_verification_state=EmailVerificationState.LEGACY
     )
@@ -347,6 +289,12 @@ def test_verify_change_link_post_applies_pending_change(client, event):
     user.save()
     token = make_verification_token(user, KIND_CHANGE)
     djmail.outbox = []
+
+    response = client.get(_verify_url(event, token))
+
+    assert response.status_code == 200
+    assert response.context["error"] is None
+    assert response.context["target_email"] == "new@example.com"
 
     response = client.post(_verify_url(event, token))
 
@@ -359,10 +307,11 @@ def test_verify_change_link_post_applies_pending_change(client, event):
     assert djmail.outbox[0].to == ["old@example.com"]
 
 
-def test_verify_change_link_expired_pending_get_shows_error_without_writes(
-    client, event
-):
-    user = UserFactory(email_verification_state=EmailVerificationState.VERIFIED)
+def test_verify_change_link_expired_pending_clears_on_post_only(client, event):
+    user = UserFactory(
+        email="old@example.com",
+        email_verification_state=EmailVerificationState.VERIFIED,
+    )
     user.pending_email = "new@example.com"
     user.pending_email_sent = now() - dt.timedelta(hours=25)
     user.save()
@@ -375,19 +324,6 @@ def test_verify_change_link_expired_pending_get_shows_error_without_writes(
     assert response.context["error"] == "pending_expired"
     assert user.pending_email == "new@example.com"
     assert user.pending_email_sent is not None
-
-
-def test_verify_change_link_expired_pending_post_clears_and_offers_rerequest(
-    client, event
-):
-    user = UserFactory(
-        email="old@example.com",
-        email_verification_state=EmailVerificationState.VERIFIED,
-    )
-    user.pending_email = "new@example.com"
-    user.pending_email_sent = now() - dt.timedelta(hours=25)
-    user.save()
-    token = make_verification_token(user, KIND_CHANGE)
 
     response = client.post(_verify_url(event, token))
 

@@ -25,10 +25,14 @@ def facet_names(filterset):
     return [f.name for f in filterset.facets]
 
 
-def test_sent_list_has_no_status_filter():
-    filterset = build(EventFactory(), sent=True)
+def test_sent_list_has_no_status_filter_and_leaves_queryset_alone():
+    event = EventFactory()
+    mail = QueuedMailFactory(event=event)
+
+    filterset = build(event, sent=True)
 
     assert "status" not in filterset.filters
+    assert list(filterset.filter(event.queued_mails.all())) == [mail]
 
 
 def test_status_filter_dropped_without_failures():
@@ -37,18 +41,20 @@ def test_status_filter_dropped_without_failures():
     assert "status" not in facet_names(filterset)
 
 
-def test_status_filter_offers_pending_and_failed():
+def test_status_filter_offers_and_filters_failed_mails():
     event = EventFactory()
-    QueuedMailFactory(
+    failed = QueuedMailFactory(
         event=event,
         state=QueuedMailStates.DRAFT,
         error_data={"error": "SMTP failed", "type": "Exception"},
     )
     QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
 
-    filterset = build(event, sent=False)
+    filterset = build(event, sent=False, query="status=failed")
+    qs = event.queued_mails.filter(state=QueuedMailStates.DRAFT).with_computed_state()
 
     assert [c.value for c in filterset.filters["status"].choices] == ["draft", "failed"]
+    assert list(filterset.filter(qs)) == [failed]
 
 
 def test_track_filter_dropped_without_tracks():
@@ -57,31 +63,7 @@ def test_track_filter_dropped_without_tracks():
     assert "track" not in facet_names(build(event, sent=False))
 
 
-def test_track_filter_offers_event_tracks():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-
-    filterset = build(event, sent=False)
-
-    assert [c.value for c in filterset.filters["track"].choices] == [str(track.pk)]
-
-
-def test_filter_by_status():
-    event = EventFactory()
-    failed = QueuedMailFactory(
-        event=event,
-        state=QueuedMailStates.DRAFT,
-        error_data={"error": "fail", "type": "Exception"},
-    )
-    QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-
-    filterset = build(event, sent=False, query="status=failed")
-    qs = event.queued_mails.filter(state=QueuedMailStates.DRAFT).with_computed_state()
-
-    assert list(filterset.filter(qs)) == [failed]
-
-
-def test_filter_by_track():
+def test_track_filter_offers_and_filters_by_event_tracks():
     event = EventFactory()
     track = TrackFactory(event=event)
     submission = SubmissionFactory(event=event, track=track)
@@ -91,16 +73,8 @@ def test_filter_by_track():
 
     filterset = build(event, sent=False, query=f"track={track.pk}")
 
+    assert [c.value for c in filterset.filters["track"].choices] == [str(track.pk)]
     assert list(filterset.filter(event.queued_mails.all())) == [mail_with_track]
-
-
-def test_no_filters_leaves_queryset_alone():
-    event = EventFactory()
-    mail = QueuedMailFactory(event=event)
-
-    filterset = build(event, sent=True)
-
-    assert list(filterset.filter(event.queued_mails.all())) == [mail]
 
 
 def test_track_counts_only_sent_mails():

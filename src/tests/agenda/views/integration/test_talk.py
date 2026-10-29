@@ -94,6 +94,8 @@ def test_talk_view_default_rendering(
     assert submission.urls.user_base not in content
     assert str(phrases.agenda.schedule_do_not_record) not in content
     assert "<iframe" not in content
+    assert "Around this session" not in content
+    assert "Details" not in content
 
 
 @pytest.mark.parametrize(
@@ -188,19 +190,6 @@ def test_talk_view_shows_room_neighbours_and_parallel_sessions(
     assert neighbourhood["Parallel session"].urls.public in content
 
 
-@pytest.mark.parametrize(
-    "absent",
-    (("Around this session",), ("Details",)),
-    ids=["context_card", "details_card"],
-)
-def test_talk_view_omits_empty_cards(client, published_talk_slot, absent):
-    response = client.get(published_talk_slot.submission.urls.public, follow=True)
-
-    content = response.content.decode()
-    for snippet in absent:
-        assert snippet not in content
-
-
 def test_talk_view_hides_context_card_without_scheduling_permission(
     client, neighbourhood, event, organiser_user
 ):
@@ -251,7 +240,9 @@ def test_talk_view_shows_details_card_and_long_answers(client, published_talk_sl
     assert "Because it matters" in content
 
 
-def test_talk_view_offers_ical_before_the_session(client, event):
+def test_future_session_offers_ical_and_shows_but_rejects_feedback(
+    client, django_assert_num_queries, event
+):
     with scopes_disabled():
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.speakers.add(SpeakerFactory(event=event))
@@ -263,11 +254,22 @@ def test_talk_view_offers_ical_before_the_session(client, event):
         )
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
-    response = client.get(submission.urls.public, follow=True)
+    talk_page = client.get(submission.urls.public, follow=True)
+    with django_assert_num_queries(9):
+        feedback_page = client.get(submission.urls.feedback, follow=True)
+    with django_assert_num_queries(9):
+        response = client.post(
+            submission.urls.feedback, {"review": "Time traveler!"}, follow=True
+        )
 
-    content = response.content.decode()
+    content = talk_page.content.decode()
     assert submission.urls.ical in content
     assert submission.urls.feedback not in content
+    assert feedback_page.status_code == 200
+    assert "review" in feedback_page.context["form"].fields
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert submission.feedback.count() == 0
 
 
 def test_talk_view_404_for_nonpublic_event(client, django_assert_num_queries):
@@ -503,26 +505,20 @@ def test_talk_view_speaker_query_count(
             assert speaker.get_display_name() in content
 
 
-def test_talk_social_media_card_404_without_image(
+def test_talk_social_media_card_serves_submission_image_or_404(
     client, django_assert_num_queries, published_talk_slot
 ):
-    slot = published_talk_slot
+    submission = published_talk_slot.submission
 
     with django_assert_num_queries(9):
-        response = client.get(slot.submission.urls.social_image, follow=True)
-
-    assert response.status_code == 404
-
-
-def test_talk_social_media_card_serves_submission_image(client, published_talk_slot):
-    submission = published_talk_slot.submission
+        missing = client.get(submission.urls.social_image, follow=True)
     with scopes_disabled():
         submission.image.save(
             "card.png", SimpleUploadedFile("card.png", b"card_content")
         )
-
     response = client.get(submission.urls.social_image, follow=True)
 
+    assert missing.status_code == 404
     assert response.status_code == 200
     assert b"".join(response.streaming_content) == b"card_content"
 
@@ -568,15 +564,16 @@ def test_feedback_view_accessible_for_past_talk(
     assert "review" in response.context["form"].fields
 
 
-def test_feedback_view_submit_creates_feedback(
+def test_feedback_view_submit_creates_feedback_and_redirects_to_talk(
     client, django_assert_num_queries, feedback_submission
 ):
-    with django_assert_num_queries(23):
+    with django_assert_num_queries(9):
         response = client.post(
-            feedback_submission.urls.feedback, {"review": "Great talk!"}, follow=True
+            feedback_submission.urls.feedback, {"review": "Great talk!"}, follow=False
         )
 
-    assert response.status_code == 200
+    assert response.status_code == 302
+    assert response.url == feedback_submission.urls.public
     with scopes_disabled():
         feedback = feedback_submission.feedback.select_related("speaker").first()
         assert feedback is not None
@@ -584,35 +581,23 @@ def test_feedback_view_submit_creates_feedback(
         assert feedback.speaker == feedback_submission.speakers.first()
 
 
-def test_feedback_view_submit_creates_feedback_for_managed_speaker(
+def test_feedback_view_managed_speaker_feedback_is_stored_but_hidden_from_public(
     client, django_assert_num_queries, managed_feedback_submission
 ):
     with django_assert_num_queries(23):
-        response = client.post(
+        post = client.post(
             managed_feedback_submission.urls.feedback,
-            {"review": "Great talk!"},
+            {"review": "Loved it!"},
             follow=True,
         )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        feedback = managed_feedback_submission.feedback.select_related(
-            "speaker"
-        ).first()
-        assert feedback is not None
-        assert feedback.review == "Great talk!"
-        assert feedback.speaker == managed_feedback_submission.speakers.first()
-
-
-def test_feedback_view_does_not_show_managed_speaker_feedback_to_anonymous_users(
-    client, django_assert_num_queries, managed_feedback_submission
-):
-    with scopes_disabled():
-        FeedbackFactory(talk=managed_feedback_submission, review="Loved it!")
-
     with django_assert_num_queries(9):
         response = client.get(managed_feedback_submission.urls.feedback, follow=True)
 
+    assert post.status_code == 200
+    with scopes_disabled():
+        feedback = managed_feedback_submission.feedback.select_related("speaker").get()
+        assert feedback.review == "Loved it!"
+        assert feedback.speaker == managed_feedback_submission.speakers.first()
     assert response.status_code == 200
     assert "review" in response.context["form"].fields
     assert "Loved it!" not in response.content.decode()
@@ -636,31 +621,6 @@ def test_feedback_view_submit_multiple_speakers_no_auto_assign(
         assert feedback is not None
         assert feedback.review == "Great talks!"
         assert feedback.speaker is None
-
-
-def test_feedback_view_rejects_post_before_talk_starts(
-    client, django_assert_num_queries, event
-):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        submission.speakers.add(speaker)
-        TalkSlotFactory(
-            submission=submission,
-            is_visible=True,
-            start=now() + dt.timedelta(hours=1),
-            end=now() + dt.timedelta(hours=2),
-        )
-        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-
-    with django_assert_num_queries(9):
-        response = client.post(
-            submission.urls.feedback, {"review": "Time traveler!"}, follow=True
-        )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert submission.feedback.count() == 0
 
 
 def test_feedback_view_honeypot_rejects_spam(
@@ -691,40 +651,6 @@ def test_feedback_view_speaker_sees_feedback(
 
     assert response.status_code == 200
     assert "Loved it!" in response.content.decode()
-
-
-def test_feedback_view_redirects_to_talk_after_submit(
-    client, django_assert_num_queries, feedback_submission
-):
-    with django_assert_num_queries(9):
-        response = client.post(
-            feedback_submission.urls.feedback, {"review": "Nice!"}, follow=False
-        )
-
-    assert response.status_code == 302
-    assert response.url == feedback_submission.urls.public
-
-
-def test_feedback_view_accessible_before_talk_starts(
-    client, django_assert_num_queries, event
-):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        submission.speakers.add(speaker)
-        TalkSlotFactory(
-            submission=submission,
-            is_visible=True,
-            start=now() + dt.timedelta(hours=1),
-            end=now() + dt.timedelta(hours=2),
-        )
-        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-
-    with django_assert_num_queries(9):
-        response = client.get(submission.urls.feedback, follow=True)
-
-    assert response.status_code == 200
-    assert "review" in response.context["form"].fields
 
 
 @pytest.fixture
@@ -800,20 +726,32 @@ def test_talk_view_omits_places_left_without_capacity(client, signup_submission)
     assert "places left" not in content
 
 
-def test_talk_view_shows_cancel_button_when_signed_up(client, signup_submission):
+def test_talk_view_shows_cancel_button_when_signed_up_until_session_is_over(
+    client, signup_submission
+):
     user = UserFactory()
     with scope(event=signup_submission.event):
         create_signup(signup_submission, user=user)
     client.force_login(user)
 
-    response = client.get(signup_submission.urls.public, follow=True)
+    upcoming = client.get(signup_submission.urls.public, follow=True)
+    with scope(event=signup_submission.event):
+        signup_submission.slots.update(
+            start=now() - dt.timedelta(hours=2), end=now() - dt.timedelta(hours=1)
+        )
+    past = client.get(signup_submission.urls.public, follow=True)
 
-    assert response.status_code == 200
-    content = response.content.decode()
+    assert upcoming.status_code == 200
+    content = upcoming.content.decode()
     assert "You’re signed up" in content
     assert "signup-cancel-dialog" in content
     assert "signup-success-dialog" in content
     assert signup_submission.urls.signup_cancel in content
+    assert past.status_code == 200
+    content = past.content.decode()
+    assert "You’re signed up" in content
+    assert "Cancel signup" not in content
+    assert "signup-cancel-dialog" not in content
 
 
 @pytest.mark.parametrize("fill_up", (False, True))
@@ -837,37 +775,20 @@ def test_talk_view_hides_signup_for_past_session(client, signup_submission, fill
     assert 'id="signup"' not in content
 
 
-def test_talk_view_keeps_signup_state_without_cancel_for_past_session(
+def test_signup_blocked_domain_user_sees_disabled_button_and_generic_rejection(
     client, signup_submission
 ):
-    user = UserFactory()
-    with scope(event=signup_submission.event):
-        create_signup(signup_submission, user=user)
-        signup_submission.slots.update(
-            start=now() - dt.timedelta(hours=2), end=now() - dt.timedelta(hours=1)
-        )
-    client.force_login(user)
-
-    response = client.get(signup_submission.urls.public, follow=True)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "You’re signed up" in content
-    assert "Cancel signup" not in content
-    assert "signup-cancel-dialog" not in content
-
-
-def test_talk_view_disables_signup_button_when_domain_blocks(client, signup_submission):
     event = signup_submission.event
     event.attendee_signup_settings = {"signup_domains": ["allowed.example"]}
     event.save()
     user = UserFactory(email="someone@forbidden.example")
     client.force_login(user)
 
-    response = client.get(signup_submission.urls.public, follow=True)
+    talk_page = client.get(signup_submission.urls.public, follow=True)
+    response = client.post(signup_submission.urls.signup, follow=True)
 
-    assert response.status_code == 200
-    content = response.content.decode()
+    assert talk_page.status_code == 200
+    content = talk_page.content.decode()
     assert "signup-button" in content
     assert "disabled" in content
     assert "signup-confirm-dialog" not in content
@@ -875,19 +796,6 @@ def test_talk_view_disables_signup_button_when_domain_blocks(client, signup_subm
     # configured allow-list values nor the user's own (rejected) domain.
     assert "allowed.example" not in content
     assert "forbidden.example" not in content
-
-
-def test_signup_post_rejected_for_blocked_domain_user_with_generic_message(
-    client, signup_submission
-):
-    event = signup_submission.event
-    event.attendee_signup_settings = {"signup_domains": ["allowed.example"]}
-    event.save()
-    user = UserFactory(email="someone@forbidden.example")
-    client.force_login(user)
-
-    response = client.post(signup_submission.urls.signup, follow=True)
-
     assert response.status_code == 200
     content = response.content.decode()
     assert "You cannot sign up for this session." in content
@@ -899,19 +807,28 @@ def test_signup_post_rejected_for_blocked_domain_user_with_generic_message(
         ).exists()
 
 
-def test_talk_view_shows_booked_out_when_full(client, signup_submission):
+def test_signup_full_session_shows_booked_out_and_rejects_signup(
+    client, signup_submission
+):
     with scope(event=signup_submission.event):
         for _i in range(2):
             create_signup(signup_submission, user=UserFactory())
     user = UserFactory()
     client.force_login(user)
 
-    response = client.get(signup_submission.urls.public, follow=True)
+    talk_page = client.get(signup_submission.urls.public, follow=True)
+    response = client.post(signup_submission.urls.signup, follow=True)
 
-    assert response.status_code == 200
-    content = response.content.decode()
+    assert talk_page.status_code == 200
+    content = talk_page.content.decode()
     assert "Session is full" in content
     assert "signup-confirm-dialog" not in content
+    assert response.status_code == 200
+    assert "This session is currently full" in response.content.decode()
+    with scope(event=signup_submission.event):
+        assert not AttendeeSignup.objects.filter(
+            submission=signup_submission, attendee__user=user
+        ).exists()
 
 
 @pytest.mark.parametrize("url_attr", ("signup", "signup_cancel"))
@@ -927,29 +844,21 @@ def test_signup_views_anonymous_redirect_to_login(client, signup_submission, url
         assert not AttendeeSignup.objects.filter(submission=signup_submission).exists()
 
 
-def test_signup_post_when_full_shows_error_and_does_not_create(
-    client, signup_submission
-):
-    with scope(event=signup_submission.event):
-        for _i in range(2):
-            create_signup(signup_submission, user=UserFactory())
-    user = UserFactory()
+def test_signup_post_signs_up_cancels_signs_up_again(client, signup_submission):
+    user = UserFactory(email="cycler@example.com")
     client.force_login(user)
 
-    response = client.post(signup_submission.urls.signup, follow=True)
+    response = client.get(signup_submission.urls.signup, follow=False)
+    assert response.status_code == 302
+    assert response.url == f"{signup_submission.urls.public}#signup"
 
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "This session is currently full" in content
+    response = client.post(signup_submission.urls.signup_cancel, follow=False)
+    assert response.status_code == 302
+    assert response.url == signup_submission.urls.public
     with scope(event=signup_submission.event):
         assert not AttendeeSignup.objects.filter(
             submission=signup_submission, attendee__user=user
         ).exists()
-
-
-def test_signup_post_signs_up_cancels_signs_up_again(client, signup_submission):
-    user = UserFactory(email="cycler@example.com")
-    client.force_login(user)
 
     response = client.post(signup_submission.urls.signup, follow=False)
     assert response.status_code == 302
@@ -979,30 +888,6 @@ def test_signup_post_signs_up_cancels_signs_up_again(client, signup_submission):
             ).count()
             == 1
         )
-
-
-def test_signup_get_redirects_to_talk_fragment(client, signup_submission):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.get(signup_submission.urls.signup, follow=False)
-
-    assert response.status_code == 302
-    assert response.url == f"{signup_submission.urls.public}#signup"
-
-
-def test_signup_cancel_on_no_signup_is_silent(client, signup_submission):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.post(signup_submission.urls.signup_cancel, follow=False)
-
-    assert response.status_code == 302
-    assert response.url == signup_submission.urls.public
-    with scope(event=signup_submission.event):
-        assert not AttendeeSignup.objects.filter(
-            submission=signup_submission, attendee__user=user
-        ).exists()
 
 
 @pytest.mark.parametrize("authenticated", (True, False))

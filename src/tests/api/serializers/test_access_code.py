@@ -126,33 +126,27 @@ def test_v1_access_code_serializer_to_representation_shows_first_only():
     assert data["track"] in (track1.pk, track2.pk)
 
 
-def test_v1_access_code_serializer_create_with_track_and_type(rf):
+def test_v1_access_code_serializer_create_with_optional_track_and_type(rf):
     event = EventFactory()
     track = TrackFactory(event=event)
     sub_type = SubmissionTypeFactory(event=event)
     request = rf.get("/")
     request.event = event
 
-    serializer = V1SubmitterAccessCodeSerializer(
+    with_relations = V1SubmitterAccessCodeSerializer(
         data={"code": "v1create", "track": track.pk, "submission_type": sub_type.pk},
         context={"request": request},
     )
-    assert serializer.is_valid(), serializer.errors
-    instance = serializer.save()
+    assert with_relations.is_valid(), with_relations.errors
+    instance = with_relations.save()
     assert list(instance.tracks.all()) == [track]
     assert list(instance.submission_types.all()) == [sub_type]
 
-
-def test_v1_access_code_serializer_create_without_track_or_type(rf):
-    event = EventFactory()
-    request = rf.get("/")
-    request.event = event
-
-    serializer = V1SubmitterAccessCodeSerializer(
+    without_relations = V1SubmitterAccessCodeSerializer(
         data={"code": "v1notype"}, context={"request": request}
     )
-    assert serializer.is_valid(), serializer.errors
-    instance = serializer.save()
+    assert without_relations.is_valid(), without_relations.errors
+    instance = without_relations.save()
     assert instance.tracks.count() == 0
     assert instance.submission_types.count() == 0
 

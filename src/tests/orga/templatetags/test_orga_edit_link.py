@@ -17,9 +17,6 @@ pytestmark = pytest.mark.unit
 )
 def test_orga_edit_link_href(url, target, expected_href):
     result = orga_edit_link(url, target)
+
     assert f'href="{expected_href}"' in result
-
-
-def test_orga_edit_link_returns_safe_string():
-    result = orga_edit_link("https://example.com")
     assert hasattr(result, "__html__")

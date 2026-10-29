@@ -17,85 +17,91 @@ from tests.factories import AnswerOptionFactory, EventFactory, QuestionFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
+MIN_ABOVE_COUNT = {
+    "min_options": [
+        "This custom field only has 2 options, so it cannot require 3 of them."
+    ]
+}
 
-def test_validate_question_identifier_unique_raises_on_duplicate():
+
+def _messages(validator, *args, **kwargs):
+    try:
+        validator(*args, **kwargs)
+    except ValidationError as exc:
+        return exc.messages
+    return []
+
+
+def _message_dict(validator, *args, **kwargs):
+    try:
+        validator(*args, **kwargs)
+    except ValidationError as exc:
+        return exc.message_dict
+    return {}
+
+
+def test_validate_question_identifier_unique_is_case_insensitive_and_skips_self():
     event = EventFactory()
-    QuestionFactory(event=event, identifier="DUPE-ID")
+    question = QuestionFactory(event=event, identifier="My-Id")
+    error = {
+        "identifier": ["This identifier is already used for a different question."]
+    }
 
-    with pytest.raises(ValidationError) as exc_info:
-        validate_question_identifier_unique(event=event, identifier="DUPE-ID")
-
-    assert "identifier" in exc_info.value.message_dict
-
-
-def test_validate_question_identifier_unique_case_insensitive():
-    event = EventFactory()
-    QuestionFactory(event=event, identifier="My-Id")
-
-    with pytest.raises(ValidationError):
-        validate_question_identifier_unique(event=event, identifier="my-id")
-
-
-def test_validate_question_identifier_unique_allows_same_instance():
-    event = EventFactory()
-    question = QuestionFactory(event=event, identifier="MY-ID")
-    validate_question_identifier_unique(
-        event=event, identifier="MY-ID", instance=question
+    assert [
+        _message_dict(
+            validate_question_identifier_unique, event=event, identifier=identifier
+        )
+        for identifier in ("Other", "", None, "My-Id", "my-id")
+    ] == [{}, {}, {}, error, error]
+    assert (
+        _message_dict(
+            validate_question_identifier_unique,
+            event=event,
+            identifier="MY-ID",
+            instance=question,
+        )
+        == {}
     )
 
 
-@pytest.mark.parametrize("identifier", ("", None), ids=("empty", "none"))
-def test_validate_question_identifier_unique_returns_early_for_falsy(identifier):
-    validate_question_identifier_unique(event=EventFactory(), identifier=identifier)
-
-
-def test_validate_answer_option_identifier_unique_raises_on_duplicate():
-    option = AnswerOptionFactory(identifier="DUPE")
-    with pytest.raises(ValidationError) as exc_info:
-        validate_answer_option_identifier_unique(
-            question=option.question, identifier="DUPE"
-        )
-
-    assert "identifier" in exc_info.value.message_dict
-
-
-def test_validate_answer_option_identifier_unique_case_insensitive():
+def test_validate_answer_option_identifier_unique_is_case_insensitive_and_skips_self():
     option = AnswerOptionFactory(identifier="MyOpt")
-    with pytest.raises(ValidationError):
-        validate_answer_option_identifier_unique(
-            question=option.question, identifier="myopt"
+    question = option.question
+    error = {"identifier": ["This identifier is already used for a different option."]}
+
+    assert [
+        _message_dict(
+            validate_answer_option_identifier_unique,
+            question=question,
+            identifier=identifier,
         )
-
-
-def test_validate_answer_option_identifier_unique_allows_same_instance():
-    option = AnswerOptionFactory(identifier="MY-OPT")
-    validate_answer_option_identifier_unique(
-        question=option.question, identifier="MY-OPT", instance=option
+        for identifier in ("Other", "", None, "MyOpt", "myopt")
+    ] == [{}, {}, {}, error, error]
+    assert (
+        _message_dict(
+            validate_answer_option_identifier_unique,
+            question=question,
+            identifier="MYOPT",
+            instance=option,
+        )
+        == {}
     )
 
 
-@pytest.mark.parametrize("identifier", ("", None), ids=("empty", "none"))
-def test_validate_answer_option_identifier_unique_returns_early_for_falsy(identifier):
-    validate_answer_option_identifier_unique(
-        question=QuestionFactory(), identifier=identifier
-    )
-
-
-def test_validate_question_deadline_required_after_deadline_without_deadline():
-    question = QuestionFactory.build(
+def test_validate_question_deadline_required_only_after_deadline():
+    after_deadline = QuestionFactory.build(
         question_required=QuestionRequired.AFTER_DEADLINE, deadline=None
     )
-    with pytest.raises(ValidationError) as exc_info:
-        validate_question_deadline(question)
-
-    assert "deadline" in exc_info.value.message_dict
-
-
-def test_validate_question_deadline_optional_does_not_require_deadline():
-    question = QuestionFactory.build(
+    optional = QuestionFactory.build(
         question_required=QuestionRequired.OPTIONAL, deadline=None
     )
-    validate_question_deadline(question)
+
+    assert _message_dict(validate_question_deadline, after_deadline) == {
+        "deadline": [
+            "Please select a deadline after which the field should become mandatory."
+        ]
+    }
+    assert _message_dict(validate_question_deadline, optional) == {}
 
 
 @pytest.mark.parametrize(
@@ -115,99 +121,111 @@ def test_get_option_count_help_text(text, min_number, max_number, expected):
 
 
 @pytest.mark.parametrize(
-    ("value", "min_number", "max_number"),
-    ((["a", "b"], 1, 5), (["a", "b", "c"], 3, 3), ([], None, 5), (["a"], None, None)),
-    ids=("in_range", "exact", "empty_under_max", "no_limits"),
-)
-def test_validate_option_count_accepts_valid(value, min_number, max_number):
-    validate_option_count(value, min_number, max_number)
-
-
-@pytest.mark.parametrize(
-    ("value", "min_number", "max_number", "expected"),
+    ("value", "min_number", "max_number", "messages"),
     (
-        (["a"], 3, 5, "Please select between 3 and 5 options. You selected 1 options."),
+        (["a", "b"], 1, 5, []),
+        (["a", "b", "c"], 3, 3, []),
+        ([], None, 5, []),
+        (["a"], None, None, []),
+        (["7", "7"], None, 1, []),
+        (
+            ["a"],
+            3,
+            5,
+            ["Please select between 3 and 5 options. You selected 1 options."],
+        ),
         (
             ["a", "b", "c", "d"],
             None,
             3,
-            "Please select at most 3 options. You selected 4 options.",
+            ["Please select at most 3 options. You selected 4 options."],
         ),
-        (None, 2, None, "Please select at least 2 options. You selected 0 options."),
+        (None, 2, None, ["Please select at least 2 options. You selected 0 options."]),
+        (
+            ["7", "7"],
+            2,
+            None,
+            ["Please select at least 2 options. You selected 1 options."],
+        ),
     ),
-    ids=("too_few", "too_many", "none_below_min"),
+    ids=(
+        "in_range",
+        "exact",
+        "empty_under_max",
+        "no_limits",
+        "duplicates_count_once",
+        "too_few",
+        "too_many",
+        "none_below_min",
+        "duplicates_too_few",
+    ),
 )
-def test_validate_option_count_rejects_invalid(value, min_number, max_number, expected):
-    with pytest.raises(ValidationError) as exc_info:
-        validate_option_count(value, min_number, max_number)
-
-    assert exc_info.value.messages == [expected]
-
-
-def test_validate_question_option_limits_rejects_min_above_max():
-    question = QuestionFactory.build(min_options=3, max_options=2)
-
-    with pytest.raises(ValidationError) as exc_info:
-        validate_question_option_limits(question)
-
-    assert exc_info.value.message_dict == {
-        "min_options": [
-            "Minimum number of options cannot be greater than maximum number of options."
-        ]
-    }
+def test_validate_option_count(value, min_number, max_number, messages):
+    assert _messages(validate_option_count, value, min_number, max_number) == messages
 
 
 @pytest.mark.parametrize(
-    ("min_options", "max_options"),
-    ((1, 3), (2, 2), (None, 2), (3, None), (None, None)),
-    ids=("in_order", "equal", "max_only", "min_only", "unset"),
+    ("min_options", "max_options", "errors"),
+    (
+        (1, 3, {}),
+        (2, 2, {}),
+        (None, 2, {}),
+        (3, None, {}),
+        (None, None, {}),
+        (
+            3,
+            2,
+            {
+                "min_options": [
+                    "Minimum number of options cannot be greater than maximum number of options."
+                ]
+            },
+        ),
+    ),
+    ids=("in_order", "equal", "max_only", "min_only", "unset", "min_above_max"),
 )
-def test_validate_question_option_limits_accepts_valid(min_options, max_options):
+def test_validate_question_option_limits(min_options, max_options, errors):
     question = QuestionFactory.build(min_options=min_options, max_options=max_options)
-    validate_question_option_limits(question)
 
-
-def test_validate_option_count_deduplicates_repeated_options():
-    validate_option_count(["7", "7"], None, 1)
-
-    with pytest.raises(ValidationError) as exc_info:
-        validate_option_count(["7", "7"], 2, None)
-
-    assert exc_info.value.messages == [
-        "Please select at least 2 options. You selected 1 options."
-    ]
-
-
-def test_validate_question_min_options_available_rejects_min_above_option_count():
-    question = QuestionFactory(variant=QuestionVariant.MULTIPLE, min_options=3)
-    AnswerOptionFactory(question=question)
-    AnswerOptionFactory(question=question)
-
-    with pytest.raises(ValidationError) as exc_info:
-        validate_question_min_options_available(question)
-
-    assert exc_info.value.message_dict == {
-        "min_options": [
-            "This custom field only has 2 options, so it cannot require 3 of them."
-        ]
-    }
+    assert _message_dict(validate_question_option_limits, question) == errors
 
 
 @pytest.mark.parametrize(
-    ("min_options", "option_count"),
-    ((2, 2), (2, 3), (None, 1), (5, 0)),
-    ids=("exact", "more_than_needed", "no_minimum", "no_options_yet"),
+    ("min_options", "created_options", "option_count", "errors"),
+    (
+        (2, 2, None, {}),
+        (2, 3, None, {}),
+        (None, 1, None, {}),
+        (5, 0, None, {}),
+        (3, 2, 3, {}),
+        (3, 2, None, MIN_ABOVE_COUNT),
+        (3, 3, 2, MIN_ABOVE_COUNT),
+    ),
+    ids=(
+        "exact",
+        "more_than_needed",
+        "no_minimum",
+        "no_options_yet",
+        "given_count_wins",
+        "min_above_count",
+        "min_above_given_count",
+    ),
 )
-def test_validate_question_min_options_available_accepts_valid(
-    min_options, option_count
+def test_validate_question_min_options_available(
+    min_options, created_options, option_count, errors
 ):
     question = QuestionFactory(
         variant=QuestionVariant.MULTIPLE, min_options=min_options
     )
-    for _unused in range(option_count):
+    for _unused in range(created_options):
         AnswerOptionFactory(question=question)
 
-    validate_question_min_options_available(question)
+    assert (
+        _message_dict(
+            validate_question_min_options_available, question, option_count=option_count
+        )
+        == errors
+    )
 
 
 @pytest.mark.parametrize(
@@ -225,26 +243,3 @@ def test_validate_question_min_options_available_skips_unsaved_question():
     question = QuestionFactory.build(variant=QuestionVariant.MULTIPLE, min_options=3)
 
     validate_question_min_options_available(question)
-
-
-def test_validate_question_min_options_available_uses_given_option_count():
-    question = QuestionFactory(variant=QuestionVariant.MULTIPLE, min_options=3)
-    AnswerOptionFactory(question=question)
-    AnswerOptionFactory(question=question)
-
-    validate_question_min_options_available(question, option_count=3)
-
-
-def test_validate_question_min_options_available_rejects_given_option_count():
-    question = QuestionFactory(variant=QuestionVariant.MULTIPLE, min_options=3)
-    for _unused in range(3):
-        AnswerOptionFactory(question=question)
-
-    with pytest.raises(ValidationError) as exc_info:
-        validate_question_min_options_available(question, option_count=2)
-
-    assert exc_info.value.message_dict == {
-        "min_options": [
-            "This custom field only has 2 options, so it cannot require 3 of them."
-        ]
-    }

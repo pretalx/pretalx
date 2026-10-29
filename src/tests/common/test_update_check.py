@@ -63,13 +63,15 @@ def patch_urllib3():
         yield patched
 
 
-def test_run_update_check_disabled(patch_urllib3):
+def test_update_check_disabled(patch_urllib3):
     gs = GlobalSettings()
     gs.settings.update_check_enabled = False
 
     run_update_check(None)
+    update_check.apply(throw=True)
 
     assert patch_urllib3.call_count == 0
+    assert gs.settings.update_check_last is None
 
 
 @pytest.mark.parametrize(
@@ -86,24 +88,6 @@ def test_run_update_check_respects_interval(patch_urllib3, hours_ago, should_tri
     run_update_check(None)
 
     assert patch_urllib3.call_count == (1 if should_trigger else 0)
-
-
-def test_update_check_disabled(patch_urllib3):
-    gs = GlobalSettings()
-    gs.settings.update_check_enabled = False
-
-    update_check.apply(throw=True)
-
-    assert patch_urllib3.call_count == 0
-
-
-def test_update_check_sets_id_on_first_run(patch_urllib3):
-    patch_urllib3.return_value = _ok_response(updatable=False)
-    update_check.apply(throw=True)
-
-    gs = GlobalSettings()
-    assert gs.settings.update_check_id is not None
-    assert len(gs.settings.update_check_id) == 32  # hex uuid4
 
 
 def test_update_check_dev_server(monkeypatch, patch_urllib3):
@@ -154,39 +138,17 @@ def test_update_check_error_stores_result(
     assert gs.settings.update_check_last is not None
 
 
-def test_update_check_sends_email(patch_urllib3):
+def test_update_check_sends_email_only_on_changed_result(patch_urllib3):
     gs = GlobalSettings()
     gs.settings.update_check_email = "admin@example.com"
     djmail.outbox = []
 
     patch_urllib3.return_value = _ok_response(updatable=True)
     update_check.apply(throw=True)
-
     assert len(djmail.outbox) == 1
     assert djmail.outbox[0].to == ["admin@example.com"]
     assert "update" in djmail.outbox[0].subject.lower()
 
-
-def test_update_check_no_email_on_same_result(patch_urllib3):
-    gs = GlobalSettings()
-    gs.settings.update_check_email = "admin@example.com"
-    djmail.outbox = []
-
-    patch_urllib3.return_value = _ok_response(updatable=True)
-
-    update_check.apply(throw=True)
-    assert len(djmail.outbox) == 1
-
-    update_check.apply(throw=True)
-    assert len(djmail.outbox) == 1
-
-
-def test_update_check_sends_email_on_changed_result(patch_urllib3):
-    gs = GlobalSettings()
-    gs.settings.update_check_email = "admin@example.com"
-    djmail.outbox = []
-
-    patch_urllib3.return_value = _ok_response(updatable=True)
     update_check.apply(throw=True)
     assert len(djmail.outbox) == 1
 
@@ -210,22 +172,17 @@ def test_update_check_sends_payload(patch_urllib3):
     payload = call.kwargs["json"]
     assert payload["version"] == __version__
     assert payload["events"] == {"total": 0, "public": 0}
-    assert {"name": "tests.dummy_app", "version": "0.0.0"} in payload["plugins"]
-    assert all("name" in p and "version" in p for p in payload["plugins"])
+    assert payload["plugins"] == [
+        {"name": "tests.dummy_app", "version": "0.0.0"},
+        {"name": "tests.dummy_app_no_hooks", "version": "0.0.0"},
+    ]
     assert len(payload["id"]) == 32
+    assert payload["id"] == GlobalSettings().settings.update_check_id
     assert re.fullmatch(r"\d+\.\d+\.\d+", payload["python_version"])
-    assert set(payload["database"]) == {"type", "version"}
+    assert payload["database"] == get_database_info()
     assert payload["database"]["type"] == connection.vendor
+    assert payload["database"]["version"] != "unknown"
     assert re.fullmatch(r"[^.]+(\.[^.]+)*", payload["database"]["version"])
-
-
-def test_get_database_info_real_connection():
-    info = get_database_info()
-    assert info["type"] == connection.vendor
-    assert info["version"] != "unknown"
-    # The production code uses str(part), so version segments are not
-    # guaranteed numeric; only assert the dotted structure is populated.
-    assert all(part for part in info["version"].split("."))
 
 
 @pytest.mark.parametrize(
@@ -258,80 +215,77 @@ def test_get_database_info_version_failure():
         assert get_database_info() == {"type": "postgresql", "version": "unknown"}
 
 
-def test_send_update_notification_email_no_email_configured():
+def test_send_update_notification_email_requires_configured_address():
     gs = GlobalSettings()
-    gs.settings.update_check_email = ""
     djmail.outbox = []
 
+    gs.settings.update_check_email = ""
     send_update_notification_email()
-
     assert len(djmail.outbox) == 0
 
-
-def test_send_update_notification_email_sends():
-    gs = GlobalSettings()
     gs.settings.update_check_email = "admin@example.com"
-    djmail.outbox = []
-
     send_update_notification_email()
-
     assert len(djmail.outbox) == 1
     assert djmail.outbox[0].to == ["admin@example.com"]
     assert "update" in djmail.outbox[0].subject.lower()
 
 
-def test_check_result_table_no_result():
+def test_check_result_table_passes_errors_through():
+    gs = GlobalSettings()
+
     assert check_result_table() == {"error": "no_result"}
 
-
-def test_check_result_table_error_result():
-    gs = GlobalSettings()
     gs.settings.update_check_result = {"error": "unavailable"}
-
     assert check_result_table() == {"error": "unavailable"}
 
 
-def test_check_result_table_no_updates(patch_urllib3):
-    patch_urllib3.return_value = _ok_response(updatable=False)
-    update_check.apply(throw=True)
-
-    table = check_result_table()
-
-    assert table[0] == {
-        "name": "pretalx",
-        "installed": __version__,
-        "latest": "1.0.0",
-        "updatable": False,
-    }
-    plugin_row = next(r for r in table if "Test Dummy Plugin" in str(r["name"]))
-    assert plugin_row["installed"] == "0.0.0"
-    assert plugin_row["latest"] is None
-    assert plugin_row["updatable"] is False
-
-
-def test_check_result_table_with_plugin_update(patch_urllib3):
-    # Server reports the pretalx version as latest=1.0.0 but updatable=True
-    # (contradictory in practice; the helper just shows the table cells the
-    # response yields). The plugin is also flagged updatable.
+@pytest.mark.parametrize(
+    ("plugins", "updatable", "plugin_latest", "plugin_updatable"),
+    (
+        ({}, False, None, False),
+        (
+            {"tests.dummy_app": {"latest": "1.1.1", "updatable": True}},
+            True,
+            "1.1.1",
+            True,
+        ),
+    ),
+    ids=["no_updates", "plugin_update"],
+)
+def test_check_result_table(
+    patch_urllib3, plugins, updatable, plugin_latest, plugin_updatable
+):
     patch_urllib3.return_value = _stub_response(
         status=200,
         json_data={
             "status": "ok",
-            "version": {"latest": "1.0.0", "yours": __version__, "updatable": True},
-            "plugins": {"tests.dummy_app": {"latest": "1.1.1", "updatable": True}},
+            "version": {
+                "latest": "1.0.0",
+                "yours": __version__,
+                "updatable": updatable,
+            },
+            "plugins": plugins,
         },
     )
     update_check.apply(throw=True)
 
-    table = check_result_table()
-
-    assert table[0] == {
-        "name": "pretalx",
-        "installed": __version__,
-        "latest": "1.0.0",
-        "updatable": True,
-    }
-    plugin_row = next(r for r in table if "Test Dummy Plugin" in str(r["name"]))
-    assert plugin_row["installed"] == "0.0.0"
-    assert plugin_row["latest"] == "1.1.1"
-    assert plugin_row["updatable"] is True
+    assert check_result_table() == [
+        {
+            "name": "pretalx",
+            "installed": __version__,
+            "latest": "1.0.0",
+            "updatable": updatable,
+        },
+        {
+            "name": "Plugin: Test Dummy Plugin",
+            "installed": "0.0.0",
+            "latest": plugin_latest,
+            "updatable": plugin_updatable,
+        },
+        {
+            "name": "Plugin: Test Dummy Plugin (No Hooks)",
+            "installed": "0.0.0",
+            "latest": None,
+            "updatable": False,
+        },
+    ]

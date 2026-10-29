@@ -28,16 +28,19 @@ from tests.utils import make_orga_user, make_request, make_view, query_dict
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_outbox_list_get_queryset_returns_drafts(event):
+def test_outbox_and_sent_list_split_by_state(event):
     draft = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-    QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
+    sent = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
-    view = make_view(OutboxList, request)
+    outbox = make_view(OutboxList, request)
+    outbox.object_list = []
 
-    result = list(view.get_queryset())
-
-    assert result == [draft]
+    assert list(outbox.get_queryset()) == [draft]
+    assert list(make_view(SentMail, request).get_queryset()) == [sent]
+    kwargs = outbox.get_table_kwargs()
+    assert kwargs["has_update_permission"] is True
+    assert kwargs["has_delete_permission"] is True
 
 
 @pytest.mark.parametrize("view_class", (OutboxList, SentMail))
@@ -58,83 +61,24 @@ def test_show_tracks_reflects_active_tracks(
     assert view.show_tracks is expected
 
 
-def test_outbox_list_get_table_kwargs_with_send_permission(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(OutboxList, request)
-    view.object_list = []
-
-    kwargs = view.get_table_kwargs()
-
-    assert kwargs["has_update_permission"] is True
-    assert kwargs["has_delete_permission"] is True
-
-
-def test_sent_mail_get_queryset_returns_sent(event):
-    QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-    sent = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(SentMail, request)
-
-    result = list(view.get_queryset())
-
-    assert result == [sent]
-
-
-def test_outbox_send_queryset_filters_by_pks(event):
-    mail1 = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-    QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user, path=f"/?pks={mail1.pk}")
-    request.GET = query_dict({"pks": str(mail1.pk)})
-    view = make_view(OutboxSend, request)
-
-    result = list(view.queryset)
-
-    assert result == [mail1]
-
-
-def test_outbox_send_queryset_ignores_empty_pks(event):
-    QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user, path="/?pks=,,,,,")
-    request.GET = query_dict({"pks": ",,,,,"})
-    view = make_view(OutboxSend, request)
-
-    result = list(view.queryset)
-
-    assert result == []
-
-
-def test_outbox_send_queryset_filters_failed_only(event):
+def test_outbox_send_queryset_filters_by_pks_and_failure(event):
     failed = QueuedMailFactory(
         event=event, state=QueuedMailStates.DRAFT, error_data={"error": "fail"}
     )
     QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
     user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    request.GET = query_dict({"failed_only": "1"})
-    view = make_view(OutboxSend, request)
 
-    result = list(view.queryset)
+    def send_view(params):
+        request = make_request(event, user=user)
+        request.GET = query_dict(params)
+        return make_view(OutboxSend, request)
 
-    assert result == [failed]
-
-
-def test_mail_delete_queryset_single(event):
-    mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    request.GET = query_dict()
-    view = make_view(MailDelete, request, pk=mail.pk)
-
-    result = list(view.queryset)
-
-    assert result == [mail]
+    assert list(send_view({"pks": str(failed.pk)}).queryset) == [failed]
+    assert list(send_view({"pks": ",,,,,"}).queryset) == []
+    assert list(send_view({"failed_only": "1"}).queryset) == [failed]
 
 
-def test_mail_delete_queryset_all_by_template(event):
+def test_mail_delete_queryset_single_or_all_by_template(event):
     template = MailTemplateFactory(event=event)
     mail1 = QueuedMailFactory(
         event=event, state=QueuedMailStates.DRAFT, template=template
@@ -142,90 +86,66 @@ def test_mail_delete_queryset_all_by_template(event):
     mail2 = QueuedMailFactory(
         event=event, state=QueuedMailStates.DRAFT, template=template
     )
+    QueuedMailFactory(event=event, state=QueuedMailStates.SENT, template=template)
     user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    request.GET = query_dict({"all": "true"})
-    view = make_view(MailDelete, request, pk=mail1.pk)
+    single_request = make_request(event, user=user)
+    single_request.GET = query_dict()
+    all_request = make_request(event, user=user)
+    all_request.GET = query_dict({"all": "true"})
 
-    result = set(view.queryset)
-
-    assert result == {mail1, mail2}
+    assert list(make_view(MailDelete, single_request, pk=mail1.pk).queryset) == [mail1]
+    assert set(make_view(MailDelete, all_request, pk=mail1.pk).queryset) == {
+        mail1,
+        mail2,
+    }
 
 
 def test_mail_detail_get_object(event):
     mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
-    view = make_view(MailDetail, request, pk=mail.pk)
 
-    result = view.get_object()
-
-    assert result == mail
+    assert make_view(MailDetail, request, pk=mail.pk).get_object() == mail
+    assert make_view(MailDetail, request, pk=99999).get_object() is None
 
 
-def test_mail_detail_get_object_returns_none_for_missing(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(MailDetail, request, pk=99999)
-
-    result = view.get_object()
-
-    assert result is None
-
-
-def test_mail_detail_get_context_data_draft_view_only_has_no_buttons(event):
-    mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(MailDetail, request, pk=mail.pk)
-    view.object = mail
-    # Force view-only permission to exercise the defensive branch
-    view.__dict__["permission_action"] = "view"
-
-    ctx = view.get_context_data()
-
-    assert "submit_buttons" not in ctx
-    assert "submit_buttons_extra" not in ctx
-
-
-def test_mail_detail_get_context_data_shows_history_with_log_entries(event):
+def test_mail_detail_get_context_data(event):
     mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
     log = ActivityLogFactory(event=event, content_object=mail)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
     view = make_view(MailDetail, request, pk=mail.pk)
     view.object = mail
+    view_only = make_view(MailDetail, request, pk=mail.pk)
+    view_only.object = mail
+    # Force view-only permission to exercise the defensive branch
+    view_only.__dict__["permission_action"] = "view"
 
     ctx = view.get_context_data()
+    view_only_ctx = view_only.get_context_data()
 
     assert ctx["history_log_entries"] == [log]
     assert list(ctx["tablist"].keys()) == ["email", "history"]
+    assert "submit_buttons" in ctx
+    assert "submit_buttons" not in view_only_ctx
+    assert "submit_buttons_extra" not in view_only_ctx
 
 
-def test_compose_session_mail_get_form_kwargs_with_submissions(event):
-    submission = SubmissionFactory(event=event)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    request.GET = query_dict({"submissions": submission.code})
-    view = make_view(ComposeSessionMail, request)
-
-    kwargs = view.get_form_kwargs()
-
-    assert kwargs["initial"]["submissions"] == [submission.code]
-
-
-def test_compose_session_mail_get_form_kwargs_with_speakers(event):
+def test_compose_session_mail_get_form_kwargs_from_query(event):
     speaker = SpeakerFactory(event=event)
-    sub = SubmissionFactory(event=event)
-    sub.speakers.add(speaker)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
     user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    request.GET = query_dict({"speakers": speaker.code})
-    view = make_view(ComposeSessionMail, request)
+    by_submission = make_request(event, user=user)
+    by_submission.GET = query_dict({"submissions": submission.code})
+    by_speaker = make_request(event, user=user)
+    by_speaker.GET = query_dict({"speakers": speaker.code})
 
-    kwargs = view.get_form_kwargs()
+    submission_kwargs = make_view(ComposeSessionMail, by_submission).get_form_kwargs()
+    speaker_kwargs = make_view(ComposeSessionMail, by_speaker).get_form_kwargs()
 
-    assert list(kwargs["initial"]["speakers"]) == [speaker]
+    assert submission_kwargs["initial"]["submissions"] == [submission.code]
+    assert list(speaker_kwargs["initial"]["speakers"]) == [speaker]
 
 
 def test_compose_session_mail_get_recipient_count_counts_unique_contexts(event):

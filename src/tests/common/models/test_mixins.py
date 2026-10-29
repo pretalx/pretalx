@@ -40,23 +40,14 @@ def test_log_action_creates_activity_log():
     assert log.content_object == submission
 
 
-def test_log_action_with_dot_prefix_uses_log_prefix():
+def test_log_action_with_dot_prefix_needs_log_prefix():
     submission = SubmissionFactory()
 
     log = submission.log_action(".update")
-
     assert log.action_type == f"{submission.log_prefix}.update"
 
-
-def test_log_action_with_dot_prefix_without_log_prefix_returns_none():
-    submission = SubmissionFactory()
-    original_prefix = submission.log_prefix
     submission.log_prefix = None
-
-    result = submission.log_action(".update")
-
-    submission.log_prefix = original_prefix
-    assert result is None
+    assert submission.log_action(".update") is None
 
 
 def test_log_action_without_pk_returns_none():
@@ -67,14 +58,24 @@ def test_log_action_without_pk_returns_none():
     assert result is None
 
 
-def test_log_action_with_data_dict():
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    (
+        ({"title": "New Title"}, {"title": "New Title"}),
+        (
+            {"password": "s3cret", "api_key": "abc123", "title": "ok"},
+            {"password": "********", "api_key": "********", "title": "ok"},
+        ),
+        ({"password": "", "title": "ok"}, {"password": "", "title": "ok"}),
+    ),
+    ids=("plain", "redacts_sensitive_keys", "keeps_falsy_sensitive_values"),
+)
+def test_log_action_stores_data(data, expected):
     submission = SubmissionFactory()
 
-    log = submission.log_action(
-        "pretalx.submission.update", data={"title": "New Title"}
-    )
+    log = submission.log_action("pretalx.submission.update", data=data)
 
-    assert log.data == {"title": "New Title"}
+    assert log.data == expected
 
 
 def test_log_action_with_non_dict_data_raises():
@@ -116,63 +117,39 @@ def test_log_action_with_custom_content_object():
     assert log.content_object == event
 
 
-def test_log_action_with_old_and_new_data():
+@pytest.mark.parametrize(
+    ("data", "new_data", "expected"),
+    (
+        (None, {"title": "New"}, {"changes": {"title": {"old": "Old", "new": "New"}}}),
+        (
+            {"extra": "info"},
+            {"title": "New"},
+            {"extra": "info", "changes": {"title": {"old": "Old", "new": "New"}}},
+        ),
+        ({"note": "manual edit"}, {"title": "Old"}, {"note": "manual edit"}),
+        (None, {"title": "Old"}, None),
+    ),
+    ids=("changes", "changes_and_data", "data_without_changes", "nothing_to_log"),
+)
+def test_log_action_computes_changes(data, new_data, expected):
     submission = SubmissionFactory()
 
     log = submission.log_action(
         "pretalx.submission.update",
+        data=data,
         old_data={"title": "Old"},
-        new_data={"title": "New"},
+        new_data=new_data,
     )
 
-    assert log.data["changes"]["title"] == {"old": "Old", "new": "New"}
+    assert getattr(log, "data", None) == expected
 
 
-def test_log_action_with_changes_and_existing_data():
-    submission = SubmissionFactory()
-
-    log = submission.log_action(
-        "pretalx.submission.update",
-        data={"extra": "info"},
-        old_data={"title": "Old"},
-        new_data={"title": "New"},
-    )
-
-    assert log.data["extra"] == "info"
-    assert log.data["changes"]["title"] == {"old": "Old", "new": "New"}
-
-
-def test_log_action_no_changes_but_with_data():
-    submission = SubmissionFactory()
-
-    log = submission.log_action(
-        "pretalx.submission.update",
-        data={"note": "manual edit"},
-        old_data={"title": "Same"},
-        new_data={"title": "Same"},
-    )
-
-    assert log is not None
-    assert log.data == {"note": "manual edit"}
-    assert "changes" not in log.data
-
-
-def test_log_action_with_identical_old_and_new_data_returns_none():
-    submission = SubmissionFactory()
-
-    result = submission.log_action(
-        "pretalx.submission.update",
-        old_data={"title": "Same"},
-        new_data={"title": "Same"},
-    )
-
-    assert result is None
-
-
-def test_get_instance_data_excludes_sensitive_and_auto_fields():
-    submission = SubmissionFactory()
+def test_get_instance_data_serializes_fields_and_excludes_auto_fields():
+    submission = SubmissionFactory(title="My Talk")
     data = submission.get_instance_data()
 
+    assert data["title"] == "My Talk"
+    assert data["submission_type"] == submission.submission_type.pk
     for excluded in (
         "created",
         "updated",
@@ -187,34 +164,17 @@ def test_get_instance_data_excludes_sensitive_and_auto_fields():
         assert key not in data
 
 
-def test_get_instance_data_includes_regular_fields():
-    submission = SubmissionFactory(title="My Talk")
-    data = submission.get_instance_data()
-
-    assert data["title"] == "My Talk"
-
-
-def test_get_instance_data_serializes_foreign_keys_as_pk():
-    submission = SubmissionFactory()
-    data = submission.get_instance_data()
-
-    assert data["submission_type"] == submission.submission_type.pk
-
-
-def test_get_instance_data_serializes_i18n_string_dict():
-    track = TrackFactory(name={"en": "English Name", "de": "German Name"})
+@pytest.mark.parametrize(
+    "name",
+    ({"en": "English Name", "de": "German Name"}, "Simple Name"),
+    ids=("dict", "plain"),
+)
+def test_get_instance_data_serializes_i18n_string(name):
+    track = TrackFactory(name=name)
     track.refresh_from_db()
     data = track.get_instance_data()
 
-    assert data["name"] == {"en": "English Name", "de": "German Name"}
-
-
-def test_get_instance_data_serializes_i18n_string_plain():
-    track = TrackFactory(name="Simple Name")
-    track.refresh_from_db()
-    data = track.get_instance_data()
-
-    assert data["name"] == "Simple Name"
+    assert data["name"] == name
 
 
 def test_get_instance_data_serializes_uuid_field():
@@ -280,9 +240,11 @@ def test_logmixin_delete_skip_log():
     )
 
 
-def test_generate_code_does_not_overwrite_existing_code():
+def test_generate_code_uses_charset_and_does_not_overwrite_existing_code():
     submission = SubmissionFactory()
     original_code = submission.code
+    assert len(original_code) == 6
+    assert set(original_code) <= set(Submission.code_charset)
 
     submission.save()
 
@@ -297,39 +259,23 @@ def test_generate_code_save_with_update_fields():
     assert len(submission.code) == 6
 
 
-def test_generate_code_charset():
-    allowed = set(Submission.code_charset)
+@pytest.mark.parametrize(
+    ("kwargs", "length"), (({}, 6), ({"length": 10}, 10)), ids=("default", "custom")
+)
+def test_generate_code_class_method(kwargs, length):
+    code = Submission.generate_code(**kwargs)
 
+    assert len(code) == length
+    assert set(code) <= set(Submission.code_charset)
+
+
+def test_generate_unique_codes_avoids_existing_and_each_other():
     submission = SubmissionFactory()
 
-    assert all(c in allowed for c in submission.code)
-
-
-def test_generate_code_class_method():
-    code = Submission.generate_code()
-
-    assert len(code) == 6
-    assert all(c in Submission.code_charset for c in code)
-
-
-def test_generate_code_class_method_custom_length():
-    code = Submission.generate_code(length=10)
-
-    assert len(code) == 10
-
-
-def test_generate_unique_codes():
     codes = Submission.generate_unique_codes(5)
 
     assert len(codes) == 5
     assert len(set(codes)) == 5
-
-
-def test_generate_unique_codes_avoids_existing():
-    submission = SubmissionFactory()
-
-    codes = Submission.generate_unique_codes(3)
-
     assert submission.code not in codes
 
 
@@ -471,7 +417,11 @@ def test_file_cleanup_mixin_save_removes_old_file_on_change(
     picture = ProfilePictureFactory(user=user)
     picture.avatar.save("old.png", ContentFile(b"\x89PNG\r\n\x1a\n"), save=True)
     old_path = Path(picture.avatar.path)
+    assert old_path.exists()
 
+    # Saving with update_fields that don't include file fields should skip cleanup
+    with django_capture_on_commit_callbacks(execute=True):
+        picture.save(update_fields=["updated"])
     assert old_path.exists()
 
     with django_capture_on_commit_callbacks(execute=True):
@@ -490,18 +440,6 @@ def test_file_cleanup_mixin_save_no_cleanup_on_new_instance(tmp_path, settings):
     picture.save()
 
     assert Path(picture.avatar.path).exists()
-
-
-def test_file_cleanup_mixin_save_no_cleanup_when_update_fields_excludes_file(
-    tmp_path, settings
-):
-    settings.MEDIA_ROOT = str(tmp_path)
-    user = UserFactory()
-    picture = ProfilePictureFactory(user=user)
-    picture.avatar.save("test.png", ContentFile(b"\x89PNG\r\n\x1a\n"), save=True)
-
-    # Saving with update_fields that don't include file fields should skip cleanup
-    picture.save(update_fields=["updated"])
 
 
 def test_file_cleanup_mixin_save_object_does_not_exist(tmp_path, settings):

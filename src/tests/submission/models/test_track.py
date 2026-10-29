@@ -8,29 +8,12 @@ from tests.factories import EventFactory, SubmitterAccessCodeFactory, TrackFacto
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_track_str():
-    track = TrackFactory(name="Security")
-    assert str(track) == "Security"
-
-
-def test_track_log_parent_is_event():
-    track = TrackFactory()
-    assert track.log_parent == track.event
-
-
-def test_track_slug():
+def test_track_properties():
     track = TrackFactory(name="Web Security")
+
+    assert str(track) == "Web Security"
+    assert track.log_parent == track.event
     assert track.slug == f"{track.id}-web-security"
-
-
-def test_track_get_order_queryset():
-    event = EventFactory()
-    track2 = TrackFactory(event=event, position=1)
-    track1 = TrackFactory(event=event, position=0)
-
-    result = list(Track.get_order_queryset(event))
-
-    assert result == [track1, track2]
 
 
 def test_track_ordering_by_position():
@@ -38,57 +21,40 @@ def test_track_ordering_by_position():
     track_b = TrackFactory(event=event, position=2)
     track_a = TrackFactory(event=event, position=1)
 
-    tracks = list(event.tracks.all())
+    assert list(event.tracks.all()) == [track_a, track_b]
+    assert list(Track.get_order_queryset(event)) == [track_a, track_b]
 
-    assert tracks == [track_a, track_b]
 
-
-@pytest.mark.parametrize(
-    ("move_index", "up"), ((0, False), (1, True)), ids=["down", "up"]
-)
-def test_track_move_swaps_positions(move_index, up):
+def test_track_move_swaps_positions_and_stops_at_boundaries():
     event = EventFactory()
-    tracks = [TrackFactory(event=event, position=i) for i in range(2)]
+    first, second = (TrackFactory(event=event, position=i) for i in range(2))
 
-    tracks[move_index].move(up=up)
+    def positions():
+        return [
+            Track.objects.get(pk=first.pk).position,
+            Track.objects.get(pk=second.pk).position,
+        ]
 
-    for track in tracks:
-        track.refresh_from_db()
-    assert tracks[0].position == 1
-    assert tracks[1].position == 0
-
-
-@pytest.mark.parametrize(
-    ("move_index", "up"), ((0, True), (1, False)), ids=["up_at_top", "down_at_bottom"]
-)
-def test_track_move_noop_at_boundary(move_index, up):
-    event = EventFactory()
-    tracks = [TrackFactory(event=event, position=i) for i in range(2)]
-
-    tracks[move_index].move(up=up)
-
-    for track in tracks:
-        track.refresh_from_db()
-    assert tracks[0].position == 0
-    assert tracks[1].position == 1
+    first.move(up=True)
+    assert positions() == [0, 1]
+    second.move(up=False)
+    assert positions() == [0, 1]
+    first.move(up=False)
+    assert positions() == [1, 0]
+    first.move(up=True)
+    assert positions() == [0, 1]
 
 
-def test_track_delete_removes_single_track_access_codes():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    access_code = SubmitterAccessCodeFactory(event=event)
-    access_code.tracks.add(track)
-
-    track.delete()
-    assert not SubmitterAccessCode.objects.filter(pk=access_code.pk).exists()
-
-
-def test_track_delete_keeps_multi_track_access_codes():
+def test_track_delete_removes_access_codes_left_without_tracks():
     event = EventFactory()
     track1 = TrackFactory(event=event)
     track2 = TrackFactory(event=event)
-    access_code = SubmitterAccessCodeFactory(event=event)
-    access_code.tracks.add(track1, track2)
+    single = SubmitterAccessCodeFactory(event=event)
+    single.tracks.add(track1)
+    multi = SubmitterAccessCodeFactory(event=event)
+    multi.tracks.add(track1, track2)
 
     track1.delete()
-    assert SubmitterAccessCode.objects.filter(pk=access_code.pk).exists()
+
+    assert not SubmitterAccessCode.objects.filter(pk=single.pk).exists()
+    assert list(multi.tracks.all()) == [track2]

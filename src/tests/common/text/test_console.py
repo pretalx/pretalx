@@ -40,18 +40,15 @@ def test_get_separator(args, expected):
     assert get_separator(*args) == expected
 
 
-def test_start_box(caplog):
+def test_start_and_end_box(caplog):
     with caplog.at_level(logging.INFO, logger="pretalx.common.text.console"):
         start_box(10)
-
-    assert "━" * 10 in caplog.text
-
-
-def test_end_box(caplog):
-    with caplog.at_level(logging.INFO, logger="pretalx.common.text.console"):
         end_box(10)
 
-    assert "━" * 10 in caplog.text
+    assert [record.getMessage() for record in caplog.records] == [
+        "┏" + "━" * 10 + "┓",
+        "┗" + "━" * 10 + "┛",
+    ]
 
 
 @pytest.mark.parametrize(
@@ -85,46 +82,17 @@ def test_log_initial_skips_without_config_files(settings, caplog):
     CONFIG_FILES=["/etc/pretalx/pretalx.cfg"],
     DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}},
     LOG_DIR="/var/log/pretalx",
-    PLUGINS=[],
-    DEBUG=False,
+    PLUGINS=["pretalx_pages", "pretalx_vimeo"],
+    DEBUG=True,
 )
 def test_log_initial_with_config(caplog):
     with caplog.at_level(logging.INFO, logger="pretalx.common.text.console"):
         log_initial()
 
     assert "pretalx v" in caplog.text
-    assert "pretalx.cfg" in caplog.text
-    assert "sqlite3" in caplog.text
-
-
-@pytest.mark.filterwarnings("ignore:Overriding setting DATABASES:UserWarning")
-@override_settings(
-    CONFIG_FILES=["/etc/pretalx/pretalx.cfg"],
-    DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}},
-    LOG_DIR="/var/log/pretalx",
-    PLUGINS=["pretalx_pages", "pretalx_vimeo"],
-    DEBUG=False,
-)
-def test_log_initial_with_plugins(caplog):
-    with caplog.at_level(logging.INFO, logger="pretalx.common.text.console"):
-        log_initial()
-
-    assert "Plugins:" in caplog.text
-    assert "pretalx_pages" in caplog.text
-
-
-@pytest.mark.filterwarnings("ignore:Overriding setting DATABASES:UserWarning")
-@override_settings(
-    CONFIG_FILES=["/etc/pretalx/pretalx.cfg"],
-    DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}},
-    LOG_DIR="/var/log/pretalx",
-    PLUGINS=[],
-    DEBUG=True,
-)
-def test_log_initial_with_debug(caplog):
-    with caplog.at_level(logging.INFO, logger="pretalx.common.text.console"):
-        log_initial()
-
+    assert "Settings:  /etc/pretalx/pretalx.cfg" in caplog.text
+    assert "Database:  :memory: (sqlite3)" in caplog.text
+    assert "Plugins:   pretalx_pages, pretalx_vimeo" in caplog.text
     assert "DEVELOPMENT MODE" in caplog.text
 
 

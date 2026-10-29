@@ -8,7 +8,6 @@ from django.test import RequestFactory
 from django_scopes import scope
 
 from pretalx.agenda.views.feed import ScheduleFeed
-from pretalx.common.text.xml import strip_control_characters
 from pretalx.schedule.domain.release import freeze_schedule
 from tests.factories import EventFactory, UserFactory
 
@@ -44,73 +43,34 @@ def test_schedule_feed_get_object_raises_404_without_permission(event):
         feed.get_object(request)
 
 
-def test_schedule_feed_items_returns_published_schedules(event):
+def test_schedule_feed_items_returns_published_schedules_newest_first(event):
+    assert list(ScheduleFeed().items(event)) == []
+
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1")
         freeze_schedule(event.wip_schedule, "v2")
 
     result = list(ScheduleFeed().items(event))
 
-    assert len(result) == 2
-    assert result[0].version == "v2"
-    assert result[1].version == "v1"
+    assert [schedule.version for schedule in result] == ["v2", "v1"]
 
 
-def test_schedule_feed_items_excludes_wip_schedule(event):
-    result = list(ScheduleFeed().items(event))
-
-    assert result == []
-
-
-def test_schedule_feed_item_title(event):
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, "v1")
-    schedule = event.schedules.filter(version="v1").first()
-
-    result = ScheduleFeed().item_title(schedule)
-
-    expected = f"New {strip_control_characters(event.name)} schedule released ({strip_control_characters(schedule.version)})"
-    assert result == expected
-
-
-def test_schedule_feed_item_link(event):
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, "v1")
-    schedule = event.schedules.filter(version="v1").first()
-
-    result = ScheduleFeed().item_link(schedule)
-
-    expected = f"{event.urls.changelog.full()}#{urllib.parse.quote('v1', safe='')}"
-    assert result == expected
-
-
-def test_schedule_feed_item_link_encodes_version(event):
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, "v1 beta#final")
-    schedule = event.schedules.filter(version="v1 beta#final").first()
-
-    result = ScheduleFeed().item_link(schedule)
-
-    assert urllib.parse.quote("v1 beta#final", safe="") in result
-
-
-def test_schedule_feed_item_pubdate(event):
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, "v1")
-    schedule = event.schedules.filter(version="v1").first()
-
-    result = ScheduleFeed().item_pubdate(schedule)
-
-    assert result == schedule.published
-
-
-def test_schedule_feed_item_description_strips_control_characters():
+def test_schedule_feed_item_fields_escape_name_and_version():
     event = EventFactory(name="My\x0bEvent")
     with scope(event=event):
-        freeze_schedule(event.wip_schedule, "v1")
-        schedule = event.schedules.filter(version="v1").first()
+        freeze_schedule(event.wip_schedule, "v1 beta#final")
+        schedule = event.schedules.get(version="v1 beta#final")
+        feed = ScheduleFeed()
 
-        result = ScheduleFeed().item_description(schedule)
+        assert (
+            feed.item_title(schedule) == "New MyEvent schedule released (v1 beta#final)"
+        )
+        assert (
+            feed.item_link(schedule)
+            == f"{event.urls.changelog.full()}#{urllib.parse.quote('v1 beta#final', safe='')}"
+        )
+        assert feed.item_pubdate(schedule) == schedule.published
+        description = feed.item_description(schedule)
 
-    assert "\x0b" not in result
-    assert "MyEvent" in result
+    assert "\x0b" not in description
+    assert "MyEvent" in description

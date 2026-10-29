@@ -13,47 +13,46 @@ from tests.dummy_app.apps import PluginApp, installed_events, uninstalled_events
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_apply_plugin_changes_calls_installed_hook(event):
+def test_apply_plugin_changes_persists_and_calls_installed_and_uninstalled_hooks(event):
     installed_events.clear()
-    apply_plugin_changes(event, ["tests.dummy_app"])
-    assert installed_events == [event.slug]
-
-
-def test_apply_plugin_changes_calls_uninstalled_hook(event):
     uninstalled_events.clear()
-    event.plugins = "tests.dummy_app"
-    apply_plugin_changes(event, [])
-    assert uninstalled_events == [event.slug]
-
-
-def test_apply_plugin_changes_skips_missing_installed_hook(event):
-    apply_plugin_changes(event, ["tests.dummy_app_no_hooks"])
-    assert event.plugin_list == ["tests.dummy_app_no_hooks"]
-
-
-def test_apply_plugin_changes_skips_missing_uninstalled_hook(event):
-    event.plugins = "tests.dummy_app_no_hooks"
-    apply_plugin_changes(event, [])
-    assert event.plugin_list == []
-
-
-def test_apply_plugin_changes_persists_to_db(event):
     event.plugins = ""
     event.save(update_fields=["plugins"])
+
     apply_plugin_changes(event, ["tests.dummy_app"])
+
+    assert installed_events == [event.slug]
+    assert uninstalled_events == []
     event.refresh_from_db()
     assert event.plugin_list == ["tests.dummy_app"]
 
+    apply_plugin_changes(event, [])
 
-def test_apply_plugin_changes_drops_unknown_new_modules(event):
-    event.plugins = ""
-    apply_plugin_changes(event, ["totally.unknown.module"])
+    assert installed_events == [event.slug]
+    assert uninstalled_events == [event.slug]
+    event.refresh_from_db()
     assert event.plugin_list == []
 
 
-def test_apply_plugin_changes_preserves_active_unavailable_modules(event):
+def test_apply_plugin_changes_skips_missing_hooks_and_unchanged_targets(event):
+    apply_plugin_changes(event, ["tests.dummy_app_no_hooks"])
+    assert event.plugin_list == ["tests.dummy_app_no_hooks"]
+    updated = event.updated
+
+    apply_plugin_changes(event, ["tests.dummy_app_no_hooks"])
+    assert event.updated == updated
+
+    apply_plugin_changes(event, [])
+    assert event.plugin_list == []
+
+
+def test_apply_plugin_changes_drops_unknown_new_modules_but_keeps_active_ones(event):
     event.plugins = "ghost.plugin"
-    apply_plugin_changes(event, ["ghost.plugin", "tests.dummy_app"])
+
+    apply_plugin_changes(
+        event, ["ghost.plugin", "tests.dummy_app", "totally.unknown.module"]
+    )
+
     assert set(event.plugin_list) == {"ghost.plugin", "tests.dummy_app"}
 
 
@@ -64,28 +63,15 @@ def test_apply_plugin_changes_enables_invisible_plugin(event, monkeypatch):
     assert event.plugin_list == ["tests.dummy_app"]
 
 
-def test_enable_plugin_adds_to_list(event):
+def test_enable_and_disable_plugin_are_idempotent(event):
     event.plugins = ""
-    enable_plugin(event, "tests.dummy_app")
-    assert event.plugin_list == ["tests.dummy_app"]
-
-
-def test_enable_plugin_twice_is_idempotent(event):
-    enable_plugin(event, "tests.dummy_app")
-    enable_plugin(event, "tests.dummy_app")
-    assert event.plugin_list.count("tests.dummy_app") == 1
-
-
-def test_disable_plugin_removes_from_list(event):
-    event.plugins = ""
-    enable_plugin(event, "tests.dummy_app")
-    assert event.plugin_list == ["tests.dummy_app"]
 
     disable_plugin(event, "tests.dummy_app")
     assert event.plugin_list == []
 
+    enable_plugin(event, "tests.dummy_app")
+    enable_plugin(event, "tests.dummy_app")
+    assert event.plugin_list == ["tests.dummy_app"]
 
-def test_disable_plugin_not_present_is_noop(event):
-    event.plugins = ""
-    disable_plugin(event, "nonexistent")
+    disable_plugin(event, "tests.dummy_app")
     assert event.plugin_list == []

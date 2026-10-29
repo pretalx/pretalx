@@ -21,46 +21,8 @@ def _create_submission_with_speaker(**event_kwargs):
     return submission, speaker_profile.user
 
 
-@pytest.fixture
-def submission_with_speaker():
-    return _create_submission_with_speaker()
-
-
-def test_invitation_form_valid_with_correct_data(submission_with_speaker):
-    submission, _ = submission_with_speaker
-
-    form = SubmissionInvitationForm(
-        submission=submission, data={"speaker": "new-speaker@example.com"}
-    )
-    assert form.is_valid(), form.errors
-
-
-@pytest.mark.parametrize("upcase", (False, True), ids=("exact", "case_insensitive"))
-def test_invitation_form_clean_speaker_rejects_existing_speaker(
-    submission_with_speaker, upcase
-):
-    submission, speaker_user = submission_with_speaker
-    email = speaker_user.email.upper() if upcase else speaker_user.email
-
-    form = SubmissionInvitationForm(submission=submission, data={"speaker": email})
-    assert not form.is_valid()
-    assert "speaker" in form.errors
-
-
-@pytest.mark.parametrize("upcase", (False, True), ids=("exact", "case_insensitive"))
-def test_invitation_form_clean_speaker_rejects_already_invited(
-    submission_with_speaker, upcase
-):
-    submission, _ = submission_with_speaker
-    SubmissionInvitationFactory(submission=submission, email="invited@example.com")
-    email = "INVITED@example.com" if upcase else "invited@example.com"
-    form = SubmissionInvitationForm(submission=submission, data={"speaker": email})
-    assert not form.is_valid()
-    assert "speaker" in form.errors
-
-
-def test_invitation_form_clean_speaker_lowercases_and_strips(submission_with_speaker):
-    submission, _ = submission_with_speaker
+def test_invitation_form_clean_speaker_lowercases_and_strips():
+    submission, _ = _create_submission_with_speaker()
 
     form = SubmissionInvitationForm(
         submission=submission, data={"speaker": "  NewSpeaker@Example.COM  "}
@@ -69,37 +31,47 @@ def test_invitation_form_clean_speaker_lowercases_and_strips(submission_with_spe
     assert form.cleaned_data["speaker"] == "newspeaker@example.com"
 
 
-def test_invitation_form_clean_speaker_rejects_exceeding_max_speakers():
-    submission, _ = _create_submission_with_speaker(
-        cfp__fields={"additional_speaker": {"visibility": "required", "max": 1}}
-    )
+@pytest.mark.parametrize(
+    ("kind", "upcase"),
+    (("speaker", False), ("speaker", True), ("invited", False), ("invited", True)),
+    ids=(
+        "speaker_exact",
+        "speaker_case_insensitive",
+        "invited_exact",
+        "invited_case_insensitive",
+    ),
+)
+def test_invitation_form_clean_speaker_rejects_present_and_invited_speakers(
+    kind, upcase
+):
+    submission, speaker_user = _create_submission_with_speaker()
+    SubmissionInvitationFactory(submission=submission, email="invited@example.com")
+    email = {"speaker": speaker_user.email, "invited": "invited@example.com"}[kind]
+    if upcase:
+        email = email.upper()
 
-    form = SubmissionInvitationForm(
-        submission=submission, data={"speaker": "extra@example.com"}
-    )
+    form = SubmissionInvitationForm(submission=submission, data={"speaker": email})
+
     assert not form.is_valid()
-    assert "speaker" in form.errors
+    assert list(form.errors) == ["speaker"]
 
 
-def test_invitation_form_clean_speaker_allows_within_max_speakers():
+@pytest.mark.parametrize(
+    ("max_speakers", "valid"), ((2, False), (3, True)), ids=("at_max", "below_max")
+)
+def test_invitation_form_clean_speaker_counts_speakers_and_pending_invitations(
+    max_speakers, valid
+):
     submission, _ = _create_submission_with_speaker(
-        cfp__fields={"additional_speaker": {"visibility": "required", "max": 3}}
-    )
-
-    form = SubmissionInvitationForm(
-        submission=submission, data={"speaker": "extra@example.com"}
-    )
-    assert form.is_valid(), form.errors
-
-
-def test_invitation_form_clean_speaker_counts_pending_invitations_toward_max():
-    submission, _ = _create_submission_with_speaker(
-        cfp__fields={"additional_speaker": {"visibility": "required", "max": 2}}
+        cfp__fields={
+            "additional_speaker": {"visibility": "required", "max": max_speakers}
+        }
     )
     SubmissionInvitationFactory(submission=submission, email="pending@example.com")
 
     form = SubmissionInvitationForm(
         submission=submission, data={"speaker": "extra@example.com"}
     )
-    assert not form.is_valid()
-    assert "speaker" in form.errors
+
+    assert form.is_valid() is valid, form.errors
+    assert list(form.errors) == ([] if valid else ["speaker"])

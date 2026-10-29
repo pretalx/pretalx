@@ -5,7 +5,6 @@ import datetime as dt
 import pytest
 
 from pretalx.schedule.domain.slot import (
-    DEFAULT_SLOT_MINUTES,
     copy_slot,
     create_slot,
     move_slot,
@@ -22,169 +21,123 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_create_slot_with_duration(event):
+def test_create_slot_resolves_end_and_slot_type(event):
+    schedule = event.wip_schedule
     room = RoomFactory(event=event)
     start = event.datetime_from
+    minutes = dt.timedelta(minutes=1)
 
-    slot = create_slot(
-        schedule=event.wip_schedule,
+    with_duration = create_slot(
+        schedule=schedule,
         room=room,
         slot_type="break",
         start=start,
         duration=45,
         description="Coffee",
     )
-
-    assert slot.pk is not None
-    assert slot.submission is None
-    assert slot.room == room
-    assert slot.slot_type == "break"
-    assert slot.start == start
-    assert slot.end == start + dt.timedelta(minutes=45)
-    assert str(slot.description) == "Coffee"
-
-
-def test_create_slot_explicit_end_wins(event):
-    start = event.datetime_from
-    end = start + dt.timedelta(hours=2)
-
-    slot = create_slot(
-        schedule=event.wip_schedule,
+    explicit_end = create_slot(
+        schedule=schedule,
         slot_type="blocker",
         start=start,
-        end=end,
+        end=start + 120 * minutes,
         duration=999,
     )
+    invalid_type = create_slot(schedule=schedule, slot_type="nonsense", start=start)
+    default = create_slot(schedule=schedule, slot_type="break", start=start)
 
-    assert slot.end == end
-    assert slot.slot_type == "blocker"
-
-
-def test_create_slot_invalid_slot_type_falls_back_to_break(event):
-    slot = create_slot(
-        schedule=event.wip_schedule, slot_type="nonsense", start=event.datetime_from
+    assert (with_duration.submission, with_duration.room, with_duration.start) == (
+        None,
+        room,
+        start,
     )
-
-    assert slot.slot_type == "break"
-    assert slot.end == event.datetime_from + dt.timedelta(minutes=DEFAULT_SLOT_MINUTES)
-
-
-def test_create_slot_without_duration_uses_default(event):
-    slot = create_slot(
-        schedule=event.wip_schedule, slot_type="break", start=event.datetime_from
-    )
-
-    assert slot.end == event.datetime_from + dt.timedelta(minutes=DEFAULT_SLOT_MINUTES)
-
-
-def test_move_slot_uses_submission_duration(event):
-    submission = SubmissionFactory(event=event, duration=45)
-    slot = TalkSlotFactory(submission=submission, start=None, end=None)
-    new_start = event.datetime_from
-
-    move_slot(slot, new_start)
-
-    slot.refresh_from_db()
-    assert slot.start == new_start
-    assert slot.end == new_start + dt.timedelta(minutes=45)
+    assert str(with_duration.description) == "Coffee"
+    assert [
+        (slot.slot_type, (slot.end - start) / minutes)
+        for slot in (with_duration, explicit_end, invalid_type, default)
+    ] == [("break", 45), ("blocker", 120), ("break", 30), ("break", 30)]
+    assert list(schedule.talks.order_by("pk")) == [
+        with_duration,
+        explicit_end,
+        invalid_type,
+        default,
+    ]
 
 
-def test_move_slot_explicit_duration_overrides_submission(event):
-    submission = SubmissionFactory(event=event, duration=45)
-    slot = TalkSlotFactory(submission=submission)
-    new_start = event.datetime_from
-
-    move_slot(slot, new_start, duration=90)
-
-    assert slot.end == new_start + dt.timedelta(minutes=90)
-
-
-def test_move_slot_explicit_end_wins_over_duration(event):
-    submission = SubmissionFactory(event=event, duration=45)
-    slot = TalkSlotFactory(submission=submission)
-    new_start = event.datetime_from
-    new_end = new_start + dt.timedelta(hours=3)
-
-    move_slot(slot, new_start, end=new_end, duration=90)
-
-    assert slot.end == new_end
-
-
-def test_move_slot_assigns_room(event):
+def test_move_slot_resolves_end_from_arguments_then_submission(event):
     room = RoomFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    slot = TalkSlotFactory(submission=submission, room=None)
+    slot = TalkSlotFactory(
+        submission=SubmissionFactory(event=event, duration=45), start=None, end=None
+    )
+    start = event.datetime_from
+    explicit_end = start + dt.timedelta(hours=3)
 
-    move_slot(slot, event.datetime_from, room=room)
+    ends = [
+        move_slot(slot, start).end,
+        move_slot(slot, start, duration=90).end,
+        move_slot(slot, start, end=explicit_end, duration=90).end,
+        move_slot(slot, start, room=room).end,
+    ]
 
-    slot = TalkSlot.objects.select_related("room").get(pk=slot.pk)
-    assert slot.room == room
+    assert ends == [
+        start + dt.timedelta(minutes=45),
+        start + dt.timedelta(minutes=90),
+        explicit_end,
+        start + dt.timedelta(minutes=45),
+    ]
+    assert list(
+        TalkSlot.objects.filter(pk=slot.pk).values_list("start", "room_id")
+    ) == [(start, room.pk)]
 
 
-def test_move_slot_without_submission_uses_default(event):
+def test_move_slot_without_submission_keeps_duration_or_uses_default(event):
     room = RoomFactory(event=event)
     slot = TalkSlotFactory(
         schedule=event.wip_schedule, submission=None, room=room, start=None, end=None
     )
+    start = event.datetime_from
 
-    move_slot(slot, event.datetime_from)
+    default_end = move_slot(slot, start).end
+    slot.end = start + dt.timedelta(minutes=20)
+    kept_end = move_slot(slot, start + dt.timedelta(hours=2)).end
 
-    slot.refresh_from_db()
-    assert slot.end == event.datetime_from + dt.timedelta(minutes=DEFAULT_SLOT_MINUTES)
-
-
-def test_move_slot_without_submission_uses_existing_duration(event):
-    room = RoomFactory(event=event)
-    existing_start = event.datetime_from
-    slot = TalkSlotFactory(
-        schedule=event.wip_schedule,
-        submission=None,
-        room=room,
-        start=existing_start,
-        end=existing_start + dt.timedelta(minutes=20),
-    )
-
-    new_start = existing_start + dt.timedelta(hours=2)
-    move_slot(slot, new_start)
-
-    assert slot.end == new_start + dt.timedelta(minutes=20)
+    assert default_end == start + dt.timedelta(minutes=30)
+    assert kept_end == start + dt.timedelta(hours=2, minutes=20)
+    assert TalkSlot.objects.get(pk=slot.pk).end == kept_end
 
 
 def test_unschedule_slot_clears_fields(event):
-    room = RoomFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    slot = TalkSlotFactory(submission=submission, room=room)
+    slot = TalkSlotFactory(submission=SubmissionFactory(event=event))
 
     unschedule_slot(slot)
 
-    slot.refresh_from_db()
-    assert slot.start is None
-    assert slot.end is None
-    assert slot.room is None
+    assert list(TalkSlot.objects.filter(pk=slot.pk).values("start", "end", "room")) == [
+        {"start": None, "end": None, "room": None}
+    ]
 
 
-def test_copy_slot():
+def test_copy_slot_clones_fields_into_schedule():
     slot = TalkSlotFactory()
     new_schedule = ScheduleFactory(event=slot.schedule.event)
 
-    new_slot = copy_slot(slot, schedule=new_schedule)
+    unsaved = copy_slot(slot, schedule=new_schedule, save=False)
+    saved = copy_slot(slot, schedule=new_schedule)
 
-    assert new_slot.pk is not None
-    assert new_slot.pk != slot.pk
-    assert new_slot.schedule == new_schedule
-    assert new_slot.submission == slot.submission
-    assert new_slot.room == slot.room
-    assert new_slot.start == slot.start
-    assert new_slot.end == slot.end
-    assert new_slot.is_visible == slot.is_visible
-
-
-def test_copy_slot_without_save():
-    slot = TalkSlotFactory()
-    new_schedule = ScheduleFactory(event=slot.schedule.event)
-
-    new_slot = copy_slot(slot, schedule=new_schedule, save=False)
-
-    assert new_slot.pk is None
-    assert new_slot.schedule == new_schedule
-    assert new_slot.submission == slot.submission
+    assert unsaved.pk is None
+    assert saved.pk not in (None, slot.pk)
+    for copy in (unsaved, saved):
+        assert (
+            copy.schedule,
+            copy.submission,
+            copy.room,
+            copy.start,
+            copy.end,
+            copy.is_visible,
+        ) == (
+            new_schedule,
+            slot.submission,
+            slot.room,
+            slot.start,
+            slot.end,
+            slot.is_visible,
+        )
+    assert list(new_schedule.talks.all()) == [saved]

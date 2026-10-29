@@ -10,22 +10,24 @@ from tests.factories import SpeakerFactory, UserFactory
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-def test_locale_set_redirects_and_sets_cookie(client, event):
+def test_locale_set_sets_cookie_and_redirects_to_next(client, event):
     url = reverse("cfp:locale.set", kwargs={"event": event.slug})
 
-    response = client.get(f"{url}?locale=de")
+    response = client.get(f"{url}?locale=de&next=/{event.slug}/cfp")
 
     assert response.status_code == 302
+    assert response.url == f"/{event.slug}/cfp"
     assert response.cookies[settings.LANGUAGE_COOKIE_NAME].value == "de"
 
 
-def test_locale_set_with_next_param(client, event):
+def test_locale_set_ignores_unknown_locale(client, event):
     url = reverse("cfp:locale.set", kwargs={"event": event.slug})
 
-    response = client.get(f"{url}?locale=en&next=/{event.slug}/cfp")
+    response = client.get(f"{url}?locale=xx")
 
     assert response.status_code == 302
-    assert f"/{event.slug}/cfp" in response.url
+    assert response.url == "/"
+    assert settings.LANGUAGE_COOKIE_NAME not in response.cookies
 
 
 def test_locale_set_updates_account_and_profile_locale(client, event):
@@ -68,15 +70,9 @@ def test_locale_set_global_leaves_profile_locale(client, event):
     response = client.get("/locale/set?locale=de")
 
     assert response.status_code == 302
+    assert response.cookies[settings.LANGUAGE_COOKIE_NAME].value == "de"
     user.refresh_from_db()
     with scopes_disabled():
         speaker.refresh_from_db()
     assert user.locale == "de"
     assert speaker.locale is None
-
-
-def test_locale_set_global_endpoint(client):
-    response = client.get("/locale/set?locale=de")
-
-    assert response.status_code == 302
-    assert response.cookies[settings.LANGUAGE_COOKIE_NAME].value == "de"

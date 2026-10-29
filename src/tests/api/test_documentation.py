@@ -48,7 +48,7 @@ def _make_schema_skeleton():
     }
 
 
-def test_postprocess_schema_removes_security_from_public_endpoints():
+def test_postprocess_schema_strips_public_security_and_adds_role_enum():
     schema = _make_schema_skeleton()
 
     result = postprocess_schema(schema, generator=None, request=None, public=True)
@@ -56,24 +56,9 @@ def test_postprocess_schema_removes_security_from_public_endpoints():
     assert "security" not in result["paths"]["/api/"]["get"]
     assert "security" not in result["paths"]["/api/events/"]["get"]
     assert "security" not in result["paths"]["/api/events/{event}/"]["get"]
-
-
-def test_postprocess_schema_adds_role_enum():
-    schema = _make_schema_skeleton()
-
-    result = postprocess_schema(schema, generator=None, request=None, public=True)
-
     role_enum = result["components"]["schemas"]["RoleEnum"]
     assert role_enum["type"] == "string"
-    expected_keys = list(dict(MailTemplateRoles.choices).keys())
-    assert role_enum["enum"] == expected_keys
-
-
-def test_postprocess_schema_patches_mail_template_role_property():
-    schema = _make_schema_skeleton()
-
-    result = postprocess_schema(schema, generator=None, request=None, public=True)
-
+    assert role_enum["enum"] == list(dict(MailTemplateRoles.choices).keys())
     role_prop = result["components"]["schemas"]["MailTemplate"]["properties"]["role"]
     assert role_prop["nullable"] is True
     assert role_prop["$ref"] == "#/components/schemas/RoleEnum"

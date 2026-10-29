@@ -18,14 +18,6 @@ from tests.utils import make_api_request
 pytestmark = pytest.mark.unit
 
 
-def test_register_serializer_with_string_version():
-    @register_serializer(versions="v1", class_name="_TestStringVersion")
-    class _TestSerializer:
-        pass
-
-    assert SERIALIZER_REGISTRY["_TestStringVersion", "v1"] is _TestSerializer
-
-
 def test_register_serializer_with_default_versions():
     @register_serializer(class_name="_TestDefaultVersions")
     class _TestSerializer:
@@ -35,22 +27,13 @@ def test_register_serializer_with_default_versions():
         assert SERIALIZER_REGISTRY["_TestDefaultVersions", version] is _TestSerializer
 
 
-def test_register_serializer_uses_class_name_by_default():
-    @register_serializer(versions=["v1"])
+def test_register_serializer_with_string_version_and_default_class_name():
+    @register_serializer(versions="v1")
     class _TestAutoName:
         pass
 
     assert SERIALIZER_REGISTRY["_TestAutoName", "v1"] is _TestAutoName
-
-
-def test_get_serializer_by_version_returns_registered_class():
-    @register_serializer(versions=["v1"], class_name="_TestLookup")
-    class _TestSerializer:
-        pass
-
-    result = get_serializer_by_version("_TestLookup", "v1")
-
-    assert result is _TestSerializer
+    assert get_serializer_by_version("_TestAutoName", "v1") is _TestAutoName
 
 
 def test_get_serializer_by_version_raises_for_missing():
@@ -59,32 +42,19 @@ def test_get_serializer_by_version_raises_for_missing():
 
 
 @pytest.mark.django_db
-def test_get_api_version_from_request_uses_header():
+@pytest.mark.parametrize(
+    ("header", "expected"),
+    ((None, CURRENT_VERSION), ("v1", "v1")),
+    ids=["defaults_to_current", "uses_header"],
+)
+def test_get_api_version_from_request_without_token(header, expected):
     request = make_api_request()
-    request._request.META["HTTP_PRETALX_VERSION"] = CURRENT_VERSION
+    if header:
+        request._request.META["HTTP_PRETALX_VERSION"] = header
 
     result = get_api_version_from_request(request)
 
-    assert result == CURRENT_VERSION
-
-
-@pytest.mark.django_db
-def test_get_api_version_from_request_uses_token_version():
-    token = UserApiTokenFactory(version="v1")
-    request = make_api_request(auth=token)
-
-    result = get_api_version_from_request(request)
-
-    assert result == "v1"
-
-
-@pytest.mark.django_db
-def test_get_api_version_from_request_defaults_to_current():
-    request = make_api_request()
-
-    result = get_api_version_from_request(request)
-
-    assert result == CURRENT_VERSION
+    assert result == expected
 
 
 @pytest.mark.django_db

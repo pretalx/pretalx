@@ -12,35 +12,18 @@ from tests.factories import EventFactory, UserApiTokenFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_user_token_authentication_valid_token():
+def test_user_token_authentication_valid_token(django_assert_num_queries):
     token = UserApiTokenFactory()
+    event = EventFactory()
+    token.limit_events.add(event)
     auth = UserTokenAuthentication()
 
     user, returned_token = auth.authenticate_credentials(token.token)
 
     assert user == token.user
     assert returned_token == token
-
-
-def test_user_token_authentication_prefetches_events(django_assert_num_queries):
-    token = UserApiTokenFactory()
-    event = EventFactory()
-    token.limit_events.add(event)
-    auth = UserTokenAuthentication()
-
-    _, returned_token = auth.authenticate_credentials(token.token)
-
     with django_assert_num_queries(0):
-        events = list(returned_token.limit_events.all())
-    assert events == [event]
-
-
-def test_user_token_authentication_sets_last_used():
-    token = UserApiTokenFactory()
-    auth = UserTokenAuthentication()
-
-    _, returned_token = auth.authenticate_credentials(token.token)
-
+        assert list(returned_token.limit_events.all()) == [event]
     token.refresh_from_db()
     assert token.last_used is not None
     assert token.last_used == returned_token.last_used

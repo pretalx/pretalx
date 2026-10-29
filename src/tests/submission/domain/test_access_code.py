@@ -36,6 +36,16 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 def test_send_access_code_dispatches_and_logs():
     code = SubmitterAccessCodeFactory()
     user = UserFactory()
+    speaker = SpeakerFactory(
+        event=code.event,
+        user=None,
+        email="speaker@example.com",
+        origin=SpeakerProfileOrigin.ORGA,
+    )
+    draft_speaker = SpeakerFactory(
+        event=code.event, user=None, email="draft@example.com"
+    )
+    SubmissionFactory(event=code.event, state="draft").speakers.add(draft_speaker)
     djmail.outbox = []
 
     with scope(event=code.event), translation.override("de"):
@@ -67,54 +77,31 @@ def test_send_access_code_dispatches_and_logs():
         assert log.is_orga_action is True
         assert log.data == {"email": "a@example.com"}
 
-
-def test_send_access_code_attaches_visible_speaker():
-    code = SubmitterAccessCodeFactory()
-    speaker = SpeakerFactory(
-        event=code.event,
-        user=None,
-        email="speaker@example.com",
-        origin=SpeakerProfileOrigin.ORGA,
-    )
-    djmail.outbox = []
-
     with scope(event=code.event):
-        sent = send_access_code(
+        assert send_access_code(
             code,
-            user=UserFactory(),
+            user=user,
             recipient="Speaker@example.com",
             subject="Subject",
             text="Body text",
         )
-
-        assert sent is True
-        assert djmail.outbox[0].to == ["speaker@example.com"]
-
-        mail = QueuedMail.objects.get(event=code.event)
+        assert djmail.outbox[1].to == ["speaker@example.com"]
+        mail = QueuedMail.objects.get(event=code.event, to_speakers=speaker)
         assert not mail.to
         assert list(mail.to_speakers.all()) == [speaker]
         assert list(speaker.mails.all()) == [mail]
 
-
-def test_send_access_code_ignores_draft_only_speaker():
-    code = SubmitterAccessCodeFactory()
-    speaker = SpeakerFactory(event=code.event, user=None, email="speaker@example.com")
-    SubmissionFactory(event=code.event, state="draft").speakers.add(speaker)
-    djmail.outbox = []
-
-    with scope(event=code.event):
-        send_access_code(
+        assert send_access_code(
             code,
-            user=UserFactory(),
-            recipient="speaker@example.com",
+            user=user,
+            recipient="draft@example.com",
             subject="Subject",
             text="Body text",
         )
-
-        assert djmail.outbox[0].to == ["speaker@example.com"]
-        mail = QueuedMail.objects.get(event=code.event)
-        assert mail.to == "speaker@example.com"
+        assert djmail.outbox[2].to == ["draft@example.com"]
+        mail = QueuedMail.objects.get(event=code.event, to="draft@example.com")
         assert list(mail.to_speakers.all()) == []
+        assert list(draft_speaker.mails.all()) == []
 
 
 @pytest.mark.parametrize(
@@ -156,42 +143,31 @@ def test_send_access_code_does_not_log_when_dispatch_fails(
         )
 
 
-def test_can_delete_access_code_true_when_unused():
+def test_can_delete_access_code_until_referenced_by_submission():
     code = SubmitterAccessCodeFactory()
 
     with scope(event=code.event):
         assert can_delete_access_code(code) is True
-
-
-def test_can_delete_access_code_false_when_referenced_by_submission():
-    code = SubmitterAccessCodeFactory()
-    with scope(event=code.event):
         SubmissionFactory(event=code.event, access_code=code)
-
         assert can_delete_access_code(code) is False
 
 
-def test_delete_orphan_access_codes_removes_codes_with_only_one_track():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    code = SubmitterAccessCodeFactory(event=event)
-    code.tracks.add(track)
-
-    delete_orphan_access_codes(track.submitter_access_codes, "tracks")
-
-    assert not SubmitterAccessCode.objects.filter(pk=code.pk).exists()
-
-
-def test_delete_orphan_access_codes_keeps_codes_with_multiple_tracks():
+def test_delete_orphan_access_codes_removes_codes_with_only_one_reference():
     event = EventFactory()
     track1 = TrackFactory(event=event)
     track2 = TrackFactory(event=event)
-    code = SubmitterAccessCodeFactory(event=event)
-    code.tracks.add(track1, track2)
+    stype = SubmissionTypeFactory(event=event)
+    single_track = SubmitterAccessCodeFactory(event=event)
+    single_track.tracks.add(track1)
+    both_tracks = SubmitterAccessCodeFactory(event=event)
+    both_tracks.tracks.add(track1, track2)
+    single_type = SubmitterAccessCodeFactory(event=event)
+    single_type.submission_types.add(stype)
 
     delete_orphan_access_codes(track1.submitter_access_codes, "tracks")
+    delete_orphan_access_codes(stype.submitter_access_codes, "submission_types")
 
-    assert SubmitterAccessCode.objects.filter(pk=code.pk).exists()
+    assert list(SubmitterAccessCode.objects.filter(event=event)) == [both_tracks]
 
 
 def test_redeem_access_code_only_redeemed_up_to_maximum():
@@ -206,14 +182,3 @@ def test_redeem_access_code_only_redeemed_up_to_maximum():
 
     code.refresh_from_db()
     assert code.redeemed == 1
-
-
-def test_delete_orphan_access_codes_works_for_submission_types():
-    event = EventFactory()
-    stype = SubmissionTypeFactory(event=event)
-    code = SubmitterAccessCodeFactory(event=event)
-    code.submission_types.add(stype)
-
-    delete_orphan_access_codes(stype.submitter_access_codes, "submission_types")
-
-    assert not SubmitterAccessCode.objects.filter(pk=code.pk).exists()

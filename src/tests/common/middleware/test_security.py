@@ -7,6 +7,7 @@ import pytest
 from django.core.exceptions import BadRequest
 from django.http import HttpResponse
 from django.test import RequestFactory, override_settings
+from django.test.client import MULTIPART_CONTENT
 
 from pretalx.common.middleware.security import (
     RejectInvalidInputMiddleware,
@@ -27,13 +28,9 @@ def dummy_response(request):
 middleware = RejectInvalidInputMiddleware(dummy_response)
 
 
-def test_clean_request_passes():
-    request = rf.get("/?foo=bar&baz=quux")
-    assert middleware.process_request(request) is None
-
-
 def test_clean_request_reaches_response():
     request = rf.get("/?foo=bar&baz=quux")
+    assert middleware.process_request(request) is None
     response = middleware(request)
     assert response.status_code == 200
     assert response.content == b"ok"
@@ -73,19 +70,19 @@ def test_nullbyte_in_urlencoded_post_rejected(data):
         middleware.process_request(request)
 
 
-def test_clean_urlencoded_post_passes():
-    request = rf.post(
-        "/", data="foo=bar", content_type="application/x-www-form-urlencoded"
-    )
-    assert middleware.process_request(request) is None
-
-
-def test_multipart_body_is_not_inspected():
-    # Multipart bodies are deliberately not scanned: file uploads may
-    # legitimately contain nullbytes, and accessing request.POST for them in
-    # middleware would consume the upload stream.
-    request = rf.post("/", data={"foo": "ba\x00r"})
-    assert request.content_type == "multipart/form-data"
+@pytest.mark.parametrize(
+    ("data", "content_type"),
+    (
+        ("foo=bar", "application/x-www-form-urlencoded"),
+        # Multipart bodies are deliberately not scanned: file uploads may
+        # legitimately contain nullbytes, and accessing request.POST for them in
+        # middleware would consume the upload stream.
+        ({"foo": "ba\x00r"}, MULTIPART_CONTENT),
+    ),
+    ids=("clean_urlencoded", "multipart_not_inspected"),
+)
+def test_post_body_passes(data, content_type):
+    request = rf.post("/", data=data, content_type=content_type)
     assert middleware.process_request(request) is None
 
 

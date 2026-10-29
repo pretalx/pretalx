@@ -46,6 +46,16 @@ def _get_category_and_score(event, value=1):
     return category, score
 
 
+def _review_count(submission):
+    with scopes_disabled():
+        return submission.reviews.count()
+
+
+def _assigned_count(submission):
+    with scopes_disabled():
+        return submission.assigned_reviewers.count()
+
+
 def test_review_dashboard_denied_for_unprivileged_user(client, event):
     user = UserFactory()
     client.force_login(user)
@@ -197,17 +207,23 @@ def test_review_submission_post_with_tags(client, event):
     response = client.post(
         submission.orga_urls.reviews,
         follow=True,
+        data={f"score_{category.id}": score.id, "text": "LGTM", "tags": "99999"},
+    )
+    assert response.status_code == 200
+    assert _review_count(submission) == 0
+
+    response = client.post(
+        submission.orga_urls.reviews,
+        follow=True,
         data={f"score_{category.id}": score.id, "text": "LGTM", "tags": str(tag.id)},
     )
-
     assert response.status_code == 200
     assert str(tag.tag) in response.content.decode()
     with scopes_disabled():
-        assert submission.reviews.count() == 1
-        review = submission.reviews.first()
+        review = submission.reviews.get()
         assert review.score == 1
         assert review.text == "LGTM"
-        assert submission.tags.first() == tag
+        assert list(submission.tags.all()) == [tag]
 
 
 def test_review_submission_post_tagging_disabled(client, event):
@@ -234,9 +250,7 @@ def test_review_submission_post_tagging_disabled(client, event):
         assert submission.tags.count() == 0
 
 
-def test_review_submission_denied_when_unassigned_and_visibility_restricted(
-    client, event
-):
+def test_review_submission_restricted_visibility_requires_assignment(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
         submission = SubmissionFactory(event=event)
@@ -246,45 +260,22 @@ def test_review_submission_denied_when_unassigned_and_visibility_restricted(
         event.active_review_phase.proposal_visibility = "assigned"
         event.active_review_phase.save()
     client.force_login(reviewer)
+    data = {f"score_{category.id}": score.id, "text": "LGTM"}
 
-    response = client.post(
-        submission.orga_urls.reviews,
-        follow=True,
-        data={f"score_{category.id}": score.id, "text": "LGTM"},
-    )
-
+    response = client.post(submission.orga_urls.reviews, follow=True, data=data)
     assert response.status_code == 404
-    with scopes_disabled():
-        assert submission.reviews.count() == 0
+    assert _review_count(submission) == 0
 
     response = client.get(submission.orga_urls.reviews, follow=True)
     assert response.status_code == 404
 
-
-def test_review_submission_allowed_when_assigned_and_visibility_restricted(
-    client, event
-):
     with scopes_disabled():
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        category, score = _get_category_and_score(event)
-        event.active_review_phase.proposal_visibility = "assigned"
-        event.active_review_phase.save()
         submission.assigned_reviewers.add(reviewer)
-    client.force_login(reviewer)
 
-    response = client.post(
-        submission.orga_urls.reviews,
-        follow=True,
-        data={f"score_{category.id}": score.id, "text": "LGTM"},
-    )
-
+    response = client.post(submission.orga_urls.reviews, follow=True, data=data)
     assert response.status_code == 200
     with scopes_disabled():
-        assert submission.reviews.count() == 1
-        review = submission.reviews.first()
+        review = submission.reviews.get()
         assert review.score == 1
         assert review.text == "LGTM"
 
@@ -332,7 +323,7 @@ def test_review_submission_shows_actual_duration_not_type_default(client, event)
     assert "30 minutes" not in content
 
 
-def test_review_submission_post_with_redirect_to_next(client, event):
+def test_review_submission_save_and_next(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
         submission = SubmissionFactory(event=event)
@@ -343,44 +334,21 @@ def test_review_submission_post_with_redirect_to_next(client, event):
         other_submission.speakers.add(other_speaker)
         category, score = _get_category_and_score(event)
     client.force_login(reviewer)
+    data = {
+        f"score_{category.id}": score.id,
+        "text": "LGTM",
+        "review_submit": "save_and_next",
+    }
 
-    response = client.post(
-        submission.orga_urls.reviews,
-        data={
-            f"score_{category.id}": score.id,
-            "text": "LGTM",
-            "review_submit": "save_and_next",
-        },
-    )
-
+    response = client.post(submission.orga_urls.reviews, data=data)
     assert response.status_code == 302
     assert other_submission.code in response.url
-    with scopes_disabled():
-        assert submission.reviews.count() == 1
+    assert _review_count(submission) == 1
 
-
-def test_review_submission_post_with_redirect_finished(client, event):
-    with scopes_disabled():
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        category, score = _get_category_and_score(event)
-    client.force_login(reviewer)
-
-    response = client.post(
-        submission.orga_urls.reviews,
-        data={
-            f"score_{category.id}": score.id,
-            "text": "LGTM",
-            "review_submit": "save_and_next",
-        },
-    )
-
+    response = client.post(other_submission.orga_urls.reviews, data=data)
     assert response.status_code == 302
     assert response.url == event.orga_urls.reviews
-    with scopes_disabled():
-        assert submission.reviews.count() == 1
+    assert _review_count(other_submission) == 1
 
 
 def test_review_submission_post_without_score(client, event):
@@ -457,13 +425,13 @@ def test_review_submission_skip_with_required_fields(client, action):
             assert submission.reviews.count() == 0
 
 
-def test_review_submission_post_wrong_score_rejected(client, event):
+def test_review_submission_post_invalid_review_rejected(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
         submission = SubmissionFactory(event=event)
         speaker = SpeakerFactory(event=event)
         submission.speakers.add(speaker)
-        category = event.score_categories.first()
+        category, score = _get_category_and_score(event)
     client.force_login(reviewer)
 
     response = client.post(
@@ -471,36 +439,24 @@ def test_review_submission_post_wrong_score_rejected(client, event):
         follow=True,
         data={f"score_{category.id}": "100", "text": "LGTM"},
     )
-
     assert response.status_code == 200
-    with scopes_disabled():
-        assert submission.reviews.count() == 0
+    assert _review_count(submission) == 0
 
-
-def test_review_submission_post_required_question_not_answered(client, event):
     with scopes_disabled():
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
         QuestionFactory(
             event=event,
             variant=QuestionVariant.STRING,
             target="reviewer",
             question_required=QuestionRequired.REQUIRED,
         )
-        category, score = _get_category_and_score(event)
-    client.force_login(reviewer)
 
     response = client.post(
         submission.orga_urls.reviews,
         follow=True,
         data={f"score_{category.id}": score.id, "text": "LGTM"},
     )
-
     assert response.status_code == 200
-    with scopes_disabled():
-        assert submission.reviews.count() == 0
+    assert _review_count(submission) == 0
 
     response = client.get(submission.orga_urls.reviews, follow=True)
     assert response.status_code == 200
@@ -526,79 +482,64 @@ def test_review_submission_speaker_cannot_review_own(client, event):
         assert submission.reviews.count() == 0
 
 
-def test_review_submission_cannot_review_accepted(client, event):
+def test_review_submission_edit_own_review_until_accepted(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
         submission = SubmissionFactory(event=event)
         speaker = SpeakerFactory(event=event)
         submission.speakers.add(speaker)
-        submission.accept()
-        category, score = _get_category_and_score(event)
-    client.force_login(reviewer)
-
-    response = client.post(
-        submission.orga_urls.reviews,
-        data={f"score_{category.id}": score.id, "text": "LGTM"},
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert submission.reviews.count() == 0
-
-
-def test_review_submission_edit_existing_review(client, event):
-    with scopes_disabled():
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        review = ReviewFactory(submission=submission, user=reviewer, score=1)
+        review = ReviewFactory(
+            submission=submission, user=reviewer, score=1, text="Looks great!"
+        )
         category = event.score_categories.first()
+        old_score = category.scores.filter(value=1).first()
         new_score = category.scores.filter(value=2).first()
-        count = submission.reviews.count()
         assert review.score != new_score.value
     client.force_login(reviewer)
+
+    response = client.get(review.urls.base, follow=True)
+    assert response.status_code == 200
+    assert "Looks great!" in response.content.decode()
 
     response = client.post(
         review.urls.base,
         follow=True,
         data={f"score_{category.id}": new_score.id, "text": "My mistake."},
     )
-
     assert response.status_code == 200
     with scopes_disabled():
-        review.refresh_from_db()
-        assert submission.reviews.count() == count
+        review.refresh_from_db(fields=["score", "text"])
+        assert submission.reviews.count() == 1
     assert review.score == new_score.value
     assert review.text == "My mistake."
 
-
-def test_review_submission_cannot_edit_after_accept(client, event):
     with scopes_disabled():
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        review = ReviewFactory(submission=submission, user=reviewer, score=1)
-        category = event.score_categories.first()
-        new_score = category.scores.filter(value=2).first()
         submission.accept()
-        assert review.score != new_score.value
-    client.force_login(reviewer)
+
+    response = client.get(review.urls.base, follow=True)
+    assert response.status_code == 200
+    assert "My mistake." in response.content.decode()
 
     response = client.post(
         review.urls.base,
         follow=True,
-        data={f"score_{category.id}": new_score.id, "text": "My mistake."},
+        data={f"score_{category.id}": old_score.id, "text": "Changed"},
     )
-
     assert response.status_code == 200
     with scopes_disabled():
-        review.refresh_from_db()
+        review.refresh_from_db(fields=["score", "text"])
         assert submission.reviews.count() == 1
-    assert review.score != new_score.value
-    assert review.text != "My mistake."
+    assert review.score == new_score.value
+    assert review.text == "My mistake."
+
+    client.force_login(_make_reviewer(event))
+    response = client.post(
+        submission.orga_urls.reviews,
+        data={f"score_{category.id}": new_score.id, "text": "LGTM"},
+        follow=True,
+    )
+    assert response.status_code == 200
+    assert _review_count(submission) == 1
 
 
 def test_review_submission_cannot_see_other_review_before_own(client, event):
@@ -637,26 +578,6 @@ def test_review_submission_cannot_see_other_review_before_own(client, event):
     content = response.content.decode()
     assert existing_review.text in content
     assert "My mistake" in content
-
-
-@pytest.mark.parametrize("accepted", (False, True))
-def test_review_submission_can_see_own_review(client, event, accepted):
-    with scopes_disabled():
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        review = ReviewFactory(
-            submission=submission, user=reviewer, text="Looks great!"
-        )
-        if accepted:
-            submission.accept()
-    client.force_login(reviewer)
-
-    response = client.get(review.urls.base, follow=True)
-
-    assert response.status_code == 200
-    assert review.text in response.content.decode()
 
 
 @pytest.mark.parametrize(
@@ -734,8 +655,33 @@ def test_review_dashboard_post_bulk_accept_and_reject(client, event):
         accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
         accepted_speaker = SpeakerFactory(event=event)
         accepted.speakers.add(accepted_speaker)
+        managed_submission = SubmissionFactory(event=event)
+        managed = SpeakerFactory(event=event, user=None, name="Managed Speaker")
+        managed_submission.speakers.add(managed)
         mail_count = event.queued_mails.count()
     client.force_login(orga_user)
+
+    def states(sub):
+        with scopes_disabled():
+            sub.refresh_from_db(fields=["state", "pending_state"])
+        return sub.state, sub.pending_state
+
+    response = client.post(
+        event.orga_urls.reviews,
+        {
+            f"s-{submission.code}": "accept",
+            f"s-{other_submission.code}": "reject",
+            "pending": "on",
+        },
+    )
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert event.queued_mails.count() == mail_count
+    assert states(submission) == (SubmissionStates.SUBMITTED, SubmissionStates.ACCEPTED)
+    assert states(other_submission) == (
+        SubmissionStates.SUBMITTED,
+        SubmissionStates.REJECTED,
+    )
 
     response = client.post(
         event.orga_urls.reviews,
@@ -744,18 +690,20 @@ def test_review_dashboard_post_bulk_accept_and_reject(client, event):
             f"s-{submission.code}": "accept",
             f"s-{other_submission.code}": "reject",
             f"s-{accepted.code}": "reject",
+            f"s-{managed_submission.code}": "accept",
         },
+        follow=True,
     )
-
     assert response.status_code == 200
+    body = response.content.decode()
+    assert "were not emailed automatically" in body
+    assert "Managed Speaker" in body
     with scopes_disabled():
-        assert mail_count + 2 == event.queued_mails.count()
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.ACCEPTED
-        other_submission.refresh_from_db()
-        assert other_submission.state == SubmissionStates.REJECTED
-        accepted.refresh_from_db()
-        assert accepted.state == SubmissionStates.ACCEPTED
+        assert event.queued_mails.count() == mail_count + 2
+    assert states(submission) == (SubmissionStates.ACCEPTED, None)
+    assert states(other_submission) == (SubmissionStates.REJECTED, None)
+    assert states(accepted) == (SubmissionStates.ACCEPTED, None)
+    assert states(managed_submission) == (SubmissionStates.ACCEPTED, None)
 
 
 def test_review_dashboard_post_bulk_accept_respects_track_isolation(client):
@@ -782,26 +730,6 @@ def test_review_dashboard_post_bulk_accept_respects_track_isolation(client):
         out_of_track.refresh_from_db()
         assert out_of_track.state == SubmissionStates.SUBMITTED
         assert event.queued_mails.count() == mail_count
-
-
-def test_review_dashboard_post_bulk_only_failure(client, event):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_submissions=True)
-        accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-        speaker = SpeakerFactory(event=event)
-        accepted.speakers.add(speaker)
-        mail_count = event.queued_mails.count()
-    client.force_login(orga_user)
-
-    response = client.post(
-        event.orga_urls.reviews, {"foo": "bar", f"s-{accepted.code}": "reject"}
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert mail_count == event.queued_mails.count()
-        accepted.refresh_from_db()
-        assert accepted.state == SubmissionStates.ACCEPTED
 
 
 def test_regenerate_decision_mails_post(client, event):
@@ -845,176 +773,135 @@ def test_regenerate_decision_mails_denied_for_reviewer(client, event):
         assert event.queued_mails.count() == 0
 
 
-def test_review_assignment_post_reviewer_to_submission(client, event):
+def test_review_assignment(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
         reviewer = _make_reviewer(event)
         submission = SubmissionFactory(event=event)
-        assert submission.assigned_reviewers.count() == 0
     client.force_login(orga_user)
-
-    response = client.post(
-        event.orga_urls.reviews + "assign/?direction=submission",
-        {f"submission-{submission.code}": [reviewer.id]},
-    )
-
-    assert response.status_code == 302
-    with scopes_disabled():
-        assert submission.assigned_reviewers.count() == 1
-
-
-def test_review_assignment_post_submission_to_reviewer(client, event):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_event_settings=True)
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        assert submission.assigned_reviewers.count() == 0
-    client.force_login(orga_user)
-
-    client.post(
-        event.orga_urls.reviews + "assign/?direction=reviewer",
-        {f"reviewer-{reviewer.code}": [submission.id]},
-    )
-
-    with scopes_disabled():
-        assert submission.assigned_reviewers.count() == 1
-
-
-def test_review_assignment_import_page_renders_form(client, event):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(orga_user)
+    submission_url = event.orga_urls.reviews + "assign/?direction=submission"
+    reviewer_url = event.orga_urls.reviews + "assign/?direction=reviewer"
+    assert _assigned_count(submission) == 0
 
     response = client.get(event.orga_urls.reviews + "assign/import")
-
     assert response.status_code == 200
     content = response.content.decode()
     assert 'name="import_file"' in content
     assert 'name="direction"' in content
 
+    response = client.post(
+        submission_url, {f"submission-{submission.code}": [reviewer.id]}
+    )
+    assert response.status_code == 302
+    assert _assigned_count(submission) == 1
 
-def test_review_assignment_via_import_reviewer_direction(client, event):
+    response = client.post(
+        submission_url, {"_field": submission.code}, HTTP_HX_REQUEST="true"
+    )
+    assert response.status_code == 204
+    assert _assigned_count(submission) == 0
+
+    response = client.post(reviewer_url, {f"reviewer-{reviewer.code}": [submission.id]})
+    assert response.status_code == 302
+    assert _assigned_count(submission) == 1
+
+    response = client.post(
+        submission_url, {"_field": submission.code}, HTTP_HX_REQUEST="true"
+    )
+    assert response.status_code == 204
+    assert _assigned_count(submission) == 0
+
+    response = client.post(
+        submission_url,
+        {"_field": submission.code, f"submission-{submission.code}": [reviewer.id]},
+        HTTP_HX_REQUEST="true",
+    )
+    assert response.status_code == 204
+    assert _assigned_count(submission) == 1
+
+    response = client.post(
+        submission_url, {"_field": submission.code}, HTTP_HX_REQUEST="true"
+    )
+    assert response.status_code == 204
+    assert _assigned_count(submission) == 0
+
+    response = client.post(
+        reviewer_url,
+        {"_field": reviewer.code, f"reviewer-{reviewer.code}": [submission.id]},
+        HTTP_HX_REQUEST="true",
+    )
+    assert response.status_code == 204
+    assert _assigned_count(submission) == 1
+
+    invalid = {"_field": submission.code, f"submission-{submission.code}": ["99999"]}
+    response = client.post(submission_url, invalid, HTTP_HX_REQUEST="true")
+    assert response.status_code == 200
+    response = client.post(submission_url, invalid)
+    assert response.status_code == 200
+    assert _assigned_count(submission) == 1
+
+
+def test_review_assignment_via_import(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
         reviewer = _make_reviewer(event)
         submission = SubmissionFactory(event=event)
         other_submission = SubmissionFactory(event=event)
         other_submission.assigned_reviewers.add(reviewer)
-        assert submission.assigned_reviewers.count() == 0
-        assert other_submission.assigned_reviewers.count() == 1
-        assert reviewer.assigned_reviews.count() == 1
+    client.force_login(orga_user)
+    assert _assigned_count(submission) == 0
+    assert _assigned_count(other_submission) == 1
 
     with tempfile.NamedTemporaryFile(mode="w+", encoding="utf-8") as f:
         f.write(json.dumps({reviewer.email: [submission.code]}))
         f.seek(0)
-        client.force_login(orga_user)
         response = client.post(
             event.orga_urls.reviews + "assign/import",
             {"import_file": f, "replace_assignments": 0, "direction": "reviewer"},
         )
-        assert response.status_code == 302
-
+    assert response.status_code == 302
+    assert _assigned_count(submission) == 1
+    assert _assigned_count(other_submission) == 1
     with scopes_disabled():
-        assert submission.assigned_reviewers.count() == 1
-        assert other_submission.assigned_reviewers.count() == 1
         assert reviewer.assigned_reviews.count() == 2
-
-
-def test_review_assignment_via_import_submission_direction_replace(client, event):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_event_settings=True)
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        other_submission = SubmissionFactory(event=event)
-        other_submission.assigned_reviewers.add(reviewer)
-        assert submission.assigned_reviewers.count() == 0
-        assert other_submission.assigned_reviewers.count() == 1
-        assert reviewer.assigned_reviews.count() == 1
 
     with tempfile.NamedTemporaryFile(mode="w+", encoding="utf-8") as f:
         f.write(json.dumps({submission.code: [reviewer.code]}))
         f.seek(0)
-        client.force_login(orga_user)
         response = client.post(
             event.orga_urls.reviews + "assign/import",
             {"import_file": f, "replace_assignments": 1, "direction": "submission"},
         )
-        assert response.status_code == 302
-
+    assert response.status_code == 302
+    assert _assigned_count(submission) == 1
+    assert _assigned_count(other_submission) == 0
     with scopes_disabled():
-        assert submission.assigned_reviewers.count() == 1
-        assert other_submission.assigned_reviewers.count() == 0
         assert reviewer.assigned_reviews.count() == 1
 
 
-def test_review_assignment_htmx_reviewer_to_submission(client, event):
+def test_review_export(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
         reviewer = _make_reviewer(event)
         submission = SubmissionFactory(event=event)
-        assert submission.assigned_reviewers.count() == 0
     client.force_login(orga_user)
+    export_url = event.orga_urls.reviews + "export/"
 
+    response = client.get(export_url)
+    assert response.status_code == 200
+    assert "api_buttons" in response.context
+
+    response = client.post(export_url, {"target": "all", "export_format": "json"})
+    assert response.status_code == 302
+    assert response.url == export_url
+    messages = list(get_messages(response.wsgi_request))
+    assert [message.level for message in messages] == [message_constants.WARNING]
+    assert str(messages[0]) == "No data to be exported"
+
+    with scopes_disabled():
+        ReviewFactory(submission=submission, user=reviewer, text="Good talk")
     response = client.post(
-        event.orga_urls.reviews + "assign/?direction=submission",
-        {"_field": submission.code, f"submission-{submission.code}": [reviewer.id]},
-        HTTP_HX_REQUEST="true",
-    )
-
-    assert response.status_code == 204
-    with scopes_disabled():
-        assert submission.assigned_reviewers.count() == 1
-
-
-def test_review_assignment_htmx_submission_to_reviewer(client, event):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_event_settings=True)
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        assert submission.assigned_reviewers.count() == 0
-    client.force_login(orga_user)
-
-    response = client.post(
-        event.orga_urls.reviews + "assign/?direction=reviewer",
-        {"_field": reviewer.code, f"reviewer-{reviewer.code}": [submission.id]},
-        HTTP_HX_REQUEST="true",
-    )
-
-    assert response.status_code == 204
-    with scopes_disabled():
-        assert submission.assigned_reviewers.count() == 1
-
-
-def test_review_assignment_htmx_clear(client, event):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_event_settings=True)
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        submission.assigned_reviewers.add(reviewer)
-        assert submission.assigned_reviewers.count() == 1
-    client.force_login(orga_user)
-
-    response = client.post(
-        event.orga_urls.reviews + "assign/?direction=submission",
-        {"_field": submission.code},
-        HTTP_HX_REQUEST="true",
-    )
-
-    assert response.status_code == 204
-    with scopes_disabled():
-        assert submission.assigned_reviewers.count() == 0
-
-
-def test_review_export_post_json(client, event):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_event_settings=True)
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        review = ReviewFactory(submission=submission, user=reviewer, text="Good talk")
-    client.force_login(orga_user)
-
-    response = client.post(
-        event.orga_urls.reviews + "export/",
+        export_url,
         {
             "target": "all",
             "score": "on",
@@ -1027,103 +914,11 @@ def test_review_export_post_json(client, event):
             "export_format": "json",
         },
     )
-
     assert response.status_code == 200
-    assert review.text in response.content.decode()
+    assert "Good talk" in response.content.decode()
 
 
-def test_bulk_review_htmx_post_creates_review(client, event):
-    with scopes_disabled():
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        bulk_url = event.orga_urls.reviews + "bulk/"
-        category, score = _get_category_and_score(event)
-    client.force_login(reviewer)
-
-    response = client.post(
-        bulk_url,
-        data={
-            "_submission": submission.code,
-            f"{submission.code}-score_{category.id}": score.id,
-            f"{submission.code}-text": "Bulk LGTM",
-        },
-        headers={"HX-Request": "true"},
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert submission.reviews.count() == 1
-        review = submission.reviews.select_related("user").first()
-        assert review.text == "Bulk LGTM"
-        assert review.user == reviewer
-
-
-def test_bulk_review_htmx_invalid_submission(client, event):
-    with scopes_disabled():
-        reviewer = _make_reviewer(event)
-        bulk_url = event.orga_urls.reviews + "bulk/"
-    client.force_login(reviewer)
-
-    response = client.post(
-        bulk_url, data={"_submission": "INVALID"}, headers={"HX-Request": "true"}
-    )
-
-    assert response.status_code == 404
-
-
-def test_bulk_review_htmx_validates_required_fields(client):
-    event = EventFactory(
-        review_settings={"text_mandatory": True}, score_category__required=True
-    )
-    with scopes_disabled():
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        bulk_url = event.orga_urls.reviews + "bulk/"
-    client.force_login(reviewer)
-
-    response = client.post(
-        bulk_url,
-        data={"_submission": submission.code, f"{submission.code}-text": ""},
-        headers={"HX-Request": "true"},
-    )
-
-    assert response.status_code == 200
-    assert "This field is required." in response.content.decode()
-    with scopes_disabled():
-        assert submission.reviews.count() == 0
-
-
-def test_bulk_review_without_htmx(client, event):
-    with scopes_disabled():
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        bulk_url = event.orga_urls.reviews + "bulk/"
-        category, score = _get_category_and_score(event)
-    client.force_login(reviewer)
-
-    response = client.post(
-        bulk_url,
-        data={
-            "_submission": submission.code,
-            f"{submission.code}-score_{category.id}": score.id,
-            f"{submission.code}-text": "Non-HTMX review",
-        },
-    )
-
-    assert response.status_code == 302
-    assert response.url == bulk_url
-    with scopes_disabled():
-        assert submission.reviews.count() == 1
-        assert submission.reviews.first().text == "Non-HTMX review"
-
-
-def test_bulk_review_update_existing(client, event):
+def test_bulk_review(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
         submission = SubmissionFactory(event=event)
@@ -1135,49 +930,119 @@ def test_bulk_review_update_existing(client, event):
         new_score = category.scores.filter(value=2).first()
     client.force_login(reviewer)
 
-    client.post(
-        bulk_url,
-        data={
-            "_submission": submission.code,
-            f"{submission.code}-score_{category.id}": old_score.id,
-            f"{submission.code}-text": "First pass",
-        },
-        headers={"HX-Request": "true"},
+    response = client.get(bulk_url)
+    assert response.status_code == 200
+    assert submission.title in response.content.decode()
+
+    response = client.post(
+        bulk_url, data={"_submission": "INVALID"}, headers={"HX-Request": "true"}
     )
+    assert response.status_code == 404
+
+    response = client.post(bulk_url, data={"_submission": "NONEXISTENT"})
+    assert response.status_code == 302
+    assert response.url == bulk_url
+
+    data = {
+        "_submission": submission.code,
+        f"{submission.code}-score_{category.id}": old_score.id,
+        f"{submission.code}-text": "Bulk LGTM",
+    }
+    response = client.post(bulk_url, data=data, headers={"HX-Request": "true"})
+    assert response.status_code == 200
     with scopes_disabled():
-        assert submission.reviews.count() == 1
+        review = submission.reviews.select_related("user").get()
+        assert review.text == "Bulk LGTM"
+        assert review.user == reviewer
+
+    response = client.post(bulk_url, data=data, headers={"HX-Request": "true"})
+    assert response.status_code == 200
+    assert _review_count(submission) == 1
 
     response = client.post(
         bulk_url,
         data={
-            "_submission": submission.code,
+            **data,
             f"{submission.code}-score_{category.id}": new_score.id,
             f"{submission.code}-text": "Revised opinion",
         },
         headers={"HX-Request": "true"},
     )
-
     assert response.status_code == 200
     with scopes_disabled():
-        assert submission.reviews.count() == 1
-        review = submission.reviews.first()
+        review = submission.reviews.get()
         assert review.text == "Revised opinion"
         assert review.score == new_score.value
 
+    response = client.post(
+        bulk_url, data={**data, f"{submission.code}-text": "Non-HTMX review"}
+    )
+    assert response.status_code == 302
+    assert response.url == bulk_url
+    with scopes_disabled():
+        review = submission.reviews.get()
+        assert review.text == "Non-HTMX review"
+        assert review.score == old_score.value
 
-def test_bulk_tag_add_and_remove(client, event):
+
+def test_bulk_review_validates_required_fields(client):
+    event = EventFactory(
+        review_settings={"text_mandatory": True}, score_category__required=True
+    )
+    with scopes_disabled():
+        reviewer = _make_reviewer(event)
+        submission = SubmissionFactory(event=event)
+        speaker = SpeakerFactory(event=event)
+        submission.speakers.add(speaker)
+        bulk_url = event.orga_urls.reviews + "bulk/"
+    client.force_login(reviewer)
+    data = {"_submission": submission.code, f"{submission.code}-text": ""}
+
+    response = client.post(bulk_url, data=data, headers={"HX-Request": "true"})
+    assert response.status_code == 200
+    assert "This field is required." in response.content.decode()
+    assert _review_count(submission) == 0
+
+    response = client.post(bulk_url, data=data)
+    assert response.status_code == 302
+    assert response.url == bulk_url
+    assert _review_count(submission) == 0
+
+
+def test_bulk_tag(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event)
         other_submission = SubmissionFactory(event=event)
         tag = TagFactory(event=event)
         tag2 = TagFactory(event=event)
-        assert submission.tags.count() == 0
-        assert other_submission.tags.count() == 0
     client.force_login(orga_user)
+    url = event.orga_urls.reviews + "bulk-tag/"
+
+    def tags(sub):
+        with scopes_disabled():
+            return set(sub.tags.all())
+
+    for data in (
+        {f"s-{submission.code}": "on", "tags": ["99999"], "action": "add"},
+        {"tags": [tag.id], "action": "add"},
+        {"s-NONEXIST": "on", "tags": [tag.id], "action": "add"},
+    ):
+        response = client.post(url, data, follow=True)
+        assert response.status_code == 200
+    assert tags(submission) == set()
+    assert tags(other_submission) == set()
 
     response = client.post(
-        event.orga_urls.reviews + "bulk-tag/",
+        f"{url}?next={event.orga_urls.reviews}",
+        {f"s-{submission.code}": "on", "tags": [tag.id], "action": "add"},
+    )
+    assert response.status_code == 302
+    assert response.url == event.orga_urls.reviews
+    assert tags(submission) == {tag}
+
+    response = client.post(
+        url,
         {
             f"s-{submission.code}": "on",
             f"s-{other_submission.code}": "on",
@@ -1186,18 +1051,12 @@ def test_bulk_tag_add_and_remove(client, event):
         },
         follow=True,
     )
-
     assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        other_submission.refresh_from_db()
-        assert submission.tags.count() == 2
-        assert set(submission.tags.all()) == {tag, tag2}
-        assert other_submission.tags.count() == 2
-        assert set(other_submission.tags.all()) == {tag, tag2}
+    assert tags(submission) == {tag, tag2}
+    assert tags(other_submission) == {tag, tag2}
 
     response = client.post(
-        event.orga_urls.reviews + "bulk-tag/",
+        url,
         {
             f"s-{submission.code}": "on",
             f"s-{other_submission.code}": "on",
@@ -1206,15 +1065,9 @@ def test_bulk_tag_add_and_remove(client, event):
         },
         follow=True,
     )
-
     assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        other_submission.refresh_from_db()
-        assert submission.tags.count() == 1
-        assert submission.tags.first() == tag2
-        assert other_submission.tags.count() == 1
-        assert other_submission.tags.first() == tag2
+    assert tags(submission) == {tag2}
+    assert tags(other_submission) == {tag2}
 
 
 def test_review_delete_post(client, event):
@@ -1238,62 +1091,6 @@ def test_review_delete_post(client, event):
         assert submission.reviews.count() == 0
 
 
-def test_review_dashboard_post_bulk_accept_with_pending(client, event):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        other_submission = SubmissionFactory(event=event)
-        other_speaker = SpeakerFactory(event=event)
-        other_submission.speakers.add(other_speaker)
-        mail_count = event.queued_mails.count()
-    client.force_login(orga_user)
-
-    response = client.post(
-        event.orga_urls.reviews,
-        {
-            f"s-{submission.code}": "accept",
-            f"s-{other_submission.code}": "reject",
-            "pending": "on",
-        },
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert event.queued_mails.count() == mail_count
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.SUBMITTED
-        assert submission.pending_state == SubmissionStates.ACCEPTED
-        other_submission.refresh_from_db()
-        assert other_submission.state == SubmissionStates.SUBMITTED
-        assert other_submission.pending_state == SubmissionStates.REJECTED
-
-
-def test_review_dashboard_post_bulk_accept_names_unmailed_managed_speakers(
-    client, event
-):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        managed = SpeakerFactory(event=event, user=None, name="Managed Speaker")
-        submission.speakers.add(managed)
-    client.force_login(orga_user)
-
-    response = client.post(
-        event.orga_urls.reviews, {f"s-{submission.code}": "accept"}, follow=True
-    )
-
-    assert response.status_code == 200
-    body = response.content.decode()
-    assert "were not emailed automatically" in body
-    assert "Managed Speaker" in body
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.ACCEPTED
-        assert event.queued_mails.count() == 0
-
-
 def test_review_dashboard_post_bulk_no_permission(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1308,21 +1105,6 @@ def test_review_dashboard_post_bulk_no_permission(client, event):
     with scopes_disabled():
         submission.refresh_from_db()
         assert submission.state == SubmissionStates.SUBMITTED
-
-
-def test_bulk_review_get(client, event):
-    with scopes_disabled():
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-    client.force_login(reviewer)
-
-    response = client.get(event.orga_urls.reviews + "bulk/")
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert submission.title in content
 
 
 def test_bulk_review_anonymises_title_for_restricted_reviewer(client, event):
@@ -1347,59 +1129,6 @@ def test_bulk_review_anonymises_title_for_restricted_reviewer(client, event):
     assert redacted_title in content
     assert original_title not in content
     assert "status-dot" not in content  # Do not indicate managed status
-
-
-def test_bulk_review_non_htmx_invalid_submission(client, event):
-    with scopes_disabled():
-        reviewer = _make_reviewer(event)
-        bulk_url = event.orga_urls.reviews + "bulk/"
-    client.force_login(reviewer)
-
-    response = client.post(bulk_url, data={"_submission": "NONEXISTENT"})
-
-    assert response.status_code == 302
-    assert response.url == bulk_url
-
-
-def test_bulk_review_non_htmx_invalid_form(client):
-    event = EventFactory(
-        review_settings={"text_mandatory": True}, score_category__required=True
-    )
-    with scopes_disabled():
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        bulk_url = event.orga_urls.reviews + "bulk/"
-    client.force_login(reviewer)
-
-    response = client.post(
-        bulk_url, data={"_submission": submission.code, f"{submission.code}-text": ""}
-    )
-
-    assert response.status_code == 302
-    assert response.url == bulk_url
-    with scopes_disabled():
-        assert submission.reviews.count() == 0
-
-
-def test_bulk_tag_with_next_url(client, event):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        tag = TagFactory(event=event)
-    client.force_login(orga_user)
-    next_url = event.orga_urls.reviews
-
-    response = client.post(
-        event.orga_urls.reviews + f"bulk-tag/?next={next_url}",
-        {f"s-{submission.code}": "on", "tags": [tag.id], "action": "add"},
-    )
-
-    assert response.status_code == 302
-    assert response.url == next_url
-    with scopes_disabled():
-        assert tag in submission.tags.all()
 
 
 def test_review_page_hides_other_track_proposals_from_limited_reviewer(client, event):
@@ -1428,169 +1157,6 @@ def test_review_page_hides_other_track_proposals_from_limited_reviewer(client, e
     assert visible.title in content
     assert hidden.title not in content
     assert hidden.orga_urls.reviews not in content
-
-
-def test_review_submission_post_with_invalid_tags(client, event):
-    with scopes_disabled():
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        TagFactory(event=event)
-        event.active_review_phase.can_tag_submissions = "use_tags"
-        event.active_review_phase.save()
-        category, score = _get_category_and_score(event)
-    client.force_login(reviewer)
-
-    response = client.post(
-        submission.orga_urls.reviews,
-        follow=True,
-        data={f"score_{category.id}": score.id, "text": "LGTM", "tags": "99999"},
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert submission.reviews.count() == 0
-
-
-def test_review_assignment_htmx_form_invalid(client, event):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_event_settings=True)
-        _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-    client.force_login(orga_user)
-
-    response = client.post(
-        event.orga_urls.reviews + "assign/?direction=submission",
-        {"_field": submission.code, f"submission-{submission.code}": ["99999"]},
-        HTTP_HX_REQUEST="true",
-    )
-
-    assert response.status_code == 200
-
-
-def test_review_export_post_no_data(client, event):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(orga_user)
-
-    response = client.post(
-        event.orga_urls.reviews + "export/", {"target": "all", "export_format": "json"}
-    )
-
-    assert response.status_code == 302
-    assert response.url == event.orga_urls.reviews + "export/"
-    messages = list(get_messages(response.wsgi_request))
-    assert [message.level for message in messages] == [message_constants.WARNING]
-    assert str(messages[0]) == "No data to be exported"
-
-
-def test_bulk_review_htmx_unchanged_form(client, event):
-    with scopes_disabled():
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        bulk_url = event.orga_urls.reviews + "bulk/"
-        category, score = _get_category_and_score(event)
-    client.force_login(reviewer)
-
-    # Create the review first
-    client.post(
-        bulk_url,
-        data={
-            "_submission": submission.code,
-            f"{submission.code}-score_{category.id}": score.id,
-            f"{submission.code}-text": "Same text",
-        },
-        headers={"HX-Request": "true"},
-    )
-
-    # Re-submit with identical data
-    response = client.post(
-        bulk_url,
-        data={
-            "_submission": submission.code,
-            f"{submission.code}-score_{category.id}": score.id,
-            f"{submission.code}-text": "Same text",
-        },
-        headers={"HX-Request": "true"},
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert submission.reviews.count() == 1
-
-
-def test_bulk_tag_invalid_form(client, event):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-    client.force_login(orga_user)
-
-    response = client.post(
-        event.orga_urls.reviews + "bulk-tag/",
-        {f"s-{submission.code}": "on", "tags": ["99999"], "action": "add"},
-        follow=True,
-    )
-
-    assert response.status_code == 200
-
-
-def test_bulk_tag_no_submissions_selected(client, event):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_submissions=True)
-        tag = TagFactory(event=event)
-    client.force_login(orga_user)
-
-    response = client.post(
-        event.orga_urls.reviews + "bulk-tag/",
-        {"tags": [tag.id], "action": "add"},
-        follow=True,
-    )
-
-    assert response.status_code == 200
-
-
-def test_bulk_tag_no_matching_submissions(client, event):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_submissions=True)
-        tag = TagFactory(event=event)
-    client.force_login(orga_user)
-
-    response = client.post(
-        event.orga_urls.reviews + "bulk-tag/",
-        {"s-NONEXIST": "on", "tags": [tag.id], "action": "add"},
-        follow=True,
-    )
-
-    assert response.status_code == 200
-
-
-def test_review_assignment_non_htmx_form_invalid(client, event):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_event_settings=True)
-        _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-    client.force_login(orga_user)
-
-    response = client.post(
-        event.orga_urls.reviews + "assign/?direction=submission",
-        {"_field": submission.code, f"submission-{submission.code}": ["99999"]},
-    )
-
-    assert response.status_code == 200
-
-
-def test_review_export_get(client, event):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(orga_user)
-
-    response = client.get(event.orga_urls.reviews + "export/")
-
-    assert response.status_code == 200
-    assert "api_buttons" in response.context
 
 
 def test_review_submission_skip_for_now_session(client, event):

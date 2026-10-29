@@ -27,10 +27,26 @@ from tests.factories import SpeakerFactory, UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
+LOGIN_INFO_DATA = {
+    "email": "mine@example.com",
+    "old_password": "correcthorse",
+    "password": "",
+    "password_repeat": "",
+}
+REGISTER_DATA = {
+    "register_name": "New User",
+    "register_email": "new@example.com",
+    "register_password": "Str0ngP@ss!",
+    "register_password_repeat": "Str0ngP@ss!",
+}
 
-def _ip_request(forwarded_for=None, remote_addr="127.0.0.1"):
-    request = RequestFactory().get("/")
-    request.META["REMOTE_ADDR"] = remote_addr
+
+def _ip_request(forwarded_for=None, remote_addr="203.0.113.7"):
+    request = RequestFactory().post("/login/")
+    if remote_addr is not None:
+        request.META["REMOTE_ADDR"] = remote_addr
+    else:
+        request.META.pop("REMOTE_ADDR", None)
     if forwarded_for is not None:
         request.META["HTTP_X_FORWARDED_FOR"] = forwarded_for
     else:
@@ -38,54 +54,37 @@ def _ip_request(forwarded_for=None, remote_addr="127.0.0.1"):
     return request
 
 
-@pytest.mark.parametrize(
-    ("forwarded_for", "expected"),
-    (
-        ("8.8.8.8", "8.8.8.8"),
-        ("  8.8.8.8  ", "8.8.8.8"),
-        ("1.2.3.4, 8.8.8.8", "8.8.8.8"),
-        ("10.0.0.1, 1.2.3.4, 8.8.8.8", "8.8.8.8"),
-    ),
-)
-def test_get_client_ip_single_proxy_uses_rightmost_entry(forwarded_for, expected):
-    assert get_client_ip(_ip_request(forwarded_for)) == expected
+def _error_codes(form):
+    return {
+        field: [error.code for error in errors]
+        for field, errors in form.errors.as_data().items()
+    }
 
 
 @pytest.mark.parametrize(
-    ("forwarded_for", "expected"),
+    ("proxy_count", "forwarded_for", "expected"),
     (
-        ("1.2.3.4, 9.9.9.9", "1.2.3.4"),
-        ("junk, 1.2.3.4, 9.9.9.9", "1.2.3.4"),
-        ("  8.8.8.8 , 1.2.3.4 , 9.9.9.9 ", "1.2.3.4"),
+        (1, "8.8.8.8", "8.8.8.8"),
+        (1, "  8.8.8.8  ", "8.8.8.8"),
+        (1, "1.2.3.4, 8.8.8.8", "8.8.8.8"),
+        (1, "10.0.0.1, 1.2.3.4, 8.8.8.8", "8.8.8.8"),
+        (2, "1.2.3.4, 9.9.9.9", "1.2.3.4"),
+        (2, "junk, 1.2.3.4, 9.9.9.9", "1.2.3.4"),
+        (2, "  8.8.8.8 , 1.2.3.4 , 9.9.9.9 ", "1.2.3.4"),
+        (2, "8.8.8.8", "203.0.113.7"),
+        (0, "1.2.3.4, 8.8.8.8", "203.0.113.7"),
+        (1, None, "203.0.113.7"),
+        (1, "", "203.0.113.7"),
+        (1, "   ", "203.0.113.7"),
+        (1, " , ", "203.0.113.7"),
     ),
 )
-@override_settings(TRUSTED_PROXY_COUNT=2)
-def test_get_client_ip_two_proxies_skip_two_hops_from_right(forwarded_for, expected):
+def test_get_client_ip_counts_trusted_proxies_from_the_right(
+    settings, proxy_count, forwarded_for, expected
+):
+    settings.TRUSTED_PROXY_COUNT = proxy_count
+
     assert get_client_ip(_ip_request(forwarded_for)) == expected
-
-
-@override_settings(TRUSTED_PROXY_COUNT=0)
-def test_get_client_ip_zero_count_ignores_forwarded_for():
-    assert (
-        get_client_ip(_ip_request("1.2.3.4, 8.8.8.8", remote_addr="203.0.113.7"))
-        == "203.0.113.7"
-    )
-
-
-@pytest.mark.parametrize("forwarded_for", (None, "", "   ", " , "))
-def test_get_client_ip_missing_or_empty_header_falls_back(forwarded_for):
-    assert (
-        get_client_ip(_ip_request(forwarded_for, remote_addr="203.0.113.7"))
-        == "203.0.113.7"
-    )
-
-
-@override_settings(TRUSTED_PROXY_COUNT=2)
-def test_get_client_ip_header_shorter_than_count_falls_back():
-    assert (
-        get_client_ip(_ip_request("8.8.8.8", remote_addr="203.0.113.7"))
-        == "203.0.113.7"
-    )
 
 
 def test_login_info_form_init_sets_initial_email():
@@ -97,177 +96,97 @@ def test_login_info_form_init_sets_initial_email():
     assert form.initial["email"] == "test@example.com"
 
 
-def test_login_info_form_clean_old_password_accepts_correct_password():
-    user = UserFactory(password="correcthorse")
-    data = {
-        "email": user.email,
-        "old_password": "correcthorse",
-        "password": "",
-        "password_repeat": "",
-    }
-
-    form = LoginInfoForm(user=user, data=data)
-
-    assert form.is_valid(), form.errors
-
-
-def test_login_info_form_clean_old_password_rejects_wrong_password():
-    user = UserFactory(password="correcthorse")
-    data = {
-        "email": user.email,
-        "old_password": "wrongpassword",
-        "password": "",
-        "password_repeat": "",
-    }
-
-    form = LoginInfoForm(user=user, data=data)
-
-    assert not form.is_valid()
-    assert "old_password" in form.errors
-    assert form.errors.as_data()["old_password"][0].code == "pw_current_wrong"
-
-
-def test_login_info_form_clean_email_accepts_unique_email():
-    user = UserFactory()
-    data = {
-        "email": "unique@example.com",
-        "old_password": "testpassword!",
-        "password": "",
-        "password_repeat": "",
-    }
-
-    form = LoginInfoForm(user=user, data=data)
-
-    assert form.is_valid(), form.errors
-    assert form.cleaned_data["email"] == "unique@example.com"
-
-
 @pytest.mark.parametrize(
-    ("existing_email", "submitted_email"),
+    ("data", "errors"),
     (
-        ("taken@example.com", "taken@example.com"),
-        ("taken@example.com", "Taken@Example.com"),
+        ({}, {}),
+        ({"old_password": "wrongpassword"}, {"old_password": ["pw_current_wrong"]}),
+        ({"email": "unique@example.com"}, {}),
+        ({"email": "taken@example.com"}, {"email": [None]}),
+        ({"email": "Taken@Example.com"}, {"email": [None]}),
+        ({"email": "not-an-email"}, {"email": ["invalid"]}),
+        (
+            {"password": "NewStr0ngP@ss!", "password_repeat": "DifferentP@ss!"},
+            {"password_repeat": [None]},
+        ),
+        (
+            {
+                "email": "taken@example.com",
+                "password": "NewStr0ngP@ss!",
+                "password_repeat": "DifferentP@ss!",
+            },
+            {"email": [None], "password_repeat": [None]},
+        ),
+        ({"password": "NewStr0ngP@ss!", "password_repeat": "NewStr0ngP@ss!"}, {}),
     ),
-    ids=("exact_match", "submitted_mixed_case"),
+    ids=(
+        "unchanged",
+        "wrong_password",
+        "unique_email",
+        "taken_email",
+        "taken_email_mixed_case",
+        "invalid_email",
+        "password_mismatch",
+        "taken_email_and_password_mismatch",
+        "matching_passwords",
+    ),
 )
-def test_login_info_form_rejects_email_taken_by_other_user(
-    existing_email, submitted_email
-):
-    UserFactory(email=existing_email)
-    user = UserFactory()
-    data = {
-        "email": submitted_email,
-        "old_password": "testpassword!",
-        "password": "",
-        "password_repeat": "",
-    }
-
-    form = LoginInfoForm(user=user, data=data)
-
-    assert not form.is_valid()
-    assert "email" in form.errors
-
-
-def test_login_info_form_allows_own_email():
-    user = UserFactory(email="mine@example.com")
-    data = {
-        "email": "mine@example.com",
-        "old_password": "testpassword!",
-        "password": "",
-        "password_repeat": "",
-    }
-
-    form = LoginInfoForm(user=user, data=data)
-
-    assert form.is_valid(), form.errors
-
-
-def test_login_info_form_skips_uniqueness_check_when_email_invalid():
-    user = UserFactory()
-    data = {
-        "email": "not-an-email",
-        "old_password": "testpassword!",
-        "password": "",
-        "password_repeat": "",
-    }
-
-    form = LoginInfoForm(user=user, data=data)
-
-    assert not form.is_valid()
-    assert "email" in form.errors
-    assert "email" not in form.cleaned_data
-
-
-def test_login_info_form_surfaces_email_and_password_errors_together():
+def test_login_info_form_clean(data, errors):
     UserFactory(email="taken@example.com")
-    user = UserFactory()
-    data = {
-        "email": "taken@example.com",
-        "old_password": "testpassword!",
-        "password": "NewStr0ngP@ss!",
-        "password_repeat": "DifferentP@ss!",
-    }
+    user = UserFactory(email="mine@example.com", password="correcthorse")
+    data = LOGIN_INFO_DATA | data
 
     form = LoginInfoForm(user=user, data=data)
 
-    assert not form.is_valid()
-    assert "email" in form.errors
-    assert "password_repeat" in form.errors
+    assert form.is_valid() == (not errors), form.errors
+    assert _error_codes(form) == errors
+    assert form.cleaned_data.get("email") == (
+        None if "email" in errors else data["email"]
+    )
 
 
-def test_login_info_form_clean_rejects_mismatched_passwords():
-    user = UserFactory()
-    data = {
-        "email": user.email,
-        "old_password": "testpassword!",
-        "password": "NewStr0ngP@ss!",
-        "password_repeat": "DifferentP@ss!",
-    }
-
-    form = LoginInfoForm(user=user, data=data)
-
-    assert not form.is_valid()
-    assert "password_repeat" in form.errors
-
-
-def test_login_info_form_clean_accepts_matching_passwords():
-    user = UserFactory()
-    new_pw = "NewStr0ngP@ss!"
-    data = {
-        "email": user.email,
-        "old_password": "testpassword!",
-        "password": new_pw,
-        "password_repeat": new_pw,
-    }
-
-    form = LoginInfoForm(user=user, data=data)
-
-    assert form.is_valid(), form.errors
-
-
-def test_login_info_form_save_defers_email_change():
+def test_login_info_form_save_changes_password_then_defers_email_change():
     djmail.outbox = []
-    user = UserFactory(email="old@example.com")
-    data = {
-        "email": "new@example.com",
-        "old_password": "testpassword!",
-        "password": "",
-        "password_repeat": "",
-    }
+    user = UserFactory(email="mine@example.com", password="correcthorse")
+    original_password = user.password
 
-    form = LoginInfoForm(user=user, data=data)
-    assert form.is_valid(), form.errors
-    form.save()
-
+    unchanged = LoginInfoForm(user=user, data=LOGIN_INFO_DATA)
+    assert unchanged.is_valid(), unchanged.errors
+    unchanged.save()
     user.refresh_from_db()
-    assert user.email == "old@example.com"
+    assert user.email == "mine@example.com"
+    assert user.pending_email is None
+    assert user.password == original_password
+    assert unchanged.email_change_requested is False
+    assert djmail.outbox == []
+
+    new_pw = "NewStr0ngP@ss!"
+    password_form = LoginInfoForm(
+        user=user,
+        data=LOGIN_INFO_DATA | {"password": new_pw, "password_repeat": new_pw},
+    )
+    assert password_form.is_valid(), password_form.errors
+    password_form.save()
+    user.refresh_from_db()
+    assert user.check_password(new_pw)
+    assert [(m.to, "password" in m.subject.lower()) for m in djmail.outbox] == [
+        (["mine@example.com"], True)
+    ]
+
+    djmail.outbox = []
+    email_form = LoginInfoForm(
+        user=user,
+        data=LOGIN_INFO_DATA | {"old_password": new_pw, "email": "new@example.com"},
+    )
+    assert email_form.is_valid(), email_form.errors
+    email_form.save()
+    user.refresh_from_db()
+    assert user.email == "mine@example.com"
     assert user.pending_email == "new@example.com"
     assert user.pending_email_sent is not None
-    assert form.email_change_requested is True
-    assert len(djmail.outbox) == 2
-    assert djmail.outbox[0].to == ["new@example.com"]
+    assert email_form.email_change_requested is True
+    assert [m.to for m in djmail.outbox] == [["new@example.com"], ["mine@example.com"]]
     assert "/orga/verify/" in djmail.outbox[0].body
-    assert djmail.outbox[1].to == ["old@example.com"]
     assert "new@example.com" in djmail.outbox[1].body
     action = (
         actions_by(user).filter(action_type="pretalx.user.email.change.request").get()
@@ -275,40 +194,26 @@ def test_login_info_form_save_defers_email_change():
     assert action.data == {"pending_email": "new@example.com"}
 
 
-def test_login_info_form_email_change_blocked_during_send_cooldown():
-    user = UserFactory(email="old@example.com")
+def test_login_info_form_send_cooldown_blocks_email_change_not_password_change():
+    user = UserFactory(email="mine@example.com", password="correcthorse")
     request_email_change(user, "first@example.com")
     djmail.outbox = []
-    data = {
-        "email": "second@example.com",
-        "old_password": "testpassword!",
-        "password": "",
-        "password_repeat": "",
-    }
+    new_pw = "NewStr0ngP@ss!"
 
-    form = LoginInfoForm(user=user, data=data)
+    email_form = LoginInfoForm(
+        user=user, data=LOGIN_INFO_DATA | {"email": "second@example.com"}
+    )
+    password_form = LoginInfoForm(
+        user=user,
+        data=LOGIN_INFO_DATA | {"password": new_pw, "password_repeat": new_pw},
+    )
 
-    assert not form.is_valid()
-    assert form.has_error("email", "email_send_cooldown")
+    assert not email_form.is_valid()
+    assert _error_codes(email_form) == {"email": ["email_send_cooldown"]}
+    assert password_form.is_valid(), password_form.errors
     user.refresh_from_db()
     assert user.pending_email == "first@example.com"
     assert djmail.outbox == []
-
-
-def test_login_info_form_send_cooldown_does_not_block_password_change():
-    user = UserFactory(email="old@example.com")
-    request_email_change(user, "first@example.com")
-    new_pw = "NewStr0ngP@ss!"
-    data = {
-        "email": "old@example.com",
-        "old_password": "testpassword!",
-        "password": new_pw,
-        "password_repeat": new_pw,
-    }
-
-    form = LoginInfoForm(user=user, data=data)
-
-    assert form.is_valid(), form.errors
 
 
 def test_login_info_form_unverified_user_email_read_only():
@@ -347,69 +252,8 @@ def test_login_info_form_pending_email_expired_property():
     assert form.pending_email_expired is True
 
 
-def test_login_info_form_save_changes_password():
-    djmail.outbox = []
-    user = UserFactory()
-    new_pw = "NewStr0ngP@ss!"
-    data = {
-        "email": user.email,
-        "old_password": "testpassword!",
-        "password": new_pw,
-        "password_repeat": new_pw,
-    }
-
-    form = LoginInfoForm(user=user, data=data)
-    assert form.is_valid(), form.errors
-    form.save()
-
-    user.refresh_from_db()
-    assert user.check_password(new_pw)
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == [user.email]
-    assert "password" in djmail.outbox[0].subject.lower()
-
-
-def test_login_info_form_save_no_changes_when_only_old_password():
-    djmail.outbox = []
-    user = UserFactory(email="keep@example.com")
-    original_password = user.password
-    data = {
-        "email": "keep@example.com",
-        "old_password": "testpassword!",
-        "password": "",
-        "password_repeat": "",
-    }
-
-    form = LoginInfoForm(user=user, data=data)
-    assert form.is_valid(), form.errors
-    form.save()
-
-    user.refresh_from_db()
-    assert user.email == "keep@example.com"
-    assert user.password == original_password
-    assert len(djmail.outbox) == 0
-
-
-def test_speaker_login_info_form_contact_email_change_needs_no_password():
+def test_speaker_login_info_form_contact_email_changes_need_no_password():
     speaker = SpeakerFactory()
-    data = {
-        "email": speaker.user.email,
-        "contact_email": "contact@example.com",
-        "old_password": "",
-        "password": "",
-        "password_repeat": "",
-    }
-
-    form = SpeakerLoginInfoForm(speaker=speaker, data=data)
-    assert form.is_valid(), form.errors
-    form.save()
-
-    speaker.refresh_from_db()
-    assert speaker.email == "contact@example.com"
-
-
-def test_speaker_login_info_form_clearing_contact_email_stores_none():
-    speaker = SpeakerFactory(email="contact@example.com")
     data = {
         "email": speaker.user.email,
         "contact_email": "",
@@ -418,53 +262,58 @@ def test_speaker_login_info_form_clearing_contact_email_stores_none():
         "password_repeat": "",
     }
 
-    form = SpeakerLoginInfoForm(speaker=speaker, data=data)
-    assert form.is_valid(), form.errors
-    form.save()
+    set_form = SpeakerLoginInfoForm(
+        speaker=speaker, data=data | {"contact_email": "contact@example.com"}
+    )
+    assert set_form.is_valid(), set_form.errors
+    set_form.save()
+    speaker.refresh_from_db(fields=["email"])
+    assert speaker.email == "contact@example.com"
 
-    speaker.refresh_from_db()
+    unchanged = SpeakerLoginInfoForm(
+        speaker=speaker, data=data | {"contact_email": "contact@example.com"}
+    )
+    assert unchanged.is_valid(), unchanged.errors
+    assert unchanged.changed_data == []
+
+    clear_form = SpeakerLoginInfoForm(speaker=speaker, data=data)
+    assert clear_form.is_valid(), clear_form.errors
+    clear_form.save()
+    speaker.refresh_from_db(fields=["email"])
     assert speaker.email is None
 
 
-def test_speaker_login_info_form_unchanged_contact_email_does_not_save_profile():
-    speaker = SpeakerFactory(email="contact@example.com")
-    data = {
-        "email": speaker.user.email,
-        "contact_email": "contact@example.com",
-        "old_password": "",
-        "password": "",
-        "password_repeat": "",
-    }
-
-    form = SpeakerLoginInfoForm(speaker=speaker, data=data)
-    assert form.is_valid(), form.errors
-
-    assert "contact_email" not in form.changed_data
-
-
 @pytest.mark.parametrize(
-    "changed_field_data",
+    ("data", "code"),
     (
-        {"email": "new@example.com"},
-        {"password": "newpassword!!", "password_repeat": "newpassword!!"},
+        ({"email": "new@example.com"}, "pw_current_required"),
+        (
+            {"password": "newpassword!!", "password_repeat": "newpassword!!"},
+            "pw_current_required",
+        ),
+        (
+            {"email": "new@example.com", "old_password": "wrongpassword"},
+            "pw_current_wrong",
+        ),
     ),
+    ids=("email_without_password", "password_without_password", "wrong_password"),
 )
-def test_speaker_login_info_form_login_data_change_requires_password(
-    changed_field_data,
+def test_speaker_login_info_form_login_data_change_requires_current_password(
+    data, code
 ):
-    speaker = SpeakerFactory()
+    speaker = SpeakerFactory(user__password="correcthorse")
     data = {
         "email": speaker.user.email,
         "contact_email": "",
         "old_password": "",
         "password": "",
         "password_repeat": "",
-    } | changed_field_data
+    } | data
 
     form = SpeakerLoginInfoForm(speaker=speaker, data=data)
 
     assert not form.is_valid()
-    assert form.errors.as_data()["old_password"][0].code == "pw_current_required"
+    assert _error_codes(form) == {"old_password": [code]}
 
 
 def test_speaker_login_info_form_login_data_change_with_correct_password():
@@ -500,24 +349,6 @@ def test_speaker_login_info_form_unverified_user_keeps_verification_pointer():
 
     assert form.fields["email"].disabled
     assert f"/{speaker.event.slug}/verify/" in form.fields["email"].help_text
-
-
-def test_speaker_login_info_form_wrong_password_single_error():
-    speaker = SpeakerFactory(user__password="correcthorse")
-    data = {
-        "email": "new@example.com",
-        "contact_email": "",
-        "old_password": "wrongpassword",
-        "password": "",
-        "password_repeat": "",
-    }
-
-    form = SpeakerLoginInfoForm(speaker=speaker, data=data)
-
-    assert not form.is_valid()
-    errors = form.errors.as_data()["old_password"]
-    assert len(errors) == 1
-    assert errors[0].code == "pw_current_wrong"
 
 
 def test_user_form_get_context_includes_display_options(rf):
@@ -560,186 +391,74 @@ def test_user_form_ratelimit_key_none_without_request():
 
 
 @pytest.mark.parametrize(
-    "remote_addr",
+    ("remote_addr", "forwarded_for", "expected"),
     (
-        pytest.param("192.168.1.1", id="private_ip"),
-        pytest.param("not-an-ip", id="invalid_ip"),
-        pytest.param(None, id="no_ip"),
+        ("8.8.8.8", None, "pretalx_login_8.8.8.8"),
+        ("127.0.0.1", "1.1.1.1, 8.8.8.8", "pretalx_login_8.8.8.8"),
+        ("192.168.1.1", None, None),
+        ("not-an-ip", None, None),
+        (None, None, None),
     ),
+    ids=("public_ip", "forwarded_public_ip", "private_ip", "invalid_ip", "no_ip"),
 )
-def test_user_form_ratelimit_key_none_for_non_ratelimitable_ip(rf, remote_addr):
-    request = rf.post("/login/")
-    if remote_addr is not None:
-        request.META["REMOTE_ADDR"] = remote_addr
-    else:
-        request.META.pop("REMOTE_ADDR", None)
-    form = UserForm(request=request)
+def test_user_form_ratelimit_key(remote_addr, forwarded_for, expected):
+    form = UserForm(request=_ip_request(forwarded_for, remote_addr=remote_addr))
 
-    assert form.ratelimit_key is None
-
-
-def test_user_form_ratelimit_key_for_public_ip(rf):
-    request = rf.post("/login/")
-    request.META["REMOTE_ADDR"] = "8.8.8.8"
-    form = UserForm(request=request)
-
-    assert form.ratelimit_key == "pretalx_login_8.8.8.8"
+    assert form.ratelimit_key == expected
 
 
 @pytest.mark.parametrize(
-    "forwarded_for",
-    ("10.0.0.1, 8.8.8.8", "1.1.1.1, 8.8.8.8", "1.1.1.1, 2.2.2.2, 8.8.8.8"),
-)
-def test_user_form_ratelimit_key_ignores_spoofed_forwarded_for_prefix(
-    rf, forwarded_for
-):
-    request = rf.post("/login/")
-    request.META["HTTP_X_FORWARDED_FOR"] = forwarded_for
-    request.META["REMOTE_ADDR"] = "127.0.0.1"
-    form = UserForm(request=request)
-
-    assert form.ratelimit_key == "pretalx_login_8.8.8.8"
-
-
-@pytest.mark.parametrize(
-    "login_email",
+    ("data", "is_active", "valid"),
     (
-        pytest.param("test@example.com", id="exact_match"),
-        pytest.param("TEST@EXAMPLE.COM", id="case_insensitive"),
+        (
+            {"login_email": "test@example.com", "login_password": "Str0ngP@ss!"},
+            True,
+            True,
+        ),
+        (
+            {"login_email": "TEST@EXAMPLE.COM", "login_password": "Str0ngP@ss!"},
+            True,
+            True,
+        ),
+        (
+            {"login_email": "test@example.com", "login_password": "wrongpassword"},
+            True,
+            False,
+        ),
+        (
+            {"login_email": "nobody@example.com", "login_password": "anypassword"},
+            True,
+            False,
+        ),
+        (
+            {"login_email": "test@example.com", "login_password": "Str0ngP@ss!"},
+            False,
+            False,
+        ),
+        ({"login_email": "test@example.com"}, True, False),
+        ({}, True, False),
+    ),
+    ids=(
+        "exact_match",
+        "case_insensitive",
+        "wrong_password",
+        "nonexistent_email",
+        "inactive_user",
+        "incomplete",
+        "empty",
     ),
 )
-def test_user_form_clean_login_succeeds(rf, login_email):
-    user = UserFactory(email="test@example.com", password="Str0ngP@ss!")
-    form = UserForm(
-        data={"login_email": login_email, "login_password": "Str0ngP@ss!"},
-        request=rf.post("/login/"),
+def test_user_form_clean_login(rf, data, is_active, valid):
+    user = UserFactory(
+        email="test@example.com", password="Str0ngP@ss!", is_active=is_active
     )
 
-    assert form.is_valid(), form.errors
-    assert form.cleaned_data["user_id"] == user.pk
+    form = UserForm(data=data, request=rf.post("/login/"))
 
-
-def test_user_form_clean_login_fails_with_wrong_password(rf):
-    UserFactory(email="test@example.com", password="Str0ngP@ss!")
-    form = UserForm(
-        data={"login_email": "test@example.com", "login_password": "wrongpassword"},
-        request=rf.post("/login/"),
-    )
-
-    assert not form.is_valid()
-    assert "__all__" in form.errors
-
-
-def test_user_form_clean_login_fails_with_nonexistent_email(rf):
-    form = UserForm(
-        data={"login_email": "nobody@example.com", "login_password": "anypassword"},
-        request=rf.post("/login/"),
-    )
-
-    assert not form.is_valid()
-    assert "__all__" in form.errors
-
-
-def test_user_form_clean_login_fails_for_inactive_user(rf):
-    UserFactory(email="test@example.com", password="Str0ngP@ss!", is_active=False)
-    form = UserForm(
-        data={"login_email": "test@example.com", "login_password": "Str0ngP@ss!"},
-        request=rf.post("/login/"),
-    )
-
-    assert not form.is_valid()
-    assert "__all__" in form.errors
-
-
-def test_user_form_clean_rate_limit_blocks_over_threshold(rf):
-    UserFactory(email="test@example.com", password="Str0ngP@ss!")
-    request = rf.post("/login/")
-    request.META["REMOTE_ADDR"] = "8.8.8.8"
-    cache.set("pretalx_login_8.8.8.8", 11, 300)
-
-    form = UserForm(
-        data={"login_email": "test@example.com", "login_password": "wrongpwd"},
-        request=request,
-    )
-
-    assert not form.is_valid()
-    assert form.errors.as_data()["__all__"][0].code == "rate_limit"
-
-
-def test_user_form_clean_rate_limit_allows_under_threshold(rf):
-    UserFactory(email="test@example.com", password="Str0ngP@ss!")
-    request = rf.post("/login/")
-    request.META["REMOTE_ADDR"] = "8.8.8.8"
-    cache.set("pretalx_login_8.8.8.8", 5, 300)
-
-    form = UserForm(
-        data={"login_email": "test@example.com", "login_password": "Str0ngP@ss!"},
-        request=request,
-    )
-
-    assert form.is_valid(), form.errors
-
-
-def test_user_form_clean_no_rate_limit_for_private_ip(rf):
-    UserFactory(email="test@example.com", password="Str0ngP@ss!")
-    request = rf.post("/login/")
-    request.META["REMOTE_ADDR"] = "192.168.1.1"
-    cache.set("pretalx_login_192.168.1.1", 99, 300)
-
-    form = UserForm(
-        data={"login_email": "test@example.com", "login_password": "wrongpwd"},
-        request=request,
-    )
-    form.is_valid()
-
-    assert not any(
-        e.code == "rate_limit" for e in form.errors.as_data().get("__all__", [])
-    )
-
-
-def test_user_form_clean_login_failure_increments_rate_limit_counter(rf):
-    UserFactory(email="test@example.com", password="Str0ngP@ss!")
-    request = rf.post("/login/")
-    request.META["REMOTE_ADDR"] = "8.8.8.8"
-    cache.set("pretalx_login_8.8.8.8", 2, 300)
-
-    form = UserForm(
-        data={"login_email": "test@example.com", "login_password": "wrongpwd"},
-        request=request,
-    )
-    assert not form.is_valid()
-
-    assert cache.get("pretalx_login_8.8.8.8") == 3
-
-
-def test_user_form_clean_login_failure_initialises_counter(rf):
-    UserFactory(email="test@example.com", password="Str0ngP@ss!")
-    request = rf.post("/login/")
-    request.META["REMOTE_ADDR"] = "8.8.8.8"
-    cache.delete("pretalx_login_8.8.8.8")
-
-    form = UserForm(
-        data={"login_email": "test@example.com", "login_password": "wrongpwd"},
-        request=request,
-    )
-    assert not form.is_valid()
-
-    assert cache.get("pretalx_login_8.8.8.8") == 1
-
-
-def test_user_form_clean_login_success_does_not_increment_counter(rf):
-    UserFactory(email="test@example.com", password="Str0ngP@ss!")
-    request = rf.post("/login/")
-    request.META["REMOTE_ADDR"] = "8.8.8.8"
-    cache.set("pretalx_login_8.8.8.8", 5, 300)
-
-    form = UserForm(
-        data={"login_email": "test@example.com", "login_password": "Str0ngP@ss!"},
-        request=request,
-    )
-    assert form.is_valid(), form.errors
-
-    assert cache.get("pretalx_login_8.8.8.8") == 5
+    assert form.is_valid() is valid, form.errors
+    assert list(form.errors) == ([] if valid else ["__all__"])
+    assert form.cleaned_data.get("user_id") == (user.pk if valid else None)
+    assert form.is_registration is False
 
 
 @override_settings(
@@ -756,130 +475,79 @@ def test_user_form_clean_login_rejects_inactive_user_with_permissive_backend(rf)
     assert "__all__" in form.errors
 
 
-def test_user_form_clean_register_succeeds_with_valid_data(rf):
-    form = UserForm(
-        data={
-            "register_name": "New User",
-            "register_email": "new@example.com",
-            "register_password": "Str0ngP@ss!",
-            "register_password_repeat": "Str0ngP@ss!",
-        },
-        request=rf.post("/register/"),
-    )
-
-    assert form.is_valid(), form.errors
-
-
-def test_user_form_clean_register_increments_rate_limit_counter(rf):
-    UserFactory(email="taken@example.com")
-    request = rf.post("/register/")
-    request.META["REMOTE_ADDR"] = "8.8.8.8"
-    cache.set("pretalx_login_8.8.8.8", 2, 300)
+@pytest.mark.parametrize(
+    ("remote_addr", "count", "password", "errors", "expected_count"),
+    (
+        ("8.8.8.8", 11, "wrongpwd", {"__all__": ["rate_limit"]}, 11),
+        ("8.8.8.8", 5, "Str0ngP@ss!", {}, 5),
+        ("8.8.8.8", 2, "wrongpwd", {"__all__": [None]}, 3),
+        ("192.168.1.1", 99, "wrongpwd", {"__all__": [None]}, 99),
+    ),
+    ids=("over_threshold", "success_keeps_count", "failure_increments", "private_ip"),
+)
+def test_user_form_login_rate_limit(
+    rf, remote_addr, count, password, errors, expected_count
+):
+    UserFactory(email="test@example.com", password="Str0ngP@ss!")
+    key = f"pretalx_login_{remote_addr}"
+    cache.set(key, count, 300)
 
     form = UserForm(
-        data={
-            "register_name": "New User",
-            "register_email": "taken@example.com",
-            "register_password": "Str0ngP@ss!",
-            "register_password_repeat": "Str0ngP@ss!",
-        },
-        request=request,
+        data={"login_email": "test@example.com", "login_password": password},
+        request=_ip_request(remote_addr=remote_addr),
     )
-    form.is_valid()
 
-    assert cache.get("pretalx_login_8.8.8.8") == 3
+    assert form.is_valid() == (not errors), form.errors
+    assert _error_codes(form) == errors
+    assert cache.get(key) == expected_count
 
 
-def test_user_form_clean_register_success_does_not_increment_rate_limit(rf):
-    request = rf.post("/register/")
-    request.META["REMOTE_ADDR"] = "8.8.8.8"
-    cache.set("pretalx_login_8.8.8.8", 2, 300)
+def test_user_form_clean_login_failure_initialises_counter():
+    UserFactory(email="test@example.com", password="Str0ngP@ss!")
+    cache.delete("pretalx_login_8.8.8.8")
 
     form = UserForm(
-        data={
-            "register_name": "New User",
-            "register_email": "new@example.com",
-            "register_password": "Str0ngP@ss!",
-            "register_password_repeat": "Str0ngP@ss!",
-        },
-        request=request,
+        data={"login_email": "test@example.com", "login_password": "wrongpwd"},
+        request=_ip_request(remote_addr="8.8.8.8"),
     )
-
-    assert form.is_valid(), form.errors
-    assert cache.get("pretalx_login_8.8.8.8") == 2
-
-
-def test_user_form_rate_limited_request_does_not_increment_counter(rf):
-    UserFactory(email="taken@example.com")
-    request = rf.post("/register/")
-    request.META["REMOTE_ADDR"] = "8.8.8.8"
-    cache.set("pretalx_login_8.8.8.8", 11, 300)
-
-    form = UserForm(
-        data={
-            "register_name": "New User",
-            "register_email": "taken@example.com",
-            "register_password": "Str0ngP@ss!",
-            "register_password_repeat": "Str0ngP@ss!",
-        },
-        request=request,
-    )
-
     assert not form.is_valid()
-    assert form.errors.as_data()["__all__"][0].code == "rate_limit"
-    assert cache.get("pretalx_login_8.8.8.8") == 11
 
-
-def test_user_form_clean_register_rejects_password_mismatch(rf):
-    form = UserForm(
-        data={
-            "register_name": "New User",
-            "register_email": "new@example.com",
-            "register_password": "Str0ngP@ss!",
-            "register_password_repeat": "DifferentP@ss!",
-        },
-        request=rf.post("/register/"),
-    )
-
-    assert not form.is_valid()
-    assert "register_password_repeat" in form.errors
+    assert cache.get("pretalx_login_8.8.8.8") == 1
 
 
 @pytest.mark.parametrize(
-    "existing_email",
+    ("data", "count", "errors", "expected_count"),
     (
-        pytest.param("existing@example.com", id="exact_match"),
-        pytest.param("Existing@Example.com", id="case_insensitive"),
+        ({}, 2, {}, 2),
+        (
+            {"register_password_repeat": "DifferentP@ss!"},
+            2,
+            {"register_password_repeat": [None]},
+            2,
+        ),
+        ({"register_email": "taken@example.com"}, 2, {"register_email": [None]}, 3),
+        ({"register_email": "Taken@Example.com"}, 2, {"register_email": [None]}, 3),
+        ({"register_email": "taken@example.com"}, 11, {"__all__": ["rate_limit"]}, 11),
+    ),
+    ids=(
+        "valid",
+        "password_mismatch",
+        "taken_email_increments",
+        "taken_email_mixed_case_increments",
+        "rate_limited",
     ),
 )
-def test_user_form_clean_register_rejects_duplicate_email(rf, existing_email):
-    UserFactory(email=existing_email)
+def test_user_form_clean_register(data, count, errors, expected_count):
+    UserFactory(email="taken@example.com")
+    cache.set("pretalx_login_8.8.8.8", count, 300)
+
     form = UserForm(
-        data={
-            "register_name": "New User",
-            "register_email": "existing@example.com",
-            "register_password": "Str0ngP@ss!",
-            "register_password_repeat": "Str0ngP@ss!",
-        },
-        request=rf.post("/register/"),
+        data=REGISTER_DATA | data, request=_ip_request(remote_addr="8.8.8.8")
     )
 
-    assert not form.is_valid()
-    assert "register_email" in form.errors
-
-
-@pytest.mark.parametrize(
-    "data",
-    (
-        pytest.param({"login_email": "test@example.com"}, id="incomplete"),
-        pytest.param({}, id="empty"),
-    ),
-)
-def test_user_form_clean_rejects_insufficient_data(rf, data):
-    form = UserForm(data=data, request=rf.post("/login/"))
-
-    assert not form.is_valid()
-    assert "__all__" in form.errors
+    assert form.is_valid() == (not errors), form.errors
+    assert _error_codes(form) == errors
+    assert cache.get("pretalx_login_8.8.8.8") == expected_count
 
 
 @pytest.mark.parametrize(
@@ -894,16 +562,7 @@ def test_user_form_clean_rejects_insufficient_data(rf, data):
             False,
             id="login_with_autofilled_register_email",
         ),
-        pytest.param(
-            {
-                "register_name": "New User",
-                "register_email": "new@example.com",
-                "register_password": "Str0ngP@ss!",
-                "register_password_repeat": "Str0ngP@ss!",
-            },
-            True,
-            id="register",
-        ),
+        pytest.param(REGISTER_DATA, True, id="register"),
     ),
 )
 def test_user_form_is_registration_marks_only_the_register_branch(rf, data, expected):
@@ -930,32 +589,8 @@ def test_user_form_save_returns_user_id_for_login(rf):
 
 def test_user_form_save_creates_user_for_registration(rf):
     form = UserForm(
-        data={
-            "register_name": "New Speaker",
-            "register_email": "speaker@example.com",
-            "register_password": "Str0ngP@ss!",
-            "register_password_repeat": "Str0ngP@ss!",
-        },
-        request=rf.post("/register/"),
-    )
-    assert form.is_valid(), form.errors
-
-    result = form.save()
-
-    user = User.objects.get(pk=result)
-    assert user.name == "New Speaker"
-    assert user.email == "speaker@example.com"
-    assert user.check_password("Str0ngP@ss!")
-
-
-def test_user_form_save_strips_registration_fields(rf):
-    form = UserForm(
-        data={
-            "register_name": "  Padded Name  ",
-            "register_email": "UPPER@Example.COM",
-            "register_password": "Str0ngP@ss!",
-            "register_password_repeat": "Str0ngP@ss!",
-        },
+        data=REGISTER_DATA
+        | {"register_name": "  Padded Name  ", "register_email": "UPPER@Example.COM"},
         request=rf.post("/register/"),
     )
     assert form.is_valid(), form.errors
@@ -965,56 +600,29 @@ def test_user_form_save_strips_registration_fields(rf):
     user = User.objects.get(pk=result)
     assert user.name == "Padded Name"
     assert user.email == "upper@example.com"
-
-
-def test_user_form_save_sets_locale_and_timezone(rf):
-    form = UserForm(
-        data={
-            "register_name": "New User",
-            "register_email": "new@example.com",
-            "register_password": "Str0ngP@ss!",
-            "register_password_repeat": "Str0ngP@ss!",
-        },
-        request=rf.post("/register/"),
-    )
-    assert form.is_valid(), form.errors
-
-    result = form.save()
-
-    user = User.objects.get(pk=result)
+    assert user.check_password("Str0ngP@ss!")
     assert user.locale == "en"
     assert user.timezone == "UTC"
 
 
 @pytest.mark.parametrize(
-    "email",
-    ("speaker@example.com", "SPEAKER@example.com"),
-    ids=["exact", "case_insensitive"],
+    ("email", "errors", "found"),
+    (
+        ("speaker@example.com", {}, True),
+        ("SPEAKER@example.com", {}, True),
+        ("nonexistent@example.com", {}, False),
+        ("not-an-email", {"login_email": ["invalid"]}, False),
+        ("", {"login_email": ["required"]}, False),
+    ),
 )
-def test_reset_form_clean_sets_user_when_email_exists(email):
+def test_reset_form_clean_looks_up_user_case_insensitively(email, errors, found):
     user = UserFactory(email="speaker@example.com")
 
     form = ResetForm(data={"login_email": email})
 
-    assert form.is_valid(), form.errors
-    assert form.cleaned_data["user"] == user
-
-
-def test_reset_form_clean_sets_user_none_when_email_not_found():
-    UserFactory(email="other@example.com")
-
-    form = ResetForm(data={"login_email": "nonexistent@example.com"})
-
-    assert form.is_valid(), form.errors
-    assert form.cleaned_data["user"] is None
-
-
-@pytest.mark.parametrize("email", ("not-an-email", ""))
-def test_reset_form_rejects_invalid_email(email):
-    form = ResetForm(data={"login_email": email})
-
-    assert not form.is_valid()
-    assert "login_email" in form.errors
+    assert form.is_valid() == (not errors), form.errors
+    assert _error_codes(form) == errors
+    assert form.cleaned_data.get("user") == (user if found else None)
 
 
 def test_recover_form_prefills_email_from_user():
@@ -1027,90 +635,74 @@ def test_recover_form_prefills_email_from_user():
     assert form.fields["email"].widget.attrs["readonly"] == "readonly"
 
 
-def test_recover_form_valid_matching_passwords():
-    form = RecoverForm(
-        data={"password": "mysecurepassword1!", "password_repeat": "mysecurepassword1!"}
-    )
-
-    assert form.is_valid(), form.errors
-
-
-def test_recover_form_rejects_mismatched_passwords():
-    form = RecoverForm(
-        data={
-            "password": "mysecurepassword1!",
-            "password_repeat": "differentpassword1!",
-        }
-    )
-
-    assert not form.is_valid()
-    assert "password_repeat" in form.errors
-
-
-@pytest.mark.parametrize("data", ({"password": "", "password_repeat": ""}, {}))
-def test_recover_form_rejects_empty_passwords(data):
+@pytest.mark.parametrize(
+    ("data", "errors"),
+    (
+        (
+            {"password": "mysecurepassword1!", "password_repeat": "mysecurepassword1!"},
+            {},
+        ),
+        (
+            {
+                "password": "mysecurepassword1!",
+                "password_repeat": "differentpassword1!",
+            },
+            {"password_repeat": [None]},
+        ),
+        (
+            {"password": "", "password_repeat": ""},
+            {"password": ["required"], "password_repeat": ["required"]},
+        ),
+        ({}, {"password": ["required"], "password_repeat": ["required"]}),
+        (
+            {"password": "mysecurepassword1!", "password_repeat": ""},
+            {"password_repeat": ["required"]},
+        ),
+        (
+            {"password": "password", "password_repeat": "password"},
+            {"password": ["password_too_common"]},
+        ),
+    ),
+    ids=("matching", "mismatch", "empty", "missing", "empty_repeat", "common_password"),
+)
+def test_recover_form_clean(data, errors):
     form = RecoverForm(data=data)
 
-    assert not form.is_valid()
-    assert "password" in form.errors
-    assert "password_repeat" in form.errors
-
-
-def test_recover_form_empty_repeat_does_not_duplicate_error():
-    form = RecoverForm(data={"password": "mysecurepassword1!", "password_repeat": ""})
-
-    assert not form.is_valid()
-    assert list(form.errors) == ["password_repeat"]
-    assert len(form.errors["password_repeat"]) == 1
-
-
-def test_recover_form_rejects_common_password():
-    form = RecoverForm(data={"password": "password", "password_repeat": "password"})
-
-    assert not form.is_valid()
-    assert "password" in form.errors
-
-
-def test_email_correction_form_valid_normalises_address():
-    user = UserFactory(password="testpassword!")
-    form = EmailCorrectionForm(
-        {"email": " Fixed@Example.COM ", "password": "testpassword!"}, user=user
-    )
-
-    assert form.is_valid(), form.errors
-    assert form.cleaned_data["email"] == "fixed@example.com"
+    assert form.is_valid() == (not errors), form.errors
+    assert _error_codes(form) == errors
 
 
 @pytest.mark.parametrize(
-    ("data", "field", "code"),
+    ("data", "errors", "email"),
     (
         (
-            {"email": "fixed@example.com", "password": "wrongpassword!"},
-            "password",
-            "pw_current_wrong",
+            {"email": " Fixed@Example.COM ", "password": "testpassword!"},
+            {},
+            "fixed@example.com",
         ),
-        ({"email": "", "password": "testpassword!"}, "email", "required"),
+        (
+            {"email": "fixed@example.com", "password": "wrongpassword!"},
+            {"password": ["pw_current_wrong"]},
+            "fixed@example.com",
+        ),
+        ({"email": "", "password": "testpassword!"}, {"email": ["required"]}, None),
+        (
+            {"email": "taken@example.com", "password": "testpassword!"},
+            {"email": [None]},
+            None,
+        ),
     ),
-    ids=["wrong_password", "missing_email"],
+    ids=("normalises", "wrong_password", "missing_email", "taken_email"),
 )
-def test_email_correction_form_rejects_invalid_input(data, field, code):
-    user = UserFactory(password="testpassword!")
-    form = EmailCorrectionForm(data, user=user)
-
-    assert not form.is_valid()
-    assert form.has_error(field, code)
-
-
-def test_email_correction_form_rejects_taken_address():
+def test_email_correction_form_clean(data, errors, email):
     user = UserFactory(password="testpassword!")
     UserFactory(email="taken@example.com")
-    form = EmailCorrectionForm(
-        {"email": "taken@example.com", "password": "testpassword!"}, user=user
-    )
 
-    assert not form.is_valid()
-    assert "email" in form.errors
-    assert "password" not in form.errors
+    form = EmailCorrectionForm(data, user=user)
+
+    assert form.is_valid() == (not errors), form.errors
+    assert _error_codes(form) == errors
+    assert form.cleaned_data.get("email") == email
 
 
 @pytest.mark.parametrize("orga", (True, False))
@@ -1120,20 +712,17 @@ def test_user_form_keep_logged_in_field_only_on_orga_login(orga):
     assert ("keep_logged_in" in form.fields) is orga
 
 
-def test_reauth_form_accepts_correct_password():
+@pytest.mark.parametrize(
+    ("password", "errors"),
+    (
+        ("correcthorse!", {}),
+        ("wrong", {"password": ["The current password you entered was not correct."]}),
+    ),
+)
+def test_reauth_form_checks_current_password(password, errors):
     user = UserFactory(password="correcthorse!")
 
-    form = ReauthForm(data={"password": "correcthorse!"}, user=user)
+    form = ReauthForm(data={"password": password}, user=user)
 
-    assert form.is_valid()
-
-
-def test_reauth_form_rejects_wrong_password():
-    user = UserFactory(password="correcthorse!")
-
-    form = ReauthForm(data={"password": "wrong"}, user=user)
-
-    assert not form.is_valid()
-    assert form.errors["password"] == [
-        "The current password you entered was not correct."
-    ]
+    assert form.is_valid() == (not errors)
+    assert form.errors == errors

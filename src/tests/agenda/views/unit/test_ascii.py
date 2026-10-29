@@ -83,169 +83,124 @@ def _talk(
     )
 
 
-def test_draw_schedule_list_empty_data():
-    assert draw_schedule_list([]) == ""
+EMPTY_DAY = {"start": START, "rooms": [{"name": "Room 1", "talks": []}]}
 
 
-def test_draw_schedule_list_day_with_no_talks():
-    data = [{"start": START, "rooms": [{"name": "Room 1", "talks": []}]}]
+@pytest.mark.parametrize("data", ([], [EMPTY_DAY]), ids=["no_days", "no_talks"])
+def test_draw_schedule_list_empty_without_talks(data):
     assert draw_schedule_list(data) == ""
 
 
-def test_draw_schedule_list_talk_with_submission():
-    talk = _talk(title="My Talk", speakers="Alice", locale="de", room_name="Main Hall")
-    data = [{"start": START, "rooms": [{"name": "Main Hall", "talks": [talk]}]}]
-
-    result = _strip_ansi(draw_schedule_list(data))
-
-    assert "2024-01-15" in result
-    assert "10:00" in result
-    assert "My Talk" in result
-    assert "Alice" in result
-    assert "(de)" in result
-    assert "Main Hall" in result
-
-
-def test_draw_schedule_list_talk_without_submission():
-    talk = _talk(has_submission=False, description="Lunch Break", room_name="Foyer")
-    data = [{"start": START, "rooms": [{"name": "Foyer", "talks": [talk]}]}]
-
-    result = _strip_ansi(draw_schedule_list(data))
-
-    assert "Lunch Break" in result
-    assert "Foyer" in result
-
-
-def test_draw_schedule_list_talk_without_speakers():
-    talk = _talk(speakers="")
-    data = [{"start": START, "rooms": [{"name": "Room 1", "talks": [talk]}]}]
-
-    result = _strip_ansi(draw_schedule_list(data))
-
-    assert "No speakers" in result
-
-
-def test_draw_schedule_list_sorts_talks_by_start_time():
-    early = _talk(title="Early", start=START)
-    late = _talk(title="Late", start=START + dt.timedelta(hours=1))
-    data = [{"start": START, "rooms": [{"name": "Room", "talks": [late, early]}]}]
-
-    result = _strip_ansi(draw_schedule_list(data))
-
-    assert result.index("Early") < result.index("Late")
-
-
-def test_draw_schedule_list_multiple_rooms():
-    talk1 = _talk(title="Talk A", room_name="Room 1")
-    talk2 = _talk(
-        title="Talk B", room_name="Room 2", start=START + dt.timedelta(minutes=5)
+def test_draw_schedule_list_renders_days_and_talks_in_start_order():
+    early = _talk(title="Early", speakers="", room_name="Main Hall")
+    lunch = _talk(
+        has_submission=False,
+        description="Lunch Break",
+        room_name="Foyer",
+        start=START + dt.timedelta(minutes=5),
     )
+    late = _talk(
+        title="Late",
+        speakers="Alice",
+        locale="de",
+        room_name="Main Hall",
+        start=START + dt.timedelta(hours=1),
+    )
+    day2_start = START + dt.timedelta(days=1)
+    day2_talk = _talk(title="Day2 Talk", room_name="R", start=day2_start)
     data = [
         {
             "start": START,
             "rooms": [
-                {"name": "Room 1", "talks": [talk1]},
-                {"name": "Room 2", "talks": [talk2]},
+                {"name": "Main Hall", "talks": [late, early]},
+                {"name": "Foyer", "talks": [lunch]},
             ],
-        }
-    ]
-
-    result = _strip_ansi(draw_schedule_list(data))
-
-    assert "Talk A" in result
-    assert "Talk B" in result
-
-
-def test_draw_schedule_list_multiple_days():
-    day1_talk = _talk(title="Day1 Talk")
-    day2_start = START + dt.timedelta(days=1)
-    day2_talk = _talk(title="Day2 Talk", start=day2_start)
-    data = [
-        {"start": START, "rooms": [{"name": "R", "talks": [day1_talk]}]},
+        },
         {"start": day2_start, "rooms": [{"name": "R", "talks": [day2_talk]}]},
     ]
 
     result = _strip_ansi(draw_schedule_list(data))
 
-    assert "2024-01-15" in result
-    assert "2024-01-16" in result
-    assert "Day1 Talk" in result
-    assert "Day2 Talk" in result
+    assert result == (
+        "\n2024-01-15\n"
+        "* 10:00 Early, No speakers (en); in Main Hall\n"
+        "* 10:05 Lunch Break in Foyer\n"
+        "* 11:00 Late, Alice (de); in Main Hall\n"
+        "\n2024-01-16\n"
+        "* 10:00 Day2 Talk, Speaker Name (en); in R\n"
+    )
 
 
-def test_talk_card_yields_correct_line_count():
-    talk = _talk(duration=30)  # height = 5, yields 6 lines
-    lines = list(talk_card(talk, col_width=20))
-    assert len(lines) == 6
+@pytest.mark.parametrize(
+    ("talk_kwargs", "expected_lines"),
+    (
+        (
+            {
+                "title": "This is a very long title that exceeds the column width",
+                "speakers": "Alice",
+                "locale": "de",
+                "duration": 15,
+            },
+            ["  This is a very …  ", "  Alice         de  ", "                    "],
+        ),
+        (
+            {"duration": 30},
+            [
+                "                    ",
+                "  Talk Title        ",
+                "                    ",
+                "  Speaker Name      ",
+                "                en  ",
+                "                    ",
+            ],
+        ),
+        (
+            {"speakers": "A" * 50, "duration": 60},
+            [
+                "                    ",
+                "  Talk Title        ",
+                "                    ",
+                "  AAAAAAAAAAAAAAA…  ",
+                "                    ",
+                "                en  ",
+                *["                    "] * 6,
+            ],
+        ),
+        (
+            {"speakers": "", "duration": 30},
+            [
+                "                    ",
+                "  Talk Title        ",
+                "                    ",
+                "                en  ",
+                "                    ",
+                "                    ",
+            ],
+        ),
+        (
+            {"has_submission": False, "description": "Coffee Break", "duration": 30},
+            [
+                "                    ",
+                "  Coffee Break      ",
+                *["                    "] * 4,
+            ],
+        ),
+    ),
+    ids=[
+        "short_card_truncates_title_and_joins_speaker_with_locale",
+        "medium_card_separates_speaker_and_locale",
+        "tall_card_truncates_speaker",
+        "no_speakers_still_shows_locale",
+        "break_shows_description_only",
+    ],
+)
+def test_talk_card_fills_card_height(talk_kwargs, expected_lines):
+    talk = _talk(**talk_kwargs)
 
+    lines = [_strip_ansi(line) for line in talk_card(talk, col_width=20)]
 
-def test_talk_card_short_talk_includes_title():
-    talk = _talk(title="Short", duration=15)
-    lines = list(talk_card(talk, col_width=20))
-    text = _strip_ansi("\n".join(lines))
-    assert "Short" in text
-
-
-def test_talk_card_includes_speaker_and_locale():
-    talk = _talk(speakers="Alice", locale="de", duration=30)
-    lines = list(talk_card(talk, col_width=20))
-    text = _strip_ansi("\n".join(lines))
-    assert "Alice" in text
-    assert "de" in text
-
-
-def test_talk_card_without_submission_shows_description():
-    talk = _talk(has_submission=False, description="Coffee Break", duration=30)
-    lines = list(talk_card(talk, col_width=20))
-    text = _strip_ansi("\n".join(lines))
-    assert "Coffee Break" in text
-
-
-def test_talk_card_long_title_truncated():
-    long_title = "This is a very long title that definitely exceeds the column width"
-    talk = _talk(title=long_title, duration=15)  # height=2, max_title_lines=1
-    lines = list(talk_card(talk, col_width=20))
-    text = _strip_ansi("\n".join(lines))
-    assert "…" in text
-
-
-def test_talk_card_long_speaker_name_truncated():
-    long_speaker = "A" * 50
-    talk = _talk(speakers=long_speaker, duration=30)
-    lines = list(talk_card(talk, col_width=20))
-    text = _strip_ansi("\n".join(lines))
-    assert "…" in text
-
-
-def test_talk_card_empty_speaker_still_shows_locale():
-    talk = _talk(speakers="", duration=30)
-    lines = list(talk_card(talk, col_width=20))
-    text = _strip_ansi("\n".join(lines))
-    assert "en" in text
-
-
-def test_talk_card_tall_card_separates_speaker_and_locale():
-    talk = _talk(duration=60)  # height=11, height_after_title > 3
-    lines = list(talk_card(talk, col_width=20))
-    text = _strip_ansi("\n".join(lines))
-    assert "Speaker Name" in text
-    assert "en" in text
-
-
-def test_talk_card_joined_speaker_and_locale():
-    talk = _talk(duration=15)  # height=2, height_after_title <= 3
-    lines = list(talk_card(talk, col_width=20))
-    text = _strip_ansi("\n".join(lines))
-    assert "Speaker Name" in text
-    assert "en" in text
-
-
-def test_talk_card_all_lines_match_col_width():
-    talk = _talk(duration=30)
-    col_width = 20
-    for line in talk_card(talk, col_width):
-        stripped = _strip_ansi(line)
-        assert len(stripped) == col_width
+    assert lines == expected_lines
+    assert len(lines) == talk.duration // 5
 
 
 @pytest.mark.parametrize(
@@ -292,99 +247,42 @@ def test_get_line_parts(start1, start2, end1, end2, run1, run2, fill_char, expec
 
 
 def test_draw_grid_for_day_no_talks_returns_none():
-    day = {"start": START, "rooms": [{"name": "Room 1", "talks": []}]}
-    assert draw_grid_for_day(day) is None
+    assert draw_grid_for_day(EMPTY_DAY) is None
 
 
-def test_draw_grid_for_day_single_talk():
-    talk = _talk(title="My Talk", duration=30, start=START, room_name="Room 1")
+@pytest.mark.parametrize(
+    ("short_room", "long_room"),
+    (("Room 1", "Room 2"), ("Room 2", "Room 1")),
+    ids=["first_room_ends_early", "last_room_ends_early"],
+)
+def test_draw_grid_for_day_renders_rooms_talks_and_breaks(short_room, long_room):
+    short = _talk(title="Short", room_name=short_room, duration=15)
+    long_ = _talk(
+        has_submission=False, description="Coffee", room_name=long_room, duration=30
+    )
     day = {
-        "start": START,
-        "rooms": [{"name": "Room 1", "talks": [talk]}],
-        "first_start": START,
-        "last_end": START + dt.timedelta(minutes=30),
-    }
-
-    result = draw_grid_for_day(day, col_width=20)
-
-    assert result is not None
-    plain = _strip_ansi(result)
-    assert "Room 1" in plain
-    assert "10:00" in plain
-    assert "My Talk" in plain
-
-
-def test_draw_grid_for_day_two_rooms():
-    talk1 = _talk(title="Talk A", room_name="Room 1", duration=30)
-    talk2 = _talk(title="Talk B", room_name="Room 2", duration=30)
-    day = {
-        "start": START,
         "rooms": [
-            {"name": "Room 1", "talks": [talk1]},
-            {"name": "Room 2", "talks": [talk2]},
-        ],
-        "first_start": START,
-        "last_end": START + dt.timedelta(minutes=30),
+            {"name": "Room 1", "talks": [short if short_room == "Room 1" else long_]},
+            {"name": "Room 2", "talks": [short if short_room == "Room 2" else long_]},
+        ]
     }
 
-    result = draw_grid_for_day(day, col_width=20)
-    plain = _strip_ansi(result)
+    plain = _strip_ansi(draw_grid_for_day(day, col_width=20))
 
     assert "Room 1" in plain
     assert "Room 2" in plain
-    assert "Talk A" in plain
-    assert "Talk B" in plain
-
-
-def test_draw_grid_for_day_derives_start_end_from_talks():
-    talk = _talk(duration=30, start=START)
-    day = {"rooms": [{"name": "Room 1", "talks": [talk]}]}
-
-    result = draw_grid_for_day(day, col_width=20)
-
-    assert result is not None
-    assert "10:00" in _strip_ansi(result)
-
-
-def test_draw_grid_for_day_break_without_submission():
-    talk = _talk(
-        has_submission=False, description="Coffee", duration=30, room_name="Foyer"
-    )
-    day = {
-        "start": START,
-        "rooms": [{"name": "Foyer", "talks": [talk]}],
-        "first_start": START,
-        "last_end": START + dt.timedelta(minutes=30),
-    }
-
-    result = draw_grid_for_day(day, col_width=20)
-
-    assert result is not None
-    assert "Coffee" in _strip_ansi(result)
+    assert "10:00" in plain
+    assert "10:30" in plain
+    assert "Short" in plain
+    assert "Coffee" in plain
 
 
 def test_draw_schedule_grid_day_without_talks():
-    day = {"start": START, "rooms": [{"name": "Room 1", "talks": []}]}
-    result = draw_schedule_grid([day])
-    assert "No talks on this day." in result
+    assert "No talks on this day." in draw_schedule_grid([EMPTY_DAY])
+    assert draw_ascii_schedule([EMPTY_DAY]) == draw_schedule_grid([EMPTY_DAY])
 
 
-def test_draw_schedule_grid_day_with_talks():
-    talk = _talk(duration=30)
-    day = {
-        "start": START,
-        "rooms": [{"name": "Room 1", "talks": [talk]}],
-        "first_start": START,
-        "last_end": START + dt.timedelta(minutes=30),
-    }
-
-    result = _strip_ansi(draw_schedule_grid([day]))
-
-    assert "2024-01-15" in result
-    assert "Talk Title" in result
-
-
-def test_draw_schedule_grid_custom_col_width():
+def test_draw_schedule_grid_day_with_talks_and_custom_col_width():
     talk = _talk(duration=30)
     day = {
         "start": START,
@@ -395,67 +293,10 @@ def test_draw_schedule_grid_custom_col_width():
 
     result = _strip_ansi(draw_schedule_grid([day], col_width=30))
 
+    assert "2024-01-15" in result
     assert "Talk Title" in result
     assert "Room 1" in result
-
-
-@pytest.mark.parametrize("output_format", ("list", "table"))
-def test_draw_ascii_schedule_renders_talk(output_format):
-    talk = _talk(duration=30)
-    data = [
-        {
-            "start": START,
-            "rooms": [{"name": "Room 1", "talks": [talk]}],
-            "first_start": START,
-            "last_end": START + dt.timedelta(minutes=30),
-        }
-    ]
-
-    result = draw_ascii_schedule(data, output_format=output_format)
-
-    assert "Talk Title" in _strip_ansi(result)
-
-
-@pytest.mark.parametrize(
-    ("short_room", "long_room"),
-    (("Room 1", "Room 2"), ("Room 2", "Room 1")),
-    ids=["first_room_short", "last_room_short"],
-)
-def test_draw_grid_for_day_room_empty_at_end(short_room, long_room):
-    short = _talk(title="Short", room_name=short_room, duration=15)
-    long_ = _talk(title="Long", room_name=long_room, duration=30)
-    day = {
-        "start": START,
-        "rooms": [
-            {"name": "Room 1", "talks": [short if short_room == "Room 1" else long_]},
-            {"name": "Room 2", "talks": [short if short_room == "Room 2" else long_]},
-        ],
-        "first_start": START,
-        "last_end": START + dt.timedelta(minutes=30),
-    }
-
-    result = draw_grid_for_day(day, col_width=20)
-    plain = _strip_ansi(result)
-
-    assert "Short" in plain
-    assert "Long" in plain
-
-
-def test_draw_ascii_schedule_default_is_table():
-    talk = _talk(duration=30)
-    data = [
-        {
-            "start": START,
-            "rooms": [{"name": "Room 1", "talks": [talk]}],
-            "first_start": START,
-            "last_end": START + dt.timedelta(minutes=30),
-        }
-    ]
-
-    result_default = draw_ascii_schedule(data)
-    result_table = draw_ascii_schedule(data, output_format="table")
-
-    assert result_default == result_table
+    assert result.splitlines()[2] == "        | " + "Room 1".ljust(28)
 
 
 @pytest.mark.parametrize("output_format", ("list", "table"))

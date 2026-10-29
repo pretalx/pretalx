@@ -17,68 +17,36 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_run_update_check_deletes_expired_tokens():
+def test_run_update_check_deletes_only_expired_tokens():
     expired = UserApiTokenFactory(expires=now() - dt.timedelta(hours=1))
     active = UserApiTokenFactory(expires=now() + dt.timedelta(hours=1))
-
-    run_update_check(sender=None)
-
-    assert not UserApiToken.objects.filter(pk=expired.pk).exists()
-    assert UserApiToken.objects.filter(pk=active.pk).exists()
-
-
-def test_run_update_check_keeps_tokens_without_expiry():
     no_expiry = UserApiTokenFactory(expires=None)
 
     run_update_check(sender=None)
 
-    assert UserApiToken.objects.filter(pk=no_expiry.pk).exists()
+    assert not UserApiToken.objects.filter(pk=expired.pk).exists()
+    assert set(UserApiToken.objects.all()) == {active, no_expiry}
 
 
-def test_clean_orphaned_profile_pictures_deletes_old_orphan():
+def test_clean_orphaned_profile_pictures_deletes_only_old_unreferenced_pictures():
     user = UserFactory()
-    picture = ProfilePictureFactory(user=user)
-    ProfilePicture.objects.filter(pk=picture.pk).update(
-        updated=now() - dt.timedelta(days=31)
-    )
-
-    clean_orphaned_profile_pictures(sender=None)
-
-    assert not ProfilePicture.objects.filter(pk=picture.pk).exists()
-
-
-def test_clean_orphaned_profile_pictures_keeps_recent_orphan():
-    user = UserFactory()
-    picture = ProfilePictureFactory(user=user)
-
-    clean_orphaned_profile_pictures(sender=None)
-
-    assert ProfilePicture.objects.filter(pk=picture.pk).exists()
-
-
-def test_clean_orphaned_profile_pictures_keeps_user_referenced():
-    user = UserFactory()
-    picture = ProfilePictureFactory(user=user)
-    user.profile_picture = picture
+    old_orphan = ProfilePictureFactory(user=user)
+    recent_orphan = ProfilePictureFactory(user=user)
+    user_referenced = ProfilePictureFactory(user=user)
+    user.profile_picture = user_referenced
     user.save(update_fields=["profile_picture"])
-    ProfilePicture.objects.filter(pk=picture.pk).update(
-        updated=now() - dt.timedelta(days=31)
-    )
-
-    clean_orphaned_profile_pictures(sender=None)
-
-    assert ProfilePicture.objects.filter(pk=picture.pk).exists()
-
-
-def test_clean_orphaned_profile_pictures_keeps_speaker_referenced():
     speaker = SpeakerFactory()
-    picture = ProfilePictureFactory(user=speaker.user)
-    speaker.profile_picture = picture
+    speaker_referenced = ProfilePictureFactory(user=speaker.user)
+    speaker.profile_picture = speaker_referenced
     speaker.save(update_fields=["profile_picture"])
-    ProfilePicture.objects.filter(pk=picture.pk).update(
-        updated=now() - dt.timedelta(days=31)
-    )
+    ProfilePicture.objects.filter(
+        pk__in=[old_orphan.pk, user_referenced.pk, speaker_referenced.pk]
+    ).update(updated=now() - dt.timedelta(days=31))
 
     clean_orphaned_profile_pictures(sender=None)
 
-    assert ProfilePicture.objects.filter(pk=picture.pk).exists()
+    assert set(ProfilePicture.objects.all()) == {
+        recent_orphan,
+        user_referenced,
+        speaker_referenced,
+    }

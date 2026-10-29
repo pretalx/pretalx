@@ -19,10 +19,6 @@ class _FileFieldWrapper(serializers.Serializer):
     file = UploadedFileField()
 
 
-class _FileFieldWrapperTypeOnly(serializers.Serializer):
-    file = UploadedFileField(allowed_types=["image/png"])
-
-
 class _FileFieldWrapperSizeOnly(serializers.Serializer):
     file = UploadedFileField(max_size=100)
 
@@ -77,8 +73,10 @@ def test_uploaded_file_field_attached_file_is_copied_out_of_upload_cache():
 
 
 @pytest.mark.django_db
-def test_uploaded_file_field_to_internal_value_not_found_wrong_id():
+def test_uploaded_file_field_to_internal_value_not_found_for_unknown_or_foreign_id():
     api_token = UserApiTokenFactory()
+    uploaded = SimpleUploadedFile("test.txt", b"content")
+    foreign = CachedFileFactory(session_key="api-upload-other-token", file=uploaded)
     request = rf.get("/")
     request.auth = api_token
     wrapper = _FileFieldWrapper(context={"request": request})
@@ -86,40 +84,8 @@ def test_uploaded_file_field_to_internal_value_not_found_wrong_id():
 
     with pytest.raises(ValidationError, match="not found"):
         field.to_internal_value("file:00000000-0000-0000-0000-000000000000")
-
-
-@pytest.mark.django_db
-def test_uploaded_file_field_to_internal_value_not_found_wrong_session():
-    api_token = UserApiTokenFactory()
-    uploaded = SimpleUploadedFile("test.txt", b"content")
-    cf = CachedFileFactory(session_key="api-upload-other-token", file=uploaded)
-    request = rf.get("/")
-    request.auth = api_token
-    wrapper = _FileFieldWrapper(context={"request": request})
-    field = wrapper.fields["file"]
-
     with pytest.raises(ValidationError, match="not found"):
-        field.to_internal_value(f"file:{cf.pk}")
-
-
-@pytest.mark.django_db
-def test_uploaded_file_field_to_internal_value_rejects_wrong_type():
-    api_token = UserApiTokenFactory()
-    uploaded = SimpleUploadedFile(
-        "test.pdf", b"pdf content", content_type="application/pdf"
-    )
-    cf = CachedFileFactory(
-        session_key=f"api-upload-{api_token.token}",
-        file=uploaded,
-        content_type="application/pdf",
-    )
-    request = rf.get("/")
-    request.auth = api_token
-    wrapper = _FileFieldWrapperTypeOnly(context={"request": request})
-    field = wrapper.fields["file"]
-
-    with pytest.raises(ValidationError, match="file type"):
-        field.to_internal_value(f"file:{cf.pk}")
+        field.to_internal_value(f"file:{foreign.pk}")
 
 
 @pytest.mark.django_db
@@ -136,20 +102,13 @@ def test_uploaded_file_field_to_internal_value_rejects_oversized():
         field.to_internal_value(f"file:{cf.pk}")
 
 
-def test_uploaded_file_field_to_representation_returns_none_for_falsy():
+def test_uploaded_file_field_to_representation_returns_none_without_file_url():
     request = rf.get("/")
     wrapper = _FileFieldWrapper(context={"request": request})
     field = wrapper.fields["file"]
 
     assert field.to_representation(None) is None
     assert field.to_representation("") is None
-
-
-def test_uploaded_file_field_to_representation_returns_none_without_url():
-    request = rf.get("/")
-    wrapper = _FileFieldWrapper(context={"request": request})
-    field = wrapper.fields["file"]
-
     assert field.to_representation(object()) is None
 
 

@@ -33,18 +33,9 @@ def test_room_serializer_fields():
     assert data["id"] == room.pk
     assert data["guid"] is None
     assert data["capacity"] is None
-
-
-def test_room_serializer_uuid_without_guid():
-    room = RoomFactory()
-    request = make_api_request(room.event)
-
-    serializer = RoomSerializer(room, context={"request": request})
-
-    expected = str(
+    assert data["uuid"] == str(
         uuid.uuid5(GlobalSettings().get_instance_identifier(), f"room:{room.pk}")
     )
-    assert serializer.data["uuid"] == expected
 
 
 def test_room_serializer_uuid_equals_guid_when_set():
@@ -60,6 +51,7 @@ def test_room_serializer_uuid_equals_guid_when_set():
 
 def test_room_orga_serializer_fields():
     room = RoomFactory()
+    avail = AvailabilityFactory(event=room.event, room=room)
     request = make_api_request(room.event)
 
     serializer = RoomOrgaSerializer(room, context={"request": request})
@@ -77,16 +69,6 @@ def test_room_orga_serializer_fields():
         "speaker_info",
         "availabilities",
     }
-
-
-def test_room_orga_serializer_includes_availabilities():
-    room = RoomFactory()
-    avail = AvailabilityFactory(event=room.event, room=room)
-    request = make_api_request(room.event)
-
-    serializer = RoomOrgaSerializer(room, context={"request": request})
-    data = serializer.data
-
     assert len(data["availabilities"]) == 1
     avail_data = data["availabilities"][0]
     assert set(avail_data.keys()) == {"start", "end", "allDay"}
@@ -119,34 +101,21 @@ def test_room_orga_serializer_create_with_availabilities():
     assert avail.event_id == event.pk
 
 
-def test_room_orga_serializer_update():
-    room = RoomFactory()
-    request = make_api_request(room.event)
-
-    serializer = RoomOrgaSerializer(
-        room, data={"name": "Renamed Hall", "position": 5}, context={"request": request}
-    )
-    serializer.is_valid(raise_exception=True)
-
-    updated = serializer.save()
-
-    assert str(updated.name) == "Renamed Hall"
-    assert updated.position == 5
-
-
-def test_room_orga_serializer_update_with_availabilities():
+def test_room_orga_serializer_update_replaces_fields_and_availabilities():
     room = RoomFactory()
     AvailabilityFactory(event=room.event, room=room)
     request = make_api_request(room.event)
-    new_start = room.event.datetime_from.isoformat()
-    new_end = (room.event.datetime_from + dt.timedelta(hours=3)).isoformat()
+    new_start = room.event.datetime_from
+    new_end = new_start + dt.timedelta(hours=3)
 
     serializer = RoomOrgaSerializer(
         room,
         data={
-            "name": str(room.name),
-            "position": room.position,
-            "availabilities": [{"start": new_start, "end": new_end}],
+            "name": "Renamed Hall",
+            "position": 5,
+            "availabilities": [
+                {"start": new_start.isoformat(), "end": new_end.isoformat()}
+            ],
         },
         context={"request": request},
     )
@@ -154,7 +123,11 @@ def test_room_orga_serializer_update_with_availabilities():
 
     updated = serializer.save()
 
-    assert updated.availabilities.count() == 1
+    assert str(updated.name) == "Renamed Hall"
+    assert updated.position == 5
+    assert [(a.start, a.end) for a in updated.availabilities.all()] == [
+        (new_start, new_end)
+    ]
 
 
 def test_room_orga_serializer_update_without_availabilities_key():

@@ -73,37 +73,25 @@ def test_upload_document_image_type_skips_image_validation(
     assert cf.content_type == content_type
 
 
-def test_upload_extension_mismatch_returns_400(client, orga_write_token):
-    response = client.post(
-        "/api/upload/",
-        data={"name": "file.png", "file_field": ContentFile(b"fake pdf content")},
-        headers={
-            "Authorization": f"Token {orga_write_token.token}",
-            "Content-Disposition": 'attachment; filename="file.png"',
-            "Content-Type": "application/pdf",
-        },
-    )
-
-    assert response.status_code == 400
-    assert response.data == [
-        'File name "file.png" has an invalid extension for type "application/pdf"'
-    ]
-
-
 @pytest.mark.parametrize(
-    ("filename", "content_type", "body"),
+    ("filename", "content_type", "error"),
     (
-        ("file.bin", "application/octet-stream", b"binary content"),
-        ("evil.html", "text/html", b"<script>x</script>"),
+        (
+            "file.png",
+            "application/pdf",
+            'File name "file.png" has an invalid extension for type "application/pdf"',
+        ),
+        ("file.bin", "application/octet-stream", "Content type is not allowed."),
+        ("evil.html", "text/html", "Content type is not allowed."),
     ),
-    ids=("octet_stream", "active_content_html"),
+    ids=("extension_mismatch", "octet_stream", "active_content_html"),
 )
-def test_upload_disallowed_content_type_returns_400(
-    client, orga_write_token, filename, content_type, body
+def test_upload_rejects_invalid_type_or_extension(
+    client, orga_write_token, filename, content_type, error
 ):
     response = client.post(
         "/api/upload/",
-        data={"name": filename, "file_field": ContentFile(body)},
+        data={"name": filename, "file_field": ContentFile(b"fake content")},
         headers={
             "Authorization": f"Token {orga_write_token.token}",
             "Content-Disposition": f'attachment; filename="{filename}"',
@@ -112,7 +100,7 @@ def test_upload_disallowed_content_type_returns_400(
     )
 
     assert response.status_code == 400
-    assert "Content type is not allowed" in str(response.data)
+    assert response.data == [error]
     assert CachedFile.objects.count() == 0
 
 

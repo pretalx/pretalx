@@ -15,54 +15,44 @@ from pretalx.orga.forms.widgets import (
 
 pytestmark = pytest.mark.unit
 
+COMMUNITY_LABEL = (
+    f"{MultipleLanguagesWidget.community_group_label}"
+    f"\n{MultipleLanguagesWidget.community_note}"
+)
+
 
 def test_plugin_select_widget_create_option_adds_plugin():
     plugin = SimpleNamespace(module="my_plugin", name="My Plugin")
     widget = PluginSelectWidget(plugins=[plugin])
 
-    opt = widget.create_option("plugins", "my_plugin", "My Plugin", False, 0)
+    known = widget.create_option("plugins", "my_plugin", "My Plugin", False, 0)
+    unknown = widget.create_option("plugins", "unknown", "Unknown", False, 1)
 
-    assert opt["plugin"] is plugin
-
-
-def test_plugin_select_widget_create_option_missing_plugin():
-    widget = PluginSelectWidget(plugins=[])
-
-    opt = widget.create_option("plugins", "unknown", "Unknown", False, 0)
-
-    assert opt["plugin"] is None
+    assert known["plugin"] is plugin
+    assert unknown["plugin"] is None
 
 
 def test_language_widget_optgroups_splits_official_and_community():
     widget = MultipleLanguagesWidget()
     widget.choices = [("ar", "Arabic"), ("en", "English"), ("de", "German")]
 
-    groups = widget.optgroups("locale", [], attrs={})
+    groups = widget.optgroups("locale", ["ar"], attrs={})
 
-    community_label = (
-        f"{MultipleLanguagesWidget.community_group_label}"
-        f"\n{MultipleLanguagesWidget.community_note}"
-    )
     assert [group[0] for group in groups] == [
         str(MultipleLanguagesWidget.official_group_label),
-        community_label,
+        COMMUNITY_LABEL,
     ]
     assert str(MultipleLanguagesWidget.community_note).endswith(
         "translate.pretalx.com."
     )
-    assert [option["value"] for option in groups[0][1]] == ["en", "de"]
-    assert [option["value"] for option in groups[1][1]] == ["ar"]
+    assert [(option["value"], option["selected"]) for option in groups[0][1]] == [
+        ("en", False),
+        ("de", False),
+    ]
+    assert [(option["value"], option["selected"]) for option in groups[1][1]] == [
+        ("ar", True)
+    ]
     assert [group[2] for group in groups] == [0, 1]
-
-
-def test_language_widget_optgroups_marks_selected():
-    widget = MultipleLanguagesWidget()
-    widget.choices = [("en", "English"), ("ar", "Arabic")]
-
-    groups = widget.optgroups("locale", ["ar"], attrs={})
-
-    assert groups[0][1][0]["selected"] is False
-    assert groups[1][1][0]["selected"] is True
 
 
 @pytest.mark.parametrize(
@@ -111,29 +101,24 @@ def test_language_widget_community_option_without_percentage():
     assert "data-description" not in option["attrs"]
 
 
-def test_language_widget_context_opts_into_natural_name_search():
-    widget = MultipleLanguagesWidget()
-    widget.choices = [("en", "English"), ("ar", "Arabic")]
-
-    context = widget.get_context("locale", [], {"id": "id_locale"})
-
-    attrs = context["widget"]["attrs"]
-    assert attrs["data-search-fields"] == "label,customProperties"
-    assert "language-select" in attrs["class"]
-    assert "enhanced" in attrs["class"]
-
-
-def test_language_widget_renders_note_in_community_group_label():
-    widget = MultipleLanguagesWidget()
+@pytest.mark.parametrize(
+    ("widget_class", "expects_multiple"),
+    ((MultipleLanguagesWidget, True), (LanguageWidget, False)),
+    ids=("multiple", "single"),
+)
+def test_language_widget_renders_note_in_community_group_label(
+    widget_class, expects_multiple
+):
+    widget = widget_class()
     widget.choices = [("en", "English"), ("ar", "Arabic")]
 
     rendered = widget.render("locale", ["ar"], {"id": "id_locale"})
 
-    expected_label = (
-        f"{MultipleLanguagesWidget.community_group_label}"
-        f"\n{MultipleLanguagesWidget.community_note}"
-    )
-    assert f'<optgroup label="{expected_label}">' in rendered
+    assert ("multiple" in rendered) is expects_multiple
+    assert 'data-search-fields="label,customProperties"' in rendered
+    assert 'class="enhanced language-select"' in rendered
+    assert f'<optgroup label="{COMMUNITY_LABEL}">' in rendered
+    assert '<option value="en" lang="en" data-custom-properties="English">' in rendered
     assert (
         '<option value="ar" selected lang="ar" data-custom-properties="اَلْعَرَبِيَّةُ" data-description='
         in rendered
@@ -155,63 +140,29 @@ def test_language_widget_renders_no_note_without_community_languages():
 
 
 @pytest.mark.parametrize(
-    ("widget_class", "expects_multiple"),
-    ((MultipleLanguagesWidget, True), (LanguageWidget, False)),
-    ids=("multiple", "single"),
+    ("fonts", "default_font", "value", "family", "sample"),
+    (
+        ({"TestFont": {"regular": {}}}, None, "TestFont", "TestFont", None),
+        (
+            {"TestFont": {"regular": {}, "sample": "مرحبا بالعالم"}},
+            None,
+            "TestFont",
+            "TestFont",
+            "مرحبا بالعالم",
+        ),
+        ({"TestFont": {"regular": {}}}, "Titillium Web", "", "Titillium Web", None),
+        ({"TestFont": {"regular": {}}}, None, "", None, None),
+    ),
+    ids=("known-font", "font-with-sample", "empty-with-default", "empty-no-default"),
 )
-def test_language_widget_renders_matching_select_type(widget_class, expects_multiple):
-    widget = widget_class()
-    widget.choices = [("en", "English"), ("ar", "Arabic")]
-
-    rendered = widget.render("locale", ["en"], {"id": "id_locale"})
-
-    assert ("multiple" in rendered) is expects_multiple
-    assert '<option value="en" selected lang="en"' in rendered
-
-
-def test_font_select_create_option_sets_font_family_for_known_font():
-    fonts = {"TestFont": {"regular": {"woff2": "fonts/test.woff2"}}}
-    widget = FontSelect(
-        fonts=fonts, choices=[("", "Default"), ("TestFont", "TestFont")]
-    )
-
-    option = widget.create_option("field", "TestFont", "TestFont", False, 1)
-
-    assert option["attrs"]["data-font-family"] == "TestFont"
-
-
-def test_font_select_create_option_sets_sample_data():
-    fonts = {
-        "TestFont": {
-            "regular": {"woff2": "fonts/test.woff2"},
-            "sample": "مرحبا بالعالم",
-        }
-    }
-    widget = FontSelect(fonts=fonts, choices=[("TestFont", "TestFont")])
-
-    option = widget.create_option("field", "TestFont", "TestFont", False, 0)
-
-    assert option["attrs"]["data-font-family"] == "TestFont"
-    assert option["attrs"]["data-font-sample"] == "مرحبا بالعالم"
-
-
-def test_font_select_create_option_empty_value_uses_default_font():
-    fonts = {"TestFont": {"regular": {"woff2": "fonts/test.woff2"}}}
+def test_font_select_create_option(fonts, default_font, value, family, sample):
     widget = FontSelect(
         fonts=fonts,
         choices=[("", "Default"), ("TestFont", "TestFont")],
-        default_font="Titillium Web",
+        default_font=default_font,
     )
 
-    option = widget.create_option("field", "", "Default", False, 0)
+    option = widget.create_option("field", value, value or "Default", False, 0)
 
-    assert option["attrs"]["data-font-family"] == "Titillium Web"
-
-
-def test_font_select_create_option_empty_value_without_default():
-    fonts = {"TestFont": {"regular": {"woff2": "fonts/test.woff2"}}}
-    widget = FontSelect(fonts=fonts, choices=[("", "Default")])
-
-    option = widget.create_option("field", "", "Default", False, 0)
-
-    assert "data-font-family" not in option["attrs"]
+    assert option["attrs"].get("data-font-family") == family
+    assert option["attrs"].get("data-font-sample") == sample

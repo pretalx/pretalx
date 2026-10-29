@@ -5,6 +5,9 @@ import datetime as dt
 import pytest
 from django_scopes import scope
 
+from pretalx.common.text.phrases import phrases
+from pretalx.mail.domain.template import mail_template_by_role
+from pretalx.mail.enums import MailTemplateRoles
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.interfaces.forms import ScheduleReleaseForm
 from pretalx.submission.models import Submission, SubmissionStates
@@ -18,140 +21,92 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_schedule_release_form_init_notify_speakers_help_text_contains_link():
+def test_schedule_release_form_init_before_first_release():
     event = EventFactory()
-    schedule = event.wip_schedule
-    form = ScheduleReleaseForm(event=event, instance=schedule)
+    template_url = mail_template_by_role(
+        event, MailTemplateRoles.NEW_SCHEDULE
+    ).urls.base
 
-    help_text = str(form.fields["notify_speakers"].help_text)
-    assert "<a href=" in help_text
-
-
-def test_schedule_release_form_init_first_schedule_comment():
-    event = EventFactory()
-    assert event.current_schedule is None
-    schedule = event.wip_schedule
-    form = ScheduleReleaseForm(event=event, instance=schedule)
-
-    assert form.fields["comment"].initial is not None
-    assert str(form.fields["comment"].initial) != ""
-
-
-def test_schedule_release_form_init_subsequent_schedule_comment():
-    event = EventFactory()
-    schedule = event.wip_schedule
-    freeze_schedule(schedule, "v1", notify_speakers=False)
     form = ScheduleReleaseForm(event=event, instance=event.wip_schedule)
+    custom = ScheduleReleaseForm(
+        event=event, instance=event.wip_schedule, initial={"version": "custom"}
+    )
 
-    assert form.fields["comment"].initial is not None
-    assert str(form.fields["comment"].initial) != ""
-
-
-def test_schedule_release_form_init_guesses_version_when_no_initial():
-    event = EventFactory()
-    schedule = event.wip_schedule
-    form = ScheduleReleaseForm(event=event, instance=schedule)
-
+    assert form.fields["notify_speakers"].help_text == (
+        f"<a href='{template_url}'>Email template</a>"
+    )
+    assert form.fields["comment"].initial == phrases.schedule.first_schedule
     assert form.fields["version"].initial == "0.1"
+    assert custom.fields["version"].initial == "custom"
 
 
-def test_schedule_release_form_init_guesses_version_after_release():
+def test_schedule_release_form_init_after_release():
     event = EventFactory()
-    schedule = event.wip_schedule
-    freeze_schedule(schedule, "v1.3", notify_speakers=False)
+    freeze_schedule(event.wip_schedule, "v1.3", notify_speakers=False)
+
     form = ScheduleReleaseForm(event=event, instance=event.wip_schedule)
 
+    assert form.fields["comment"].initial == "We released a new schedule version!"
     assert form.fields["version"].initial == "v1.4"
 
 
-def test_schedule_release_form_clean_version_valid():
+@pytest.mark.parametrize(
+    ("version", "errors"),
+    (
+        ("v2.0", {}),
+        (
+            "v1.0",
+            {
+                "version": [
+                    "This schedule version was used already, please choose a different one."
+                ]
+            },
+        ),
+        (
+            "200 km/h",
+            {
+                "version": [
+                    "Schedule versions cannot contain slashes or be “.” or “..”."
+                ]
+            },
+        ),
+        ("", {"version": ["This field is required."]}),
+    ),
+    ids=["valid", "duplicate_case_insensitive", "slash", "required"],
+)
+def test_schedule_release_form_clean_version(version, errors):
     event = EventFactory()
-    schedule = event.wip_schedule
+    freeze_schedule(event.wip_schedule, "V1.0", notify_speakers=False)
+
     form = ScheduleReleaseForm(
-        data={"version": "v1.0", "comment": "test", "notify_speakers": True},
-        event=event,
-        instance=schedule,
-    )
-    assert form.is_valid()
-
-    assert form.cleaned_data["version"] == "v1.0"
-
-
-def test_schedule_release_form_clean_version_rejects_duplicate():
-    event = EventFactory()
-    schedule = event.wip_schedule
-    freeze_schedule(schedule, "v1.0", notify_speakers=False)
-    form = ScheduleReleaseForm(
-        data={"version": "v1.0", "comment": "test", "notify_speakers": True},
-        event=event,
-        instance=event.wip_schedule,
-    )
-    assert not form.is_valid()
-
-    assert "version" in form.errors
-
-
-def test_schedule_release_form_clean_version_rejects_duplicate_case_insensitive():
-    event = EventFactory()
-    schedule = event.wip_schedule
-    freeze_schedule(schedule, "V1.0", notify_speakers=False)
-    form = ScheduleReleaseForm(
-        data={"version": "v1.0", "comment": "test", "notify_speakers": True},
+        data={"version": version, "comment": "test", "notify_speakers": True},
         event=event,
         instance=event.wip_schedule,
     )
-    assert not form.is_valid()
 
-    assert "version" in form.errors
-
-
-def test_schedule_release_form_clean_version_rejects_slash():
-    event = EventFactory()
-    form = ScheduleReleaseForm(
-        data={"version": "200 km/h", "comment": "test", "notify_speakers": True},
-        event=event,
-        instance=event.wip_schedule,
-    )
-    assert not form.is_valid()
-
-    assert "version" in form.errors
+    assert form.is_valid() == (not errors)
+    assert form.errors == errors
+    assert form.cleaned_data.get("version") == (version if not errors else None)
 
 
-def test_schedule_release_form_version_is_required():
-    event = EventFactory()
-    schedule = event.wip_schedule
-    form = ScheduleReleaseForm(
-        data={"version": "", "comment": "test", "notify_speakers": True},
-        event=event,
-        instance=schedule,
-    )
-    assert not form.is_valid()
-
-    assert "version" in form.errors
-
-
-def test_schedule_release_form_init_preserves_version_initial():
-    event = EventFactory()
-    schedule = event.wip_schedule
-    schedule.version = "custom"
-    form = ScheduleReleaseForm(
-        event=event, instance=schedule, initial={"version": "custom"}
-    )
-
-    assert form.fields["version"].initial == "custom"
-
-
-def _expand_capacity_setup(room_capacity, session_capacity):
+@pytest.mark.parametrize(
+    ("checkbox_value", "expected_capacity"),
+    (
+        ("on", 300),  # checked: capacity rises to room capacity
+        (None, 50),  # unchecked: capacity stays put
+    ),
+)
+def test_schedule_release_form_apply_expand_capacity(checkbox_value, expected_capacity):
     event = EventFactory(feature_flags={"attendee_signup": True})
     sub_type = event.cfp.default_type
     sub_type.attendee_signup_required = True
     sub_type.save()
-    room = RoomFactory(event=event, capacity=room_capacity)
+    room = RoomFactory(event=event, capacity=300)
     submission = SubmissionFactory(
         event=event,
         state=SubmissionStates.CONFIRMED,
         submission_type=sub_type,
-        attendee_signup_capacity=session_capacity,
+        attendee_signup_capacity=50,
     )
     start = event.datetime_from
     with scope(event=event):
@@ -164,48 +119,22 @@ def _expand_capacity_setup(room_capacity, session_capacity):
             is_visible=True,
         )
         warnings = event.wip_schedule.warnings
-    return event, submission, warnings
-
-
-def test_schedule_release_form_expand_capacity_fields_from_warnings():
-    event, submission, warnings = _expand_capacity_setup(
-        room_capacity=120, session_capacity=20
-    )
-
-    form = ScheduleReleaseForm(
-        event=event, instance=event.wip_schedule, warnings=warnings
-    )
-
     field_name = f"expand_capacity_{submission.pk}"
-    assert field_name in form.fields
-    assert form.fields[field_name].initial is False
-    bound = form.get_expand_capacity_fields()
-    assert len(bound) == 1
-    assert bound[0]["submission"] == submission
-    assert bound[0]["bound_field"].name == field_name
-
-
-@pytest.mark.parametrize(
-    ("checkbox_value", "expected_capacity"),
-    (
-        ("on", 300),  # checked: capacity rises to room capacity
-        (None, 50),  # unchecked: capacity stays put
-    ),
-)
-def test_schedule_release_form_apply_expand_capacity(checkbox_value, expected_capacity):
-    event, submission, warnings = _expand_capacity_setup(
-        room_capacity=300, session_capacity=50
-    )
     data = {"version": "v1.0", "comment": "release", "notify_speakers": True}
     if checkbox_value is not None:
-        data[f"expand_capacity_{submission.pk}"] = checkbox_value
+        data[field_name] = checkbox_value
 
     form = ScheduleReleaseForm(
         data=data, event=event, instance=event.wip_schedule, warnings=warnings
     )
     assert form.is_valid(), form.errors
-
+    bound = form.get_expand_capacity_fields()
     with scope(event=event):
         form.apply_expand_capacity()
         refreshed = Submission.objects.get(pk=submission.pk)
+
+    assert form.fields[field_name].initial is False
+    assert [(entry["submission"], entry["bound_field"].name) for entry in bound] == [
+        (submission, field_name)
+    ]
     assert refreshed.attendee_signup_capacity == expected_capacity

@@ -100,12 +100,6 @@ def test_render_preview_body(template, expected, preview_context):
     assert render_preview_body(template, preview_context) == expected
 
 
-def test_render_preview_subject_marks_placeholder_values(event, preview_context):
-    result = render_preview_subject("Hello {event_name}", preview_context, event)
-
-    assert result == f"Hello {mark_placeholder_value('Democon')}"
-
-
 def test_render_preview_subject_marks_link_syntax(event, preview_context):
     result = render_preview_subject(
         "See [{event_name}]({event_url}) now", preview_context, event

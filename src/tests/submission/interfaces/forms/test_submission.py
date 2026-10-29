@@ -3,7 +3,6 @@
 import datetime as dt
 
 import pytest
-from django.utils.timezone import now
 
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.interfaces.forms import (
@@ -30,49 +29,35 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_info_form_init_sets_default_submission_type():
+def test_info_form_init_on_plain_event_hides_single_choice_fields():
     event = EventFactory()
 
     form = InfoForm(event=event)
+    read_only = InfoForm(event=event, read_only=True)
+    speaker_form = SubmissionInfoForm(event=event)
 
-    assert form.initial["submission_type"] == event.cfp.default_type
-
-
-def test_info_form_init_sets_default_content_locale():
-    event = EventFactory()
-
-    form = InfoForm(event=event)
-
-    assert form.initial["content_locale"] == event.locale
-
-
-def test_info_form_init_preserves_existing_submission_type():
-    event = EventFactory()
-    extra_type = SubmissionTypeFactory(event=event)
-    submission = SubmissionFactory(event=event, submission_type=extra_type)
-
-    form = InfoForm(event=event, instance=submission)
-
-    assert form.initial["submission_type"] == extra_type.pk
-
-
-def test_info_form_has_additional_speaker_field():
-    event = EventFactory()
-
-    form = InfoForm(event=event)
-
-    assert "additional_speaker" in form.fields
+    assert list(form.fields) == [
+        "title",
+        "abstract",
+        "description",
+        "notes",
+        "do_not_record",
+        "image",
+        "additional_speaker",
+    ]
+    assert form.initial == {
+        "submission_type": event.cfp.default_type,
+        "content_locale": event.locale,
+    }
+    assert form.default_values == {
+        "submission_type": event.cfp.default_type,
+        "content_locale": event.content_locales[0],
+    }
+    assert all(field.disabled is True for field in read_only.fields.values())
+    assert list(speaker_form.fields) == list(form.fields)[:-1]
 
 
-def test_submission_info_form_has_no_additional_speaker_field():
-    event = EventFactory()
-
-    form = SubmissionInfoForm(event=event)
-
-    assert "additional_speaker" not in form.fields
-
-
-def test_info_form_init_prefills_additional_speaker_from_draft_additional_speakers():
+def test_info_form_init_prefills_additional_speaker_from_draft():
     event = EventFactory()
     submission = SubmissionFactory(
         event=event,
@@ -81,34 +66,14 @@ def test_info_form_init_prefills_additional_speaker_from_draft_additional_speake
     )
 
     form = InfoForm(event=event, instance=submission)
-
-    assert form.initial["additional_speaker"] == "a@example.com, b@example.com"
-
-
-def test_info_form_init_draft_additional_speakers_does_not_override_explicit_initial():
-    event = EventFactory()
-    submission = SubmissionFactory(
-        event=event,
-        state=SubmissionStates.DRAFT,
-        draft_additional_speakers=["a@example.com"],
-    )
-
-    form = InfoForm(
+    overridden = InfoForm(
         event=event,
         instance=submission,
         initial={"additional_speaker": "override@example.com"},
     )
 
-    assert form.initial["additional_speaker"] == "override@example.com"
-
-
-def test_info_form_init_readonly_disables_all_fields():
-    event = EventFactory()
-
-    form = InfoForm(event=event, read_only=True)
-
-    for field in form.fields.values():
-        assert field.disabled is True
+    assert form.initial["additional_speaker"] == "a@example.com, b@example.com"
+    assert overridden.initial["additional_speaker"] == "override@example.com"
 
 
 def test_info_form_init_abstract_do_not_ask_removes_field():
@@ -141,45 +106,53 @@ def test_info_form_configure_track_removes_field_when_tracks_disabled():
         feature_flags={"use_tracks": False},
         cfp__fields={"track": {"visibility": "required"}},
     )
+    TrackFactory(event=event)
 
     form = InfoForm(event=event)
 
     assert "track" not in form.fields
 
 
-def test_info_form_configure_track_removes_field_when_instance_not_submitted():
+def test_info_form_locks_track_and_type_for_non_submitted_instance():
     event = _tracks_event()
     TrackFactory(event=event)
     TrackFactory(event=event)
+    SubmissionTypeFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
 
     form = InfoForm(event=event, instance=submission)
 
     assert "track" not in form.fields
+    assert form.fields["submission_type"].disabled is True
+    assert list(form.fields["submission_type"].queryset) == [submission.submission_type]
+    assert form.initial["submission_type"] == submission.submission_type.pk
 
 
-def test_info_form_configure_track_excludes_access_code_tracks():
+def test_info_form_configure_track_single_track_default_or_locked_by_access_code():
     event = _tracks_event()
-    public1 = TrackFactory(event=event, requires_access_code=False)
-    public2 = TrackFactory(event=event, requires_access_code=False)
-    TrackFactory(event=event, requires_access_code=True)
+    code_track = TrackFactory(event=event, requires_access_code=True)
+    public_track = TrackFactory(event=event, requires_access_code=False)
+    access_code = SubmitterAccessCodeFactory(event=event)
+    access_code.tracks.add(code_track)
 
     form = InfoForm(event=event)
-
-    assert set(form.fields["track"].queryset) == {public1, public2}
-
-
-def test_info_form_configure_track_single_required_track_becomes_default():
-    event = _tracks_event()
-    track = TrackFactory(event=event, requires_access_code=False)
-
-    form = InfoForm(event=event)
+    code_form = InfoForm(event=event, access_code=access_code)
+    bound = InfoForm(
+        event=event,
+        access_code=access_code,
+        data={"title": "My Talk", "abstract": "An abstract", "track": public_track.pk},
+    )
 
     assert "track" not in form.fields
-    assert form.default_values.get("track") == track
+    assert form.default_values["track"] == public_track
+    assert list(code_form.fields["track"].queryset) == [code_track]
+    assert code_form.fields["track"].disabled is True
+    assert code_form.initial["track"] == code_track
+    assert bound.is_valid(), bound.errors
+    assert bound.cleaned_data["track"] == code_track
 
 
-def test_info_form_configure_track_with_access_code_tracks():
+def test_info_form_configure_track_multiple_access_code_tracks_stay_selectable():
     event = _tracks_event()
     code_track1 = TrackFactory(event=event)
     code_track2 = TrackFactory(event=event)
@@ -190,34 +163,7 @@ def test_info_form_configure_track_with_access_code_tracks():
     form = InfoForm(event=event, access_code=access_code)
 
     assert set(form.fields["track"].queryset) == {code_track1, code_track2}
-
-
-def test_info_form_configure_track_single_access_code_track_stays_visible():
-    event = _tracks_event()
-    code_track = TrackFactory(event=event, requires_access_code=True)
-    TrackFactory(event=event, requires_access_code=False)
-    access_code = SubmitterAccessCodeFactory(event=event)
-    access_code.tracks.add(code_track)
-
-    form = InfoForm(event=event, access_code=access_code)
-
-    assert list(form.fields["track"].queryset) == [code_track]
-    assert form.fields["track"].disabled is True
-    assert form.initial["track"] == code_track
-
-
-def test_info_form_configure_track_single_access_code_track_ignores_posted_track():
-    event = _tracks_event()
-    code_track = TrackFactory(event=event, requires_access_code=True)
-    other_track = TrackFactory(event=event, requires_access_code=False)
-    access_code = SubmitterAccessCodeFactory(event=event)
-    access_code.tracks.add(code_track)
-    data = {"title": "My Talk", "abstract": "An abstract", "track": other_track.pk}
-
-    form = InfoForm(event=event, access_code=access_code, data=data)
-    assert form.is_valid(), form.errors
-
-    assert form.cleaned_data["track"] == code_track
+    assert form.fields["track"].disabled is False
 
 
 def test_info_form_configure_track_single_access_code_track_on_trackless_instance():
@@ -239,75 +185,31 @@ def test_info_form_configure_track_single_access_code_track_on_trackless_instanc
     assert form.save().track == code_track
 
 
-def test_info_form_configure_track_preserves_restricted_track_on_instance():
-    event = _tracks_event()
-    restricted_track = TrackFactory(event=event, requires_access_code=True)
-    public_track = TrackFactory(event=event, requires_access_code=False)
-    submission = SubmissionFactory(
-        event=event, track=restricted_track, state=SubmissionStates.SUBMITTED
-    )
-
-    form = InfoForm(event=event, instance=submission)
-
-    assert set(form.fields["track"].queryset) == {restricted_track, public_track}
-
-
-def test_info_form_configure_submission_types_locks_for_non_submitted_existing():
-    submission = SubmissionFactory(state=SubmissionStates.ACCEPTED)
-
-    form = InfoForm(event=submission.event, instance=submission)
-
-    assert form.fields["submission_type"].disabled is True
-    assert list(form.fields["submission_type"].queryset) == [submission.submission_type]
-
-
-def test_info_form_configure_submission_types_single_type_becomes_default():
-    event = EventFactory()
-
-    form = InfoForm(event=event)
-
-    assert "submission_type" not in form.fields
-    assert form.default_values["submission_type"] == event.cfp.default_type
-
-
-def test_info_form_configure_submission_types_access_code_with_types():
+def test_info_form_configure_submission_types_by_access_code():
     event = EventFactory()
     code_type1 = SubmissionTypeFactory(event=event)
     code_type2 = SubmissionTypeFactory(event=event)
-    SubmissionTypeFactory(event=event)  # not in the access code
-    access_code = SubmitterAccessCodeFactory(event=event)
-    access_code.submission_types.add(code_type1, code_type2)
-
-    form = InfoForm(event=event, access_code=access_code)
-
-    assert set(form.fields["submission_type"].queryset) == {code_type1, code_type2}
-
-
-def test_info_form_configure_submission_types_access_code_without_types():
-    event = EventFactory()
     SubmissionTypeFactory(event=event, requires_access_code=True)
-    access_code = SubmitterAccessCodeFactory(event=event)
+    typed_code = SubmitterAccessCodeFactory(event=event)
+    typed_code.submission_types.add(code_type1, code_type2)
+    untyped_code = SubmitterAccessCodeFactory(event=event)
 
-    form = InfoForm(event=event, access_code=access_code)
+    typed_form = InfoForm(event=event, access_code=typed_code)
+    untyped_form = InfoForm(event=event, access_code=untyped_code)
 
-    assert "submission_type" not in form.fields
-    assert form.default_values["submission_type"] == event.cfp.default_type
-
-
-def test_info_form_configure_submission_types_single_access_code_type_stays_visible():
-    event = EventFactory()
-    code_type = SubmissionTypeFactory(event=event)
-    access_code = SubmitterAccessCodeFactory(event=event)
-    access_code.submission_types.add(code_type)
-
-    form = InfoForm(event=event, access_code=access_code)
-
-    assert list(form.fields["submission_type"].queryset) == [code_type]
-    assert form.fields["submission_type"].disabled is True
-    assert form.initial["submission_type"] == code_type
+    assert set(typed_form.fields["submission_type"].queryset) == {
+        code_type1,
+        code_type2,
+    }
+    assert typed_form.fields["submission_type"].disabled is False
+    assert set(untyped_form.fields["submission_type"].queryset) == {
+        event.cfp.default_type,
+        code_type1,
+        code_type2,
+    }
 
 
-def test_info_form_configure_submission_types_single_access_code_type_saves():
+def test_info_form_configure_submission_types_single_access_code_type_locks_and_saves():
     event = EventFactory()
     code_type = SubmissionTypeFactory(event=event)
     access_code = SubmitterAccessCodeFactory(event=event)
@@ -318,49 +220,20 @@ def test_info_form_configure_submission_types_single_access_code_type_saves():
         "submission_type": event.cfp.default_type.pk,
     }
 
-    form = InfoForm(event=event, access_code=access_code, data=data)
-    assert form.is_valid(), form.errors
-    form.instance.event = event
-    result = form.save()
+    form = InfoForm(event=event, access_code=access_code)
+    bound = InfoForm(event=event, access_code=access_code, data=data)
+    assert bound.is_valid(), bound.errors
+    bound.instance.event = event
+    result = bound.save()
 
+    assert list(form.fields["submission_type"].queryset) == [code_type]
+    assert form.fields["submission_type"].disabled is True
+    assert form.initial["submission_type"] == code_type
     assert result.submission_type == code_type
 
 
-def test_info_form_configure_submission_types_after_deadline_only_type_specific():
-    past = now() - dt.timedelta(days=1)
-    future = now() + dt.timedelta(days=1)
-    event = EventFactory(cfp__deadline=past)
-    future_type1 = SubmissionTypeFactory(event=event, deadline=future)
-    future_type2 = SubmissionTypeFactory(event=event, deadline=future)
-    SubmissionTypeFactory(event=event, deadline=past)
-
-    form = InfoForm(event=event)
-
-    assert set(form.fields["submission_type"].queryset) == {future_type1, future_type2}
-
-
-def test_info_form_configure_submission_types_duration_help_text():
-    event = EventFactory(cfp__fields={"duration": {"visibility": "optional"}})
-    SubmissionTypeFactory(event=event)
-
-    form = InfoForm(event=event)
-
-    assert "duration" in form.fields
-    assert "default duration" in str(form.fields["duration"].help_text)
-
-
-def test_info_form_configure_submission_types_multiple_types_shown():
-    event = EventFactory()
-    SubmissionTypeFactory(event=event)
-
-    form = InfoForm(event=event)
-
-    assert "submission_type" in form.fields
-    assert form.fields["submission_type"].queryset.count() == 2
-
-
 @pytest.mark.parametrize(
-    ("visibility", "expected"),
+    ("visibility", "expected", "duration_help"),
     (
         (
             "optional",
@@ -368,61 +241,48 @@ def test_info_form_configure_submission_types_multiple_types_shown():
                 "Talk": "Default duration: 30\xa0minutes",
                 "Workshop": "Default duration: 2\xa0hours",
             },
+            True,
         ),
-        ("required", {"Talk": None, "Workshop": None}),
+        ("required", {"Talk": None, "Workshop": None}, False),
     ),
 )
 def test_info_form_submission_type_options_describe_default_duration(
-    visibility, expected
+    visibility, expected, duration_help
 ):
     event = EventFactory(cfp__fields={"duration": {"visibility": visibility}})
     event.submission_types.update(name="Talk", default_duration=30)
-    SubmissionTypeFactory(event=event, name="Workshop", default_duration=120)
+    workshop = SubmissionTypeFactory(event=event, name="Workshop", default_duration=120)
 
     form = InfoForm(event=event)
     options = [option.data for option in form["submission_type"].subwidgets]
 
+    assert set(form.fields["submission_type"].queryset) == {
+        event.cfp.default_type,
+        workshop,
+    }
     assert {
         option["label"]: option["attrs"].get("data-description")
         for option in options
         if option["value"]
     } == expected
+    assert ("default duration" in str(form.fields["duration"].help_text)) is (
+        duration_help
+    )
 
 
-def test_info_form_configure_locales_do_not_ask_skips():
-    event = EventFactory(cfp__fields={"content_locale": {"visibility": "do_not_ask"}})
-
-    form = InfoForm(event=event)
-
-    assert "content_locale" not in form.fields
-
-
-def test_info_form_configure_locales_single_locale_becomes_default():
-    event = EventFactory()
-
-    form = InfoForm(event=event)
-
-    assert "content_locale" not in form.fields
-    assert form.default_values["content_locale"] == event.content_locales[0]
-
-
-def test_info_form_configure_locales_multiple_locales_shows_field():
-    event = EventFactory(content_locales=["en", "de"])
+@pytest.mark.parametrize(
+    ("visibility", "choices"),
+    (("optional", [("en", "English"), ("de", "Deutsch")]), ("do_not_ask", None)),
+)
+def test_info_form_configure_locales_multiple_locales(visibility, choices):
+    event = EventFactory(
+        content_locales=["en", "de"],
+        cfp__fields={"content_locale": {"visibility": visibility}},
+    )
 
     form = InfoForm(event=event)
 
-    assert "content_locale" in form.fields
-    locale_codes = [code for code, _ in form.fields["content_locale"].choices]
-    assert "en" in locale_codes
-    assert "de" in locale_codes
-
-
-def test_info_form_configure_slot_count_removed_when_feature_disabled():
-    event = EventFactory()
-
-    form = InfoForm(event=event)
-
-    assert "slot_count" not in form.fields
+    assert getattr(form.fields.get("content_locale"), "choices", None) == choices
 
 
 @pytest.mark.parametrize(
@@ -440,174 +300,98 @@ def test_info_form_configure_slot_count_disabled_by_state(state, expect_disabled
     assert form.fields["slot_count"].disabled is expect_disabled
 
 
-def _tags_event(visibility="optional"):
-    return EventFactory(
-        cfp__fields={"tags": {"visibility": visibility, "min": None, "max": None}}
+def test_info_form_tags_show_public_tags_and_preserve_private_ones():
+    event = EventFactory(
+        cfp__fields={"tags": {"visibility": "optional", "min": None, "max": None}}
     )
-
-
-def test_info_form_configure_tags_removed_when_no_public_tags():
-    event = _tags_event()
-    TagFactory(event=event, is_public=False)
-
-    form = InfoForm(event=event)
-
-    assert "tags" not in form.fields
-
-
-def test_info_form_configure_tags_shows_public_tags():
-    event = _tags_event()
-    public_tag = TagFactory(event=event, is_public=True)
-    TagFactory(event=event, is_public=False)
-
-    form = InfoForm(event=event)
-
-    assert "tags" in form.fields
-    assert list(form.fields["tags"].queryset) == [public_tag]
-
-
-def test_info_form_configure_tags_initial_from_instance():
-    event = _tags_event()
-    public_tag = TagFactory(event=event, is_public=True)
     private_tag = TagFactory(event=event, is_public=False)
+    assert "tags" not in InfoForm(event=event).fields
+
+    public_tag = TagFactory(event=event, is_public=True)
     submission = SubmissionFactory(event=event)
     submission.tags.add(public_tag, private_tag)
+    data = {"title": "Talk", "abstract": "An abstract", "tags": [public_tag.pk]}
 
-    form = InfoForm(event=event, instance=submission)
+    form = InfoForm(event=event)
+    new_bound = InfoForm(event=event, data=data)
+    existing = InfoForm(event=event, instance=submission)
+    existing_bound = InfoForm(event=event, instance=submission, data=data)
+    assert new_bound.is_valid(), new_bound.errors
+    assert existing_bound.is_valid(), existing_bound.errors
 
-    assert set(form.initial["tags"]) == {public_tag}
-
-
-def test_info_form_clean_additional_speaker_empty_returns_empty_list():
-    event = EventFactory()
-    data = {"title": "Talk", "additional_speaker": ""}
-
-    form = InfoForm(event=event, data=data)
-    form.is_valid()
-
-    assert form.cleaned_data.get("additional_speaker") == []
-
-
-def test_info_form_clean_additional_speaker_valid_emails():
-    event = EventFactory()
-    data = {"title": "Talk", "additional_speaker": "a@example.com, b@example.com"}
-
-    form = InfoForm(event=event, data=data)
-    form.is_valid()
-
-    emails = form.cleaned_data.get("additional_speaker", [])
-    assert set(emails) == {"a@example.com", "b@example.com"}
+    assert list(form.fields["tags"].queryset) == [public_tag]
+    assert new_bound.cleaned_data["tags"] == {public_tag}
+    assert list(existing.initial["tags"]) == [public_tag]
+    assert existing_bound.cleaned_data["tags"] == {public_tag, private_tag}
 
 
-def test_info_form_clean_additional_speaker_invalid_email_raises_error():
-    event = EventFactory()
-    data = {"title": "Talk", "additional_speaker": "valid@example.com, not-an-email"}
-
-    form = InfoForm(event=event, data=data)
-
-    assert not form.is_valid()
-    assert "additional_speaker" in form.errors
-
-
-def test_info_form_clean_additional_speaker_caps_address_count():
+@pytest.mark.parametrize(
+    ("value", "cleaned", "errors"),
+    (
+        ("", [], None),
+        ("a@example.com, b@example.com", ["a@example.com", "b@example.com"], None),
+        ("a@example.com,,b@example.com,", ["a@example.com", "b@example.com"], None),
+        ("a@example.com\na@example.com", ["a@example.com"], None),
+        ("A@Example.COM", ["a@example.com"], None),
+        (
+            "valid@example.com, not-an-email",
+            None,
+            ["Please enter only valid email addresses: not-an-email"],
+        ),
+        (
+            ", ".join(f"victim{i}@example.com" for i in range(51)),
+            None,
+            [
+                (
+                    "This would exceed the maximum of 50 speakers per proposal. "
+                    "Currently: 1 speaker(s) and 0 pending invitation(s)."
+                )
+            ],
+        ),
+    ),
+    ids=["empty", "list", "empty_tokens", "duplicate", "uppercase", "invalid", "cap"],
+)
+def test_info_form_clean_additional_speaker(value, cleaned, errors):
     event = EventFactory()
     assert event.cfp.max_speakers is None
-    addresses = ", ".join(f"victim{i}@example.com" for i in range(51))
-    data = {"title": "Talk", "additional_speaker": addresses}
 
-    form = InfoForm(event=event, data=data)
-
-    assert not form.is_valid()
-    assert "additional_speaker" in form.errors
-
-
-def test_info_form_clean_additional_speaker_skips_empty_between_commas():
-    event = EventFactory()
-    data = {"title": "Talk", "additional_speaker": "a@example.com,,b@example.com,"}
-
-    form = InfoForm(event=event, data=data)
+    form = InfoForm(event=event, data={"title": "Talk", "additional_speaker": value})
     form.is_valid()
 
-    assert set(form.cleaned_data.get("additional_speaker", [])) == {
-        "a@example.com",
-        "b@example.com",
-    }
+    assert form.cleaned_data.get("additional_speaker") == cleaned
+    assert form.errors.get("additional_speaker") == errors
 
 
-def test_info_form_clean_additional_speaker_delegates_to_speaker_limit_validator():
-    event = EventFactory(
-        cfp__fields={"additional_speaker": {"visibility": "optional", "max": 2}}
-    )
-    data = {"title": "Talk", "additional_speaker": "a@example.com, b@example.com"}
-
-    form = InfoForm(event=event, data=data)
-
-    assert not form.is_valid()
-    assert "additional_speaker" in form.errors
-
-
-def test_info_form_clean_additional_speaker_skips_validator_when_all_invited():
+def test_info_form_clean_additional_speaker_counts_only_new_invitations():
     event = EventFactory(
         cfp__fields={"additional_speaker": {"visibility": "optional", "max": 1}}
     )
     submission = SubmissionFactory(event=event)
     SubmissionInvitationFactory(submission=submission, email="invited@example.com")
-    data = {"title": submission.title, "additional_speaker": "invited@example.com"}
 
-    form = InfoForm(event=event, instance=submission, data=data)
-    form.is_valid()
+    new_form = InfoForm(
+        event=event, data={"title": "Talk", "additional_speaker": "a@example.com"}
+    )
+    existing_form = InfoForm(
+        event=event,
+        instance=submission,
+        data={"title": submission.title, "additional_speaker": "invited@example.com"},
+    )
+    new_form.is_valid()
+    existing_form.is_valid()
 
-    assert form.cleaned_data["additional_speaker"] == ["invited@example.com"]
-    assert "additional_speaker" not in form.errors
-
-
-def test_info_form_clean_additional_speaker_deduplicates():
-    event = EventFactory()
-    data = {"title": "Talk", "additional_speaker": "a@example.com\na@example.com"}
-
-    form = InfoForm(event=event, data=data)
-    form.is_valid()
-
-    assert form.cleaned_data.get("additional_speaker") == ["a@example.com"]
-
-
-def test_info_form_clean_additional_speaker_lowercases():
-    event = EventFactory()
-    data = {"title": "Talk", "additional_speaker": "A@Example.COM"}
-
-    form = InfoForm(event=event, data=data)
-    form.is_valid()
-
-    assert form.cleaned_data.get("additional_speaker") == ["a@example.com"]
+    assert new_form.errors["additional_speaker"] == [
+        (
+            "This would exceed the maximum of 1 speakers per proposal. "
+            "Currently: 1 speaker(s) and 0 pending invitation(s)."
+        )
+    ]
+    assert existing_form.cleaned_data["additional_speaker"] == ["invited@example.com"]
+    assert "additional_speaker" not in existing_form.errors
 
 
-def test_info_form_clean_tags_preserves_private_tags():
-    event = _tags_event()
-    public_tag = TagFactory(event=event, is_public=True)
-    private_tag = TagFactory(event=event, is_public=False)
-    submission = SubmissionFactory(event=event)
-    submission.tags.add(public_tag, private_tag)
-    data = {"title": "Talk", "tags": [public_tag.pk]}
-
-    form = InfoForm(event=event, instance=submission, data=data)
-    form.is_valid()
-
-    assert set(form.cleaned_data.get("tags", set())) == {public_tag, private_tag}
-
-
-def test_info_form_clean_tags_without_instance():
-    event = _tags_event()
-    public_tag = TagFactory(event=event, is_public=True)
-    data = {"title": "Talk", "abstract": "An abstract", "tags": [public_tag.pk]}
-
-    form = InfoForm(event=event, data=data)
-    form.is_valid()
-
-    assert form.cleaned_data.get("tags") == {public_tag}
-
-
-def test_info_form_save_applies_default_values():
-    event = EventFactory()
+def test_info_form_save_applies_default_values_and_skips_hidden_image():
+    event = EventFactory(cfp__fields={"image": {"visibility": "do_not_ask"}})
     data = {"title": "My Talk", "abstract": "An abstract"}
 
     form = InfoForm(event=event, data=data)
@@ -616,20 +400,9 @@ def test_info_form_save_applies_default_values():
     result = form.save()
 
     assert result.pk is not None
+    assert result.title == "My Talk"
     assert result.submission_type == event.cfp.default_type
     assert result.content_locale == event.content_locales[0]
-
-
-def test_info_form_save_with_image_field_hidden():
-    event = EventFactory(cfp__fields={"image": {"visibility": "do_not_ask"}})
-    submission = SubmissionFactory(event=event)
-    data = {"title": "Updated", "abstract": "An abstract"}
-
-    form = InfoForm(event=event, instance=submission, data=data)
-    assert form.is_valid(), form.errors
-    result = form.save()
-
-    assert result.title == "Updated"
     assert "image" not in form.cleaned_data
 
 
@@ -654,175 +427,16 @@ def _orga_new_data(event, **overrides):
     return data
 
 
-def test_submission_orga_form_init_sets_submission_type_queryset(event):
-    extra_type = SubmissionTypeFactory(event=event)
+def test_submission_orga_form_init_new_on_plain_event(event):
+    room = RoomFactory(event=event)
 
     form = SubmissionOrgaForm(event=event)
-
-    assert set(form.fields["submission_type"].queryset) == {
-        event.cfp.default_type,
-        extra_type,
-    }
-
-
-def test_submission_orga_form_init_removes_tags_field_when_no_tags(event):
-    form = SubmissionOrgaForm(event=event)
-
-    assert "tags" not in form.fields
-
-
-def test_submission_orga_form_init_shows_tags_field_when_tags_exist(event):
-    tag = TagFactory(event=event)
-
-    form = SubmissionOrgaForm(event=event)
-
-    assert "tags" in form.fields
-    assert list(form.fields["tags"].queryset) == [tag]
-    assert form.fields["tags"].required is False
-
-
-def test_submission_orga_form_init_new_adds_state_field(event):
-    form = SubmissionOrgaForm(event=event)
-
-    assert "state" in form.fields
-    state_values = [choice for choice, _ in form.fields["state"].choices]
-    assert SubmissionStates.SUBMITTED in state_values
-    assert SubmissionStates.ACCEPTED in state_values
-    assert SubmissionStates.DRAFT not in state_values
-
-
-def test_submission_orga_form_init_existing_has_no_state_field(event):
-    submission = SubmissionFactory(event=event)
-
-    form = SubmissionOrgaForm(event=event, instance=submission)
-
-    assert "state" not in form.fields
-
-
-def test_submission_orga_form_init_new_adds_scheduling_fields(event):
-    RoomFactory(event=event)
-
-    form = SubmissionOrgaForm(event=event)
-
-    assert "room" in form.fields
-    assert "start" in form.fields
-    assert "end" in form.fields
-
-
-def test_submission_orga_form_init_accepted_submission_has_scheduling_fields(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-
-    form = SubmissionOrgaForm(event=event, instance=submission)
-
-    assert "room" in form.fields
-    assert "start" in form.fields
-    assert "end" in form.fields
-
-
-def test_submission_orga_form_init_submitted_submission_has_no_scheduling_fields(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-
-    form = SubmissionOrgaForm(event=event, instance=submission)
-
-    assert "room" not in form.fields
-    assert "start" not in form.fields
-    assert "end" not in form.fields
-
-
-def test_submission_orga_form_init_existing_populates_slot_initial(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    slot = TalkSlotFactory(submission=submission, is_visible=True)
-
-    form = SubmissionOrgaForm(event=event, instance=submission)
-
-    assert form.initial["room"] == slot.room
-    assert form.initial["start"] == slot.local_start
-    assert form.initial["end"] == slot.local_end
-
-
-def test_submission_orga_form_init_removes_slot_count_without_feature_flag(event):
-    form = SubmissionOrgaForm(event=event)
-
-    assert "slot_count" not in form.fields
-
-
-def test_submission_orga_form_init_keeps_slot_count_with_feature_flag():
-    event = EventFactory(feature_flags={"present_multiple_times": True})
-    form = SubmissionOrgaForm(event=event)
-
-    assert "slot_count" in form.fields
-
-
-def test_submission_orga_form_init_removes_track_without_feature_flag():
-    event = EventFactory(feature_flags={"use_tracks": False})
-    form = SubmissionOrgaForm(event=event)
-
-    assert "track" not in form.fields
-
-
-def test_submission_orga_form_init_keeps_track_with_feature_flag(event):
-    track = TrackFactory(event=event)
-
-    form = SubmissionOrgaForm(event=event)
-
-    assert "track" in form.fields
-    assert list(form.fields["track"].queryset) == [track]
-
-
-def test_submission_orga_form_init_removes_content_locale_for_single_locale(event):
-    form = SubmissionOrgaForm(event=event)
-
-    assert "content_locale" not in form.fields
-
-
-def test_submission_orga_form_init_keeps_content_locale_for_multiple_locales():
-    event = EventFactory(locales=["en", "de"], content_locales=["en", "de", "fr"])
-    form = SubmissionOrgaForm(event=event)
-
-    assert form.fields["content_locale"].choices == [
-        ("en", "English"),
-        ("de", "Deutsch"),
-        ("fr", "Français"),
-    ]
-
-
-def test_submission_orga_form_init_abstract_do_not_ask_removes_field():
-    event = EventFactory(cfp__fields={"abstract": {"visibility": "do_not_ask"}})
-
-    form = SubmissionOrgaForm(event=event)
-
-    assert "abstract" not in form.fields
-
-
-def test_submission_orga_form_init_content_locale_do_not_ask_skips_locale_setup():
-    event = EventFactory(
-        content_locales=["en", "de"],
-        cfp__fields={"content_locale": {"visibility": "do_not_ask"}},
+    read_only = SubmissionOrgaForm(event=event, read_only=True)
+    read_only_bound = SubmissionOrgaForm(
+        event=event, read_only=True, data={"title": "Test"}
     )
 
-    form = SubmissionOrgaForm(event=event)
-
-    assert "content_locale" not in form.fields
-
-
-def test_submission_orga_form_init_duration_help_text_with_multiple_types(event):
-    SubmissionTypeFactory(event=event)
-
-    form = SubmissionOrgaForm(event=event)
-
-    assert "default duration" in str(form.fields["duration"].help_text)
-
-
-def test_submission_orga_form_init_no_duration_help_text_with_single_type(event):
-    form = SubmissionOrgaForm(event=event)
-
-    assert "default duration" not in str(form.fields["duration"].help_text)
-
-
-def test_submission_orga_form_init_read_only_disables_model_fields(event):
-    form = SubmissionOrgaForm(event=event, read_only=True)
-
-    model_fields = {
+    assert list(form.fields) == [
         "title",
         "submission_type",
         "abstract",
@@ -833,176 +447,205 @@ def test_submission_orga_form_init_read_only_disables_model_fields(event):
         "duration",
         "image",
         "is_featured",
+        "state",
+        "room",
+        "start",
+        "end",
+    ]
+    assert [choice for choice, _ in form.fields["state"].choices] == [
+        SubmissionStates.SUBMITTED,
+        SubmissionStates.ACCEPTED,
+        SubmissionStates.CONFIRMED,
+        SubmissionStates.REJECTED,
+        SubmissionStates.CANCELED,
+        SubmissionStates.WITHDRAWN,
+    ]
+    assert form.fields["state"].initial == SubmissionStates.SUBMITTED
+    assert list(form.fields["room"].queryset) == [room]
+    assert "default duration" not in str(form.fields["duration"].help_text)
+    assert [name for name, field in read_only.fields.items() if not field.disabled] == [
+        "room",
+        "start",
+        "end",
+    ]
+    assert not read_only_bound.is_valid()
+    assert read_only_bound.errors["__all__"] == [
+        "You are trying to change read-only data."
+    ]
+
+
+def test_submission_orga_form_init_new_on_rich_event():
+    event = EventFactory(
+        feature_flags={"present_multiple_times": True},
+        locales=["en", "de"],
+        content_locales=["en", "de", "fr"],
+    )
+    extra_type = SubmissionTypeFactory(event=event)
+    tag = TagFactory(event=event)
+    track = TrackFactory(event=event)
+
+    form = SubmissionOrgaForm(event=event)
+
+    assert list(form.fields) == [
+        "title",
+        "submission_type",
+        "track",
+        "tags",
+        "abstract",
+        "description",
+        "notes",
+        "internal_notes",
+        "content_locale",
+        "do_not_record",
+        "duration",
+        "slot_count",
+        "image",
+        "is_featured",
+        "state",
+        "room",
+        "start",
+        "end",
+    ]
+    assert set(form.fields["submission_type"].queryset) == {
+        event.cfp.default_type,
+        extra_type,
     }
-    for name in model_fields:
-        assert name in form.fields, f"Expected field: {name}"
-        assert form.fields[name].disabled is True, f"{name} should be disabled"
+    assert list(form.fields["tags"].queryset) == [tag]
+    assert form.fields["tags"].required is False
+    assert list(form.fields["track"].queryset) == [track]
+    assert form.fields["content_locale"].choices == [
+        ("en", "English"),
+        ("de", "Deutsch"),
+        ("fr", "Français"),
+    ]
+    assert "default duration" in str(form.fields["duration"].help_text)
 
 
-def test_submission_orga_form_clean_read_only_raises_validation_error(event):
-    form = SubmissionOrgaForm(event=event, read_only=True, data={"title": "Test"})
+def test_submission_orga_form_init_do_not_ask_removes_fields():
+    event = EventFactory(
+        content_locales=["en", "de"],
+        cfp__fields={
+            "abstract": {"visibility": "do_not_ask"},
+            "content_locale": {"visibility": "do_not_ask"},
+        },
+    )
 
-    assert not form.is_valid()
-    assert "__all__" in form.errors
+    form = SubmissionOrgaForm(event=event)
+
+    assert "abstract" not in form.fields
+    assert "content_locale" not in form.fields
 
 
-def test_submission_orga_form_init_anonymise_uses_anonymised_data(event):
+def test_submission_orga_form_init_existing_scheduling_fields_follow_state(event):
+    submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    slot = TalkSlotFactory(submission=confirmed, is_visible=True)
+    RoomFactory(event=event, hidden=True)
+
+    submitted_form = SubmissionOrgaForm(event=event, instance=submitted)
+    confirmed_form = SubmissionOrgaForm(event=event, instance=confirmed)
+
+    assert {"state", "room", "start", "end"}.isdisjoint(submitted_form.fields)
+    assert "state" not in confirmed_form.fields
+    assert list(confirmed_form.fields["room"].queryset) == [slot.room]
+    assert confirmed_form.initial["room"] == slot.room
+    assert confirmed_form.initial["start"] == slot.local_start
+    assert confirmed_form.initial["end"] == slot.local_end
+
+
+def test_submission_orga_form_init_anonymise_prefers_anonymised_data(event):
     submission = SubmissionFactory(
         event=event,
         title="Original Title",
+        abstract="Original abstract",
         anonymised={"_anonymised": True, "title": "Anonymised Title"},
     )
 
     form = SubmissionOrgaForm(event=event, anonymise=True, instance=submission)
 
     assert form.initial["title"] == "Anonymised Title"
+    assert form.initial["abstract"] == "Original abstract"
+    assert "state" not in form.fields
 
 
-def test_submission_orga_form_init_anonymise_falls_back_to_instance_attr(event):
-    submission = SubmissionFactory(
-        event=event, title="Original Title", anonymised={"_anonymised": True}
-    )
-
-    form = SubmissionOrgaForm(event=event, anonymise=True, instance=submission)
-
-    assert form.initial["title"] == "Original Title"
-
-
-def test_submission_orga_form_clean_start_before_event_raises_error(event):
+def test_submission_orga_form_clean_scheduling_fields(event):
     submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
     room = RoomFactory(event=event)
-    early = event.datetime_from - dt.timedelta(days=1)
-
-    form = SubmissionOrgaForm(
-        event=event,
-        instance=submission,
-        data=_orga_base_data(
-            submission,
-            room=room.pk,
-            start=early,
-            end=event.datetime_from + dt.timedelta(hours=1),
+    start = event.datetime_from
+    hour = dt.timedelta(hours=1)
+    cases = (
+        ({}, {}),
+        (
+            {"room": room.pk, "start": start - hour, "end": start + hour},
+            {
+                "start": ["Scheduled times cannot be before the event starts."],
+                "room": [
+                    "You cannot assign a room without setting the start time as well."
+                ],
+            },
+        ),
+        (
+            {"room": room.pk, "start": start, "end": event.datetime_to + hour},
+            {"end": ["Scheduled times cannot be after the event ends."]},
+        ),
+        (
+            {"room": room.pk, "start": start + 2 * hour, "end": start + hour},
+            {"end": ["The end time has to be after the start time."]},
+        ),
+        (
+            {"room": room.pk},
+            {
+                "room": [
+                    "You cannot assign a room without setting the start time as well."
+                ]
+            },
+        ),
+        (
+            {"start": start},
+            {
+                "start": [
+                    "You cannot set a start time without assigning the room as well."
+                ]
+            },
         ),
     )
 
-    assert not form.is_valid()
-    assert "start" in form.errors
+    for overrides, errors in cases:
+        form = SubmissionOrgaForm(
+            event=event,
+            instance=submission,
+            data=_orga_base_data(submission, **overrides),
+        )
+        form.is_valid()
+        assert form.errors == errors, overrides
 
 
-def test_submission_orga_form_clean_end_after_event_raises_error(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    room = RoomFactory(event=event)
-    late = event.datetime_to + dt.timedelta(days=1)
+def test_submission_orga_form_save_new_sets_state_and_content_locale(event):
+    multi_locale_event = EventFactory(content_locales=["en", "de"])
 
-    form = SubmissionOrgaForm(
-        event=event,
-        instance=submission,
-        data=_orga_base_data(
-            submission, room=room.pk, start=event.datetime_from, end=late
-        ),
-    )
-
-    assert not form.is_valid()
-    assert "end" in form.errors
-
-
-def test_submission_orga_form_clean_start_after_end_raises_error(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    room = RoomFactory(event=event)
-
-    form = SubmissionOrgaForm(
-        event=event,
-        instance=submission,
-        data=_orga_base_data(
-            submission,
-            room=room.pk,
-            start=event.datetime_from + dt.timedelta(hours=2),
-            end=event.datetime_from + dt.timedelta(hours=1),
-        ),
-    )
-
-    assert not form.is_valid()
-    assert "end" in form.errors
-
-
-def test_submission_orga_form_room_field_excludes_hidden_rooms(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    room = RoomFactory(event=event)
-    RoomFactory(event=event, hidden=True)
-
-    form = SubmissionOrgaForm(event=event, instance=submission)
-
-    assert list(form.fields["room"].queryset) == [room]
-
-
-def test_submission_orga_form_clean_room_without_start_raises_error(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    room = RoomFactory(event=event)
-
-    form = SubmissionOrgaForm(
-        event=event, instance=submission, data=_orga_base_data(submission, room=room.pk)
-    )
-
-    assert not form.is_valid()
-    assert "room" in form.errors
-
-
-def test_submission_orga_form_clean_start_without_room_raises_error(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-
-    form = SubmissionOrgaForm(
-        event=event,
-        instance=submission,
-        data=_orga_base_data(submission, start=event.datetime_from),
-    )
-
-    assert not form.is_valid()
-    assert "start" in form.errors
-
-
-def test_submission_orga_form_clean_no_scheduling_fields_is_valid(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-
-    form = SubmissionOrgaForm(
-        event=event, instance=submission, data=_orga_base_data(submission)
-    )
-
-    assert form.is_valid(), form.errors
-
-
-def test_submission_orga_form_save_new_sets_state(event):
     form = SubmissionOrgaForm(event=event, data=_orga_new_data(event))
     assert form.is_valid(), form.errors
     form.instance.event = event
     result = form.save()
+    german = SubmissionOrgaForm(
+        event=multi_locale_event,
+        data=_orga_new_data(multi_locale_event, content_locale="de"),
+    )
+    assert german.is_valid(), german.errors
+    german.instance.event = multi_locale_event
+    german_result = german.save()
 
     assert result.pk is not None
     assert result.state == SubmissionStates.SUBMITTED
-
-
-def test_submission_orga_form_save_new_sets_content_locale_from_event(event):
-    form = SubmissionOrgaForm(event=event, data=_orga_new_data(event))
-    assert form.is_valid(), form.errors
-    form.instance.event = event
-    result = form.save()
-
     assert result.content_locale == event.locale
+    assert german_result.content_locale == "de"
 
 
-def test_submission_orga_form_save_new_preserves_content_locale_when_field_present():
-    event = EventFactory(content_locales=["en", "de"])
-    form = SubmissionOrgaForm(
-        event=event, data=_orga_new_data(event, content_locale="de")
-    )
-    assert form.is_valid(), form.errors
-    form.instance.event = event
-    result = form.save()
-
-    assert result.content_locale == "de"
-
-
-def test_submission_orga_form_save_existing_duration_change_updates_slots(event):
+def test_submission_orga_form_save_applies_duration_and_track_side_effects(event):
+    track1 = TrackFactory(event=event)
+    track2 = TrackFactory(event=event)
     submission = SubmissionFactory(
-        event=event, state=SubmissionStates.CONFIRMED, duration=30
+        event=event, state=SubmissionStates.CONFIRMED, duration=30, track=track1
     )
     slot = TalkSlotFactory(submission=submission, is_visible=True)
 
@@ -1010,68 +653,49 @@ def test_submission_orga_form_save_existing_duration_change_updates_slots(event)
         event=event,
         instance=submission,
         data=_orga_base_data(
-            submission, duration=60, room=slot.room.pk, start=slot.start, end=slot.end
+            submission,
+            duration=60,
+            track=track2.pk,
+            room=slot.room.pk,
+            start=slot.start,
+            end=slot.end,
         ),
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    slot.refresh_from_db()
-
-    assert slot.end == slot.start + dt.timedelta(minutes=60)
-
-
-def test_submission_orga_form_save_existing_track_change_updates_review_scores(event):
-    track1 = TrackFactory(event=event)
-    track2 = TrackFactory(event=event)
-    submission = SubmissionFactory(event=event, track=track1)
-
-    form = SubmissionOrgaForm(
-        event=event,
-        instance=submission,
-        data=_orga_base_data(submission, track=track2.pk),
     )
     assert form.is_valid(), form.errors
     result = form.save()
 
+    slot.refresh_from_db()
+
     assert result.track == track2
+    assert slot.end == slot.start + dt.timedelta(minutes=60)
 
 
-def test_submission_orga_form_scheduling_kwargs_returns_changed_values(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    TalkSlotFactory(submission=submission, is_visible=True)
+def test_submission_orga_form_scheduling_kwargs(event):
+    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    TalkSlotFactory(submission=confirmed, is_visible=True)
+    submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     room = RoomFactory(event=event)
     start = event.datetime_from + dt.timedelta(hours=2)
     end = event.datetime_from + dt.timedelta(hours=3)
 
-    form = SubmissionOrgaForm(
+    changed = SubmissionOrgaForm(
         event=event,
-        instance=submission,
-        data=_orga_base_data(submission, room=room.pk, start=start, end=end),
+        instance=confirmed,
+        data=_orga_base_data(confirmed, room=room.pk, start=start, end=end),
     )
-    assert form.is_valid(), form.errors
-    assert form.scheduling_kwargs() == {"room": room, "start": start, "end": end}
-
-
-def test_submission_orga_form_scheduling_kwargs_none_when_unchanged(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    TalkSlotFactory(submission=submission, is_visible=True)
-
-    form = SubmissionOrgaForm(
-        event=event, instance=submission, data=_orga_base_data(submission)
+    unchanged = SubmissionOrgaForm(
+        event=event, instance=confirmed, data=_orga_base_data(confirmed)
     )
-    assert form.is_valid(), form.errors
-    assert form.scheduling_kwargs() is None
-
-
-def test_submission_orga_form_scheduling_kwargs_none_without_fields(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-
-    form = SubmissionOrgaForm(
-        event=event, instance=submission, data=_orga_base_data(submission)
+    without_fields = SubmissionOrgaForm(
+        event=event, instance=submitted, data=_orga_base_data(submitted)
     )
-    assert form.is_valid(), form.errors
-    assert form.scheduling_kwargs() is None
+    assert changed.is_valid(), changed.errors
+    assert unchanged.is_valid(), unchanged.errors
+    assert without_fields.is_valid(), without_fields.errors
+
+    assert changed.scheduling_kwargs() == {"room": room, "start": start, "end": end}
+    assert unchanged.scheduling_kwargs() is None
+    assert without_fields.scheduling_kwargs() is None
 
 
 def test_submission_orga_form_save_slot_count_change_updates_talk_slots():
@@ -1094,135 +718,51 @@ def test_submission_orga_form_save_slot_count_change_updates_talk_slots():
     assert slot_count == 2
 
 
-def test_anonymise_form_raises_on_unsaved_instance():
+def test_anonymise_form_raises_on_unsaved_instance(event):
     with pytest.raises(ValueError, match="Cannot anonymise unsaved submission"):
         AnonymiseForm(instance=None)
-
-
-def test_anonymise_form_raises_on_instance_without_pk(event):
-
-    unsaved = Submission(event=event, title="Test")
-
     with pytest.raises(ValueError, match="Cannot anonymise unsaved submission"):
-        AnonymiseForm(instance=unsaved)
+        AnonymiseForm(instance=Submission(event=event, title="Test"))
 
 
-def test_anonymise_form_init_with_tags_does_not_crash(event):
+def test_anonymise_form_init_keeps_only_optional_text_fields():
+    event = EventFactory(
+        feature_flags={"attendee_signup": True}, content_locales=["en", "de"]
+    )
     TagFactory(event=event)
-    submission = SubmissionFactory(event=event)
-
-    form = AnonymiseForm(instance=submission)
-
-    assert "tags" not in form.fields
-
-
-def test_anonymise_form_init_with_active_tracks_does_not_crash(event):
     TrackFactory(event=event)
-    submission = SubmissionFactory(event=event)
+    submission = SubmissionFactory(
+        event=event, state=SubmissionStates.ACCEPTED, title="Original"
+    )
 
     form = AnonymiseForm(instance=submission)
 
-    assert "track" not in form.fields
+    assert list(form.fields) == ["title", "abstract", "description", "notes"]
+    assert {name: field.plaintext for name, field in form.fields.items()} == {
+        "title": "Original",
+        "abstract": submission.abstract,
+        "description": submission.description,
+        "notes": submission.notes,
+    }
+    assert all(field.required is False for field in form.fields.values())
 
 
-def test_anonymise_form_init_with_attendee_signup_does_not_crash(event):
-    event.feature_flags["attendee_signup"] = True
-    event.save()
-    submission = SubmissionFactory(event=event)
-
-    form = AnonymiseForm(instance=submission)
-
-    assert "attendee_signup_required" not in form.fields
-
-
-def test_anonymise_form_init_sets_plaintext_on_fields(event):
-    submission = SubmissionFactory(event=event, title="Original")
-
-    form = AnonymiseForm(instance=submission)
-
-    assert form.fields["title"].plaintext == "Original"
-
-
-def test_anonymise_form_init_removes_content_locale_field(event):
-    submission = SubmissionFactory(event=event)
-
-    form = AnonymiseForm(instance=submission)
-
-    assert "content_locale" not in form.fields
-
-
-def test_anonymise_form_init_removes_non_model_fields(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-
-    form = AnonymiseForm(instance=submission)
-
-    assert "room" not in form.fields
-    assert "start" not in form.fields
-    assert "end" not in form.fields
-    assert "state" not in form.fields
-
-
-def test_anonymise_form_init_all_fields_not_required(event):
-    submission = SubmissionFactory(event=event)
-
-    form = AnonymiseForm(instance=submission)
-
-    for field in form.fields.values():
-        assert field.required is False
-
-
-def test_anonymise_form_save_stores_anonymised_data(event):
-    submission = SubmissionFactory(event=event, title="Original Title")
+def test_anonymise_form_save_stores_only_changed_fields(event):
+    submission = SubmissionFactory(
+        event=event,
+        title="Original Title",
+        abstract="Abstract",
+        description="",
+        notes="Notes",
+    )
 
     form = AnonymiseForm(
         instance=submission,
         data={
             "title": "Anonymised Title",
-            "abstract": submission.abstract or "",
-            "description": submission.description or "",
-            "notes": submission.notes or "",
-        },
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    submission.refresh_from_db()
-
-    assert submission.anonymised["_anonymised"] is True
-    assert submission.anonymised["title"] == "Anonymised Title"
-
-
-def test_anonymise_form_save_only_stores_changed_fields(event):
-    submission = SubmissionFactory(event=event, title="Original", abstract="Abstract")
-
-    form = AnonymiseForm(
-        instance=submission,
-        data={
-            "title": "Original",
-            "abstract": "New abstract",
-            "description": submission.description or "",
-            "notes": submission.notes or "",
-        },
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    submission.refresh_from_db()
-
-    assert "title" not in submission.anonymised
-    assert submission.anonymised["abstract"] == "New abstract"
-
-
-def test_anonymise_form_save_does_not_modify_original_model_fields(event):
-    submission = SubmissionFactory(event=event, title="Original Title")
-
-    form = AnonymiseForm(
-        instance=submission,
-        data={
-            "title": "Anonymised Title",
-            "abstract": "",
+            "abstract": "Abstract",
             "description": "",
-            "notes": "",
+            "notes": "New notes",
         },
     )
     assert form.is_valid(), form.errors
@@ -1230,45 +770,28 @@ def test_anonymise_form_save_does_not_modify_original_model_fields(event):
 
     submission.refresh_from_db()
 
+    assert submission.anonymised == {
+        "_anonymised": True,
+        "title": "Anonymised Title",
+        "notes": "New notes",
+    }
     assert submission.title == "Original Title"
+    assert submission.notes == "Notes"
 
 
-@pytest.mark.parametrize(
-    ("flag_enabled", "present"),
-    ((False, False), (True, True)),
-    ids=("disabled", "enabled"),
-)
-def test_submission_orga_form_attendee_signup_field_visibility(flag_enabled, present):
-    event = EventFactory(feature_flags={"attendee_signup": flag_enabled})
-    submission = SubmissionFactory(event=event)
-
-    form = SubmissionOrgaForm(event=event, instance=submission)
-
-    assert ("attendee_signup_required" in form.fields) is present
-
-
-def test_submission_orga_form_attendee_signup_field_disabled_in_read_only_mode():
+def test_submission_orga_form_attendee_signup_field_follows_feature_flag():
+    disabled_event = EventFactory(feature_flags={"attendee_signup": False})
     event = EventFactory(feature_flags={"attendee_signup": True})
-    submission = SubmissionFactory(event=event)
 
-    form = SubmissionOrgaForm(event=event, instance=submission, read_only=True)
-
-    assert form.fields["attendee_signup_required"].disabled is True
-
-
-def test_submission_orga_form_attendee_signup_default_label_ignores_submission_override():
-    # The label must reflect what would apply if the orga left the
-    # override unset — track/type defaults are False (factory defaults), so
-    # the underlying default is "No signup" regardless of the override.
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    submission = SubmissionFactory(event=event, attendee_signup_required=True)
-
-    form = SubmissionOrgaForm(event=event, instance=submission)
-
-    default_choice_label = str(
-        dict(form.fields["attendee_signup_required"].choices)["unknown"]
+    disabled_form = SubmissionOrgaForm(
+        event=disabled_event, instance=SubmissionFactory(event=disabled_event)
     )
-    assert "currently: No signup" in default_choice_label
+    read_only = SubmissionOrgaForm(
+        event=event, instance=SubmissionFactory(event=event), read_only=True
+    )
+
+    assert "attendee_signup_required" not in disabled_form.fields
+    assert read_only.fields["attendee_signup_required"].disabled is True
 
 
 @pytest.mark.parametrize("source", ("track", "submission_type"))
@@ -1294,30 +817,20 @@ def test_submission_orga_form_attendee_signup_default_label_inherits_requirement
 
 
 @pytest.mark.parametrize(
-    ("instance_value", "expected_initial"),
-    ((True, "true"), (False, "false"), (None, "unknown")),
+    ("value", "token"), ((True, "true"), (False, "false"), (None, "unknown"))
 )
-def test_submission_orga_form_attendee_signup_initial_matches_instance(
-    instance_value, expected_initial
-):
+def test_submission_orga_form_attendee_signup_round_trips_through_tokens(value, token):
     event = EventFactory(feature_flags={"attendee_signup": True})
-    submission = SubmissionFactory(event=event, attendee_signup_required=instance_value)
+    submission = SubmissionFactory(event=event, attendee_signup_required=value)
 
     form = SubmissionOrgaForm(event=event, instance=submission)
+    form.cleaned_data = {"attendee_signup_required": token}
 
-    assert form.initial["attendee_signup_required"] == expected_initial
-
-
-@pytest.mark.parametrize(
-    ("submitted", "expected"), (("true", True), ("false", False), ("unknown", None))
-)
-def test_submission_orga_form_clean_attendee_signup_required(submitted, expected):
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    submission = SubmissionFactory(event=event)
-    form = SubmissionOrgaForm(event=event, instance=submission)
-    form.cleaned_data = {"attendee_signup_required": submitted}
-
-    assert form.clean_attendee_signup_required() is expected
+    assert form.initial["attendee_signup_required"] == token
+    assert form.clean_attendee_signup_required() is value
+    assert [
+        str(label) for _, label in form.fields["attendee_signup_required"].choices
+    ] == ["Default (currently: No signup)", "Requires signup", "No signup"]
 
 
 def test_submission_orga_form_blocks_required_false_with_signups():

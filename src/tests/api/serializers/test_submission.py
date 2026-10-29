@@ -45,36 +45,38 @@ from tests.utils import make_api_request
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_resource_serializer_fields():
-    resource = ResourceFactory()
-    request = make_api_request(resource.submission.event)
-
-    serializer = ResourceSerializer(resource, context={"request": request})
-    data = serializer.data
-
-    assert set(data.keys()) == {"id", "resource", "description", "is_public"}
-    assert data["id"] == resource.pk
-    assert data["is_public"] is True
-
-
-def test_resource_serializer_get_resource_returns_url():
+def test_resource_serializer_data():
     resource = ResourceFactory(link="https://example.com/slides")
     request = make_api_request(resource.submission.event)
 
     serializer = ResourceSerializer(resource, context={"request": request})
 
-    assert serializer.data["resource"] == "https://example.com/slides"
+    assert serializer.data == {
+        "id": resource.pk,
+        "resource": "https://example.com/slides",
+        "description": resource.description,
+        "is_public": True,
+    }
 
 
-def test_resource_write_serializer_rejects_neither_link_nor_file():
+@pytest.mark.parametrize(
+    ("data", "errors"),
+    (
+        ({"link": "https://example.com", "description": "slides"}, {}),
+        (
+            {"description": "d", "link": ""},
+            {"__all__": ["Please provide a link or upload a file!"]},
+        ),
+    ),
+    ids=("link_only", "neither_link_nor_file"),
+)
+def test_resource_write_serializer_requires_link_or_file(data, errors):
     event = EventFactory()
     request = make_api_request(event)
-    serializer = ResourceWriteSerializer(
-        data={"description": "d", "link": ""}, context={"request": request}
-    )
+    serializer = ResourceWriteSerializer(data=data, context={"request": request})
 
-    assert not serializer.is_valid()
-    assert "provide a link or upload a file" in str(serializer.errors)
+    assert serializer.is_valid() == (not errors)
+    assert serializer.errors == errors
 
 
 def test_resource_write_serializer_rejects_both_link_and_file():
@@ -93,17 +95,6 @@ def test_resource_write_serializer_rejects_both_link_and_file():
         serializer._run_model_full_clean(
             {"link": "https://example.com", "description": "d"}
         )
-
-
-def test_resource_write_serializer_accepts_link_only():
-    event = EventFactory()
-    request = make_api_request(event)
-    serializer = ResourceWriteSerializer(
-        data={"link": "https://example.com", "description": "slides"},
-        context={"request": request},
-    )
-
-    assert serializer.is_valid(), serializer.errors
 
 
 @pytest.mark.parametrize(
@@ -143,15 +134,17 @@ def test_tag_serializer_fields():
 
 def test_tag_serializer_create_sets_event():
     event = EventFactory()
+    TagFactory(event=event, tag="python")
     request = make_api_request(event)
     serializer = TagSerializer(
-        data={"tag": "python", "color": "#00ff00", "is_public": True},
+        data={"tag": "django", "color": "#00ff00", "is_public": True},
         context={"request": request},
     )
     assert serializer.is_valid(), serializer.errors
     tag = serializer.save()
 
     assert tag.event == event
+    assert tag.tag == "django"
 
 
 def test_tag_serializer_rejects_duplicate():
@@ -163,46 +156,27 @@ def test_tag_serializer_rejects_duplicate():
     )
 
     assert not serializer.is_valid()
-    assert "tag" in serializer.errors
+    assert serializer.errors == {"tag": ["You already have a tag by this name!"]}
 
 
-def test_tag_serializer_allows_editing_own():
-    tag = TagFactory(tag="python")
-    request = make_api_request(tag.event)
+@pytest.mark.parametrize(
+    ("name", "errors"),
+    (("django", {}), ("python", {"tag": ["You already have a tag by this name!"]})),
+    ids=("own_name", "other_name"),
+)
+def test_tag_serializer_edit_rejects_only_other_tags_name(name, errors):
+    event = EventFactory()
+    TagFactory(event=event, tag="python")
+    tag = TagFactory(event=event, tag="django")
+    request = make_api_request(event)
     serializer = TagSerializer(
         instance=tag,
-        data={"tag": "python", "color": tag.color, "is_public": tag.is_public},
+        data={"tag": name, "color": tag.color, "is_public": tag.is_public},
         context={"request": request},
     )
 
-    assert serializer.is_valid(), serializer.errors
-
-
-def test_tag_serializer_rejects_duplicate_when_editing_other():
-    event = EventFactory()
-    TagFactory(event=event, tag="python")
-    other = TagFactory(event=event, tag="django")
-    request = make_api_request(event)
-    serializer = TagSerializer(
-        instance=other,
-        data={"tag": "python", "color": other.color, "is_public": other.is_public},
-        context={"request": request},
-    )
-
-    assert not serializer.is_valid()
-    assert "tag" in serializer.errors
-
-
-def test_tag_serializer_accepts_unique():
-    event = EventFactory()
-    TagFactory(event=event, tag="python")
-    request = make_api_request(event)
-    serializer = TagSerializer(
-        data={"tag": "django", "color": "#0000ff", "is_public": False},
-        context={"request": request},
-    )
-
-    assert serializer.is_valid(), serializer.errors
+    assert serializer.is_valid() == (not errors)
+    assert serializer.errors == errors
 
 
 def test_submission_type_serializer_fields():
@@ -245,37 +219,42 @@ def test_submission_type_serializer_rejects_duplicate_name():
     )
 
     assert not serializer.is_valid()
-    assert "name" in serializer.errors
+    assert serializer.errors == {
+        "name": ["You already have a session type by this name!"]
+    }
 
 
-def test_submission_type_serializer_allows_editing_own_name():
-    stype = SubmissionTypeFactory(name="Workshop")
-    request = make_api_request(stype.event)
-    serializer = SubmissionTypeSerializer(
-        instance=stype,
-        data={"name": "Workshop", "default_duration": stype.default_duration},
-        context={"request": request},
-    )
-
-    assert serializer.is_valid(), serializer.errors
-
-
-def test_submission_type_serializer_rejects_duplicate_name_when_editing_other():
+@pytest.mark.parametrize(
+    ("name", "errors"),
+    (
+        ("Lightning", {}),
+        ("Workshop", {"name": ["You already have a session type by this name!"]}),
+    ),
+    ids=("own_name", "other_name"),
+)
+def test_submission_type_serializer_edit_rejects_only_other_types_name(name, errors):
     event = EventFactory()
     SubmissionTypeFactory(event=event, name="Workshop")
-    other = SubmissionTypeFactory(event=event, name="Lightning")
+    stype = SubmissionTypeFactory(event=event, name="Lightning")
     request = make_api_request(event)
     serializer = SubmissionTypeSerializer(
-        instance=other,
-        data={"name": "Workshop", "default_duration": other.default_duration},
+        instance=stype,
+        data={"name": name, "default_duration": stype.default_duration},
         context={"request": request},
     )
 
-    assert not serializer.is_valid()
-    assert "name" in serializer.errors
+    assert serializer.is_valid() == (not errors)
+    assert serializer.errors == errors
 
 
-def test_submission_type_serializer_update_propagates_duration_to_slots():
+@pytest.mark.parametrize(
+    ("new_duration", "expected_minutes"),
+    ((60, 60), (30, 30)),
+    ids=("changed", "unchanged"),
+)
+def test_submission_type_serializer_update_propagates_duration_to_slots(
+    new_duration, expected_minutes
+):
     stype = SubmissionTypeFactory(default_duration=30)
     submission = SubmissionFactory(event=stype.event, submission_type=stype)
     start = submission.event.datetime_from
@@ -285,26 +264,10 @@ def test_submission_type_serializer_update_propagates_duration_to_slots():
     request = make_api_request(stype.event)
     serializer = SubmissionTypeSerializer(instance=stype, context={"request": request})
 
-    serializer.update(stype, {"default_duration": 60})
+    serializer.update(stype, {"default_duration": new_duration})
     slot.refresh_from_db()
 
-    assert slot.end == start + dt.timedelta(minutes=60)
-
-
-def test_submission_type_serializer_update_skips_update_duration_when_unchanged():
-    stype = SubmissionTypeFactory(default_duration=30)
-    submission = SubmissionFactory(event=stype.event, submission_type=stype)
-    start = submission.event.datetime_from
-    slot = TalkSlotFactory(
-        submission=submission, start=start, end=start + dt.timedelta(minutes=30)
-    )
-    request = make_api_request(stype.event)
-    serializer = SubmissionTypeSerializer(instance=stype, context={"request": request})
-
-    serializer.update(stype, {"default_duration": 30})
-    slot.refresh_from_db()
-
-    assert slot.end == start + dt.timedelta(minutes=30)
+    assert slot.end == start + dt.timedelta(minutes=expected_minutes)
 
 
 def test_track_serializer_fields():
@@ -348,51 +311,30 @@ def test_track_serializer_rejects_duplicate_name():
     )
 
     assert not serializer.is_valid()
-    assert "name" in serializer.errors
+    assert serializer.errors == {"name": ["You already have a track by this name!"]}
 
 
-def test_track_serializer_allows_editing_own_name():
-    track = TrackFactory(name="Security")
-    request = make_api_request(track.event)
-    serializer = TrackSerializer(
-        instance=track,
-        data={"name": "Security", "color": track.color},
-        context={"request": request},
-    )
-
-    assert serializer.is_valid(), serializer.errors
-
-
-def test_track_serializer_rejects_duplicate_name_when_editing_other():
+@pytest.mark.parametrize(
+    ("name", "errors"),
+    (
+        ("DevOps", {}),
+        ("Security", {"name": ["You already have a track by this name!"]}),
+    ),
+    ids=("own_name", "other_name"),
+)
+def test_track_serializer_edit_rejects_only_other_tracks_name(name, errors):
     event = EventFactory()
     TrackFactory(event=event, name="Security")
-    other = TrackFactory(event=event, name="DevOps")
+    track = TrackFactory(event=event, name="DevOps")
     request = make_api_request(event)
     serializer = TrackSerializer(
-        instance=other,
-        data={"name": "Security", "color": other.color},
+        instance=track,
+        data={"name": name, "color": track.color},
         context={"request": request},
     )
 
-    assert not serializer.is_valid()
-    assert "name" in serializer.errors
-
-
-def test_submission_invitation_serializer_fields():
-    submission = SubmissionFactory()
-    invitation = SubmissionInvitationFactory(
-        submission=submission, email="speaker@example.com"
-    )
-    request = make_api_request(submission.event)
-
-    serializer = SubmissionInvitationSerializer(
-        invitation, context={"request": request}
-    )
-    data = serializer.data
-
-    assert set(data.keys()) == {"id", "email", "created", "updated"}
-    assert data["id"] == invitation.pk
-    assert data["email"] == "speaker@example.com"
+    assert serializer.is_valid() == (not errors)
+    assert serializer.errors == errors
 
 
 def test_submission_serializer_init_sets_querysets():
@@ -406,14 +348,25 @@ def test_submission_serializer_init_sets_querysets():
     assert list(serializer.fields["track"].queryset) == [track]
 
 
-def test_submission_orga_serializer_init_sets_tags_queryset():
+def test_submission_orga_serializer_init_sets_querysets_and_choices():
     event = EventFactory()
     tag = TagFactory(event=event)
     TagFactory()
+    team = TeamFactory(organiser=event.organiser, name="Reviewers", is_reviewer=True)
+    team.limit_events.add(event)
+    reviewer = UserFactory()
+    team.members.add(reviewer)
+    UserFactory()
     request = make_api_request(event, user=UserFactory())
     serializer = SubmissionOrgaSerializer(context={"request": request})
 
     assert list(serializer.fields["tags"].child_relation.queryset) == [tag]
+    assert set(serializer.fields["assigned_reviewers"].child_relation.queryset) == {
+        reviewer
+    }
+    assert set(dict(serializer.fields["content_locale"].choices)) == set(
+        event.content_locales
+    )
 
 
 @pytest.mark.parametrize(
@@ -437,220 +390,77 @@ def test_submission_serializer_get_tags_filters_by_visibility(
     assert sorted(serializer.data["tags"]) == sorted(expected)
 
 
-def test_submission_serializer_init_removes_track_when_feature_disabled():
-    event = EventFactory(feature_flags={"use_tracks": False})
+@pytest.mark.parametrize(
+    ("event_kwargs", "expected"),
+    (
+        (
+            {
+                "feature_flags": {"use_tracks": False},
+                "cfp__fields": {
+                    "abstract": {"visibility": "required"},
+                    "description": {"visibility": "optional"},
+                },
+            },
+            {"abstract": True, "description": False},
+        ),
+        (
+            {
+                "feature_flags": {"use_tracks": True},
+                "cfp__fields": {
+                    "abstract": {"visibility": "required"},
+                    "description": {"visibility": "do_not_ask"},
+                },
+            },
+            {"track": False, "abstract": True},
+        ),
+    ),
+    ids=("no_tracks_optional_description", "tracks_no_description"),
+)
+def test_submission_serializer_init_fields_follow_event_and_cfp(event_kwargs, expected):
+    event = EventFactory(**event_kwargs)
     request = make_api_request(event)
     serializer = SubmissionSerializer(context={"request": request})
 
-    assert "track" not in serializer.fields
-
-
-def test_submission_serializer_init_removes_unrequested_cfp_fields():
-    event = EventFactory(cfp__fields={"description": {"visibility": "do_not_ask"}})
-    request = make_api_request(event)
-    serializer = SubmissionSerializer(context={"request": request})
-
-    assert "description" not in serializer.fields
-
-
-def test_submission_serializer_init_sets_field_required_from_cfp():
-    event = EventFactory(
-        cfp__fields={
-            "abstract": {"visibility": "required"},
-            "description": {"visibility": "optional"},
-        }
-    )
-    request = make_api_request(event)
-    serializer = SubmissionSerializer(context={"request": request})
-
-    assert serializer.fields["abstract"].required is True
-    assert serializer.fields["description"].required is False
-
-
-def test_submission_serializer_init_without_event():
-    request = make_api_request(event=None)
-
-    serializer = SubmissionSerializer(context={"request": request})
-
-    assert serializer.event is None
+    assert {
+        name: field.required
+        for name, field in serializer.fields.items()
+        if name in ("track", "abstract", "description")
+    } == expected
 
 
 def test_submission_serializer_fields():
     submission = SubmissionFactory()
     request = make_api_request(submission.event)
-    serializer = SubmissionSerializer(
+    base = SubmissionSerializer(
         submission, context={"request": request, "questions": [], "schedule": None}
-    )
-    data = serializer.data
+    ).data
+    orga = SubmissionOrgaSerializer(
+        submission, context={"request": request, "questions": [], "schedule": None}
+    ).data
 
-    expected_keys = {
+    assert set(base.keys()) == {
         "code",
         "title",
         "speakers",
         "submission_type",
+        "track",
+        "tags",
         "state",
         "abstract",
+        "description",
         "duration",
         "slot_count",
         "attendee_signup_required",
         "attendee_signup_capacity",
+        "signup_status",
         "content_locale",
         "do_not_record",
+        "image",
         "resources",
         "slots",
         "answers",
     }
-    assert expected_keys <= set(data.keys())
-    assert data["code"] == submission.code
-    assert data["title"] == str(submission.title)
-
-
-def test_submission_serializer_get_speakers_returns_codes():
-    role = SpeakerRoleFactory()
-    submission = role.submission
-    speaker = role.speaker
-    request = make_api_request(submission.event)
-    serializer = SubmissionSerializer(submission, context={"request": request})
-    data = serializer.data
-
-    assert data["speakers"] == [speaker.code]
-
-
-def test_submission_serializer_get_answers_filters_by_submission_questions():
-    submission = SubmissionFactory()
-    sub_question = QuestionFactory(
-        event=submission.event, target=QuestionTarget.SUBMISSION
-    )
-    speaker_question = QuestionFactory(
-        event=submission.event, target=QuestionTarget.SPEAKER
-    )
-    sub_answer = AnswerFactory(question=sub_question, submission=submission)
-    AnswerFactory(question=speaker_question, submission=submission)
-    request = make_api_request(submission.event)
-    serializer = SubmissionSerializer(
-        submission,
-        context={"request": request, "questions": [sub_question, speaker_question]},
-    )
-    data = serializer.data
-
-    assert data["answers"] == [sub_answer.pk]
-
-
-def test_submission_serializer_get_answers_returns_empty_without_questions():
-    submission = SubmissionFactory()
-    request = make_api_request(submission.event)
-    serializer = SubmissionSerializer(
-        submission, context={"request": request, "questions": []}
-    )
-    data = serializer.data
-
-    assert data["answers"] == []
-
-
-def test_submission_serializer_get_slots_filters_by_schedule():
-    submission = SubmissionFactory()
-    slot = TalkSlotFactory(submission=submission, is_visible=True)
-    schedule = slot.schedule
-    other_schedule = ScheduleFactory(event=submission.event)
-    TalkSlotFactory(submission=submission, schedule=other_schedule, is_visible=True)
-    request = make_api_request(submission.event)
-    serializer = SubmissionSerializer(
-        submission, context={"request": request, "schedule": schedule}
-    )
-    data = serializer.data
-
-    assert data["slots"] == [slot.pk]
-
-
-def test_submission_serializer_get_slots_returns_empty_without_schedule():
-    submission = SubmissionFactory()
-    request = make_api_request(submission.event)
-    serializer = SubmissionSerializer(
-        submission, context={"request": request, "schedule": None}
-    )
-    data = serializer.data
-
-    assert data["slots"] == []
-
-
-@pytest.mark.parametrize(
-    ("public_slots", "include_hidden"),
-    ((True, False), (False, True)),
-    ids=("public_only", "all_slots"),
-)
-def test_submission_serializer_get_slots_filters_by_visibility(
-    public_slots, include_hidden
-):
-    submission = SubmissionFactory()
-    visible_slot = TalkSlotFactory(submission=submission, is_visible=True)
-    hidden_slot = TalkSlotFactory(
-        submission=submission, is_visible=False, schedule=visible_slot.schedule
-    )
-    request = make_api_request(submission.event)
-    serializer = SubmissionSerializer(
-        submission,
-        context={
-            "request": request,
-            "schedule": visible_slot.schedule,
-            "public_slots": public_slots,
-        },
-    )
-    data = serializer.data
-
-    expected = {visible_slot.pk}
-    if include_hidden:
-        expected.add(hidden_slot.pk)
-    assert set(data["slots"]) == expected
-
-
-@pytest.mark.parametrize(
-    ("public_resources", "include_private"),
-    ((True, False), (False, True)),
-    ids=("public_only", "all_resources"),
-)
-def test_submission_serializer_get_resources_filters_by_visibility(
-    public_resources, include_private
-):
-    submission = SubmissionFactory()
-    public_resource = ResourceFactory(
-        submission=submission, link="https://example.com/public", is_public=True
-    )
-    private_resource = ResourceFactory(
-        submission=submission, link="https://example.com/private", is_public=False
-    )
-    request = make_api_request(submission.event)
-    serializer = SubmissionSerializer(
-        submission, context={"request": request, "public_resources": public_resources}
-    )
-    data = serializer.data
-
-    expected = {public_resource.pk}
-    if include_private:
-        expected.add(private_resource.pk)
-    assert set(data["resources"]) == expected
-
-
-def test_submission_serializer_get_resources_excludes_without_url():
-    submission = SubmissionFactory()
-    ResourceFactory(submission=submission, link="")
-    request = make_api_request(submission.event)
-    serializer = SubmissionSerializer(
-        submission, context={"request": request, "public_resources": False}
-    )
-    data = serializer.data
-
-    assert data["resources"] == []
-
-
-def test_submission_orga_serializer_fields():
-    submission = SubmissionFactory()
-    request = make_api_request(submission.event)
-    serializer = SubmissionOrgaSerializer(
-        submission, context={"request": request, "questions": [], "schedule": None}
-    )
-    data = serializer.data
-
-    orga_keys = {
+    assert set(orga.keys()) - set(base.keys()) == {
         "pending_state",
         "is_featured",
         "notes",
@@ -667,51 +477,185 @@ def test_submission_orga_serializer_fields():
         "updated",
         "invitations",
     }
-    assert orga_keys <= set(data.keys())
+    assert base["code"] == submission.code
+    assert base["title"] == str(submission.title)
+    assert base["answers"] == []
+    assert base["slots"] == []
 
 
-def test_submission_orga_serializer_assigned_reviewers_queryset():
-    event = EventFactory()
-    team = TeamFactory(organiser=event.organiser, name="Reviewers", is_reviewer=True)
-    team.limit_events.add(event)
-    reviewer = UserFactory()
-    team.members.add(reviewer)
-    UserFactory()  # non-reviewer user exists but must not appear in queryset
-    request = make_api_request(event)
-    serializer = SubmissionOrgaSerializer(context={"request": request})
+def test_submission_serializer_get_speakers_codes_and_expanded():
+    role = SpeakerRoleFactory()
+    submission = role.submission
+    speaker = role.speaker
+    event = submission.event
 
-    qs = serializer.fields["assigned_reviewers"].child_relation.queryset
-    assert set(qs) == {reviewer}
+    codes = SubmissionSerializer(
+        submission, context={"request": make_api_request(event)}
+    ).data["speakers"]
+    expanded = SubmissionSerializer(
+        submission,
+        context={"request": make_api_request(event, data={"expand": "speakers"})},
+    ).data["speakers"]
 
-
-def test_submission_orga_serializer_content_locale_choices():
-    event = EventFactory()
-    request = make_api_request(event)
-    serializer = SubmissionOrgaSerializer(context={"request": request})
-
-    choices = dict(serializer.fields["content_locale"].choices)
-    assert set(choices.keys()) == set(event.content_locales)
+    assert codes == [speaker.code]
+    assert [(s["code"], s["name"]) for s in expanded] == [
+        (speaker.code, speaker.user.name)
+    ]
 
 
-def test_submission_orga_serializer_rejects_invalid_content_locale():
-    event = EventFactory()
-    request = make_api_request(event, user=UserFactory())
-    serializer = SubmissionOrgaSerializer(
-        data={
-            "title": "Talk",
-            "submission_type": event.cfp.default_type.pk,
-            "abstract": "An abstract",
-            "content_locale": "xx",
+def test_submission_serializer_get_answers_filters_by_submission_questions():
+    submission = SubmissionFactory()
+    event = submission.event
+    sub_question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
+    speaker_question = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    sub_answer = AnswerFactory(question=sub_question, submission=submission)
+    AnswerFactory(question=speaker_question, submission=submission)
+    questions = [sub_question, speaker_question]
+
+    pks = SubmissionSerializer(
+        submission, context={"request": make_api_request(event), "questions": questions}
+    ).data["answers"]
+    expanded = SubmissionSerializer(
+        submission,
+        context={
+            "request": make_api_request(event, data={"expand": "answers"}),
+            "questions": questions,
         },
-        context={"request": request},
+    ).data["answers"]
+
+    assert pks == [sub_answer.pk]
+    assert [answer["id"] for answer in expanded] == [sub_answer.pk]
+
+
+@pytest.mark.parametrize(
+    ("public_slots", "include_hidden"),
+    ((True, False), (False, True)),
+    ids=("public_only", "all_slots"),
+)
+def test_submission_serializer_get_slots_filters_by_schedule_and_visibility(
+    public_slots, include_hidden
+):
+    submission = SubmissionFactory()
+    event = submission.event
+    visible_slot = TalkSlotFactory(submission=submission, is_visible=True)
+    hidden_slot = TalkSlotFactory(
+        submission=submission, is_visible=False, schedule=visible_slot.schedule
     )
+    TalkSlotFactory(
+        submission=submission, schedule=ScheduleFactory(event=event), is_visible=True
+    )
+    context = {"schedule": visible_slot.schedule, "public_slots": public_slots}
 
-    assert not serializer.is_valid()
-    assert "content_locale" in serializer.errors
+    pks = SubmissionSerializer(
+        submission, context={"request": make_api_request(event), **context}
+    ).data["slots"]
+    expanded = SubmissionSerializer(
+        submission,
+        context={
+            "request": make_api_request(event, data={"expand": "slots"}),
+            **context,
+        },
+    ).data["slots"]
+
+    expected = {visible_slot.pk}
+    if include_hidden:
+        expected.add(hidden_slot.pk)
+    assert set(pks) == expected
+    assert {slot["id"] for slot in expanded} == expected
 
 
-def test_submission_orga_serializer_allows_slot_count_one():
-    event = EventFactory(feature_flags={"present_multiple_times": False})
+@pytest.mark.parametrize(
+    ("public_resources", "include_private"),
+    ((True, False), (False, True)),
+    ids=("public_only", "all_resources"),
+)
+def test_submission_serializer_get_resources_filters_by_visibility_and_url(
+    public_resources, include_private
+):
+    submission = SubmissionFactory()
+    event = submission.event
+    public_resource = ResourceFactory(
+        submission=submission, link="https://example.com/public", is_public=True
+    )
+    private_resource = ResourceFactory(
+        submission=submission, link="https://example.com/private", is_public=False
+    )
+    ResourceFactory(submission=submission, link="", is_public=True)
+    context = {"public_resources": public_resources}
+
+    pks = SubmissionSerializer(
+        submission, context={"request": make_api_request(event), **context}
+    ).data["resources"]
+    expanded = SubmissionSerializer(
+        submission,
+        context={
+            "request": make_api_request(event, data={"expand": "resources"}),
+            **context,
+        },
+    ).data["resources"]
+
+    expected = {public_resource.pk}
+    if include_private:
+        expected.add(private_resource.pk)
+    assert set(pks) == expected
+    assert {(r["id"], r["resource"]) for r in expanded} == {
+        (r.pk, r.link) for r in (public_resource, private_resource) if r.pk in expected
+    }
+
+
+def test_submission_invitation_serializer_data_and_orga_invitations():
+    submission = SubmissionFactory()
+    event = submission.event
+    invitation = SubmissionInvitationFactory(
+        submission=submission, email="invited@example.com"
+    )
+    context = {"questions": [], "schedule": None}
+
+    invitation_data = SubmissionInvitationSerializer(
+        invitation, context={"request": make_api_request(event)}
+    ).data
+    pks = SubmissionOrgaSerializer(
+        submission, context={"request": make_api_request(event), **context}
+    ).data["invitations"]
+    expanded = SubmissionOrgaSerializer(
+        submission,
+        context={
+            "request": make_api_request(event, data={"expand": "invitations"}),
+            **context,
+        },
+    ).data["invitations"]
+
+    assert set(invitation_data.keys()) == {"id", "email", "created", "updated"}
+    assert invitation_data["id"] == invitation.pk
+    assert invitation_data["email"] == "invited@example.com"
+    assert pks == [invitation.pk]
+    assert expanded == [invitation_data]
+
+
+@pytest.mark.parametrize(
+    ("present_multiple_times", "extra_data", "errors"),
+    (
+        (False, {"slot_count": 1}, {}),
+        (
+            False,
+            {"slot_count": 3},
+            {"slot_count": ["Slot count may only be 1 in this event."]},
+        ),
+        (True, {"slot_count": 3}, {}),
+        (
+            False,
+            {"content_locale": "xx"},
+            {"content_locale": ['"xx" is not a valid choice.']},
+        ),
+    ),
+    ids=("one_slot", "multiple_slots_without_flag", "multiple_slots", "bad_locale"),
+)
+def test_submission_orga_serializer_validates_slot_count_and_content_locale(
+    present_multiple_times, extra_data, errors
+):
+    event = EventFactory(
+        feature_flags={"present_multiple_times": present_multiple_times}
+    )
     request = make_api_request(event, user=UserFactory())
     serializer = SubmissionOrgaSerializer(
         data={
@@ -719,82 +663,30 @@ def test_submission_orga_serializer_allows_slot_count_one():
             "submission_type": event.cfp.default_type.pk,
             "abstract": "An abstract",
             "content_locale": event.locale,
-            "slot_count": 1,
+            **extra_data,
         },
         context={"request": request},
     )
 
-    assert serializer.is_valid(), serializer.errors
+    assert serializer.is_valid() == (not errors)
+    assert serializer.errors == errors
 
 
-def test_submission_orga_serializer_rejects_slot_count_without_flag():
-    event = EventFactory(feature_flags={"present_multiple_times": False})
-    request = make_api_request(event, user=UserFactory())
-    serializer = SubmissionOrgaSerializer(
-        data={
-            "title": "Talk",
-            "submission_type": event.cfp.default_type.pk,
-            "abstract": "An abstract",
-            "content_locale": event.locale,
-            "slot_count": 3,
-        },
-        context={"request": request},
-    )
-
-    assert not serializer.is_valid()
-    assert "slot_count" in serializer.errors
-    assert "may only be 1" in str(serializer.errors["slot_count"])
-
-
-def test_submission_orga_serializer_allows_multiple_slots_with_flag():
-    event = EventFactory(feature_flags={"present_multiple_times": True})
-    request = make_api_request(event, user=UserFactory())
-    serializer = SubmissionOrgaSerializer(
-        data={
-            "title": "Talk",
-            "submission_type": event.cfp.default_type.pk,
-            "abstract": "An abstract",
-            "content_locale": event.locale,
-            "slot_count": 3,
-        },
-        context={"request": request},
-    )
-
-    assert serializer.is_valid(), serializer.errors
-
-
-def test_submission_orga_serializer_create_sets_event_and_defaults():
-    event = EventFactory()
-    request = make_api_request(event, user=UserFactory())
-    serializer = SubmissionOrgaSerializer(
-        data={
-            "title": "My Talk",
-            "submission_type": event.cfp.default_type.pk,
-            "abstract": "An abstract",
-            "content_locale": event.locale,
-        },
-        context={"request": request},
-    )
-    assert serializer.is_valid(), serializer.errors
-    submission = serializer.save()
-
-    assert submission.event == event
-    assert submission.content_locale == event.locale
-    assert submission.title == "My Talk"
-
-
-def test_submission_orga_serializer_create_with_assigned_reviewers():
-    event = EventFactory()
+def test_submission_orga_serializer_create_from_data():
+    event = EventFactory(locale="en", content_locales=["en", "de"])
+    tag = TagFactory(event=event)
     reviewer = UserFactory()
     team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
     team.members.add(reviewer)
     request = make_api_request(event, user=UserFactory())
     serializer = SubmissionOrgaSerializer(
         data={
-            "title": "My Talk",
+            "title": "German Talk",
             "submission_type": event.cfp.default_type.pk,
-            "abstract": "An abstract",
-            "content_locale": event.locale,
+            "abstract": "Ein Abstract",
+            "content_locale": "de",
+            "duration": 45,
+            "tags": [tag.pk],
             "assigned_reviewers": [reviewer.code],
         },
         context={"request": request},
@@ -802,7 +694,36 @@ def test_submission_orga_serializer_create_with_assigned_reviewers():
     assert serializer.is_valid(), serializer.errors
     submission = serializer.save()
 
+    assert submission.event == event
+    assert submission.title == "German Talk"
+    assert submission.content_locale == "de"
+    assert submission.duration == 45
+    assert list(submission.tags.all()) == [tag]
     assert list(submission.assigned_reviewers.all()) == [reviewer]
+
+
+def test_submission_orga_serializer_create_defaults_content_locale_and_stores_image(
+    make_image,
+):
+    event = EventFactory(locale="de", content_locales=["en", "de"])
+    request = make_api_request(event, user=UserFactory())
+    serializer = SubmissionOrgaSerializer(context={"request": request})
+
+    submission = serializer.create(
+        {
+            "event": event,
+            "title": "Illustrated Talk",
+            "submission_type": event.cfp.default_type,
+            "abstract": "An abstract",
+            "image": make_image("created.png"),
+        }
+    )
+
+    assert submission.content_locale == "de"
+    assert submission.image.name.startswith(
+        f"{event.slug}/submissions/{submission.code}/image_"
+    )
+    assert submission.image.name.endswith(".png")
 
 
 def test_submission_orga_serializer_init_skips_content_locale_when_not_requested():
@@ -813,87 +734,61 @@ def test_submission_orga_serializer_init_skips_content_locale_when_not_requested
     assert "content_locale" not in serializer.fields
 
 
-def test_submission_orga_serializer_create_converts_get_duration():
-    event = EventFactory()
-    request = make_api_request(event, user=UserFactory())
-    serializer = SubmissionOrgaSerializer(
-        data={
-            "title": "My Talk",
-            "submission_type": event.cfp.default_type.pk,
-            "duration": 45,
-            "abstract": "An abstract",
-            "content_locale": event.locale,
-        },
-        context={"request": request},
-    )
-    assert serializer.is_valid(), serializer.errors
-    submission = serializer.save()
-
-    assert submission.duration == 45
-
-
-def test_submission_orga_serializer_create_with_tags():
-    event = EventFactory()
-    tag = TagFactory(event=event)
-    request = make_api_request(event, user=UserFactory())
-    serializer = SubmissionOrgaSerializer(
-        data={
-            "title": "Tagged Talk",
-            "submission_type": event.cfp.default_type.pk,
-            "tags": [tag.pk],
-            "abstract": "An abstract",
-            "content_locale": event.locale,
-        },
-        context={"request": request},
-    )
-    assert serializer.is_valid(), serializer.errors
-    submission = serializer.save()
-    assert list(submission.tags.all()) == [tag]
-
-
-def test_submission_orga_serializer_update_basic():
+def test_submission_orga_serializer_update_sets_fields_tags_and_image(make_image):
     submission = SubmissionFactory(title="Old Title")
-    request = make_api_request(submission.event)
-    serializer = SubmissionOrgaSerializer(
-        instance=submission, context={"request": request}
-    )
-    updated = serializer.update(submission, {"title": "New Title"})
-
-    assert updated.title == "New Title"
-
-
-def test_submission_orga_serializer_update_with_tags():
-    submission = SubmissionFactory()
     tag = TagFactory(event=submission.event)
     request = make_api_request(submission.event)
     serializer = SubmissionOrgaSerializer(
         instance=submission, context={"request": request}
     )
-    updated = serializer.update(submission, {"tags": [tag]})
-    assert list(updated.tags.all()) == [tag]
 
-
-def test_submission_orga_serializer_update_validates_tag_pks():
-    submission = SubmissionFactory()
-    tag1 = TagFactory(event=submission.event)
-    tag2 = TagFactory(event=submission.event)
-    request = make_api_request(submission.event)
-    serializer = SubmissionOrgaSerializer(
-        instance=submission,
-        data={"tags": [tag1.pk, tag2.pk]},
-        partial=True,
-        context={"request": request},
+    updated = serializer.update(
+        submission,
+        {"title": "New Title", "tags": [tag], "image": make_image("new.png")},
     )
 
-    assert serializer.is_valid(), serializer.errors
-    serializer.save()
-    assert set(submission.tags.all()) == {tag1, tag2}
+    assert updated.title == "New Title"
+    assert list(updated.tags.all()) == [tag]
+    assert updated.image
+
+
+def test_submission_orga_serializer_update_tags_and_reviewers_from_data():
+    submission = SubmissionFactory()
+    event = submission.event
+    old_tag = TagFactory(event=event)
+    new_tags = [TagFactory(event=event), TagFactory(event=event)]
+    submission.tags.add(old_tag)
+    team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
+    old_reviewer, new_reviewer = UserFactory(), UserFactory()
+    team.members.add(old_reviewer, new_reviewer)
+    submission.assigned_reviewers.add(old_reviewer)
+    request = make_api_request(event)
+
+    for data, expected_tags, expected_reviewers in (
+        (
+            {
+                "tags": [tag.pk for tag in new_tags],
+                "assigned_reviewers": [new_reviewer.code],
+            },
+            set(new_tags),
+            {new_reviewer},
+        ),
+        ({"title": "Changed"}, set(new_tags), {new_reviewer}),
+        ({"tags": [], "assigned_reviewers": []}, set(), set()),
+    ):
+        serializer = SubmissionOrgaSerializer(
+            instance=submission, data=data, partial=True, context={"request": request}
+        )
+        assert serializer.is_valid(), serializer.errors
+        serializer.save()
+
+        assert set(submission.tags.all()) == expected_tags
+        assert set(submission.assigned_reviewers.all()) == expected_reviewers
 
 
 def test_submission_orga_serializer_update_rejects_cross_event_tag():
     submission = SubmissionFactory()
-    other_event = EventFactory()
-    foreign_tag = TagFactory(event=other_event)
+    foreign_tag = TagFactory(event=EventFactory())
     request = make_api_request(submission.event)
     serializer = SubmissionOrgaSerializer(
         instance=submission,
@@ -903,61 +798,9 @@ def test_submission_orga_serializer_update_rejects_cross_event_tag():
     )
 
     assert not serializer.is_valid()
-    assert "tags" in serializer.errors
-
-
-def test_submission_orga_serializer_update_validates_assigned_reviewer_codes():
-    submission = SubmissionFactory()
-    reviewer = UserFactory()
-    team = TeamFactory(
-        organiser=submission.event.organiser, all_events=True, is_reviewer=True
-    )
-    team.members.add(reviewer)
-    request = make_api_request(submission.event)
-    serializer = SubmissionOrgaSerializer(
-        instance=submission,
-        data={"assigned_reviewers": [reviewer.code]},
-        partial=True,
-        context={"request": request},
-    )
-
-    assert serializer.is_valid(), serializer.errors
-    serializer.save()
-    assert list(submission.assigned_reviewers.all()) == [reviewer]
-
-
-def test_submission_orga_serializer_update_empty_tags_clears():
-    submission = SubmissionFactory()
-    tag = TagFactory(event=submission.event)
-    submission.tags.add(tag)
-    request = make_api_request(submission.event)
-    serializer = SubmissionOrgaSerializer(
-        instance=submission,
-        data={"tags": []},
-        partial=True,
-        context={"request": request},
-    )
-
-    assert serializer.is_valid(), serializer.errors
-    serializer.save()
-    assert list(submission.tags.all()) == []
-
-
-def test_submission_orga_serializer_update_omitted_tags_unchanged():
-    submission = SubmissionFactory()
-    tag = TagFactory(event=submission.event)
-    submission.tags.add(tag)
-    request = make_api_request(submission.event)
-    serializer = SubmissionOrgaSerializer(
-        instance=submission,
-        data={"title": "Changed"},
-        partial=True,
-        context={"request": request},
-    )
-
-    assert serializer.is_valid(), serializer.errors
-    serializer.save()
-    assert list(submission.tags.all()) == [tag]
+    assert serializer.errors == {
+        "tags": [f'Invalid pk "{foreign_tag.pk}" - object does not exist.']
+    }
 
 
 def test_submission_orga_serializer_update_null_tags_rejected():
@@ -971,32 +814,13 @@ def test_submission_orga_serializer_update_null_tags_rejected():
     )
 
     assert not serializer.is_valid()
-    assert "tags" in serializer.errors
+    assert serializer.errors == {"tags": ["This field may not be null."]}
 
 
-def test_submission_orga_serializer_update_empty_assigned_reviewers_clears():
-    submission = SubmissionFactory()
-    reviewer = UserFactory()
-    team = TeamFactory(
-        organiser=submission.event.organiser, all_events=True, is_reviewer=True
+def test_submission_orga_serializer_update_duration_and_slot_count_updates_slots():
+    submission = SubmissionFactory(
+        duration=30, slot_count=1, state=SubmissionStates.CONFIRMED
     )
-    team.members.add(reviewer)
-    submission.assigned_reviewers.add(reviewer)
-    request = make_api_request(submission.event)
-    serializer = SubmissionOrgaSerializer(
-        instance=submission,
-        data={"assigned_reviewers": []},
-        partial=True,
-        context={"request": request},
-    )
-
-    assert serializer.is_valid(), serializer.errors
-    serializer.save()
-    assert list(submission.assigned_reviewers.all()) == []
-
-
-def test_submission_orga_serializer_update_duration_change_updates_slot_end():
-    submission = SubmissionFactory(duration=30)
     start = submission.event.datetime_from
     slot = TalkSlotFactory(
         submission=submission, start=start, end=start + dt.timedelta(minutes=30)
@@ -1006,26 +830,13 @@ def test_submission_orga_serializer_update_duration_change_updates_slot_end():
         instance=submission, context={"request": request}
     )
 
-    serializer.update(submission, {"get_duration": 60})
+    serializer.update(submission, {"get_duration": 60, "slot_count": 2})
     slot.refresh_from_db()
 
     assert slot.end == start + dt.timedelta(minutes=60)
-
-
-def test_submission_orga_serializer_update_slot_count_change_creates_slots():
-    submission = SubmissionFactory(slot_count=1, state=SubmissionStates.CONFIRMED)
-    TalkSlotFactory(submission=submission)
-    request = make_api_request(submission.event)
-    serializer = SubmissionOrgaSerializer(
-        instance=submission, context={"request": request}
+    assert (
+        submission.event.wip_schedule.talks.filter(submission=submission).count() == 2
     )
-
-    serializer.update(submission, {"slot_count": 2})
-
-    slot_count = submission.event.wip_schedule.talks.filter(
-        submission=submission
-    ).count()
-    assert slot_count == 2
 
 
 def test_submission_orga_serializer_update_track_change_recalculates_review_scores():
@@ -1062,20 +873,6 @@ def test_submission_orga_serializer_update_track_change_recalculates_review_scor
     assert review.updated > original_updated
 
 
-def test_submission_orga_serializer_get_invitations():
-    submission = SubmissionFactory()
-    invitation = SubmissionInvitationFactory(
-        submission=submission, email="invited@example.com"
-    )
-    request = make_api_request(submission.event)
-    serializer = SubmissionOrgaSerializer(
-        submission, context={"request": request, "questions": [], "schedule": None}
-    )
-    data = serializer.data
-
-    assert data["invitations"] == [invitation.pk]
-
-
 def test_submission_orga_serializer_init_without_event():
     request = make_api_request(event=None)
 
@@ -1083,145 +880,6 @@ def test_submission_orga_serializer_init_without_event():
 
     assert serializer.event is None
     assert serializer.fields["reviews"].required is False
-
-
-def test_submission_serializer_get_speakers_expanded():
-    role = SpeakerRoleFactory()
-    submission = role.submission
-    speaker = role.speaker
-    request = make_api_request(event=submission.event, data={"expand": "speakers"})
-    serializer = SubmissionSerializer(submission, context={"request": request})
-    data = serializer.data
-
-    assert len(data["speakers"]) == 1
-    assert data["speakers"][0]["code"] == speaker.code
-    assert data["speakers"][0]["name"] == speaker.user.name
-
-
-def test_submission_serializer_get_answers_expanded():
-    submission = SubmissionFactory()
-    question = QuestionFactory(event=submission.event, target=QuestionTarget.SUBMISSION)
-    answer = AnswerFactory(question=question, submission=submission)
-    request = make_api_request(event=submission.event, data={"expand": "answers"})
-    serializer = SubmissionSerializer(
-        submission, context={"request": request, "questions": [question]}
-    )
-    data = serializer.data
-
-    assert len(data["answers"]) == 1
-    assert data["answers"][0]["id"] == answer.pk
-
-
-def test_submission_serializer_get_slots_expanded():
-    submission = SubmissionFactory()
-    slot = TalkSlotFactory(submission=submission, is_visible=True)
-    request = make_api_request(event=submission.event, data={"expand": "slots"})
-    serializer = SubmissionSerializer(
-        submission, context={"request": request, "schedule": slot.schedule}
-    )
-    data = serializer.data
-
-    assert len(data["slots"]) == 1
-    assert data["slots"][0]["id"] == slot.pk
-
-
-def test_submission_serializer_get_resources_expanded():
-    submission = SubmissionFactory()
-    resource = ResourceFactory(
-        submission=submission, link="https://example.com/slides", is_public=True
-    )
-    request = make_api_request(event=submission.event, data={"expand": "resources"})
-    serializer = SubmissionSerializer(submission, context={"request": request})
-    data = serializer.data
-
-    assert len(data["resources"]) == 1
-    assert data["resources"][0]["id"] == resource.pk
-    assert data["resources"][0]["resource"] == "https://example.com/slides"
-
-
-def test_submission_orga_serializer_get_invitations_expanded():
-    submission = SubmissionFactory()
-    invitation = SubmissionInvitationFactory(
-        submission=submission, email="expanded@example.com"
-    )
-    request = make_api_request(event=submission.event, data={"expand": "invitations"})
-    serializer = SubmissionOrgaSerializer(
-        submission, context={"request": request, "questions": [], "schedule": None}
-    )
-    data = serializer.data
-
-    assert len(data["invitations"]) == 1
-    assert data["invitations"][0]["id"] == invitation.pk
-    assert data["invitations"][0]["email"] == "expanded@example.com"
-
-
-def test_submission_orga_serializer_update_with_image(make_image):
-    submission = SubmissionFactory()
-    request = make_api_request(submission.event)
-    serializer = SubmissionOrgaSerializer(
-        instance=submission, context={"request": request}
-    )
-    updated = serializer.update(submission, {"image": make_image("new.png")})
-
-    assert updated.image
-
-
-def test_submission_orga_serializer_create_with_explicit_content_locale():
-    event = EventFactory(locale="en", content_locales=["en", "de"])
-    request = make_api_request(event, user=UserFactory())
-    serializer = SubmissionOrgaSerializer(
-        data={
-            "title": "German Talk",
-            "submission_type": event.cfp.default_type.pk,
-            "content_locale": "de",
-            "abstract": "Ein Abstract",
-        },
-        context={"request": request},
-    )
-    assert serializer.is_valid(), serializer.errors
-    submission = serializer.save()
-
-    assert submission.content_locale == "de"
-
-
-def test_submission_orga_serializer_create_defaults_content_locale_to_event():
-    event = EventFactory(locale="de", content_locales=["en", "de"])
-    request = make_api_request(event, user=UserFactory())
-    serializer = SubmissionOrgaSerializer(context={"request": request})
-
-    submission = serializer.create(
-        {
-            "event": event,
-            "title": "Untitled",
-            "submission_type": event.cfp.default_type,
-            "abstract": "An abstract",
-        }
-    )
-
-    assert submission.content_locale == "de"
-
-
-def test_submission_orga_serializer_create_with_image(make_image):
-    event = EventFactory()
-    request = make_api_request(event, user=UserFactory())
-    serializer = SubmissionOrgaSerializer(context={"request": request})
-
-    submission = serializer.create(
-        {
-            "event": event,
-            "title": "Illustrated Talk",
-            "submission_type": event.cfp.default_type,
-            "abstract": "An abstract",
-            "content_locale": event.locale,
-            "image": make_image("created.png"),
-        }
-    )
-
-    assert submission.image
-    assert submission.image.name.startswith(
-        f"{event.slug}/submissions/{submission.code}/image_"
-    )
-    assert submission.image.name.endswith(".png")
 
 
 def test_attendee_signup_serializer_fields():

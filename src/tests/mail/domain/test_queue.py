@@ -7,6 +7,7 @@ from django.core import mail as djmail
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
+from pretalx.common.models.log import ActivityLog
 from pretalx.mail.domain.queue import (
     bulk_create_drafts,
     copy_to_draft,
@@ -29,57 +30,32 @@ from tests.factories import (
 pytestmark = [pytest.mark.django_db]
 
 
-def test_send_outbox_mails_sends_draft_mails():
+def test_send_outbox_mails_sends_selected_drafts_with_requestor():
     event = EventFactory()
     user = UserFactory()
+    requestor = UserFactory()
     mail_a = QueuedMailFactory(event=event, to=user.email)
     mail_b = QueuedMailFactory(event=event, to=user.email)
-    djmail.outbox = []
-
-    with scope(event=event):
-        result = send_outbox_mails(event=event, mail_pks=[mail_a.pk, mail_b.pk])
-
-    assert result == {"count": 2}
-    assert len(djmail.outbox) == 2
-
-
-def test_send_outbox_mails_skips_non_draft():
-    event = EventFactory()
-    user = UserFactory()
-    draft_mail = QueuedMailFactory(event=event, to=user.email)
     sent_mail = QueuedMailFactory(
         event=event, to=user.email, state=QueuedMailStates.SENT
     )
     djmail.outbox = []
 
     with scope(event=event):
-        result = send_outbox_mails(event=event, mail_pks=[draft_mail.pk, sent_mail.pk])
+        assert send_outbox_mails(event=event, mail_pks=[]) == {"count": 0}
+        result = send_outbox_mails(
+            event=event,
+            mail_pks=[mail_a.pk, mail_b.pk, sent_mail.pk],
+            requestor=requestor,
+        )
 
-    assert result == {"count": 1}
-    assert len(djmail.outbox) == 1
-
-
-def test_send_outbox_mails_with_requestor():
-    event = EventFactory()
-    user = UserFactory()
-    requestor = UserFactory()
-    mail = QueuedMailFactory(event=event, to=user.email)
-    djmail.outbox = []
-
-    with scope(event=event):
-        result = send_outbox_mails(event=event, mail_pks=[mail.pk], requestor=requestor)
-
-    assert result == {"count": 1}
-    assert len(djmail.outbox) == 1
-
-
-def test_send_outbox_mails_empty_list():
-    event = EventFactory()
-
-    with scope(event=event):
-        result = send_outbox_mails(event=event, mail_pks=[])
-
-    assert result == {"count": 0}
+    assert result == {"count": 2}
+    assert len(djmail.outbox) == 2
+    with scopes_disabled():
+        logs = ActivityLog.objects.filter(action_type="pretalx.mail.sent")
+        assert sorted(logs.values_list("object_id", "person_id")) == sorted(
+            [(mail_a.pk, requestor.pk), (mail_b.pk, requestor.pk)]
+        )
 
 
 def test_send_outbox_mails_handles_send_failure(monkeypatch):
@@ -98,10 +74,11 @@ def test_send_outbox_mails_handles_send_failure(monkeypatch):
     assert result == {"count": 1}
 
 
-def test_stale_sending_mail_marked_as_failed(event):
-    mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENDING)
+def test_expire_stale_queued_mails_fails_only_stale_sending_mails(event):
+    stale = QueuedMailFactory(event=event, state=QueuedMailStates.SENDING)
+    recent = QueuedMailFactory(event=event, state=QueuedMailStates.SENDING)
     with scopes_disabled():
-        QueuedMail.objects.filter(pk=mail.pk).update(
+        QueuedMail.objects.filter(pk=stale.pk).update(
             updated=now() - dt.timedelta(hours=2)
         )
 
@@ -109,46 +86,57 @@ def test_stale_sending_mail_marked_as_failed(event):
 
     assert count == 1
     with scopes_disabled():
-        mail.refresh_from_db()
-    assert mail.state == QueuedMailStates.DRAFT
-    assert mail.has_error is True
-    assert "Timed out" in mail.error_data["error"]
-    assert mail.error_data["type"] == "TimeoutError"
+        stale.refresh_from_db()
+        recent.refresh_from_db()
+    assert stale.state == QueuedMailStates.DRAFT
+    assert stale.has_error is True
+    assert "Timed out" in stale.error_data["error"]
+    assert stale.error_data["type"] == "TimeoutError"
+    assert recent.state == QueuedMailStates.SENDING
+    assert recent.has_error is False
 
 
-def test_recent_sending_mail_not_marked_as_failed(event):
-    mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENDING)
-
-    count = expire_stale_queued_mails()
-
-    assert count == 0
-    with scopes_disabled():
-        mail.refresh_from_db()
-    assert mail.state == QueuedMailStates.SENDING
-    assert mail.has_error is False
-
-
-def test_copy_to_draft_creates_new_draft(event):
-    original = QueuedMailFactory(
-        event=event,
-        state=QueuedMailStates.SENT,
-        subject="Original",
-        text="Original text",
-        to="recipient@example.com",
-        error_data={"error": "stale"},
-    )
-
+def test_copy_to_draft_creates_new_draft_with_reachable_speakers(event):
     with scope(event=event):
+        reachable = SpeakerFactory(event=event)
+        managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
+        original = QueuedMailFactory(
+            event=event,
+            state=QueuedMailStates.SENT,
+            subject="Original",
+            text="Original text",
+            to="recipient@example.com",
+            error_data={"error": "stale"},
+        )
+        original.to_speakers.add(reachable, managed)
+
         copy = copy_to_draft(original)
 
-    assert copy.pk != original.pk
-    assert copy.state == QueuedMailStates.DRAFT
-    assert copy.sent is None
-    assert copy.error_data is None
-    assert copy.error_timestamp is None
-    assert copy.subject == "Original"
-    assert copy.text == "Original text"
-    assert copy.to == "recipient@example.com"
+        assert copy.pk != original.pk
+        assert copy.state == QueuedMailStates.DRAFT
+        assert copy.sent is None
+        assert copy.error_data is None
+        assert copy.error_timestamp is None
+        assert copy.subject == "Original"
+        assert copy.text == "Original text"
+        assert copy.to == "recipient@example.com"
+        assert list(copy.to_speakers.all()) == [reachable]
+        assert (
+            managed.logged_actions().filter(action_type="pretalx.mail.skipped").count()
+            == 1
+        )
+
+
+def test_copy_to_draft_all_speakers_unreachable_returns_none(event):
+    with scope(event=event):
+        managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
+        original = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
+        original.to_speakers.add(managed)
+
+        result = copy_to_draft(original)
+
+        assert result is None
+        assert event.queued_mails.count() == 1
 
 
 def test_save_draft_excludes_unreachable_speakers(event):
@@ -181,85 +169,46 @@ def test_save_draft_drops_mail_with_only_unreachable_recipients(event):
         )
 
 
-def test_copy_to_draft_preserves_to_speakers(event):
-    with scope(event=event):
-        speaker = SpeakerFactory(event=event)
-        original = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
-        original.to_speakers.add(speaker)
-
-        copy = copy_to_draft(original)
-
-        assert list(copy.to_speakers.all()) == [speaker]
-
-
-def test_copy_to_draft_drops_unreachable_speakers(event):
-    with scope(event=event):
-        reachable = SpeakerFactory(event=event)
-        managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
-        original = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
-        original.to_speakers.add(reachable, managed)
-
-        copy = copy_to_draft(original)
-
-        assert copy.pk != original.pk
-        assert list(copy.to_speakers.all()) == [reachable]
-        assert (
-            managed.logged_actions().filter(action_type="pretalx.mail.skipped").count()
-            == 1
-        )
-
-
-def test_copy_to_draft_all_speakers_unreachable_returns_none(event):
-    with scope(event=event):
-        managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
-        original = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
-        original.to_speakers.add(managed)
-
-        result = copy_to_draft(original)
-
-        assert result is None
-        assert event.queued_mails.count() == 1
-
-
-def test_bulk_create_drafts_skips_missing_speaker(event):
-    template = MailTemplateFactory(event=event)
-    with scope(event=event):
-        mails, render_failures = bulk_create_drafts(template, [{"speaker_id": 999999}])
-        assert mails == []
-        assert render_failures == 0
-        assert event.queued_mails.count() == 0
-
-
-def test_bulk_create_drafts_persists_one_per_unique_recipient(event):
-    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
-    speaker = SpeakerFactory(event=event)
-    with scope(event=event):
-        mails, render_failures = bulk_create_drafts(
-            template, [{"speaker_id": speaker.pk}]
-        )
-    assert render_failures == 0
-    assert len(mails) == 1
-    mail = mails[0]
-    assert mail.pk is not None
-    assert mail.state == QueuedMailStates.DRAFT
-    assert mail.subject == "Hi"
-    assert mail.text == "Body"
-    with scope(event=event):
-        assert list(mail.to_speakers.all()) == [speaker]
-        assert list(mail.submissions.all()) == []
-
-
-def test_bulk_create_drafts_renders_event_speaker_name(event):
+def test_bulk_create_drafts_persists_one_per_speaker_and_reports_progress(event):
     template = MailTemplateFactory(event=event, subject="Hi", text="Hi {name},")
     speaker = SpeakerFactory(event=event, name="Jane Doe")
     speaker.user.name = "j-doe"
     speaker.user.save()
+    progress_calls = []
+
     with scope(event=event):
         mails, render_failures = bulk_create_drafts(
-            template, [{"speaker_id": speaker.pk}]
+            template,
+            [{"speaker_id": speaker.pk}, {"speaker_id": 999999}],
+            progress=lambda current, total: progress_calls.append((current, total)),
         )
-    assert render_failures == 0
-    assert mails[0].text == "Hi Jane Doe,"
+
+        assert render_failures == 0
+        assert progress_calls == [(1, 2), (2, 2)]
+        assert len(mails) == 1
+        mail = mails[0]
+        assert mail.pk is not None
+        assert mail.state == QueuedMailStates.DRAFT
+        assert mail.subject == "Hi"
+        assert mail.text == "Hi Jane Doe,"
+        assert list(mail.to_speakers.all()) == [speaker]
+        assert list(mail.submissions.all()) == []
+        assert event.queued_mails.count() == 1
+
+
+def test_bulk_create_drafts_skips_unreachable_and_profileless_recipients(event):
+    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
+    user = UserFactory()
+    with scope(event=event):
+        managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
+
+        mails, render_failures = bulk_create_drafts(
+            template, [{"user_id": user.pk}, {"speaker_id": managed.pk}]
+        )
+
+        assert mails == []
+        assert render_failures == 0
+        assert event.queued_mails.count() == 0
 
 
 def test_bulk_create_drafts_resolves_legacy_user_id_payload(event):
@@ -275,16 +224,6 @@ def test_bulk_create_drafts_resolves_legacy_user_id_payload(event):
     assert len(mails) == 1
     with scope(event=event):
         assert list(mails[0].to_speakers.all()) == [speaker]
-
-
-def test_bulk_create_drafts_skips_legacy_user_without_profile(event):
-    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
-    user = UserFactory()
-    with scope(event=event):
-        mails, render_failures = bulk_create_drafts(template, [{"user_id": user.pk}])
-        assert mails == []
-        assert render_failures == 0
-        assert event.queued_mails.count() == 0
 
 
 def test_bulk_create_drafts_dedups_identical_subject_and_text(event):
@@ -330,7 +269,7 @@ def test_bulk_create_drafts_resolves_slot_for_recipient(event):
         )
     assert render_failures == 0
     assert len(mails) == 1
-    assert str(slot.room.name) in mails[0].text
+    assert mails[0].text == f"Body in {slot.room.name}"
 
 
 def test_bulk_create_drafts_counts_render_failures(event):
@@ -344,31 +283,4 @@ def test_bulk_create_drafts_counts_render_failures(event):
         )
         assert mails == []
         assert render_failures == 1
-        assert event.queued_mails.count() == 0
-
-
-def test_bulk_create_drafts_progress_callback_fires_per_recipient(event):
-    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
-    speaker = SpeakerFactory(event=event)
-    progress_calls = []
-    with scope(event=event):
-        bulk_create_drafts(
-            template,
-            [{"speaker_id": speaker.pk}, {"speaker_id": 999999}],
-            progress=lambda current, total: progress_calls.append((current, total)),
-        )
-    assert progress_calls == [(1, 2), (2, 2)]
-
-
-def test_bulk_create_drafts_drops_unreachable_speaker(event):
-    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
-    with scope(event=event):
-        managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
-
-        mails, render_failures = bulk_create_drafts(
-            template, [{"speaker_id": managed.pk}]
-        )
-
-        assert mails == []
-        assert render_failures == 0
         assert event.queued_mails.count() == 0

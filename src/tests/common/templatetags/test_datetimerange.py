@@ -16,36 +16,45 @@ from pretalx.common.templatetags.datetimerange import (
 pytestmark = pytest.mark.unit
 
 
-def test_datetimerange_both_none():
-    assert datetimerange(None, None) == ""
+START = dt.datetime(2024, 6, 15, 10, 0, tzinfo=dt.UTC)
 
 
-def test_datetimerange_start_only():
-    start = dt.datetime(2024, 6, 15, 10, 0, tzinfo=dt.UTC)
-    result = str(datetimerange(start, None))
-    assert "<time" in result
-    assert "datetime=" in result
-    assert "data-isodatetime=" in result
+def _time(value, text):
+    return (
+        f'<time datetime="{value}" data-timezone="UTC" '
+        f'data-isodatetime="{value.replace(" ", "T")}:00+00:00" '
+        f'aria-description="UTC">{text}</time>'
+    )
 
 
-def test_datetimerange_same_day():
-    tz = dt.UTC
-    start = dt.datetime(2024, 6, 15, 10, 0, tzinfo=tz)
-    end = dt.datetime(2024, 6, 15, 12, 0, tzinfo=tz)
-    result = str(datetimerange(start, end))
-    assert "timerange-block" in result
-    assert "–" in result
-    assert result.count("<time") == 2
-
-
-def test_datetimerange_different_days():
-    tz = dt.UTC
-    start = dt.datetime(2024, 6, 15, 10, 0, tzinfo=tz)
-    end = dt.datetime(2024, 6, 16, 12, 0, tzinfo=tz)
-    result = str(datetimerange(start, end))
-    assert "timerange-block" in result
-    assert " – " in result
-    assert result.count("<time") == 2
+@pytest.mark.parametrize(
+    ("start", "end", "expected"),
+    (
+        (None, None, ""),
+        (START, None, _time("2024-06-15 10:00", "2024-06-15 10:00")),
+        (
+            START,
+            dt.datetime(2024, 6, 15, 12, 0, tzinfo=dt.UTC),
+            '<span class="timerange-block">2024-06-15 '
+            + _time("2024-06-15 10:00", "10:00")
+            + "–"
+            + _time("2024-06-15 12:00", "12:00")
+            + "</span>",
+        ),
+        (
+            START,
+            dt.datetime(2024, 6, 16, 12, 0, tzinfo=dt.UTC),
+            '<span class="timerange-block">'
+            + _time("2024-06-15 10:00", "2024-06-15 10:00")
+            + " – "
+            + _time("2024-06-16 12:00", "2024-06-16 12:00")
+            + "</span>",
+        ),
+    ),
+    ids=("both_none", "start_only", "same_day", "different_days"),
+)
+def test_datetimerange(start, end, expected):
+    assert str(datetimerange(start, end)) == expected
 
 
 def test_timerange_same_day_omits_date():
@@ -76,14 +85,34 @@ def test_timerange_falls_back_to_datetimerange(end):
     assert str(timerange(start, end)) == str(datetimerange(start, end))
 
 
-def test_render_time_produces_time_tag():
-    time = dt.datetime(2024, 6, 15, 10, 30, tzinfo=dt.UTC)
-    result = str(render_time(time, "TIME_FORMAT"))
-    assert result == (
-        '<time datetime="2024-06-15 10:30" data-timezone="UTC" '
-        'data-isodatetime="2024-06-15T10:30:00+00:00" '
-        'aria-description="UTC">10:30</time>'
-    )
+@pytest.mark.parametrize(
+    ("tz", "expected"),
+    (
+        (
+            "UTC",
+            (
+                '<time datetime="2024-06-15 10:30" data-timezone="UTC" '
+                'data-isodatetime="2024-06-15T10:30:00+00:00" '
+                'aria-description="UTC">10:30</time>'
+            ),
+        ),
+        (
+            "America/New_York",
+            (
+                '<time datetime="2024-06-15 10:30" data-timezone="America/New_York" '
+                'data-isodatetime="2024-06-15T10:30:00-04:00" '
+                'aria-description="America/New York">10:30</time>'
+            ),
+        ),
+    ),
+)
+def test_render_time_produces_time_tag_with_raw_and_readable_timezone(tz, expected):
+    time = dt.datetime(2024, 6, 15, 10, 30, tzinfo=ZoneInfo(tz))
+
+    with timezone.override(ZoneInfo(tz)):
+        result = str(render_time(time, "TIME_FORMAT"))
+
+    assert result == expected
 
 
 @pytest.mark.parametrize(
@@ -97,13 +126,3 @@ def test_render_time_produces_time_tag():
 )
 def test_timezone_name_replaces_underscores(tz, expected):
     assert timezone_name(ZoneInfo(tz)) == expected
-
-
-def test_render_time_keeps_raw_timezone_in_data_attribute():
-    time = dt.datetime(2024, 6, 15, 10, 30, tzinfo=ZoneInfo("America/New_York"))
-
-    with timezone.override(ZoneInfo("America/New_York")):
-        result = str(render_time(time, "TIME_FORMAT"))
-
-    assert 'data-timezone="America/New_York"' in result
-    assert 'aria-description="America/New York"' in result

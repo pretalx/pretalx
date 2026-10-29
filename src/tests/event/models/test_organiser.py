@@ -20,15 +20,13 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_generate_invite_token_character_set():
-    token = generate_invite_token()
-    allowed = set(string.ascii_lowercase + string.digits)
-    assert set(token).issubset(allowed)
-
-
-def test_generate_invite_token_returns_unique_values():
+def test_generate_invite_token_returns_unique_lowercase_alphanumerics():
     tokens = {generate_invite_token() for _ in range(10)}
+
     assert len(tokens) == 10
+    allowed = set(string.ascii_lowercase + string.digits)
+    for token in tokens:
+        assert set(token).issubset(allowed)
 
 
 @pytest.mark.parametrize(
@@ -46,6 +44,7 @@ def test_organiser_clean_lowercases_slug():
     organiser.full_clean()
 
     assert organiser.slug == "mixedcase"
+    assert organiser.organiser is organiser
 
 
 def test_organiser_clean_defers_empty_slug_to_field_validation():
@@ -86,11 +85,6 @@ def test_organiser_slug_rejects_invalid_formats(slug):
         organiser.clean_fields()
 
 
-def test_organiser_organiser_property_returns_self():
-    organiser = OrganiserFactory()
-    assert organiser.organiser is organiser
-
-
 @pytest.mark.parametrize(
     ("url_attr", "expected"),
     (
@@ -106,7 +100,7 @@ def test_organiser_orga_urls(url_attr, expected):
     assert getattr(organiser.orga_urls, url_attr) == expected
 
 
-def test_team_permission_set_includes_active_permissions():
+def test_team_permission_set_lists_active_permissions_with_display_names():
     team = TeamFactory(
         can_create_events=True,
         can_change_teams=True,
@@ -115,15 +109,7 @@ def test_team_permission_set_includes_active_permissions():
         can_change_event_settings=False,
         can_change_organiser_settings=False,
     )
-    assert team.permission_set == {
-        "can_create_events",
-        "can_change_teams",
-        "is_reviewer",
-    }
-
-
-def test_team_permission_set_empty_when_no_permissions():
-    team = TeamFactory(
+    empty = TeamFactory(
         can_create_events=False,
         can_change_teams=False,
         can_change_submissions=False,
@@ -132,42 +118,31 @@ def test_team_permission_set_empty_when_no_permissions():
         is_reviewer=False,
         force_hide_speaker_names=False,
     )
-    assert team.permission_set == set()
+
+    assert team.permission_set == {
+        "can_create_events",
+        "can_change_teams",
+        "is_reviewer",
+    }
+    assert team.permission_set_display == {
+        Team._meta.get_field(attr).verbose_name
+        for attr in ("can_create_events", "can_change_teams", "is_reviewer")
+    }
+    assert empty.permission_set == set()
+    assert empty.permission_set_display == set()
 
 
-def test_team_permission_set_display_returns_verbose_names():
-    team = TeamFactory(
-        can_create_events=True,
-        can_change_teams=False,
-        can_change_submissions=False,
-        can_change_event_settings=False,
-        can_change_organiser_settings=False,
-        is_reviewer=False,
-    )
-    display = team.permission_set_display
-
-    assert len(display) == 1
-    verbose = Team._meta.get_field("can_create_events").verbose_name
-    assert verbose in display
-
-
-def test_team_events_returns_all_organiser_events_when_all_events():
+def test_team_events_follow_all_events_flag():
     organiser = OrganiserFactory()
     event1 = EventFactory(organiser=organiser)
     event2 = EventFactory(organiser=organiser)
-    team = TeamFactory(organiser=organiser, all_events=True)
+    EventFactory()
+    all_events_team = TeamFactory(organiser=organiser, all_events=True)
+    limited_team = TeamFactory(organiser=organiser, all_events=False)
+    limited_team.limit_events.add(event1)
 
-    assert set(team.events) == {event1, event2}
-
-
-def test_team_events_returns_limited_events_when_not_all_events():
-    organiser = OrganiserFactory()
-    event1 = EventFactory(organiser=organiser)
-    EventFactory(organiser=organiser)
-    team = TeamFactory(organiser=organiser, all_events=False)
-    team.limit_events.add(event1)
-
-    assert list(team.events) == [event1]
+    assert set(all_events_team.events) == {event1, event2}
+    assert list(limited_team.events) == [event1]
 
 
 @pytest.mark.parametrize(
@@ -180,18 +155,17 @@ def test_team_orga_urls(url_attr, suffix):
     assert getattr(team.orga_urls, url_attr) == expected
 
 
-def test_team_invite_organiser_returns_team_organiser():
+def test_team_invite_generates_token_and_derives_organiser_and_url():
     organiser = OrganiserFactory()
     team = TeamFactory(organiser=organiser)
+
     invite = TeamInviteFactory(team=team)
 
     assert invite.organiser == organiser
-
-
-def test_team_invite_token_is_auto_generated():
-    invite = TeamInviteFactory()
-    assert invite.token is not None
     assert len(invite.token) == 32
+    assert invite.invitation_url == settings.SITE_URL + reverse(
+        "orga:invitation.view", kwargs={"code": invite.token}
+    )
 
 
 def test_team_invite_token_unique():
@@ -200,12 +174,3 @@ def test_team_invite_token_unique():
         TeamInviteFactory(
             team=invite1.team, email="other@example.com", token=invite1.token
         )
-
-
-def test_team_invite_invitation_url():
-    invite = TeamInviteFactory()
-
-    expected = settings.SITE_URL + reverse(
-        "orga:invitation.view", kwargs={"code": invite.token}
-    )
-    assert invite.invitation_url == expected

@@ -65,41 +65,24 @@ def test_documentation_includes_management_commands(app):
     "CI" not in os.environ or not os.environ["CI"],
     reason="No need to bother with this outside of CI.",
 )
-def test_schedule_xsd_is_up_to_date():
-    """If this test fails:
-
-    http -d https://raw.githubusercontent.com/voc/schedule/master/validator/xsd/schedule.xml.xsd >! src/tests/fixtures/schedule.xsd
-    """
-    http = urllib3.PoolManager()
-    response = http.request(
-        "GET",
-        "https://raw.githubusercontent.com/voc/schedule/master/validator/xsd/schedule.xml.xsd",
-    )
-    if response.status == 429:
-        # don't fail tests on rate limits
-        return
-    assert response.status == 200
-    schema_content = (fixtures_dir / "schedule.xsd").read_text()
-    assert response.data.decode() == schema_content
-
-
-@pytest.mark.skipif(
-    "CI" not in os.environ or not os.environ["CI"],
-    reason="No need to bother with this outside of CI.",
+@pytest.mark.parametrize(
+    ("upstream_path", "fixture_name"),
+    (("xsd/schedule.xml.xsd", "schedule.xsd"), ("json/schema.json", "schedule.json")),
+    ids=["xsd", "json"],
 )
-def test_schedule_json_schema_is_up_to_date():
+def test_schedule_validator_schema_is_up_to_date(upstream_path, fixture_name):
     """If this test fails:
 
-    http -d https://raw.githubusercontent.com/voc/schedule/master/validator/json/schema.json >! src/tests/fixtures/schedule.json
+    http -d https://raw.githubusercontent.com/voc/schedule/master/validator/<upstream_path> >! src/tests/fixtures/<fixture_name>
     """
     http = urllib3.PoolManager()
     response = http.request(
         "GET",
-        "https://raw.githubusercontent.com/voc/schedule/master/validator/json/schema.json",
+        f"https://raw.githubusercontent.com/voc/schedule/master/validator/{upstream_path}",
     )
     if response.status == 429:
         # don't fail tests on rate limits
         return
     assert response.status == 200
-    schema_content = (fixtures_dir / "schedule.json").read_text()
+    schema_content = (fixtures_dir / fixture_name).read_text()
     assert response.data.decode() == schema_content

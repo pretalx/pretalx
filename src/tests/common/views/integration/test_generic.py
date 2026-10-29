@@ -33,16 +33,10 @@ def orga_user_and_event(event):
     return user, event
 
 
-def test_crud_dispatch_redirects_anonymous_to_login(client, event):
-    response = client.get(_tag_list_url(event))
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
 @pytest.mark.parametrize(
     ("role", "expected_status"),
     (
+        pytest.param("anonymous", 302, id="anonymous-redirects-to-login"),
         pytest.param("unrelated", 404, id="unrelated-user"),
         pytest.param("other_organiser", 404, id="organiser-of-other-event"),
         pytest.param("no_submission_access", 404, id="organiser-without-access"),
@@ -54,6 +48,8 @@ def test_crud_list_permissions_by_role(client, event, role, expected_status):
     with scopes_disabled():
         tag = TagFactory(event=event, tag="SecretTag")
         match role:
+            case "anonymous":
+                user = None
             case "unrelated":
                 user = UserFactory()
             case "other_organiser":
@@ -68,25 +64,16 @@ def test_crud_list_permissions_by_role(client, event, role, expected_status):
                 )
             case _:
                 user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
+    if user:
+        client.force_login(user)
 
     response = client.get(_tag_list_url(event))
 
     assert response.status_code == expected_status
     if expected_status == 200:
         assert tag.tag in response.content.decode()
-
-
-def test_crud_dispatch_resolves_object_for_update(client, orga_user_and_event):
-    user, event = orga_user_and_event
-    with scopes_disabled():
-        tag = TagFactory(event=event)
-    client.force_login(user)
-
-    response = client.get(_tag_update_url(event, tag))
-
-    assert response.status_code == 200
-    assert response.context["form"].instance == tag
+    if expected_status == 302:
+        assert "/login/" in response.url
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -107,7 +94,7 @@ def test_crud_list_query_count(
     assert all(tag.tag in content for tag in tags)
 
 
-def test_crud_list_pagination(client, orga_user_and_event):
+def test_crud_list_persists_only_valid_page_sizes(client, orga_user_and_event):
     user, event = orga_user_and_event
     with scopes_disabled():
         TagFactory.create_batch(5, event=event)
@@ -117,24 +104,14 @@ def test_crud_list_pagination(client, orga_user_and_event):
 
     assert response.status_code == 200
     assert response.context["is_paginated"]
-
-
-@pytest.mark.parametrize("page_size", ("0", "-3", "abc"))
-def test_crud_list_invalid_page_size_is_not_persisted(
-    client, orga_user_and_event, page_size
-):
-    user, event = orga_user_and_event
-    with scopes_disabled():
-        TagFactory.create_batch(5, event=event)
-    client.force_login(user)
-    client.get(_tag_list_url(event) + "?page_size=2")
-
-    response = client.get(_tag_list_url(event) + f"?page_size={page_size}")
-
-    assert response.status_code == 200
     assert response.context["paginator"].per_page == 2
-    response = client.get(_tag_list_url(event))
-    assert response.context["paginator"].per_page == 2
+
+    for page_size in ("0", "-3", "abc"):
+        response = client.get(_tag_list_url(event) + f"?page_size={page_size}")
+        assert response.status_code == 200
+        assert response.context["paginator"].per_page == 2
+        response = client.get(_tag_list_url(event))
+        assert response.context["paginator"].per_page == 2
 
 
 @pytest.mark.parametrize(
@@ -162,6 +139,12 @@ def test_crud_list_print_pagination_gate(
 def test_crud_create_via_post(client, orga_user_and_event):
     user, event = orga_user_and_event
     client.force_login(user)
+    next_url = _tag_list_url(event)
+
+    response = client.post(_tag_create_url(event), {"tag": "", "color": ""})
+
+    assert response.status_code == 200
+    assert response.context["form"].errors
 
     response = client.post(
         _tag_create_url(event),
@@ -174,12 +157,37 @@ def test_crud_create_via_post(client, orga_user_and_event):
         assert tag.event == event
         assert tag.logged_actions().exists()
 
+    response = client.post(
+        _tag_create_url(event) + f"?next={next_url}",
+        {"tag": "WithNext", "description_0": "", "color": "#112233"},
+    )
 
-def test_crud_update_via_post(client, orga_user_and_event):
+    assert response.status_code == 302
+    assert response.url == next_url
+    with scopes_disabled():
+        assert Tag.objects.filter(event=event, tag="WithNext").exists()
+
+
+def test_crud_update_via_post_logs_only_changes(client, orga_user_and_event):
     user, event = orga_user_and_event
     with scopes_disabled():
         tag = TagFactory(event=event, tag="OldName")
+        initial_log_count = tag.logged_actions().count()
     client.force_login(user)
+
+    response = client.get(_tag_update_url(event, tag))
+
+    assert response.status_code == 200
+    assert response.context["form"].instance == tag
+
+    client.post(
+        _tag_update_url(event, tag),
+        {"tag": "OldName", "description_0": "", "color": tag.color},
+        follow=True,
+    )
+
+    with scopes_disabled():
+        assert tag.logged_actions().count() == initial_log_count
 
     response = client.post(
         _tag_update_url(event, tag),
@@ -190,59 +198,27 @@ def test_crud_update_via_post(client, orga_user_and_event):
     assert response.status_code == 200
     with scopes_disabled():
         tag.refresh_from_db()
-    assert tag.tag == "NewName"
-    with scopes_disabled():
         log = tag.logged_actions().order_by("-pk").first()
-    assert log is not None
-    assert log.json_data.get("changes")
-
-
-def test_crud_form_handler_invalid_data_rerenders(client, orga_user_and_event):
-    user, event = orga_user_and_event
-    client.force_login(user)
-
-    response = client.post(_tag_create_url(event), {"tag": "", "color": ""})
-
-    assert response.status_code == 200
-    assert response.context["form"].errors
-
-
-def test_crud_form_handler_with_next_url_redirects(client, orga_user_and_event):
-    user, event = orga_user_and_event
-    client.force_login(user)
-    next_url = _tag_list_url(event)
-
-    response = client.post(
-        _tag_create_url(event) + f"?next={next_url}",
-        {"tag": "WithNext", "description_0": "", "color": "#112233"},
-    )
-
-    assert response.status_code == 302
-    assert response.url == next_url
-
-
-def test_crud_delete_confirmation_page(client, orga_user_and_event):
-    user, event = orga_user_and_event
-    with scopes_disabled():
-        tag = TagFactory(event=event)
-    client.force_login(user)
-
-    response = client.get(_tag_delete_url(event, tag))
-
-    assert response.status_code == 200
-    assert "submit_buttons" in response.context
-    assert "submit_buttons_extra" in response.context
+        assert tag.logged_actions().count() == initial_log_count + 1
+    assert tag.tag == "NewName"
+    assert log.json_data["changes"]["tag"] == {"old": "OldName", "new": "NewName"}
 
 
 @pytest.mark.parametrize(
-    ("headers", "status", "redirect_header"),
+    ("headers", "template", "status", "redirect_header"),
     (
-        pytest.param(None, 302, "Location", id="plain"),
-        pytest.param(DIALOG_HEADERS, 286, "HX-Redirect", id="dialog"),
+        pytest.param(None, "orga/generic/delete.html", 302, "Location", id="plain"),
+        pytest.param(
+            DIALOG_HEADERS,
+            "common/includes/action_confirm.html#dialog",
+            286,
+            "HX-Redirect",
+            id="dialog",
+        ),
     ),
 )
-def test_crud_delete_handler_removes_and_redirects(
-    client, orga_user_and_event, headers, status, redirect_header
+def test_crud_delete_confirms_then_removes_and_redirects(
+    client, orga_user_and_event, headers, template, status, redirect_header
 ):
     user, event = orga_user_and_event
     with scopes_disabled():
@@ -250,26 +226,20 @@ def test_crud_delete_handler_removes_and_redirects(
         tag_pk = tag.pk
     client.force_login(user)
 
+    response = client.get(_tag_delete_url(event, tag), headers=headers)
+
+    assert response.status_code == 200
+    assert response.template_name[-1] == template
+    assert tag.tag in response.content.decode()
+    assert "submit_buttons" in response.context
+    assert "submit_buttons_extra" in response.context
+
     response = client.post(_tag_delete_url(event, tag), headers=headers)
 
     assert response.status_code == status
     assert response[redirect_header] == _tag_list_url(event)
     with scopes_disabled():
         assert not Tag.objects.filter(pk=tag_pk).exists()
-
-
-def test_crud_delete_confirmation_dialog_for_htmx(client, orga_user_and_event):
-    user, event = orga_user_and_event
-    with scopes_disabled():
-        tag = TagFactory(event=event)
-    client.force_login(user)
-
-    response = client.get(_tag_delete_url(event, tag), headers=DIALOG_HEADERS)
-
-    assert response.status_code == 200
-    assert all(name.endswith("#dialog") for name in response.template_name)
-    assert response.template_name[-1] == "common/includes/action_confirm.html#dialog"
-    assert tag.tag in response.content.decode()
 
 
 def test_crud_htmx_table_request(client, orga_user_and_event):
@@ -283,20 +253,3 @@ def test_crud_htmx_table_request(client, orga_user_and_event):
 
     assert response.status_code == 200
     assert response["HX-Push-Url"] == url
-
-
-def test_crud_update_without_changes_does_not_log(client, orga_user_and_event):
-    user, event = orga_user_and_event
-    with scopes_disabled():
-        tag = TagFactory(event=event)
-        initial_log_count = tag.logged_actions().count()
-    client.force_login(user)
-
-    client.post(
-        _tag_update_url(event, tag),
-        {"tag": str(tag.tag), "description_0": "", "color": tag.color},
-        follow=True,
-    )
-
-    with scopes_disabled():
-        assert tag.logged_actions().count() == initial_log_count

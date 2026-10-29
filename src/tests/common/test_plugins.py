@@ -10,31 +10,19 @@ from pretalx.common.plugins import (
     plugin_sort_key,
 )
 from tests.dummy_app import PluginApp
+from tests.dummy_app_no_hooks.apps import PluginApp as NoHooksPluginApp
 
 pytestmark = pytest.mark.unit
-
-
-def test_get_all_plugins_includes_dummy_plugin():
-    plugins = get_all_plugins()
-
-    assert PluginApp.PretalxPluginMeta in plugins
 
 
 def test_get_all_plugins_sets_plugin_metadata():
     plugins = get_all_plugins()
 
-    dummy = next(p for p in plugins if p == PluginApp.PretalxPluginMeta)
+    assert plugins == [PluginApp.PretalxPluginMeta, NoHooksPluginApp.PretalxPluginMeta]
+    dummy = plugins[0]
     assert dummy.module == "tests.dummy_app"
     assert dummy.app.name == "tests.dummy_app"
     assert dummy.highlighted is False
-
-
-def test_get_all_plugins_sets_highlighted_true_when_in_settings():
-    with override_settings(HIGHLIGHTED_PLUGINS=["tests.dummy_app"]):
-        plugins = get_all_plugins()
-
-    dummy = next(p for p in plugins if p == PluginApp.PretalxPluginMeta)
-    assert dummy.highlighted is True
 
 
 @pytest.mark.parametrize("available", (True, False))
@@ -49,10 +37,13 @@ def test_get_all_plugins_filters_by_event_availability(available):
 
 
 def test_get_all_plugins_sorted_highlighted_first():
-    with override_settings(HIGHLIGHTED_PLUGINS=["tests.dummy_app"]):
+    with override_settings(HIGHLIGHTED_PLUGINS=["tests.dummy_app_no_hooks"]):
         plugins = get_all_plugins()
+        grouped = get_all_plugins_grouped()
 
+    assert plugins == [NoHooksPluginApp.PretalxPluginMeta, PluginApp.PretalxPluginMeta]
     assert plugins[0].highlighted is True
+    assert grouped == {("OTHER", "Other"): plugins}
 
 
 @pytest.mark.parametrize(
@@ -94,44 +85,13 @@ def test_plugin_group_key(attrs, expected):
     assert plugin_group_key(plugin_cls()) == expected
 
 
-def test_get_all_plugins_grouped_returns_dict_with_tuple_keys():
-    result = get_all_plugins_grouped()
+@pytest.mark.parametrize("filter_visible", (True, False))
+def test_get_all_plugins_grouped(filter_visible):
+    result = get_all_plugins_grouped(filter_visible=filter_visible)
 
-    for key in result:
-        assert isinstance(key, tuple)
-        assert len(key) == 2
-        category_code, _label = key
-        assert isinstance(category_code, str)
-
-
-def test_get_all_plugins_grouped_includes_dummy_plugin():
-    result = get_all_plugins_grouped()
-
-    all_plugins = [p for plugins in result.values() for p in plugins]
-    assert PluginApp.PretalxPluginMeta in all_plugins
-
-
-def test_get_all_plugins_grouped_filters_hidden_plugins():
-    result = get_all_plugins_grouped(filter_visible=True)
-    all_plugins = [p for plugins in result.values() for p in plugins]
-    for plugin in all_plugins:
-        assert not plugin.name.startswith(".")
-
-
-def test_get_all_plugins_grouped_no_filter():
-    result_filtered = get_all_plugins_grouped(filter_visible=True)
-    result_unfiltered = get_all_plugins_grouped(filter_visible=False)
-
-    filtered_count = sum(len(v) for v in result_filtered.values())
-    unfiltered_count = sum(len(v) for v in result_unfiltered.values())
-    assert unfiltered_count >= filtered_count
-
-
-def test_get_all_plugins_grouped_highlighted_sorted_first_within_category():
-    with override_settings(HIGHLIGHTED_PLUGINS=["tests.dummy_app"]):
-        result = get_all_plugins_grouped()
-
-    other_plugins = next(
-        plugins for (code, _), plugins in result.items() if code == "OTHER"
-    )
-    assert other_plugins[0].highlighted is True
+    assert result == {
+        ("OTHER", "Other"): [
+            PluginApp.PretalxPluginMeta,
+            NoHooksPluginApp.PretalxPluginMeta,
+        ]
+    }

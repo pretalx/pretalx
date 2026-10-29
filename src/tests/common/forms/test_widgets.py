@@ -141,26 +141,22 @@ def test_markdown_widget_get_context_includes_preview_help():
     assert "Markdown" in str(ctx["preview_help"])
 
 
-def test_i18n_markdown_textarea_format_output_single_language():
-    result = I18nMarkdownTextarea.format_output(
-        None, ["<textarea>content</textarea>"], "id_bio"
-    )
-
-    assert "i18n-form-single-language" in result
-    assert "i18n-markdown-group" in result
-    assert 'id="id_bio"' in result
-    assert "<textarea>content</textarea>" in result
-
-
-def test_i18n_markdown_textarea_format_output_multiple_languages():
-    widgets = ["<textarea>en</textarea>", "<textarea>de</textarea>"]
-
+@pytest.mark.parametrize(
+    ("widgets", "single"),
+    (
+        (["<textarea>en</textarea>"], True),
+        (["<textarea>en</textarea>", "<textarea>de</textarea>"], False),
+    ),
+    ids=("single_language", "multiple_languages"),
+)
+def test_i18n_markdown_textarea_format_output(widgets, single):
     result = I18nMarkdownTextarea.format_output(None, widgets, "id_bio")
 
-    assert "i18n-form-single-language" not in result
+    assert ("i18n-form-single-language" in result) is single
     assert "i18n-markdown-group" in result
-    assert "<textarea>en</textarea>" in result
-    assert "<textarea>de</textarea>" in result
+    assert 'id="id_bio"' in result
+    for widget in widgets:
+        assert widget in result
 
 
 @pytest.mark.parametrize("widget_class", (I18nTextInput, I18nMarkdownTextarea))
@@ -280,34 +276,35 @@ def test_enhanced_select_mixin_create_option_empty_value_no_data_attrs():
     assert "data-color" not in option["attrs"]
 
 
-def test_get_count_from_instance_submission_count_attribute():
-    value = ModelChoiceIteratorValue(
-        value="1", instance=SimpleNamespace(submission_count=42)
-    )
-
-    assert get_count(value, "any label") == 42
-
-
-def test_get_count_from_label_count_attribute():
-    label = SimpleNamespace(count=7)
-
-    assert get_count("plain_value", label) == 7
-
-
-def test_get_count_callable_label_count():
-    label = SimpleNamespace(count=lambda _: 99)
-
-    assert get_count("plain_value", label) == 99
-
-
-def test_get_count_no_count_returns_zero():
-    assert get_count("plain_value", 42) == 0
-
-
-def test_get_count_honors_custom_count_attr():
-    value = ModelChoiceIteratorValue(value="1", instance=SimpleNamespace(mail_count=12))
-
-    assert get_count(value, "any label", count_attr="mail_count") == 12
+@pytest.mark.parametrize(
+    ("value", "label", "kwargs", "expected"),
+    (
+        (
+            ModelChoiceIteratorValue("1", SimpleNamespace(submission_count=42)),
+            "any label",
+            {},
+            42,
+        ),
+        ("plain_value", SimpleNamespace(count=7), {}, 7),
+        ("plain_value", SimpleNamespace(count=lambda _: 99), {}, 99),
+        ("plain_value", 42, {}, 0),
+        (
+            ModelChoiceIteratorValue("1", SimpleNamespace(mail_count=12)),
+            "any label",
+            {"count_attr": "mail_count"},
+            12,
+        ),
+    ),
+    ids=(
+        "instance_submission_count",
+        "label_count",
+        "callable_label_count",
+        "no_count",
+        "custom_count_attr",
+    ),
+)
+def test_get_count(value, label, kwargs, expected):
+    assert get_count(value, label, **kwargs) == expected
 
 
 def test_select_multiple_with_count_uses_custom_count_attr():
@@ -322,11 +319,10 @@ def test_select_multiple_with_count_uses_custom_count_attr():
     groups = widget.optgroups("field", [])
     options = groups[0][1]
 
-    assert "Bravo (9)" in options[0]["label"]
-    assert "Alpha (4)" in options[1]["label"]
+    assert [o["label"] for o in options] == ["Bravo (9)", "Alpha (4)"]
 
 
-def test_select_multiple_with_count_optgroups_sorts_by_count_descending():
+def test_select_multiple_with_count_optgroups_sorts_marks_and_skips_empty():
     widget = SelectMultipleWithCount(
         choices=[
             (
@@ -338,51 +334,11 @@ def test_select_multiple_with_count_optgroups_sorts_by_count_descending():
                 "Charlie",
             ),
             (
-                ModelChoiceIteratorValue("b", SimpleNamespace(submission_count=5)),
-                "Bravo",
-            ),
-        ]
-    )
-
-    groups = widget.optgroups("field", [])
-    options = groups[0][1]
-
-    assert len(options) == 3
-    assert "Charlie (10)" in options[0]["label"]
-    assert "Bravo (5)" in options[1]["label"]
-    assert "Alpha (1)" in options[2]["label"]
-
-
-def test_select_multiple_with_count_optgroups_skips_zero_count():
-    widget = SelectMultipleWithCount(
-        choices=[
-            (
-                ModelChoiceIteratorValue("a", SimpleNamespace(submission_count=3)),
-                "Active",
-            ),
-            (
-                ModelChoiceIteratorValue("b", SimpleNamespace(submission_count=0)),
+                ModelChoiceIteratorValue("d", SimpleNamespace(submission_count=0)),
                 "Empty",
             ),
-        ]
-    )
-
-    groups = widget.optgroups("field", [])
-    options = groups[0][1]
-
-    assert len(options) == 1
-    assert "Active (3)" in options[0]["label"]
-
-
-def test_select_multiple_with_count_optgroups_marks_selected():
-    widget = SelectMultipleWithCount(
-        choices=[
             (
-                ModelChoiceIteratorValue("a", SimpleNamespace(submission_count=5)),
-                "Alpha",
-            ),
-            (
-                ModelChoiceIteratorValue("b", SimpleNamespace(submission_count=3)),
+                ModelChoiceIteratorValue("b", SimpleNamespace(submission_count=5)),
                 "Bravo",
             ),
         ]
@@ -390,17 +346,12 @@ def test_select_multiple_with_count_optgroups_marks_selected():
 
     groups = widget.optgroups("field", ["b"])
     options = groups[0][1]
-    selected_labels = [o["label"] for o in options if o["selected"]]
 
-    assert selected_labels == ["Bravo (3)"]
-
-
-def test_select_multiple_with_count_create_option_appends_count():
-    widget = SelectMultipleWithCount(choices=[])
-
-    option = widget.create_option("field", "val", "Label", False, 0, count=7)
-
-    assert option["label"] == "Label (7)"
+    assert [(o["label"], o["selected"]) for o in options] == [
+        ("Charlie (10)", False),
+        ("Bravo (5)", True),
+        ("Alpha (1)", False),
+    ]
 
 
 def _track(value, event_name, event_id):
@@ -425,11 +376,14 @@ def test_grouped_select_multiple_optgroups_groups_by_event():
         ],
     )
 
-    groups = widget.optgroups("field", [])
+    groups = widget.optgroups("field", ["b"])
 
-    assert [(name, [o["value"] for o in opts], idx) for name, opts, idx in groups] == [
-        ("PyCon", ["a", "b"], 0),
-        ("DjangoCon", ["c"], 1),
+    assert [
+        (name, [(o["value"], o["index"], o["selected"]) for o in opts], idx)
+        for name, opts, idx in groups
+    ] == [
+        ("PyCon", [("a", "0_0", False), ("b", "0_1", True)], 0),
+        ("DjangoCon", [("c", "1_0", False)], 1),
     ]
 
 
@@ -453,34 +407,6 @@ def test_grouped_select_multiple_optgroups_one_group_per_event_when_ordered():
     ]
 
 
-def test_grouped_select_multiple_optgroups_index_matches_django_semantics():
-    widget = GroupedSelectMultiple(
-        group_by=_group_by,
-        choices=[
-            _track("a", "PyCon", 1),
-            _track("b", "PyCon", 1),
-            _track("c", "DjangoCon", 2),
-        ],
-    )
-
-    groups = widget.optgroups("field", [])
-
-    for _group_name, options, group_index in groups:
-        for subindex, option in enumerate(options):
-            assert option["index"] == f"{group_index}_{subindex}"
-
-
-def test_grouped_select_multiple_optgroups_marks_selected():
-    widget = GroupedSelectMultiple(
-        group_by=_group_by, choices=[_track("a", "PyCon", 1), _track("b", "PyCon", 1)]
-    )
-
-    groups = widget.optgroups("field", ["b"])
-    options = groups[0][1]
-
-    assert [o["value"] for o in options if o["selected"]] == ["b"]
-
-
 def test_grouped_select_multiple_optgroups_empty_value_yields_unnamed_group():
     widget = GroupedSelectMultiple(group_by=_group_by, choices=[(None, "---")])
 
@@ -490,22 +416,21 @@ def test_grouped_select_multiple_optgroups_empty_value_yields_unnamed_group():
     assert groups[0][1][0]["value"] == ""
 
 
-def test_text_input_with_addon_get_context():
-    widget = TextInputWithAddon(addon_before="https://", addon_after=".com")
+@pytest.mark.parametrize(
+    ("kwargs", "before", "after"),
+    (
+        ({"addon_before": "https://", "addon_after": ".com"}, "https://", ".com"),
+        ({}, None, None),
+    ),
+    ids=("addons", "defaults"),
+)
+def test_text_input_with_addon_get_context(kwargs, before, after):
+    widget = TextInputWithAddon(**kwargs)
 
     ctx = widget.get_context("url", "", {})
 
-    assert ctx["widget"]["addon_before"] == "https://"
-    assert ctx["widget"]["addon_after"] == ".com"
-
-
-def test_text_input_with_addon_defaults_to_none():
-    widget = TextInputWithAddon()
-
-    ctx = widget.get_context("field", "", {})
-
-    assert ctx["widget"]["addon_before"] is None
-    assert ctx["widget"]["addon_after"] is None
+    assert ctx["widget"]["addon_before"] == before
+    assert ctx["widget"]["addon_after"] == after
 
 
 @pytest.mark.parametrize(
@@ -652,23 +577,25 @@ def test_multi_email_input_use_required_attribute_returns_false():
     assert widget.use_required_attribute(None) is False
 
 
-def test_profile_picture_widget_value_from_datadict_with_action():
+_uploaded = SimpleUploadedFile("pic.png", b"content")
+
+
+@pytest.mark.parametrize(
+    ("data", "files", "expected"),
+    (
+        (
+            {"avatar_action": "upload"},
+            {"avatar": _uploaded},
+            {"action": "upload", "file": _uploaded},
+        ),
+        ({}, {}, {"action": "keep", "file": None}),
+    ),
+    ids=("with_action", "default_action"),
+)
+def test_profile_picture_widget_value_from_datadict(data, files, expected):
     widget = ProfilePictureWidget()
-    uploaded = SimpleUploadedFile("pic.png", b"content")
 
-    result = widget.value_from_datadict(
-        data={"avatar_action": "upload"}, files={"avatar": uploaded}, name="avatar"
-    )
-
-    assert result == {"action": "upload", "file": uploaded}
-
-
-def test_profile_picture_widget_value_from_datadict_default_action():
-    widget = ProfilePictureWidget()
-
-    result = widget.value_from_datadict(data={}, files={}, name="avatar")
-
-    assert result == {"action": "keep", "file": None}
+    assert widget.value_from_datadict(data=data, files=files, name="avatar") == expected
 
 
 def test_profile_picture_widget_use_required_attribute_returns_false():
@@ -678,12 +605,17 @@ def test_profile_picture_widget_use_required_attribute_returns_false():
     assert widget.use_required_attribute(initial="something") is False
 
 
-def test_profile_picture_widget_get_context_no_user_no_picture():
+@pytest.mark.parametrize(
+    ("attrs", "widget_id"),
+    (({"id": "id_avatar"}, "id_avatar"), (None, "avatar")),
+    ids=("id_from_attrs", "id_from_name"),
+)
+def test_profile_picture_widget_get_context_no_user_no_picture(attrs, widget_id):
     widget = ProfilePictureWidget()
 
-    ctx = widget.get_context("avatar", None, {"id": "id_avatar"})
+    ctx = widget.get_context("avatar", None, attrs)
 
-    assert ctx["widget"]["widget_id"] == "id_avatar"
+    assert ctx["widget"]["widget_id"] == widget_id
     assert ctx["widget"]["current_picture"] is None
     assert ctx["widget"]["other_pictures"] == []
     assert ctx["widget"]["action"] == "keep"
@@ -721,50 +653,29 @@ def test_profile_picture_widget_get_context_action(
 
 
 @pytest.mark.django_db
-def test_profile_picture_widget_get_context_remove_hides_current_picture(make_image):
-    user = UserFactory()
-    picture = ProfilePictureFactory(user=user, avatar=make_image("old.png"))
-    widget = ProfilePictureWidget(user=user, current_picture=picture)
-
-    ctx = widget.get_context("avatar", {"action": "remove", "file": None}, None)
-
-    assert ctx["widget"]["current_picture"] is None
-
-
-@pytest.mark.django_db
-def test_profile_picture_widget_get_context_selection_moves_current_picture(make_image):
+def test_profile_picture_widget_get_context_action_moves_current_picture(make_image):
     user = UserFactory()
     current = ProfilePictureFactory(user=user, avatar=make_image("old.png"))
     other = ProfilePictureFactory(user=user, avatar=make_image("new.png"))
-    widget = ProfilePictureWidget(user=user, current_picture=current)
-
-    ctx = widget.get_context(
-        "avatar", {"action": f"select_{other.pk}", "file": None}, None
-    )
-
-    assert ctx["widget"]["current_picture"]["pk"] == other.pk
-    assert other.avatar.url in ctx["widget"]["current_picture"]["url"]
-    assert {
-        picture["pk"]
-        for picture in ctx["widget"]["other_pictures"]
-        if picture["is_current"]
-    } == {other.pk}
-
-
-@pytest.mark.django_db
-def test_profile_picture_widget_get_context_foreign_selection_keeps_current_picture(
-    make_image,
-):
-    user = UserFactory()
-    current = ProfilePictureFactory(user=user, avatar=make_image("old.png"))
     foreign = ProfilePictureFactory(avatar=make_image("stranger.png"))
     widget = ProfilePictureWidget(user=user, current_picture=current)
 
-    ctx = widget.get_context(
-        "avatar", {"action": f"select_{foreign.pk}", "file": None}, None
-    )
+    def context(action):
+        return widget.get_context("avatar", {"action": action, "file": None}, None)[
+            "widget"
+        ]
 
-    assert ctx["widget"]["current_picture"]["pk"] == current.pk
+    assert context("keep")["current_picture"]["pk"] == current.pk
+    assert context("remove")["current_picture"] is None
+    assert context(f"select_{foreign.pk}")["current_picture"]["pk"] == current.pk
+
+    selected = context(f"select_{other.pk}")
+    assert selected["current_picture"]["pk"] == other.pk
+    assert other.avatar.url in selected["current_picture"]["url"]
+    assert [(p["pk"], p["is_current"]) for p in selected["other_pictures"]] == [
+        (other.pk, True),
+        (current.pk, False),
+    ]
 
 
 def test_profile_picture_widget_get_context_upload_only():
@@ -775,87 +686,36 @@ def test_profile_picture_widget_get_context_upload_only():
     assert ctx["widget"]["other_pictures"] == []
 
 
-def test_profile_picture_widget_get_context_widget_id_from_name():
-    widget = ProfilePictureWidget()
-
-    ctx = widget.get_context("avatar", None, None)
-
-    assert ctx["widget"]["widget_id"] == "avatar"
-
-
 @pytest.mark.django_db
-def test_profile_picture_widget_get_context_with_current_picture(make_image):
+def test_profile_picture_widget_get_context_lists_pictures_with_event_labels(
+    make_image,
+):
     user = UserFactory()
-    pic = ProfilePictureFactory(user=user, avatar=make_image())
-
-    widget = ProfilePictureWidget(current_picture=pic)
-
-    ctx = widget.get_context("avatar", None, {"id": "id_avatar"})
-
-    assert ctx["widget"]["current_picture"]["pk"] == pic.pk
-    assert pic.avatar.url in ctx["widget"]["current_picture"]["url"]
-
-
-@pytest.mark.django_db
-def test_profile_picture_widget_get_context_other_pictures_single_event(make_image):
-    user = UserFactory()
-    pic = ProfilePictureFactory(user=user, avatar=make_image())
+    unused = ProfilePictureFactory(user=user, avatar=make_image())
+    single = ProfilePictureFactory(user=user, avatar=make_image())
+    shared = ProfilePictureFactory(user=user, avatar=make_image())
     event = EventFactory()
-    profile = SpeakerFactory(user=user, event=event)
-    profile.profile_picture = pic
-    profile.save(update_fields=["profile_picture"])
+    for picture, speaker_event in (
+        (single, event),
+        (shared, EventFactory()),
+        (shared, EventFactory()),
+    ):
+        profile = SpeakerFactory(user=user, event=speaker_event)
+        profile.profile_picture = picture
+        profile.save(update_fields=["profile_picture"])
 
-    widget = ProfilePictureWidget(user=user)
+    widget = ProfilePictureWidget(user=user, current_picture=single)
     ctx = widget.get_context("avatar", None, {"id": "id_avatar"})
 
-    assert len(ctx["widget"]["other_pictures"]) == 1
-    entry = ctx["widget"]["other_pictures"][0]
-    assert entry["pk"] == pic.pk
-    assert entry["label"] == str(event.name)
-
-
-@pytest.mark.django_db
-def test_profile_picture_widget_get_context_other_pictures_multiple_events(make_image):
-    user = UserFactory()
-    pic = ProfilePictureFactory(user=user, avatar=make_image())
-    event1 = EventFactory()
-    event2 = EventFactory()
-    p1 = SpeakerFactory(user=user, event=event1)
-    p2 = SpeakerFactory(user=user, event=event2)
-    p1.profile_picture = pic
-    p1.save(update_fields=["profile_picture"])
-    p2.profile_picture = pic
-    p2.save(update_fields=["profile_picture"])
-
-    widget = ProfilePictureWidget(user=user)
-    ctx = widget.get_context("avatar", None, {"id": "id_avatar"})
-
-    assert len(ctx["widget"]["other_pictures"]) == 1
-    assert "2" in ctx["widget"]["other_pictures"][0]["label"]
-
-
-@pytest.mark.django_db
-def test_profile_picture_widget_get_context_other_pictures_no_events(make_image):
-    user = UserFactory()
-    ProfilePictureFactory(user=user, avatar=make_image())
-
-    widget = ProfilePictureWidget(user=user)
-    ctx = widget.get_context("avatar", None, {"id": "id_avatar"})
-
-    assert len(ctx["widget"]["other_pictures"]) == 1
-    assert ctx["widget"]["other_pictures"][0]["label"] == ""
-
-
-@pytest.mark.django_db
-def test_profile_picture_widget_get_context_marks_current_picture(make_image):
-    user = UserFactory()
-    pic = ProfilePictureFactory(user=user, avatar=make_image())
-
-    widget = ProfilePictureWidget(user=user, current_picture=pic)
-    ctx = widget.get_context("avatar", None, {"id": "id_avatar"})
-
-    entry = ctx["widget"]["other_pictures"][0]
-    assert entry["is_current"] is True
+    assert ctx["widget"]["current_picture"]["pk"] == single.pk
+    assert single.avatar.url in ctx["widget"]["current_picture"]["url"]
+    assert [
+        (p["pk"], p["label"], p["is_current"]) for p in ctx["widget"]["other_pictures"]
+    ] == [
+        (shared.pk, "2 events", False),
+        (single.pk, str(event.name), True),
+        (unused.pk, "", False),
+    ]
 
 
 @pytest.mark.parametrize(

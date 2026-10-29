@@ -13,16 +13,19 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 def test_event_list_shows_public_events(client, item_count, django_assert_num_queries):
     with scopes_disabled():
         public_events = EventFactory.create_batch(item_count, is_public=True)
-        hidden_event = EventFactory(is_public=False)
+        EventFactory(is_public=False)
 
     with django_assert_num_queries(1):
         response = client.get("/api/events/", follow=True)
+    filtered = client.get("/api/events/?is_public=true", follow=True)
+    hidden = client.get("/api/events/?is_public=false", follow=True)
 
     assert response.status_code == 200
-    data = response.json()
-    slugs = [e["slug"] for e in data]
-    assert all(e.slug in slugs for e in public_events)
-    assert hidden_event.slug not in slugs
+    assert {e["slug"] for e in response.json()} == {e.slug for e in public_events}
+    assert filtered.status_code == 200
+    assert {e["slug"] for e in filtered.json()} == {e.slug for e in public_events}
+    assert hidden.status_code == 200
+    assert hidden.json() == []
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -49,10 +52,7 @@ def test_event_list_shows_events_to_orga(client, item_count, django_assert_num_q
         )
 
     assert response.status_code == 200
-    data = response.json()
-    slugs = {e["slug"] for e in data}
-    assert all(e.slug in slugs for e in events)
-    assert len(data) == item_count
+    assert {e["slug"] for e in response.json()} == {e.slug for e in events}
 
 
 def test_event_list_hides_non_scoped_events_for_token(client):
@@ -72,10 +72,10 @@ def test_event_list_hides_non_scoped_events_for_token(client):
 
     response = client.get("/api/events/", follow=True, headers=headers)
     assert response.status_code == 200
-    slugs = {e["slug"] for e in response.json()}
-    assert scoped_event.slug in slugs
-    assert public_event.slug in slugs
-    assert other_event.slug not in slugs
+    assert {e["slug"] for e in response.json()} == {
+        scoped_event.slug,
+        public_event.slug,
+    }
 
     # The out-of-scope event is also not retrievable through the detail view.
     detail = client.get(
@@ -103,56 +103,23 @@ def test_event_list_shows_all_accessible_events_for_all_events_token(client):
     assert {e["slug"] for e in response.json()} == {event_a.slug, event_b.slug}
 
 
-def test_event_detail_accessible_for_public_event(client):
+def test_event_detail_anonymous(client):
     with scopes_disabled():
         event = EventFactory(is_public=True)
+        hidden_event = EventFactory(is_public=False)
 
     response = client.get(f"/api/events/{event.slug}/", follow=True)
+    hidden = client.get(f"/api/events/{hidden_event.slug}/", follow=True)
 
     assert response.status_code == 200
     data = response.json()
     assert data["slug"] == event.slug
-    assert "email" in data
-    assert "locale" in data
-    assert "locales" in data
-
-
-def test_event_detail_returns_404_for_non_public_anonymous(client):
-    with scopes_disabled():
-        event = EventFactory(is_public=False)
-
-    response = client.get(f"/api/events/{event.slug}/", follow=True)
-
-    assert response.status_code == 404
-
-
-def test_event_detail_fields(client):
-    with scopes_disabled():
-        event = EventFactory(is_public=True)
-
-    response = client.get(f"/api/events/{event.slug}/", follow=True)
-
-    assert response.status_code == 200
-    data = response.json()
-    detail_only_fields = {
+    assert {
         "email",
         "primary_color",
         "custom_domain",
         "locale",
         "locales",
         "content_locales",
-    }
-    assert detail_only_fields.issubset(data.keys())
-
-
-def test_event_list_filter_by_is_public(client):
-    with scopes_disabled():
-        EventFactory.create_batch(2, is_public=True)
-        EventFactory(is_public=False)
-
-    response = client.get("/api/events/?is_public=true", follow=True)
-
-    assert response.status_code == 200
-    data = response.json()
-    assert all(e["is_public"] for e in data)
-    assert len(data) == 2
+    } <= set(data.keys())
+    assert hidden.status_code == 404

@@ -15,20 +15,17 @@ from tests.factories import UserFactory
 pytestmark = pytest.mark.unit
 
 
-def test_prompt_nonempty_returns_stripped_input():
+@pytest.mark.parametrize(
+    ("inputs", "expected"),
+    ((["  hello  "], "hello"), (["", "valid"], "valid")),
+    ids=("stripped", "retries_on_empty"),
+)
+def test_prompt_nonempty(inputs, expected):
     # Mocking builtins.input: requires interactive terminal (system boundary).
-    with patch("builtins.input", return_value="  hello  "):
+    with patch("builtins.input", side_effect=inputs):
         result = prompt_nonempty("Enter: ")
 
-    assert result == "hello"
-
-
-def test_prompt_nonempty_retries_on_empty_input():
-    # Mocking builtins.input: requires interactive terminal (system boundary).
-    with patch("builtins.input", side_effect=["", "valid"]):
-        result = prompt_nonempty("Enter: ")
-
-    assert result == "valid"
+    assert result == expected
 
 
 def test_init_get_nonempty_interactive_returns_input():

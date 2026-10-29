@@ -53,19 +53,6 @@ def question(event):
 
 
 @pytest.fixture
-def inactive_question(event):
-    with scopes_disabled():
-        return QuestionFactory(
-            event=event,
-            question="How much do you like red?",
-            variant=QuestionVariant.NUMBER,
-            target="submission",
-            active=False,
-            position=2,
-        )
-
-
-@pytest.fixture
 def choice_question(event):
     with scopes_disabled():
         q = QuestionFactory(
@@ -161,14 +148,107 @@ def remind_submissions(event):
     return confirmed_sub, speaker1, submitted_sub, speaker2
 
 
-def test_cfp_text_get_accessible(client, event):
+def _positions(*questions):
+    with scopes_disabled():
+        return [Question.all_objects.get(pk=q.pk).position for q in questions]
+
+
+def _cfp_fields(event):
+    with scopes_disabled():
+        return Event.objects.get(slug=event.slug).cfp.fields
+
+
+def _choice_state(question):
+    with scopes_disabled():
+        question = Question.all_objects.get(pk=question.pk)
+        return (
+            str(question.question),
+            question.variant,
+            question.min_options,
+            {str(option.answer) for option in question.options.all()},
+        )
+
+
+def _choice_edit_data(question, answer_options, **overrides):
+    data = {
+        "question_0": str(question.question),
+        "variant": "choices",
+        "active": True,
+        "help_text_0": "",
+        "question_required": QuestionRequired.OPTIONAL,
+        "form-TOTAL_FORMS": len(answer_options),
+        "form-INITIAL_FORMS": len(answer_options),
+    }
+    for index, option in enumerate(answer_options):
+        data[f"form-{index}-id"] = option.pk
+        data[f"form-{index}-answer_0"] = str(option.answer)
+    data.update(overrides)
+    return data
+
+
+def test_cfp_text_get_and_post(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
+    data = {
+        "headline_0": "new headline",
+        "text_0": "",
+        "deadline": "2000-10-10 20:20",
+        "count_length_in": "words",
+        "show_deadline": "on",
+        "settings-mail_on_new_submission": "on",
+        "settings-speakers_can_edit_submissions": "on",
+        "settings-cfp_ask_abstract": "required",
+        "settings-cfp_ask_description": "do_not_ask",
+        "settings-cfp_ask_notes": "optional",
+        "settings-cfp_ask_biography": "optional",
+        "settings-cfp_ask_avatar": "optional",
+        "settings-cfp_ask_availabilities": "optional",
+        "settings-cfp_ask_do_not_record": "optional",
+        "settings-cfp_ask_image": "optional",
+        "settings-cfp_ask_track": "optional",
+        "settings-cfp_ask_duration": "optional",
+        "settings-cfp_ask_additional_speaker": "optional",
+    }
 
     response = client.get(event.cfp.urls.edit_text)
-
     assert response.status_code == 200
     assert b"deadline" in response.content
+
+    response = client.post(event.cfp.urls.edit_text, data, follow=True)
+    assert response.status_code == 200
+    with scopes_disabled():
+        event = Event.objects.get(slug=event.slug)
+        cfp_log = (
+            event.cfp.logged_actions()
+            .filter(action_type="pretalx.cfp.update")
+            .latest("timestamp")
+        )
+        event_log = ActivityLog.objects.filter(
+            event=event, action_type="pretalx.event.update"
+        ).latest("timestamp")
+        log_count = event.cfp.logged_actions().count()
+    assert str(event.cfp.headline) == "new headline"
+    assert event.cfp.deadline == dt.datetime(
+        2000, 10, 10, 20, 20, tzinfo=ZoneInfo("UTC")
+    )
+    assert cfp_log.data["changes"]["settings.count_length_in"] == {
+        "old": "chars",
+        "new": "words",
+    }
+    assert cfp_log.data["changes"]["headline"]["new"] == {"en": "new headline"}
+    assert event_log.data["changes"]["feature_flags.submission_public_review"] == {
+        "old": True,
+        "new": False,
+    }
+    assert event_log.data["changes"]["mail_settings.mail_on_new_submission"] == {
+        "old": False,
+        "new": True,
+    }
+
+    response = client.post(event.cfp.urls.edit_text, data, follow=True)
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert event.cfp.logged_actions().count() == log_count
 
 
 CFP_PAGES = ("edit_text", "questions", "types", "tracks", "access_codes")
@@ -214,37 +294,6 @@ def test_cfp_list_denied_with_only_insufficient_permission(
     response = client.get(getattr(event.cfp.urls, page))
 
     assert response.status_code == 404
-
-
-def test_cfp_text_post_updates_cfp(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    response = client.post(
-        event.cfp.urls.edit_text,
-        {
-            "headline_0": "new headline",
-            "text_0": "",
-            "deadline": "2000-10-10 20:20",
-            "count_length_in": "chars",
-            "settings-cfp_ask_abstract": "required",
-            "settings-cfp_ask_description": "do_not_ask",
-            "settings-cfp_ask_notes": "optional",
-            "settings-cfp_ask_biography": "optional",
-            "settings-cfp_ask_avatar": "optional",
-            "settings-cfp_ask_availabilities": "optional",
-            "settings-cfp_ask_do_not_record": "optional",
-            "settings-cfp_ask_image": "optional",
-            "settings-cfp_ask_track": "optional",
-            "settings-cfp_ask_duration": "optional",
-            "settings-cfp_ask_additional_speaker": "optional",
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    event = Event.objects.get(slug=event.slug)
-    assert str(event.cfp.headline) == "new headline"
 
 
 def test_cfp_text_timezone_display(client):
@@ -311,123 +360,6 @@ def test_question_list_separates_targets_into_tabs(client, event):
     assert str(session_question.question) not in speakers_panel
     assert str(reviewer_question.question) not in content
 
-
-def test_question_list_hides_create_link_without_permission(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=False, can_change_submissions=True
-    )
-    with scopes_disabled():
-        question = QuestionFactory(event=event, target="submission")
-    client.force_login(user)
-
-    response = client.get(event.cfp.urls.questions, follow=True)
-
-    content = response.content.decode()
-    assert str(question.question) in content
-    assert event.cfp.urls.new_question not in content
-
-
-def test_question_list_reorders_only_the_requested_target(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    with scopes_disabled():
-        speaker_first = QuestionFactory(event=event, target="speaker", position=0)
-        speaker_second = QuestionFactory(event=event, target="speaker", position=1)
-        session = QuestionFactory(event=event, target="submission", position=0)
-    client.force_login(user)
-
-    response = client.post(
-        f"{event.cfp.urls.questions}?target=speakers",
-        {"order": f"{speaker_second.pk},{speaker_first.pk}"},
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        speaker_first.refresh_from_db()
-        speaker_second.refresh_from_db()
-        session.refresh_from_db()
-        assert (speaker_second.position, speaker_first.position) == (0, 1)
-        assert session.position == 0
-
-
-@pytest.mark.parametrize("query", ("?target=reviews", "?target=nonsense", ""))
-def test_question_list_reorder_rejects_unknown_target(client, event, query):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.post(f"{event.cfp.urls.questions}{query}", {"order": "1"})
-
-    assert response.status_code == 404
-
-
-def test_question_list_reorder_rejects_malformed_order(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    with scopes_disabled():
-        first = QuestionFactory(event=event, target="submission", position=0)
-        second = QuestionFactory(event=event, target="submission", position=1)
-    client.force_login(user)
-
-    response = client.post(
-        f"{event.cfp.urls.questions}?target=sessions",
-        {"order": f"{second.pk},not-a-pk"},
-    )
-
-    assert response.status_code == 400
-    with scopes_disabled():
-        first.refresh_from_db()
-        second.refresh_from_db()
-        assert (first.position, second.position) == (0, 1)
-
-
-def test_question_list_reorder_requires_settings_permission(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=False, can_change_submissions=True
-    )
-    with scopes_disabled():
-        first = QuestionFactory(event=event, target="submission", position=0)
-        second = QuestionFactory(event=event, target="submission", position=1)
-    client.force_login(user)
-
-    response = client.post(
-        f"{event.cfp.urls.questions}?target=sessions",
-        {"order": f"{second.pk},{first.pk}"},
-    )
-
-    assert response.status_code == 404
-    with scopes_disabled():
-        first.refresh_from_db()
-        second.refresh_from_db()
-        assert (first.position, second.position) == (0, 1)
-
-
-def test_question_list_reorder_without_order_renders_list(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    with scopes_disabled():
-        question = QuestionFactory(event=event, target="submission")
-    client.force_login(user)
-
-    response = client.post(f"{event.cfp.urls.questions}?target=sessions", {})
-
-    assert response.status_code == 200
-    assert str(question.question) in response.content.decode()
-
-
-def test_question_list_print_renders_the_requested_tab(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    with scopes_disabled():
-        session_question = QuestionFactory(event=event, target="submission")
-        speaker_question = QuestionFactory(event=event, target="speaker")
-    client.force_login(user)
-
     response = client.get(
         event.cfp.urls.questions,
         headers={
@@ -441,66 +373,90 @@ def test_question_list_print_renders_the_requested_tab(client, event):
     assert str(session_question.question) not in content
 
 
-def test_reviewer_question_delete_returns_to_review_settings(client, event):
+def test_question_views_without_settings_permission(client, event):
     user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
+        event, can_change_event_settings=False, can_change_submissions=True
     )
     with scopes_disabled():
-        question = QuestionFactory(event=event, target="reviewer")
+        first = QuestionFactory(event=event, target="submission", position=0)
+        second = QuestionFactory(event=event, target="submission", position=1)
+        reviewer_first = QuestionFactory(event=event, target="reviewer", position=0)
+        reviewer_second = QuestionFactory(event=event, target="reviewer", position=1)
     client.force_login(user)
 
-    response = client.post(question.urls.delete)
-
-    assert response.status_code == 302
-    assert response["Location"] == f"{event.orga_urls.review_settings}#tab-questions"
-    with scopes_disabled():
-        assert (
-            not event.questions(manager="all_objects").filter(pk=question.pk).exists()
-        )
-
-
-@pytest.mark.parametrize("action", ("create", "edit"))
-def test_reviewer_question_form_links_back_to_review_settings(client, event, action):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    with scopes_disabled():
-        question = QuestionFactory(event=event, target="reviewer")
-    client.force_login(user)
-    url = (
-        event.cfp.urls.new_reviewer_question
-        if action == "create"
-        else question.urls.edit
-    )
-
-    response = client.get(url, follow=True)
-
-    assert response.status_code == 200
-    assert (
-        f"{event.orga_urls.review_settings}#tab-questions" in response.content.decode()
-    )
-
-
-def test_reviewer_question_order_reorders_reviewer_questions(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    with scopes_disabled():
-        first = QuestionFactory(event=event, target="reviewer", position=0)
-        second = QuestionFactory(event=event, target="reviewer", position=1)
-    client.force_login(user)
+    response = client.get(event.cfp.urls.questions, follow=True)
+    content = response.content.decode()
+    assert str(first.question) in content
+    assert event.cfp.urls.new_question not in content
 
     response = client.post(
-        f"{event.orga_urls.review_questions}?target=reviews",
+        f"{event.cfp.urls.questions}?target=sessions",
         {"order": f"{second.pk},{first.pk}"},
     )
+    assert response.status_code == 404
 
-    assert response.status_code == 204
+    response = client.post(
+        event.orga_urls.review_questions,
+        {"order": f"{reviewer_second.pk},{reviewer_first.pk}"},
+    )
+    assert response.status_code == 404
+    assert _positions(first, second, reviewer_first, reviewer_second) == [0, 1, 0, 1]
+
+
+def test_question_list_reorder(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
     with scopes_disabled():
-        first.refresh_from_db()
-        second.refresh_from_db()
-        assert (second.position, first.position) == (0, 1)
+        speaker_first = QuestionFactory(event=event, target="speaker", position=0)
+        speaker_second = QuestionFactory(event=event, target="speaker", position=1)
+        session = QuestionFactory(event=event, target="submission", position=0)
+    client.force_login(user)
+    url = f"{event.cfp.urls.questions}?target=speakers"
+
+    for query in ("?target=reviews", "?target=nonsense", ""):
+        response = client.post(f"{event.cfp.urls.questions}{query}", {"order": "1"})
+        assert response.status_code == 404
+
+    response = client.post(url, {"order": f"{speaker_second.pk},not-a-pk"})
+    assert response.status_code == 400
+    assert _positions(speaker_first, speaker_second, session) == [0, 1, 0]
+
+    response = client.post(url, {})
+    assert response.status_code == 200
+    assert str(speaker_first.question) in response.content.decode()
+    assert _positions(speaker_first, speaker_second, session) == [0, 1, 0]
+
+    response = client.post(url, {"order": f"{speaker_second.pk},{speaker_first.pk}"})
+    assert response.status_code == 200
+    assert _positions(speaker_first, speaker_second, session) == [1, 0, 0]
 
 
-def test_reviewer_question_order_rejects_malformed_order(client, event):
+def test_reviewer_question_pages_link_back_to_review_settings(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    with scopes_disabled():
+        question = QuestionFactory(event=event, target="reviewer")
+    client.force_login(user)
+    back_link = f"{event.orga_urls.review_settings}#tab-questions"
+
+    response = client.get(event.cfp.urls.new_reviewer_question, follow=True)
+    assert response.status_code == 200
+    assert back_link in response.content.decode()
+
+    response = client.get(question.urls.edit, follow=True)
+    assert response.status_code == 200
+    assert back_link in response.content.decode()
+
+    response = client.post(question.urls.delete)
+    assert response.status_code == 302
+    assert response["Location"] == back_link
+    with scopes_disabled():
+        assert not Question.all_objects.filter(pk=question.pk).exists()
+
+
+def test_reviewer_question_order(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     with scopes_disabled():
         first = QuestionFactory(event=event, target="reviewer", position=0)
@@ -510,77 +466,74 @@ def test_reviewer_question_order_rejects_malformed_order(client, event):
     response = client.post(
         event.orga_urls.review_questions, {"order": f"{second.pk},not-a-pk"}
     )
-
     assert response.status_code == 400
-    with scopes_disabled():
-        first.refresh_from_db()
-        second.refresh_from_db()
-        assert (first.position, second.position) == (0, 1)
-
-
-def test_reviewer_question_order_without_order_changes_nothing(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    with scopes_disabled():
-        first = QuestionFactory(event=event, target="reviewer", position=0)
-        second = QuestionFactory(event=event, target="reviewer", position=1)
-    client.force_login(user)
+    assert _positions(first, second) == [0, 1]
 
     response = client.post(event.orga_urls.review_questions, {})
-
     assert response.status_code == 204
-    with scopes_disabled():
-        first.refresh_from_db()
-        second.refresh_from_db()
-        assert (first.position, second.position) == (0, 1)
-
-
-def test_reviewer_question_order_requires_settings_permission(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=False, can_change_submissions=True
-    )
-    with scopes_disabled():
-        first = QuestionFactory(event=event, target="reviewer", position=0)
-        second = QuestionFactory(event=event, target="reviewer", position=1)
-    client.force_login(user)
+    assert _positions(first, second) == [0, 1]
 
     response = client.post(
-        event.orga_urls.review_questions, {"order": f"{second.pk},{first.pk}"}
+        f"{event.orga_urls.review_questions}?target=reviews",
+        {"order": f"{second.pk},{first.pk}"},
     )
-
-    assert response.status_code == 404
-    with scopes_disabled():
-        first.refresh_from_db()
-        second.refresh_from_db()
-        assert (first.position, second.position) == (0, 1)
+    assert response.status_code == 204
+    assert _positions(first, second) == [1, 0]
 
 
-@pytest.mark.parametrize("role", ("accepted", ""))
-def test_question_detail_accessible_with_role_filter(client, event, question, role):
+def test_question_detail(client, event, question, track, submission_type):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
+    with scopes_disabled():
+        submission = SubmissionFactory(
+            event=event, state="accepted", track=track, submission_type=submission_type
+        )
+        AnswerFactory(submission=submission, question=question, answer="3")
     client.force_login(user)
 
-    url = question.urls.base + (f"?role={role}" if role else "")
-    response = client.get(url, follow=True)
-
+    response = client.get(question.urls.base, follow=True)
     assert response.status_code == 200
     assert str(question.question) in response.content.decode()
 
+    response = client.get(
+        f"{question.urls.base}?role=accepted&track={track.pk}&submission_type={submission_type.pk}",
+        follow=True,
+    )
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "state=accepted" in content
+    assert "state=confirmed" in content
+    assert f"track={track.pk}" in content
+    assert f"submission_type={submission_type.pk}" in content
 
-def test_question_create_choice_page_offers_session_and_speaker_fields(client, event):
+    response = client.get(question.urls.download, follow=True)
+    assert response.status_code == 200
+    assert "does not support file downloads" in response.content.decode()
+
+
+def test_question_create_pages(client, event):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
     client.force_login(user)
 
     response = client.get(event.cfp.urls.new_question, follow=True)
-
     assert response.status_code == 200
     content = response.content.decode()
     assert event.cfp.urls.new_session_question in content
     assert event.cfp.urls.new_speaker_question in content
     assert event.cfp.urls.new_reviewer_question not in content
+
+    response = client.get(event.cfp.urls.new_speaker_question, follow=True)
+    assert response.status_code == 200
+    assert 'name="target"' not in response.content.decode()
+
+    for method in ("get", "post"):
+        response = getattr(client, method)(f"{event.cfp.urls.new_question}nonsense/")
+        assert response.status_code == 404
+    with scopes_disabled():
+        assert Question.all_objects.filter(event=event).count() == 0
 
 
 @pytest.mark.parametrize(
@@ -605,8 +558,9 @@ def test_question_create_takes_target_from_url(
             "question_0": "What is your name?",
             "variant": "string",
             "active": True,
-            "help_text_0": "",
-            "question_required": QuestionRequired.OPTIONAL,
+            "help_text_0": "Please answer!",
+            "question_required": QuestionRequired.REQUIRED,
+            "freeze_after": "2021-06-22T12:44:42Z",
             "target": "reviewer" if expected_target != "reviewer" else "speaker",
         },
         follow=True,
@@ -615,43 +569,29 @@ def test_question_create_takes_target_from_url(
     assert response.status_code == 200
     with scopes_disabled():
         question = Question.all_objects.get(event=event)
-        assert question.target == expected_target
-
-
-@pytest.mark.parametrize("method", ("get", "post"))
-def test_question_create_with_unknown_target_slug_is_404(client, event, method):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
+    assert (
+        str(question.question),
+        question.variant,
+        str(question.help_text),
+        question.target,
+        question.freeze_after,
+    ) == (
+        "What is your name?",
+        "string",
+        "Please answer!",
+        expected_target,
+        dt.datetime(2021, 6, 22, 12, 44, 42, tzinfo=ZoneInfo("UTC")),
     )
-    client.force_login(user)
-
-    response = getattr(client, method)(f"{event.cfp.urls.new_question}nonsense/")
-
-    assert response.status_code == 404
-    with scopes_disabled():
-        assert Question.all_objects.filter(event=event).count() == 0
 
 
-def test_question_create_form_has_no_target_field(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.get(event.cfp.urls.new_speaker_question, follow=True)
-
-    assert response.status_code == 200
-    assert 'name="target"' not in response.content.decode()
-
-
-def test_question_update_cannot_change_target(client, event, question):
+def test_question_update_cannot_change_target_and_follows_next(client, event, question):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
     client.force_login(user)
 
     response = client.post(
-        question.urls.edit,
+        f"{question.urls.edit}?next={event.cfp.urls.questions}",
         {
             "target": "speaker",
             "question_0": str(question.question),
@@ -660,63 +600,13 @@ def test_question_update_cannot_change_target(client, event, question):
             "help_text_0": "",
             "question_required": QuestionRequired.OPTIONAL,
         },
-        follow=True,
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 302
+    assert response.url == event.cfp.urls.questions
     with scopes_disabled():
         question.refresh_from_db()
         assert question.target == QuestionTarget.SUBMISSION
-
-
-def test_question_create_simple(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.post(
-        event.cfp.urls.new_session_question,
-        {
-            "question_0": "What is your name?",
-            "variant": "string",
-            "active": True,
-            "help_text_0": "Please answer!",
-            "question_required": QuestionRequired.OPTIONAL,
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert event.questions.count() == 1
-        q = event.questions.first()
-        assert str(q.question) == "What is your name?"
-        assert q.variant == "string"
-
-
-def test_question_create_with_freeze_after(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.post(
-        event.cfp.urls.new_session_question,
-        {
-            "question_0": "What is your name?",
-            "variant": "string",
-            "active": True,
-            "help_text_0": "",
-            "question_required": QuestionRequired.REQUIRED,
-            "freeze_after": "2021-06-22T12:44:42Z",
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert event.questions.count() == 1
 
 
 def test_question_create_after_deadline(client, event):
@@ -724,52 +614,82 @@ def test_question_create_after_deadline(client, event):
         event, can_change_event_settings=True, can_change_submissions=True
     )
     client.force_login(user)
+    data = {
+        "question_0": "What is your name?",
+        "variant": "string",
+        "active": True,
+        "help_text_0": "",
+        "question_required": QuestionRequired.AFTER_DEADLINE,
+    }
 
-    response = client.post(
-        event.cfp.urls.new_session_question,
-        {
-            "question_0": "What is your name?",
-            "variant": "string",
-            "active": True,
-            "help_text_0": "",
-            "question_required": QuestionRequired.AFTER_DEADLINE,
-            "deadline": "2021-06-22T12:44:42Z",
-        },
-        follow=True,
-    )
-
+    response = client.post(event.cfp.urls.new_session_question, data, follow=True)
     assert response.status_code == 200
-    with scopes_disabled():
-        assert event.questions.count() == 1
-        q = event.questions.first()
-        assert q.deadline == dt.datetime(
-            2021, 6, 22, 12, 44, 42, tzinfo=ZoneInfo("UTC")
-        )
-
-
-def test_question_create_after_deadline_missing_deadline_fails(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    client.post(
-        event.cfp.urls.new_session_question,
-        {
-            "question_0": "What is your name?",
-            "variant": "string",
-            "active": True,
-            "help_text_0": "",
-            "question_required": QuestionRequired.AFTER_DEADLINE,
-        },
-        follow=True,
-    )
-
     with scopes_disabled():
         assert event.questions.count() == 0
 
+    response = client.post(
+        event.cfp.urls.new_session_question,
+        {**data, "deadline": "2021-06-22T12:44:42Z"},
+        follow=True,
+    )
+    assert response.status_code == 200
+    with scopes_disabled():
+        q = event.questions.get()
+    assert q.deadline == dt.datetime(2021, 6, 22, 12, 44, 42, tzinfo=ZoneInfo("UTC"))
 
-def test_question_create_choice(client, event):
+
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    (
+        (
+            {
+                "variant": "choices",
+                "form-TOTAL_FORMS": 2,
+                "form-INITIAL_FORMS": 0,
+                "form-0-id": "",
+                "form-0-answer_0": "African",
+                "form-1-id": "",
+                "form-1-answer_0": "European",
+                "form-2-id": "",
+                "form-2-answer_0": "",
+            },
+            ("choices", {"African", "European"}, None, None),
+        ),
+        (
+            {
+                "variant": "choices",
+                "options": SimpleUploadedFile(
+                    "opts.json", b'[{"en": "Option A"}, {"en": "Option B"}]'
+                ),
+                "form-TOTAL_FORMS": 2,
+                "form-INITIAL_FORMS": 0,
+                "form-0-id": "",
+                "form-0-answer_0": "",
+                "form-0-DELETE": "on",
+                "form-1-id": "",
+                "form-1-answer_0": "",
+                "form-1-DELETE": "on",
+            },
+            ("choices", {"Option A", "Option B"}, None, None),
+        ),
+        (
+            {
+                "variant": "multiple_choice",
+                "min_options": "2",
+                "max_options": "3",
+                "form-TOTAL_FORMS": 2,
+                "form-INITIAL_FORMS": 0,
+                "form-0-id": "",
+                "form-0-answer_0": "Python",
+                "form-1-id": "",
+                "form-1-answer_0": "Rust",
+            },
+            ("multiple_choice", {"Python", "Rust"}, 2, 3),
+        ),
+    ),
+    ids=("formset", "options_file_with_deleted_blank_rows", "min_max_options"),
+)
+def test_question_create_choice(client, event, data, expected):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -778,56 +698,11 @@ def test_question_create_choice(client, event):
     response = client.post(
         event.cfp.urls.new_session_question,
         {
-            "question_0": "Is it African or European?",
-            "variant": "choices",
-            "active": True,
-            "help_text_0": "",
-            "form-TOTAL_FORMS": 2,
-            "form-INITIAL_FORMS": 0,
-            "form-0-id": "",
-            "form-0-answer_0": "African",
-            "form-1-id": "",
-            "form-1-answer_0": "European",
-            "form-2-id": "",
-            "form-2-answer_0": "",
-            "question_required": QuestionRequired.OPTIONAL,
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert event.questions.count() == 1
-        q = event.questions.first()
-        assert q.variant == "choices"
-        assert q.options.count() == 2
-
-
-def test_question_create_choice_with_options_file_and_deleted_blank_rows(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.post(
-        event.cfp.urls.new_speaker_question,
-        {
             "question_0": "Pick one",
-            "variant": "choices",
             "active": True,
             "help_text_0": "",
             "question_required": QuestionRequired.OPTIONAL,
-            "options": SimpleUploadedFile(
-                "opts.json", b'[{"en": "Option A"}, {"en": "Option B"}]'
-            ),
-            "form-TOTAL_FORMS": 2,
-            "form-INITIAL_FORMS": 0,
-            "form-0-id": "",
-            "form-0-answer_0": "",
-            "form-0-DELETE": "on",
-            "form-1-id": "",
-            "form-1-answer_0": "",
-            "form-1-DELETE": "on",
+            **data,
         },
         follow=True,
     )
@@ -835,10 +710,12 @@ def test_question_create_choice_with_options_file_and_deleted_blank_rows(client,
     assert response.status_code == 200
     with scopes_disabled():
         question = event.questions.get()
-        assert {str(opt.answer) for opt in question.options.all()} == {
-            "Option A",
-            "Option B",
-        }
+        assert (
+            question.variant,
+            {str(option.answer) for option in question.options.all()},
+            question.min_options,
+            question.max_options,
+        ) == expected
 
 
 @pytest.mark.parametrize(
@@ -884,204 +761,146 @@ def test_question_create_choice_rejected_options_renders_form(client, event, dat
         assert not event.questions.exists()
 
 
-def test_question_edit_choice_options(client, event, choice_question):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-    with scopes_disabled():
-        count = choice_question.options.count()
-        identifier = choice_question.identifier
-        first_option = choice_question.options.first()
-        last_option = choice_question.options.last()
-        other_option = choice_question.options.all()[1]
-
-    response = client.post(
-        choice_question.urls.edit,
-        {
-            "question_0": "Is it African or European?",
-            "variant": "choices",
-            "active": True,
-            "help_text_0": "",
-            "form-TOTAL_FORMS": 3,
-            "form-INITIAL_FORMS": 3,
-            "form-0-id": first_option.pk,
-            "form-0-answer_0": "African",
-            "form-1-id": last_option.pk,
-            "form-1-answer_0": "European",
-            "form-2-id": other_option.pk,
-            "form-2-answer_0": str(other_option.answer),
-            "form-2-DELETE": "on",
-            "form-3-id": "",
-            "form-3-answer_0": "",
-            "question_required": QuestionRequired.OPTIONAL,
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        choice_question.refresh_from_db()
-        assert choice_question.identifier == identifier
-        assert choice_question.options.count() == count - 1
-        assert str(choice_question.options.first().answer) == "African"
-
-
-def test_question_create_multiple_choice_with_min_options(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.post(
-        event.cfp.urls.new_session_question,
-        {
-            "question_0": "Which languages do you speak?",
-            "variant": "multiple_choice",
-            "active": True,
-            "help_text_0": "",
-            "min_options": "2",
-            "max_options": "3",
-            "form-TOTAL_FORMS": 2,
-            "form-INITIAL_FORMS": 0,
-            "form-0-id": "",
-            "form-0-answer_0": "Python",
-            "form-1-id": "",
-            "form-1-answer_0": "Rust",
-            "question_required": QuestionRequired.OPTIONAL,
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        question = event.questions.get()
-        assert (question.min_options, question.max_options) == (2, 3)
-        assert question.options.count() == 2
-
-
-def test_question_edit_option_deletion_below_min_options_rejected(
-    client, event, choice_question
-):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-    with scopes_disabled():
-        choice_question.min_options = 3
-        choice_question.save(update_fields=["min_options"])
-        options = list(choice_question.options.order_by("pk"))
-
-    response = client.post(
-        choice_question.urls.edit,
-        {
-            "question_0": str(choice_question.question),
-            "variant": "multiple_choice",
-            "active": True,
-            "help_text_0": "",
-            "min_options": "3",
-            "question_required": QuestionRequired.OPTIONAL,
-            "form-TOTAL_FORMS": 3,
-            "form-INITIAL_FORMS": 3,
-            "form-0-id": options[0].pk,
-            "form-0-answer_0": str(options[0].answer),
-            "form-1-id": options[1].pk,
-            "form-1-answer_0": str(options[1].answer),
-            "form-2-id": options[2].pk,
-            "form-2-answer_0": str(options[2].answer),
-            "form-2-DELETE": "on",
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    assert "only has 2 options" in response.content.decode()
-    with scopes_disabled():
-        assert choice_question.options.count() == 3
-
-
-def test_question_edit_adding_option_and_raising_min_options_in_one_request(
-    client, event, choice_question
-):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-    with scopes_disabled():
-        options = list(choice_question.options.order_by("pk"))
-
-    response = client.post(
-        choice_question.urls.edit,
-        {
-            "question_0": str(choice_question.question),
-            "variant": "multiple_choice",
-            "active": True,
-            "help_text_0": "",
-            "min_options": "4",
-            "question_required": QuestionRequired.OPTIONAL,
-            "form-TOTAL_FORMS": 4,
-            "form-INITIAL_FORMS": 3,
-            "form-0-id": options[0].pk,
-            "form-0-answer_0": str(options[0].answer),
-            "form-1-id": options[1].pk,
-            "form-1-answer_0": str(options[1].answer),
-            "form-2-id": options[2].pk,
-            "form-2-answer_0": str(options[2].answer),
-            "form-3-id": "",
-            "form-3-answer_0": "Fourth option",
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        choice_question.refresh_from_db()
-        assert choice_question.min_options == 4
-        assert choice_question.options.count() == 4
-
-
-def test_question_edit_switch_away_from_multiple_choice_ignores_min_options(
-    client, event, choice_question
-):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-    with scopes_disabled():
-        choice_question.variant = QuestionVariant.MULTIPLE
-        choice_question.min_options = 3
-        choice_question.save(update_fields=["variant", "min_options"])
-        options = list(choice_question.options.order_by("pk"))
-
-    response = client.post(
-        choice_question.urls.edit,
-        {
-            "question_0": str(choice_question.question),
-            "variant": "choices",
-            "active": True,
-            "help_text_0": "",
+@pytest.mark.parametrize(
+    ("question_updates", "overrides", "expected"),
+    (
+        (
+            {},
+            {
+                "form-0-answer_0": "African",
+                "form-1-DELETE": "on",
+                "form-2-answer_0": "European",
+            },
+            ("How much do you like green?", "choices", None, {"African", "European"}),
+        ),
+        (
+            {},
+            {
+                "variant": "multiple_choice",
+                "min_options": "4",
+                "form-TOTAL_FORMS": 4,
+                "form-3-id": "",
+                "form-3-answer_0": "Fourth option",
+            },
+            (
+                "How much do you like green?",
+                "multiple_choice",
+                4,
+                {"very", "incredibly", "omggreen", "Fourth option"},
+            ),
+        ),
+        (
+            {"variant": QuestionVariant.MULTIPLE, "min_options": 3},
             # The collapsed input keeps submitting the stored minimum.
-            "min_options": "3",
-            "question_required": QuestionRequired.OPTIONAL,
-            "form-TOTAL_FORMS": 3,
-            "form-INITIAL_FORMS": 3,
-            "form-0-id": options[0].pk,
-            "form-0-answer_0": str(options[0].answer),
-            "form-1-id": options[1].pk,
-            "form-1-answer_0": str(options[1].answer),
-            "form-2-id": options[2].pk,
-            "form-2-answer_0": str(options[2].answer),
-            "form-2-DELETE": "on",
-        },
+            {"variant": "choices", "min_options": "3", "form-2-DELETE": "on"},
+            ("How much do you like green?", "choices", 3, {"very", "incredibly"}),
+        ),
+        (
+            {},
+            {"options": SimpleUploadedFile("opts.txt", b"Option A\nOption B")},
+            (
+                "How much do you like green?",
+                "choices",
+                None,
+                {"very", "incredibly", "omggreen", "Option A", "Option B"},
+            ),
+        ),
+        (
+            {},
+            {"question_0": "Changed question text"},
+            (
+                "Changed question text",
+                "choices",
+                None,
+                {"very", "incredibly", "omggreen"},
+            ),
+        ),
+    ),
+    ids=(
+        "rename_and_delete_options",
+        "add_option_and_raise_min_options",
+        "switch_away_from_multiple_choice_ignores_min_options",
+        "options_file_with_unchanged_formset",
+        "unchanged_options_with_changed_question",
+    ),
+)
+def test_question_edit_choice_options_saves(
+    client, event, choice_question, question_updates, overrides, expected
+):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+    with scopes_disabled():
+        for attribute, value in question_updates.items():
+            setattr(choice_question, attribute, value)
+        choice_question.save()
+        identifier = choice_question.identifier
+        options = list(choice_question.options.order_by("pk"))
+
+    response = client.post(
+        choice_question.urls.edit,
+        _choice_edit_data(choice_question, options, **overrides),
         follow=True,
     )
 
     assert response.status_code == 200
+    assert _choice_state(choice_question) == expected
     with scopes_disabled():
-        choice_question.refresh_from_db()
-        assert choice_question.variant == QuestionVariant.CHOICES
-        assert choice_question.options.count() == 2
-        assert choice_question.min_options == 3
+        assert Question.all_objects.get(pk=choice_question.pk).identifier == identifier
+
+
+@pytest.mark.parametrize(
+    ("question_updates", "overrides", "error"),
+    (
+        (
+            {"min_options": 3},
+            {"variant": "multiple_choice", "min_options": "3", "form-2-DELETE": "on"},
+            "only has 2 options",
+        ),
+        (
+            {},
+            {
+                "options": SimpleUploadedFile("opts.txt", b"Option A\nOption B"),
+                "form-0-answer_0": "Changed Option",
+            },
+            "cannot change the options and upload",
+        ),
+        (
+            {},
+            {"question_0": "Changed question text", "form-0-answer_0": ""},
+            "This field is required.",
+        ),
+    ),
+    ids=(
+        "delete_below_min_options",
+        "options_file_and_changed_formset",
+        "invalid_formset",
+    ),
+)
+def test_question_edit_choice_options_rejected(
+    client, event, choice_question, question_updates, overrides, error
+):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+    with scopes_disabled():
+        for attribute, value in question_updates.items():
+            setattr(choice_question, attribute, value)
+        choice_question.save()
+        options = list(choice_question.options.order_by("pk"))
+    state = _choice_state(choice_question)
+
+    response = client.post(
+        choice_question.urls.edit,
+        _choice_edit_data(choice_question, options, **overrides),
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert error in response.content.decode()
+    assert _choice_state(choice_question) == state
 
 
 def test_question_edit_switch_back_to_multiple_choice_shows_min_options_error(
@@ -1099,20 +918,9 @@ def test_question_edit_switch_back_to_multiple_choice_shows_min_options_error(
 
     response = client.post(
         choice_question.urls.edit,
-        {
-            "question_0": str(choice_question.question),
-            "variant": "multiple_choice",
-            "active": True,
-            "help_text_0": "",
-            "min_options": "3",
-            "question_required": QuestionRequired.OPTIONAL,
-            "form-TOTAL_FORMS": 2,
-            "form-INITIAL_FORMS": 2,
-            "form-0-id": options[0].pk,
-            "form-0-answer_0": str(options[0].answer),
-            "form-1-id": options[1].pk,
-            "form-1-answer_0": str(options[1].answer),
-        },
+        _choice_edit_data(
+            choice_question, options, variant="multiple_choice", min_options="3"
+        ),
         follow=True,
     )
 
@@ -1123,33 +931,29 @@ def test_question_edit_switch_back_to_multiple_choice_shows_min_options_error(
         assert choice_question.variant == QuestionVariant.CHOICES
 
 
-def test_question_delete(client, event, question):
+def test_question_toggle_and_delete(client, event, question):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
     client.force_login(user)
+    assert question.active
+
+    response = client.post(question.urls.toggle, follow=True)
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert not Question.all_objects.get(pk=question.pk).active
 
     response = client.get(question.urls.delete, follow=True)
     assert response.status_code == 200
     with scopes_disabled():
-        assert event.questions.count() == 1
+        assert Question.all_objects.filter(event=event).count() == 1
 
-    response = client.post(question.urls.delete, follow=True)
-
+    response = client.post(question.urls.toggle, follow=True)
     assert response.status_code == 200
     with scopes_disabled():
-        assert event.questions.count() == 0
-        assert Question.all_objects.filter(event=event).count() == 0
+        assert Question.all_objects.get(pk=question.pk).active
 
-
-def test_question_delete_inactive(client, event, inactive_question):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.post(inactive_question.urls.delete, follow=True)
-
+    response = client.post(question.urls.delete, follow=True)
     assert response.status_code == 200
     with scopes_disabled():
         assert Question.all_objects.filter(event=event).count() == 0
@@ -1173,39 +977,11 @@ def test_question_delete_answered_deactivates_instead(
         assert q.options.count() == 3
 
 
-def test_question_toggle_deactivate(client, event, question):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-    assert question.active
-
-    response = client.post(question.urls.toggle, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        q = Question.all_objects.get(pk=question.pk)
-        assert not q.active
-
-
-def test_question_toggle_activate(client, event, inactive_question):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.post(inactive_question.urls.toggle, follow=True)
-
-    assert response.status_code == 200
-    inactive_question.refresh_from_db()
-    assert inactive_question.active
-
-
 @pytest.mark.parametrize(
     ("role", "count"), (("accepted", 1), ("confirmed", 1), ("", 2))
 )
-def test_question_remind_submission_question(
-    client, event, question, remind_submissions, role, count
+def test_question_remind_sends_one_mail_per_speaker(
+    client, event, question, speaker_question, remind_submissions, role, count
 ):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -1221,89 +997,31 @@ def test_question_remind_submission_question(
         assert QueuedMail.objects.count() == original_count + count
 
 
-def test_question_remind_multiple_questions(
-    client, event, question, speaker_question, remind_submissions
-):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-    with scopes_disabled():
-        original_count = QueuedMail.objects.count()
-
-    response = client.post(event.cfp.urls.remind_questions, {"role": ""}, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert QueuedMail.objects.count() == original_count + 2
-
-
-def test_question_remind_answered_does_not_send(
+def test_question_remind_skips_invalid_role_and_answered_questions(
     client, event, question, remind_submissions
 ):
     confirmed_sub, _, submitted_sub, _ = remind_submissions
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
     with scopes_disabled():
-        AnswerFactory(submission=confirmed_sub, question=question, answer="something")
-        AnswerFactory(submission=submitted_sub, question=question, answer="something")
         original_count = QueuedMail.objects.count()
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    client.post(event.cfp.urls.remind_questions, {"role": ""}, follow=True)
-
-    with scopes_disabled():
-        assert QueuedMail.objects.count() == original_count
-
-
-def test_question_remind_invalid_role(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
 
     response = client.post(
         event.cfp.urls.remind_questions, {"role": "hahaha"}, follow=True
     )
-
     assert response.status_code == 200
-    content = response.content.decode()
-    assert "Could not send emails" in content
-
-
-def test_question_file_download_non_file_redirects(client, event, question):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.get(question.urls.download, follow=True)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "does not support file downloads" in content
-
-
-def test_question_file_download_creates_cached_file(client, event, file_question):
+    assert "Could not send emails" in response.content.decode()
     with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event)
-        submission.speakers.add(speaker)
-        answer = AnswerFactory(
-            submission=submission, question=file_question, answer="doc.pdf"
-        )
-        answer.answer_file.save("doc.pdf", ContentFile(b"pdf content"))
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-    initial_count = CachedFile.objects.count()
+        assert QueuedMail.objects.count() == original_count
+        AnswerFactory(submission=confirmed_sub, question=question, answer="something")
+        AnswerFactory(submission=submitted_sub, question=question, answer="something")
 
-    response = client.get(file_question.urls.download, follow=False)
-
+    response = client.post(event.cfp.urls.remind_questions, {"role": ""}, follow=True)
     assert response.status_code == 200
-    assert CachedFile.objects.count() == initial_count + 1
+    with scopes_disabled():
+        assert QueuedMail.objects.count() == original_count
 
 
 def test_question_file_download_generates_zip(client, event, file_question):
@@ -1319,11 +1037,13 @@ def test_question_file_download_generates_zip(client, event, file_question):
         event, can_change_event_settings=True, can_change_submissions=True
     )
     client.force_login(user)
+    initial_count = CachedFile.objects.count()
 
     response = client.get(file_question.urls.download)
 
     assert response.status_code == 200
     assert response["Content-Type"] == "application/zip"
+    assert CachedFile.objects.count() == initial_count + 1
     zip_content = b"".join(response.streaming_content)
     with ZipFile(BytesIO(zip_content), "r") as zf:
         names = zf.namelist()
@@ -1458,123 +1178,26 @@ def test_submission_type_list_query_count(
         assert str(st.name) in content
 
 
-def test_submission_type_create_page_shows_heading(client, event):
+def test_submission_type_pages_edit_and_make_default(client, event, submission_type):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
     client.force_login(user)
+    with scopes_disabled():
+        count = submission_type.logged_actions().count()
+        assert event.cfp.default_type != submission_type
 
     response = client.get(
         reverse("orga:cfp.types.create", kwargs={"event": event.slug})
     )
-
     assert response.status_code == 200
     assert "New session type" in response.content.decode()
 
-
-def test_submission_type_edit_page_shows_name_in_heading(
-    client, event, submission_type
-):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
     response = client.get(submission_type.urls.edit)
-
     assert response.status_code == 200
     assert f"Session type “{submission_type.name}”" in response.content.decode()
 
-
-def test_submission_type_make_default_confirm_page_names_type(
-    client, event, submission_type
-):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.get(submission_type.urls.default)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert str(submission_type.name) in content
-    assert f'href="{event.cfp.urls.types}"' in content
-
-
-def test_track_create_page_shows_heading(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.get(
-        reverse("orga:cfp.tracks.create", kwargs={"event": event.slug})
-    )
-
-    assert response.status_code == 200
-    assert "New track" in response.content.decode()
-
-
-def test_track_edit_page_shows_name_in_heading(client, event, track):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.get(track.urls.base)
-
-    assert response.status_code == 200
-    assert f"Track “{track.name}”" in response.content.decode()
-
-
-def test_submission_type_make_default(client, event, submission_type):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-    with scopes_disabled():
-        assert event.cfp.default_type != submission_type
-
-    response = client.post(submission_type.urls.default, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        event.cfp.refresh_from_db()
-        assert event.cfp.default_type_id == submission_type.pk
-
-
-def test_submission_type_edit(client, event, submission_type):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-    with scopes_disabled():
-        count = submission_type.logged_actions().count()
-
     response = client.post(
-        submission_type.urls.edit,
-        {"default_duration": 31, "slug": "New_Type", "name_0": "New Type!"},
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert submission_type.logged_actions().count() == count + 1
-        submission_type.refresh_from_db()
-    assert submission_type.default_duration == 31
-    assert str(submission_type.name) == "New Type!"
-
-
-def test_submission_type_edit_without_change_no_log(client, event, submission_type):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-    with scopes_disabled():
-        count = submission_type.logged_actions().count()
-
-    client.post(
         submission_type.urls.edit,
         {
             "default_duration": submission_type.default_duration,
@@ -1583,9 +1206,33 @@ def test_submission_type_edit_without_change_no_log(client, event, submission_ty
         },
         follow=True,
     )
-
+    assert response.status_code == 200
     with scopes_disabled():
         assert submission_type.logged_actions().count() == count
+
+    response = client.post(
+        submission_type.urls.edit,
+        {"default_duration": 31, "slug": "New_Type", "name_0": "New Type!"},
+        follow=True,
+    )
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert submission_type.logged_actions().count() == count + 1
+        submission_type.refresh_from_db(fields=["default_duration", "name"])
+    assert submission_type.default_duration == 31
+    assert str(submission_type.name) == "New Type!"
+
+    response = client.get(submission_type.urls.default)
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "New Type!" in content
+    assert f'href="{event.cfp.urls.types}"' in content
+
+    response = client.post(submission_type.urls.default, follow=True)
+    assert response.status_code == 200
+    with scopes_disabled():
+        event.cfp.refresh_from_db()
+        assert event.cfp.default_type_id == submission_type.pk
 
 
 def test_submission_type_delete(client, event, submission_type):
@@ -1594,7 +1241,24 @@ def test_submission_type_delete(client, event, submission_type):
     )
     client.force_login(user)
     with scopes_disabled():
+        default_type = event.cfp.default_type
+        submission = SubmissionFactory(event=event, submission_type=submission_type)
         assert event.submission_types.count() == 2
+    in_use = "This session type is in use in a proposal and cannot be deleted."
+
+    response = client.post(default_type.urls.delete, follow=True)
+    assert response.status_code == 200
+    assert in_use in response.content.decode()
+    with scopes_disabled():
+        assert event.submission_types.count() == 2
+
+    response = client.post(submission_type.urls.delete, follow=True)
+    assert response.status_code == 200
+    assert in_use in response.content.decode()
+    with scopes_disabled():
+        assert event.submission_types.count() == 2
+        submission.submission_type = default_type
+        submission.save(update_fields=["submission_type"])
 
     response = client.get(submission_type.urls.delete, follow=True)
     assert response.status_code == 200
@@ -1602,56 +1266,9 @@ def test_submission_type_delete(client, event, submission_type):
         assert event.submission_types.count() == 2
 
     response = client.post(submission_type.urls.delete, follow=True)
-
     assert response.status_code == 200
     with scopes_disabled():
-        assert event.submission_types.count() == 1
-
-
-def test_submission_type_delete_used_fails(client, event, submission_type):
-    with scopes_disabled():
-        SubmissionFactory(event=event, submission_type=submission_type)
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.post(submission_type.urls.delete, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert event.submission_types.count() == 2
-
-
-def test_submission_type_delete_last_fails(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-    with scopes_disabled():
-        last_type = event.cfp.default_type
-        assert event.submission_types.count() == 1
-
-    response = client.post(last_type.urls.delete, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert event.submission_types.count() == 1
-
-
-def test_submission_type_delete_default_fails(client, event, submission_type):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-    with scopes_disabled():
-        default = event.cfp.default_type
-
-    response = client.post(default.urls.delete, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert event.submission_types.count() == 2
+        assert list(event.submission_types.all()) == [default_type]
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -1672,51 +1289,58 @@ def test_track_list_query_count(client, event, django_assert_num_queries, item_c
         assert str(t.name) in content
 
 
-def test_track_detail_accessible(client, event, track):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.get(track.urls.base)
-
-    assert response.status_code == 200
-    assert str(track.name) in response.content.decode()
-
-
-def test_track_edit(client, event, track):
+def test_track_pages_edit_and_delete(client, event, track):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
     client.force_login(user)
     with scopes_disabled():
         count = track.logged_actions().count()
+
+    response = client.get(
+        reverse("orga:cfp.tracks.create", kwargs={"event": event.slug})
+    )
+    assert response.status_code == 200
+    assert "New track" in response.content.decode()
+
+    response = client.get(track.urls.base)
+    assert response.status_code == 200
+    assert f"Track “{track.name}”" in response.content.decode()
+
+    response = client.post(
+        track.urls.base, {"name_0": str(track.name), "color": track.color}, follow=True
+    )
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert track.logged_actions().count() == count
+
+    response = client.post(
+        track.urls.base, {"name_0": "Renamed", "color": "#fgff99"}, follow=True
+    )
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert track.logged_actions().count() == count
+        track.refresh_from_db(fields=["name"])
+    assert str(track.name) == "Test Track"
 
     response = client.post(
         track.urls.base, {"name_0": "Renamed", "color": "#ffff99"}, follow=True
     )
-
     assert response.status_code == 200
     with scopes_disabled():
         assert track.logged_actions().count() == count + 1
-        track.refresh_from_db()
+        track.refresh_from_db(fields=["name"])
     assert str(track.name) == "Renamed"
 
-
-def test_track_edit_without_change_no_log(client, event, track):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
+    response = client.get(track.urls.delete)
+    assert response.status_code == 200
     with scopes_disabled():
-        count = track.logged_actions().count()
+        assert event.tracks.count() == 1
 
-    client.post(
-        track.urls.base, {"name_0": str(track.name), "color": track.color}, follow=True
-    )
-
+    response = client.post(track.urls.delete, follow=True)
+    assert response.status_code == 200
     with scopes_disabled():
-        assert track.logged_actions().count() == count
+        assert event.tracks.count() == 0
 
 
 def test_track_edit_unset_signup_required_warns_and_pins_submissions(client, event):
@@ -1748,36 +1372,6 @@ def test_track_edit_unset_signup_required_warns_and_pins_submissions(client, eve
         submission.refresh_from_db()
     assert submission.attendee_signup_required is True
     assert b"were set to require attendees to sign up" in response.content
-
-
-def test_track_edit_invalid_color_rejected(client, event, track):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    client.post(track.urls.base, {"name_0": "Name", "color": "#fgff99"}, follow=True)
-
-    track.refresh_from_db()
-    assert str(track.name) != "Name"
-
-
-def test_track_delete(client, event, track):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.get(track.urls.delete)
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert event.tracks.count() == 1
-
-    response = client.post(track.urls.delete, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert event.tracks.count() == 0
 
 
 @pytest.mark.parametrize(
@@ -1833,18 +1427,6 @@ def test_access_code_list_query_count(
     assert f'href="{submission_type.urls.base}"' in content
 
 
-def test_access_code_detail_accessible(client, event, access_code):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.get(access_code.urls.edit)
-
-    assert response.status_code == 200
-    assert access_code.code in response.content.decode()
-
-
 def test_access_code_create(client, event):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -1855,44 +1437,21 @@ def test_access_code_create(client, event):
     assert response.status_code == 200
 
     response = client.post(
-        event.cfp.urls.new_access_code, {"code": "LOLCODE"}, follow=True
+        event.cfp.urls.new_access_code, {"code": "LOL %CODE"}, follow=True
     )
-
     assert response.status_code == 200
-    with scopes_disabled():
-        assert event.submitter_access_codes.get(code="LOLCODE")
-
-
-def test_access_code_create_forbidden_characters_rejected(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    client.post(event.cfp.urls.new_access_code, {"code": "LOL %CODE"}, follow=True)
-
     with scopes_disabled():
         assert event.submitter_access_codes.count() == 0
 
-
-def test_access_code_edit(client, event, access_code):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
+    response = client.post(
+        event.cfp.urls.new_access_code, {"code": "LOLCODE"}, follow=True
     )
-    client.force_login(user)
-    with scopes_disabled():
-        count = access_code.logged_actions().count()
-
-    response = client.post(access_code.urls.edit, {"code": "LOLCODE"}, follow=True)
-
     assert response.status_code == 200
     with scopes_disabled():
-        access_code.refresh_from_db()
-        assert access_code.logged_actions().count() == count + 1
-    assert access_code.code == "LOLCODE"
+        assert event.submitter_access_codes.get().code == "LOLCODE"
 
 
-def test_access_code_edit_without_change_no_log(client, event, access_code):
+def test_access_code_edit_and_delete(client, event, access_code):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -1900,21 +1459,25 @@ def test_access_code_edit_without_change_no_log(client, event, access_code):
     with scopes_disabled():
         count = access_code.logged_actions().count()
 
-    client.post(
+    response = client.get(access_code.urls.edit)
+    assert response.status_code == 200
+    assert access_code.code in response.content.decode()
+
+    response = client.post(
         access_code.urls.edit,
         {"code": access_code.code, "maximum_uses": access_code.maximum_uses},
         follow=True,
     )
-
+    assert response.status_code == 200
     with scopes_disabled():
         assert access_code.logged_actions().count() == count
 
-
-def test_access_code_delete(client, event, access_code):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
+    response = client.post(access_code.urls.edit, {"code": "LOLCODE"}, follow=True)
+    assert response.status_code == 200
+    with scopes_disabled():
+        access_code.refresh_from_db(fields=["code"])
+        assert access_code.logged_actions().count() == count + 1
+    assert access_code.code == "LOLCODE"
 
     response = client.get(access_code.urls.delete)
     assert response.status_code == 200
@@ -1922,7 +1485,6 @@ def test_access_code_delete(client, event, access_code):
         assert event.submitter_access_codes.count() == 1
 
     response = client.post(access_code.urls.delete, follow=True)
-
     assert response.status_code == 200
     with scopes_disabled():
         assert event.submitter_access_codes.count() == 0
@@ -1943,7 +1505,12 @@ def test_access_code_delete_used_fails(client, event, access_code):
         assert event.submitter_access_codes.count() == 1
 
 
-def test_access_code_send(client, event, access_code):
+def test_access_code_send(client, event, access_code, track):
+    with scopes_disabled():
+        access_code.valid_until = event.datetime_from
+        access_code.maximum_uses = 3
+        access_code.save()
+        access_code.tracks.add(track)
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -1952,6 +1519,9 @@ def test_access_code_send(client, event, access_code):
 
     response = client.get(access_code.urls.send, follow=True)
     assert response.status_code == 200
+    content = response.content.decode()
+    assert f"following track(s): {track.name}." in content
+    assert f"valid until {event.datetime_from.strftime('%Y-%m-%d %H:%M')}." in content
 
     response = client.post(
         access_code.urls.send,
@@ -2000,128 +1570,109 @@ def test_access_code_send_reports_dispatch_failure(
         )
 
 
-def test_access_code_send_with_restrictions(client, event, access_code, track):
-    with scopes_disabled():
-        access_code.valid_until = event.datetime_from
-        access_code.maximum_uses = 3
-        access_code.save()
-        access_code.tracks.add(track)
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.get(access_code.urls.send, follow=True)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert f"following track(s): {track.name}." in content
-    assert f"valid until {event.datetime_from.strftime('%Y-%m-%d %H:%M')}." in content
-
-
-def test_cfp_editor_main_view(client, event):
+def test_cfp_editor_pages(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
+    titles = {
+        "info": "Hey, nice to meet you!",
+        "questions": "Tell us more!",
+        "user": "That’s it about your proposal!",
+        "profile": "Tell us something about yourself!",
+    }
 
     response = client.get(event.cfp.urls.editor)
-
     assert response.status_code == 200
     assert b"submission-steps" in response.content
 
-
-@pytest.mark.parametrize(
-    ("step", "expected_title"),
-    (
-        ("info", "Hey, nice to meet you!"),
-        ("questions", "Tell us more!"),
-        ("user", "That’s it about your proposal!"),
-        ("profile", "Tell us something about yourself!"),
-    ),
-)
-def test_cfp_editor_step_view(client, event, step, expected_title):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse("orga:cfp.editor.step", kwargs={"event": event.slug, "step": step})
-    response = client.get(url)
-
-    assert response.status_code == 200
-    assert expected_title in response.content.decode()
-
-
-def test_cfp_editor_step_invalid(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
+    for step, expected_title in titles.items():
+        response = client.get(
+            reverse("orga:cfp.editor.step", kwargs={"event": event.slug, "step": step})
+        )
+        assert response.status_code == 200
+        assert expected_title in response.content.decode()
 
     url = reverse(
         "orga:cfp.editor.step", kwargs={"event": event.slug, "step": "nonexistent"}
     )
     response = client.get(url)
-
     assert response.status_code == 200
     assert b"Step not found" in response.content
 
+    response = client.get(f"{url}?edit_header=1")
+    assert response.status_code == 200
+    assert response.context["error"] == "Step not found"
 
-def test_cfp_editor_add_field(client):
+
+def test_cfp_editor_field_toggle(client):
     event = EventFactory(cfp__fields={"duration": {"visibility": "do_not_ask"}})
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event, target=QuestionTarget.SUBMISSION, variant="text", active=False
+        )
+        event.cfp.fields.pop("resources", None)
+        event.cfp.save()
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
-
-    url = reverse(
+    add_url = reverse(
         "orga:cfp.editor.field_toggle",
         kwargs={"event": event.slug, "step": "info", "action": "add"},
     )
-    response = client.post(url, {"field": "duration"})
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        event = Event.objects.get(slug=event.slug)
-        assert event.cfp.fields["duration"]["visibility"] == "optional"
-
-
-def test_cfp_editor_remove_field(client):
-    event = EventFactory(cfp__fields={"duration": {"visibility": "optional"}})
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
+    remove_url = reverse(
         "orga:cfp.editor.field_toggle",
         kwargs={"event": event.slug, "step": "info", "action": "remove"},
     )
-    response = client.post(url, {"field": "duration"})
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        event = Event.objects.get(slug=event.slug)
-        assert event.cfp.fields["duration"]["visibility"] == "do_not_ask"
-
-
-def test_cfp_editor_toggle_missing_field_returns_400(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
+    question_add_url = reverse(
         "orga:cfp.editor.field_toggle",
-        kwargs={"event": event.slug, "step": "info", "action": "add"},
+        kwargs={"event": event.slug, "step": "questions", "action": "add"},
     )
-    response = client.post(url, {})
+    question_remove_url = reverse(
+        "orga:cfp.editor.field_toggle",
+        kwargs={"event": event.slug, "step": "questions", "action": "remove"},
+    )
 
+    response = client.post(add_url, {})
     assert response.status_code == 400
     assert b"No field provided" in response.content
 
-
-def test_cfp_editor_toggle_invalid_action_returns_400(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:cfp.editor.field_toggle",
-        kwargs={"event": event.slug, "step": "info", "action": "invalid"},
+    response = client.post(
+        reverse(
+            "orga:cfp.editor.field_toggle",
+            kwargs={"event": event.slug, "step": "info", "action": "invalid"},
+        ),
+        {"field": "duration"},
     )
-    response = client.post(url, {"field": "duration"})
-
     assert response.status_code == 400
     assert b"Invalid action" in response.content
+
+    response = client.post(add_url, {"field": "totally_nonexistent_field"})
+    assert response.status_code == 400
+    assert b"Invalid field key" in response.content
+
+    response = client.post(question_add_url, {"field": "question_99999"})
+    assert response.status_code == 404
+    assert b"Question not found" in response.content
+
+    response = client.post(add_url, {"field": "duration"})
+    assert response.status_code == 200
+    assert _cfp_fields(event)["duration"]["visibility"] == "optional"
+
+    response = client.post(remove_url, {"field": "duration"})
+    assert response.status_code == 200
+    assert _cfp_fields(event)["duration"]["visibility"] == "do_not_ask"
+
+    response = client.post(add_url, {"field": "resources"})
+    assert response.status_code == 200
+    assert _cfp_fields(event)["resources"]["visibility"] == "optional"
+
+    response = client.post(question_add_url, {"field": f"question_{question.pk}"})
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert Question.all_objects.get(pk=question.pk).active is True
+
+    response = client.post(question_remove_url, {"field": f"question_{question.pk}"})
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert Question.all_objects.get(pk=question.pk).active is False
 
 
 def test_cfp_editor_profile_name_field_always_included(client, event):
@@ -2148,79 +1699,7 @@ def test_cfp_editor_profile_name_field_always_included(client, event):
     assert name_pos < biography_pos
 
 
-def test_cfp_editor_add_question(client, event):
-    with scopes_disabled():
-        question = QuestionFactory(
-            event=event, target=QuestionTarget.SUBMISSION, variant="text", active=False
-        )
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:cfp.editor.field_toggle",
-        kwargs={"event": event.slug, "step": "questions", "action": "add"},
-    )
-    response = client.post(url, {"field": f"question_{question.pk}"})
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        question = Question.all_objects.get(pk=question.pk)
-        assert question.active is True
-
-
-def test_cfp_editor_remove_question(client, event):
-    with scopes_disabled():
-        question = QuestionFactory(
-            event=event, target=QuestionTarget.SUBMISSION, variant="text", active=True
-        )
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:cfp.editor.field_toggle",
-        kwargs={"event": event.slug, "step": "questions", "action": "remove"},
-    )
-    response = client.post(url, {"field": f"question_{question.pk}"})
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        question = Question.all_objects.get(pk=question.pk)
-        assert question.active is False
-
-
-def test_cfp_editor_reorder_fields(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:cfp.editor.reorder", kwargs={"event": event.slug, "step": "info"}
-    )
-    response = client.post(url, {"order": "abstract,title,description"})
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        event = Event.objects.get(slug=event.slug)
-        flow_config = event.cfp.settings.get("flow", {})
-        step_config = flow_config.get("steps", {}).get("info", {})
-        fields = step_config.get("fields", [])
-        field_keys = [f.get("key") for f in fields]
-        assert field_keys[:3] == ["abstract", "title", "description"]
-
-
-def test_cfp_editor_reorder_no_order_returns_400(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:cfp.editor.reorder", kwargs={"event": event.slug, "step": "info"}
-    )
-    response = client.post(url, {})
-
-    assert response.status_code == 400
-    assert b"No order provided" in response.content
-
-
-def test_cfp_editor_reorder_questions(client, event):
+def test_cfp_editor_reorder(client, event):
     with scopes_disabled():
         q1 = QuestionFactory(
             event=event, target=QuestionTarget.SUBMISSION, variant="text", position=0
@@ -2230,82 +1709,123 @@ def test_cfp_editor_reorder_questions(client, event):
         )
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
-
-    url = reverse(
+    info_url = reverse(
+        "orga:cfp.editor.reorder", kwargs={"event": event.slug, "step": "info"}
+    )
+    questions_url = reverse(
         "orga:cfp.editor.reorder",
         kwargs={"event": event.slug, "step": "questions_submission"},
     )
-    response = client.post(url, {"order": f"question_{q2.pk},question_{q1.pk}"})
 
+    response = client.post(info_url, {})
+    assert response.status_code == 400
+    assert b"No order provided" in response.content
+
+    response = client.post(info_url, {"order": "abstract,title,description"})
     assert response.status_code == 200
     with scopes_disabled():
-        q1.refresh_from_db()
-        q2.refresh_from_db()
-        assert q2.position == 0
-        assert q1.position == 1
+        event = Event.objects.get(slug=event.slug)
+        fields = event.cfp.settings["flow"]["steps"]["info"]["fields"]
+    assert [f.get("key") for f in fields][:3] == ["abstract", "title", "description"]
 
-
-def test_cfp_editor_reorder_invalid_question_id(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:cfp.editor.reorder",
-        kwargs={"event": event.slug, "step": "questions_submission"},
+    response = client.post(
+        questions_url, {"order": f"question_{q2.pk},question_{q1.pk}"}
     )
-    response = client.post(url, {"order": "question_invalid,question_abc"})
-
     assert response.status_code == 200
-    assert b"success" in response.content
+    assert _positions(q1, q2) == [1, 0]
+
+    for order in ("question_invalid,question_abc", "question_99999"):
+        response = client.post(questions_url, {"order": order})
+        assert response.status_code == 200
+        assert b"success" in response.content
+    assert _positions(q1, q2) == [1, 0]
+
+    response = client.post(questions_url, {"order": f"not_a_question,question_{q2.pk}"})
+    assert response.status_code == 200
+    assert _positions(q1, q2) == [1, 1]
 
 
-def test_cfp_editor_field_modal_get(client, event):
+def test_cfp_editor_field_modal(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
-
-    url = reverse(
+    with scopes_disabled():
+        event.cfp.fields.pop("description", None)
+        event.cfp.save()
+    abstract_url = reverse(
         "orga:cfp.editor.field",
         kwargs={"event": event.slug, "step": "info", "field_key": "abstract"},
     )
-    response = client.get(url)
 
+    response = client.get(abstract_url)
     assert response.status_code == 200
     content = response.content.decode()
     assert "Abstract" in content
     assert 'name="visibility"' in content
+    assert 'name="label_0"' in content
+    assert 'name="label_1"' not in content
 
-
-def test_cfp_editor_field_modal_post(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:cfp.editor.field",
-        kwargs={"event": event.slug, "step": "info", "field_key": "abstract"},
+    response = client.get(
+        reverse(
+            "orga:cfp.editor.field",
+            kwargs={
+                "event": event.slug,
+                "step": "info",
+                "field_key": "nonexistent_field",
+            },
+        )
     )
-    response = client.post(
-        url, {"visibility": "required", "min_length": "50", "max_length": "500"}
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        event = Event.objects.get(slug=event.slug)
-        assert event.cfp.fields["abstract"]["visibility"] == "required"
-        assert event.cfp.fields["abstract"]["min_length"] == 50
-        assert event.cfp.fields["abstract"]["max_length"] == 500
-
-
-def test_cfp_editor_field_modal_invalid_field_returns_404(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:cfp.editor.field",
-        kwargs={"event": event.slug, "step": "info", "field_key": "nonexistent_field"},
-    )
-    response = client.get(url)
-
     assert response.status_code == 404
+
+    response = client.post(
+        abstract_url,
+        {
+            "visibility": "required",
+            "min_length": "50",
+            "max_length": "500",
+            "label_0": "Custom Abstract Label",
+            "help_text_0": "<img src=x onerror=alert(1337)>",
+        },
+    )
+    assert response.status_code == 200
+    fields = _cfp_fields(event)
+    assert fields["abstract"]["visibility"] == "required"
+    assert fields["abstract"]["min_length"] == 50
+    assert fields["abstract"]["max_length"] == 500
+
+    response = client.post(
+        reverse(
+            "orga:cfp.editor.field",
+            kwargs={"event": event.slug, "step": "info", "field_key": "description"},
+        ),
+        {"visibility": "optional", "min_length": "10", "max_length": "200"},
+    )
+    assert response.status_code == 200
+    fields = _cfp_fields(event)
+    assert fields["description"]["visibility"] == "optional"
+    assert fields["description"]["min_length"] == 10
+
+    response = client.post(
+        reverse(
+            "orga:cfp.editor.field",
+            kwargs={
+                "event": event.slug,
+                "step": "info",
+                "field_key": "additional_speaker",
+            },
+        ),
+        {"visibility": "optional", "max": "5"},
+    )
+    assert response.status_code == 200
+    assert _cfp_fields(event)["additional_speaker"]["max"] == 5
+
+    response = client.get(
+        reverse("orga:cfp.editor.step", kwargs={"event": event.slug, "step": "info"})
+    )
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Custom Abstract Label" in content
+    assert "<img src=x onerror=alert(1337)>" not in content
+    assert "onerror=alert(1337)" in content
 
 
 def test_cfp_editor_field_modal_multilingual(client):
@@ -2320,45 +1840,33 @@ def test_cfp_editor_field_modal_multilingual(client):
     response = client.get(url)
 
     assert response.status_code == 200
-    assert b"label" in response.content.lower()
+    content = response.content.decode()
+    assert 'name="label_0"' in content
+    assert 'name="label_1"' in content
 
 
 def test_cfp_editor_tags_field_modal(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
-
     url = reverse(
         "orga:cfp.editor.field",
         kwargs={"event": event.slug, "step": "info", "field_key": "tags"},
     )
-    response = client.post(
-        url, {"visibility": "optional", "min_number": "1", "max_number": "5"}
-    )
 
-    assert response.status_code == 200
-    with scopes_disabled():
-        event = Event.objects.get(slug=event.slug)
-        assert event.cfp.fields["tags"]["visibility"] == "optional"
-        assert event.cfp.fields["tags"]["min"] == 1
-        assert event.cfp.fields["tags"]["max"] == 5
-
-
-def test_cfp_editor_tags_field_modal_min_greater_than_max(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:cfp.editor.field",
-        kwargs={"event": event.slug, "step": "info", "field_key": "tags"},
-    )
     response = client.post(
         url, {"visibility": "optional", "min_number": "5", "max_number": "2"}
     )
-
     assert response.status_code == 200
-    with scopes_disabled():
-        reloaded_event = Event.objects.get(slug=event.slug)
-        assert reloaded_event.cfp.fields["tags"].get("min") != 5
+    assert _cfp_fields(event)["tags"].get("min") != 5
+
+    response = client.post(
+        url, {"visibility": "optional", "min_number": "1", "max_number": "5"}
+    )
+    assert response.status_code == 200
+    fields = _cfp_fields(event)
+    assert fields["tags"]["visibility"] == "optional"
+    assert fields["tags"]["min"] == 1
+    assert fields["tags"]["max"] == 5
 
 
 def test_cfp_editor_question_modal(client, event):
@@ -2367,84 +1875,75 @@ def test_cfp_editor_question_modal(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
-    url = reverse(
-        "orga:cfp.editor.question",
-        kwargs={"event": event.slug, "question_id": question.pk},
+    response = client.get(
+        reverse(
+            "orga:cfp.editor.question",
+            kwargs={"event": event.slug, "question_id": question.pk},
+        )
     )
-    response = client.get(url)
-
     assert response.status_code == 200
     assert b"Test Question" in response.content
 
-
-def test_cfp_editor_question_modal_nonexistent_returns_404(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:cfp.editor.question", kwargs={"event": event.slug, "question_id": 99999}
+    response = client.get(
+        reverse(
+            "orga:cfp.editor.question",
+            kwargs={"event": event.slug, "question_id": 99999},
+        )
     )
-    response = client.get(url)
-
     assert response.status_code == 404
 
 
-def test_cfp_editor_step_header_edit(client, event):
+def test_cfp_editor_step_header_edit_and_clear(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
-
     url = reverse("orga:cfp.editor.step", kwargs={"event": event.slug, "step": "info"})
-    response = client.get(url + "?edit_header=1")
+
+    response = client.get(f"{url}?edit_header=1")
     assert response.status_code == 200
 
     response = client.post(url, {"title_0": "Custom Title", "text_0": "Custom text"})
-
     assert response.status_code == 200
     with scopes_disabled():
         event = Event.objects.get(slug=event.slug)
-        flow_config = event.cfp.settings.get("flow", {})
-        step_config = flow_config.get("steps", {}).get("info", {})
-        title = step_config.get("title")
-        text = step_config.get("text")
-        assert title.get("en") == "Custom Title"
-        assert text.get("en") == "Custom text"
+        step_config = event.cfp.settings["flow"]["steps"]["info"]
+    assert step_config["title"]["en"] == "Custom Title"
+    assert step_config["text"]["en"] == "Custom text"
 
-
-def test_cfp_editor_step_header_clear_custom(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-    url = reverse("orga:cfp.editor.step", kwargs={"event": event.slug, "step": "info"})
-
-    client.post(url, {"title_0": "Custom Title", "text_0": "Custom text"})
     response = client.post(url, {"title_0": "", "text_0": ""})
-
     assert response.status_code == 200
     with scopes_disabled():
         event = Event.objects.get(slug=event.slug)
-        flow_config = event.cfp.settings.get("flow", {})
-        step_config = flow_config.get("steps", {}).get("info", {})
-        title = step_config.get("title")
-        assert not any(title.values()) or title.get("en") == ""
+        step_config = event.cfp.settings["flow"]["steps"]["info"]
+    title = step_config.get("title")
+    assert not any(title.values()) or title.get("en") == ""
 
 
-def test_cfp_editor_tags_auto_hidden_without_public_tags(client):
-    event = EventFactory(cfp__fields={"tags": {"visibility": "optional"}})
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse("orga:cfp.editor.step", kwargs={"event": event.slug, "step": "info"})
-    response = client.get(url)
-
-    assert response.status_code == 200
-    assert b"Currently hidden" in response.content
-    assert b"no public tags exist" in response.content
-
-
-def test_cfp_editor_track_auto_hidden_without_tracks(client):
-    event = EventFactory(
-        feature_flags={"use_tracks": True},
-        cfp__fields={"track": {"visibility": "optional"}},
-    )
+@pytest.mark.parametrize(
+    ("event_kwargs", "expected"),
+    (
+        (
+            {"cfp__fields": {"tags": {"visibility": "optional"}}},
+            b"no public tags exist",
+        ),
+        (
+            {
+                "feature_flags": {"use_tracks": True},
+                "cfp__fields": {"track": {"visibility": "optional"}},
+            },
+            b"no tracks exist",
+        ),
+        (
+            {
+                "feature_flags": {"use_tracks": False},
+                "cfp__fields": {"track": {"visibility": "optional"}},
+            },
+            b"tracks are disabled",
+        ),
+    ),
+    ids=("tags_without_public_tags", "track_without_tracks", "track_disabled"),
+)
+def test_cfp_editor_auto_hidden_fields(client, event_kwargs, expected):
+    event = EventFactory(**event_kwargs)
     with scopes_disabled():
         event.tracks.all().delete()
     user = make_orga_user(event, can_change_event_settings=True)
@@ -2455,23 +1954,7 @@ def test_cfp_editor_track_auto_hidden_without_tracks(client):
 
     assert response.status_code == 200
     assert b"Currently hidden" in response.content
-    assert b"no tracks exist" in response.content
-
-
-def test_cfp_editor_track_auto_hidden_when_disabled(client):
-    event = EventFactory(
-        feature_flags={"use_tracks": False},
-        cfp__fields={"track": {"visibility": "optional"}},
-    )
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse("orga:cfp.editor.step", kwargs={"event": event.slug, "step": "info"})
-    response = client.get(url)
-
-    assert response.status_code == 200
-    assert b"Currently hidden" in response.content
-    assert b"tracks are disabled" in response.content
+    assert expected in response.content
 
 
 def test_cfp_editor_reset(client):
@@ -2493,48 +1976,6 @@ def test_cfp_editor_reset(client):
             event.cfp.logged_actions().filter(action_type="pretalx.cfp.reset").count()
             == 1
         )
-
-
-def test_cfp_text_post_without_changes_no_log(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-    data = {
-        "headline_0": "stable headline",
-        "text_0": "",
-        "deadline": "",
-        "count_length_in": "chars",
-    }
-
-    client.post(event.cfp.urls.edit_text, data, follow=True)
-    with scopes_disabled():
-        log_count = event.cfp.logged_actions().count()
-
-    response = client.post(event.cfp.urls.edit_text, data, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert event.cfp.logged_actions().count() == log_count
-
-
-def test_question_update_with_next_url_redirects(client, event, question):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    response = client.post(
-        question.urls.edit + f"?next={event.cfp.urls.questions}",
-        {
-            "question_0": str(question.question),
-            "variant": question.variant,
-            "active": True,
-            "help_text_0": "",
-            "question_required": QuestionRequired.OPTIONAL,
-        },
-    )
-
-    assert response.status_code == 302
-    assert response.url == event.cfp.urls.questions
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -2572,6 +2013,9 @@ def test_question_edit_choice_options_reorder(client, event, choice_question):
         options = list(choice_question.options.order_by("pk"))
         assert len(options) == 3
 
+    response = client.post(choice_question.urls.base, {})
+    assert response.status_code == 400
+
     response = client.post(
         choice_question.urls.base,
         {"order": f"{options[2].pk},{options[0].pk},{options[1].pk}"},
@@ -2586,370 +2030,6 @@ def test_question_edit_choice_options_reorder(client, event, choice_question):
     assert options[2].position == 0
     assert options[0].position == 1
     assert options[1].position == 2
-
-
-def test_question_edit_choice_with_options_and_file_conflict(
-    client, event, choice_question
-):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    options_file = SimpleUploadedFile("opts.txt", b"Option A\nOption B")
-    with scopes_disabled():
-        first_option = choice_question.options.first()
-
-    response = client.post(
-        choice_question.urls.edit,
-        {
-            "question_0": str(choice_question.question),
-            "variant": "choices",
-            "active": True,
-            "help_text_0": "",
-            "question_required": QuestionRequired.OPTIONAL,
-            "options": options_file,
-            "form-TOTAL_FORMS": 1,
-            "form-INITIAL_FORMS": 1,
-            "form-0-id": first_option.pk,
-            "form-0-answer_0": "Changed Option",
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "cannot change the options and upload" in content
-
-
-def test_question_edit_choice_with_options_file_and_unchanged_formset(
-    client, event, choice_question
-):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    options_file = SimpleUploadedFile("opts.txt", b"Option A\nOption B")
-    with scopes_disabled():
-        options = list(choice_question.options.order_by("pk"))
-        original_answers = {str(opt.answer) for opt in options}
-
-    response = client.post(
-        choice_question.urls.edit,
-        {
-            "question_0": str(choice_question.question),
-            "variant": "choices",
-            "active": True,
-            "help_text_0": "",
-            "question_required": QuestionRequired.OPTIONAL,
-            "options": options_file,
-            "form-TOTAL_FORMS": 3,
-            "form-INITIAL_FORMS": 3,
-            "form-0-id": options[0].pk,
-            "form-0-answer_0": str(options[0].answer),
-            "form-1-id": options[1].pk,
-            "form-1-answer_0": str(options[1].answer),
-            "form-2-id": options[2].pk,
-            "form-2-answer_0": str(options[2].answer),
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        choice_question.refresh_from_db()
-        answers = {str(opt.answer) for opt in choice_question.options.all()}
-    assert answers == original_answers | {"Option A", "Option B"}
-
-
-def test_question_edit_choice_with_invalid_formset_stays_on_page(
-    client, event, choice_question
-):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-    with scopes_disabled():
-        first_option = choice_question.options.first()
-        original_question_text = str(choice_question.question)
-
-    response = client.post(
-        choice_question.urls.edit,
-        {
-            "question_0": "Changed question text",
-            "variant": "choices",
-            "active": True,
-            "help_text_0": "",
-            "question_required": QuestionRequired.OPTIONAL,
-            "form-TOTAL_FORMS": 1,
-            "form-INITIAL_FORMS": 1,
-            "form-0-id": first_option.pk,
-            "form-0-answer_0": "",
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        choice_question.refresh_from_db()
-        assert str(choice_question.question) == original_question_text
-
-
-def test_question_edit_choice_unchanged_option_in_formset(
-    client, event, choice_question
-):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-    with scopes_disabled():
-        options = list(choice_question.options.order_by("pk"))
-
-    response = client.post(
-        choice_question.urls.edit,
-        {
-            "question_0": "Changed question text",
-            "variant": "choices",
-            "active": True,
-            "help_text_0": "",
-            "question_required": QuestionRequired.OPTIONAL,
-            "form-TOTAL_FORMS": 3,
-            "form-INITIAL_FORMS": 3,
-            "form-0-id": options[0].pk,
-            "form-0-answer_0": str(options[0].answer),
-            "form-1-id": options[1].pk,
-            "form-1-answer_0": str(options[1].answer),
-            "form-2-id": options[2].pk,
-            "form-2-answer_0": str(options[2].answer),
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        choice_question.refresh_from_db()
-        assert str(choice_question.question) == "Changed question text"
-        assert choice_question.options.count() == 3
-
-
-def test_cfp_editor_step_header_edit_invalid_step(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:cfp.editor.step", kwargs={"event": event.slug, "step": "nonexistent"}
-    )
-    response = client.get(url + "?edit_header=1")
-
-    assert response.status_code == 200
-    assert response.context["error"] == "Step not found"
-
-
-def test_cfp_editor_reorder_question_nonexistent_id(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:cfp.editor.reorder",
-        kwargs={"event": event.slug, "step": "questions_submission"},
-    )
-    response = client.post(url, {"order": "question_99999"})
-
-    assert response.status_code == 200
-    assert b"success" in response.content
-
-
-def test_cfp_editor_reorder_question_with_non_question_keys(client, event):
-    with scopes_disabled():
-        q = QuestionFactory(
-            event=event, target=QuestionTarget.SUBMISSION, variant="text", position=0
-        )
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:cfp.editor.reorder",
-        kwargs={"event": event.slug, "step": "questions_submission"},
-    )
-    response = client.post(url, {"order": f"not_a_question,question_{q.pk}"})
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        q.refresh_from_db()
-        assert q.position == 1
-
-
-def test_cfp_editor_toggle_nonexistent_question_returns_404(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:cfp.editor.field_toggle",
-        kwargs={"event": event.slug, "step": "questions", "action": "add"},
-    )
-    response = client.post(url, {"field": "question_99999"})
-
-    assert response.status_code == 404
-    assert b"Question not found" in response.content
-
-
-def test_cfp_editor_toggle_invalid_field_key_returns_400(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:cfp.editor.field_toggle",
-        kwargs={"event": event.slug, "step": "info", "action": "add"},
-    )
-    response = client.post(url, {"field": "totally_nonexistent_field"})
-
-    assert response.status_code == 400
-    assert b"Invalid field key" in response.content
-
-
-def test_cfp_editor_toggle_field_not_in_cfp_fields_initializes(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-    with scopes_disabled():
-        cfp = event.cfp
-        cfp.fields.pop("resources", None)
-        cfp.save()
-
-    url = reverse(
-        "orga:cfp.editor.field_toggle",
-        kwargs={"event": event.slug, "step": "info", "action": "add"},
-    )
-    response = client.post(url, {"field": "resources"})
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        event = Event.objects.get(slug=event.slug)
-        assert event.cfp.fields["resources"]["visibility"] == "optional"
-
-
-def test_cfp_editor_field_modal_post_field_not_in_cfp_fields(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-    with scopes_disabled():
-        cfp = event.cfp
-        cfp.fields.pop("description", None)
-        cfp.save()
-
-    url = reverse(
-        "orga:cfp.editor.field",
-        kwargs={"event": event.slug, "step": "info", "field_key": "description"},
-    )
-    response = client.post(
-        url, {"visibility": "optional", "min_length": "10", "max_length": "200"}
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        event = Event.objects.get(slug=event.slug)
-        assert event.cfp.fields["description"]["visibility"] == "optional"
-        assert event.cfp.fields["description"]["min_length"] == 10
-
-
-def test_cfp_editor_additional_speaker_field_max(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:cfp.editor.field",
-        kwargs={"event": event.slug, "step": "info", "field_key": "additional_speaker"},
-    )
-    response = client.post(url, {"visibility": "optional", "max": "5"})
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        event = Event.objects.get(slug=event.slug)
-        assert event.cfp.fields["additional_speaker"]["max"] == 5
-
-
-def test_cfp_editor_field_modal_with_custom_label(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    field_url = reverse(
-        "orga:cfp.editor.field",
-        kwargs={"event": event.slug, "step": "info", "field_key": "abstract"},
-    )
-    response = client.post(
-        field_url,
-        {
-            "visibility": "required",
-            "min_length": "",
-            "max_length": "",
-            "label_0": "Custom Abstract Label",
-            "help_text_0": "Custom help text here",
-        },
-    )
-    assert response.status_code == 200
-
-    step_url = reverse(
-        "orga:cfp.editor.step", kwargs={"event": event.slug, "step": "info"}
-    )
-    response = client.get(step_url)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "Custom Abstract Label" in content
-
-
-def test_cfp_editor_field_help_text_is_sanitized(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    field_url = reverse(
-        "orga:cfp.editor.field",
-        kwargs={"event": event.slug, "step": "info", "field_key": "abstract"},
-    )
-    client.post(
-        field_url,
-        {
-            "visibility": "required",
-            "min_length": "",
-            "max_length": "",
-            "label_0": "Abstract",
-            "help_text_0": "<img src=x onerror=alert(1337)>",
-        },
-    )
-
-    step_url = reverse(
-        "orga:cfp.editor.step", kwargs={"event": event.slug, "step": "info"}
-    )
-    content = client.get(step_url).content.decode()
-
-    assert "<img src=x onerror=alert(1337)>" not in content
-    assert "onerror=alert(1337)" in content
-
-
-def test_question_detail_with_all_base_search_url_filters(
-    client, event, question, track, submission_type
-):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    with scopes_disabled():
-        submission = SubmissionFactory(
-            event=event, state="accepted", track=track, submission_type=submission_type
-        )
-        AnswerFactory(submission=submission, question=question, answer="3")
-    client.force_login(user)
-
-    url = (
-        question.urls.base
-        + f"?role=accepted&track={track.pk}&submission_type={submission_type.pk}"
-    )
-    response = client.get(url, follow=True)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "state=accepted" in content
-    assert "state=confirmed" in content
-    assert f"track={track.pk}" in content
-    assert f"submission_type={submission_type.pk}" in content
 
 
 def test_question_update_without_view_permission_redirects_to_list(client, event):
@@ -2976,60 +2056,3 @@ def test_question_update_without_view_permission_redirects_to_list(client, event
 
     assert response.status_code == 302
     assert response.url == list_url
-
-
-def test_question_detail_post_without_order_returns_400(client, event, question):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    url = reverse(
-        "orga:cfp.questions.detail", kwargs={"event": event.slug, "pk": question.pk}
-    )
-    response = client.post(url, {})
-
-    assert response.status_code == 400
-
-
-def test_cfp_text_post_logs_cfp_and_event_changes(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    response = client.post(
-        event.cfp.urls.edit_text,
-        {
-            "headline_0": "new headline",
-            "text_0": "",
-            "deadline": "",
-            "count_length_in": "words",
-            "show_deadline": "on",
-            "settings-mail_on_new_submission": "on",
-            "settings-speakers_can_edit_submissions": "on",
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        cfp_log = (
-            event.cfp.logged_actions()
-            .filter(action_type="pretalx.cfp.update")
-            .latest("timestamp")
-        )
-        event_log = ActivityLog.objects.filter(
-            event=event, action_type="pretalx.event.update"
-        ).latest("timestamp")
-    assert cfp_log.data["changes"]["settings.count_length_in"] == {
-        "old": "chars",
-        "new": "words",
-    }
-    assert cfp_log.data["changes"]["headline"]["new"] == {"en": "new headline"}
-    assert event_log.data["changes"]["feature_flags.submission_public_review"] == {
-        "old": True,
-        "new": False,
-    }
-    assert event_log.data["changes"]["mail_settings.mail_on_new_submission"] == {
-        "old": False,
-        "new": True,
-    }

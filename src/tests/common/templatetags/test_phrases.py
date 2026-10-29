@@ -7,11 +7,8 @@ from pretalx.common.templatetags.phrases import phrase
 pytestmark = pytest.mark.unit
 
 
-def test_phrase_without_kwargs():
-    result = phrase("phrases.base.save")
-    assert str(result) == "Save"
-
-
-def test_phrase_with_kwargs():
-    result = phrase("phrases.schedule.timezone_hint", tz="Europe/Berlin")
-    assert "Europe/Berlin" in str(result)
+def test_phrase_formats_kwargs():
+    assert str(phrase("phrases.base.save")) == "Save"
+    assert "Europe/Berlin" in str(
+        phrase("phrases.schedule.timezone_hint", tz="Europe/Berlin")
+    )

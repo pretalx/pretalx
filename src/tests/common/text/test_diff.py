@@ -35,90 +35,115 @@ def test_detect_markdown_rejects_non_markdown(text):
 
 
 @pytest.mark.parametrize(
-    ("old", "new"),
+    ("old", "new", "kwargs", "expected"),
     (
-        (None, None),
-        (None, "new text"),
-        ("old text", None),
-        ("", "new text"),
-        ("old text", ""),
+        (None, None, {}, {"is_diff": False}),
+        (None, "new text", {}, {"is_diff": False}),
+        ("old text", None, {}, {"is_diff": False}),
+        ("", "new text", {}, {"is_diff": False}),
+        ("old text", "", {}, {"is_diff": False}),
+        (42, 99, {}, {"is_diff": False}),
+        ("hi", "hello world", {"threshold": 200}, {"is_diff": False}),
+        (
+            "**bold**",
+            None,
+            {},
+            {"is_diff": False, "old_html": "<p><strong>bold</strong></p>"},
+        ),
+        (
+            None,
+            "**bold**",
+            {},
+            {"is_diff": False, "new_html": "<p><strong>bold</strong></p>"},
+        ),
+        (None, "# header {\n}", {"markdown": False}, {"is_diff": False}),
+    ),
+    ids=(
+        "both_none",
+        "old_none",
+        "new_none",
+        "old_empty",
+        "new_empty",
+        "non_strings",
+        "below_threshold",
+        "old_markdown",
+        "new_markdown",
+        "plain_without_markdown",
     ),
 )
-def test_render_diff_returns_no_diff_for_missing_values(old, new):
-    result = render_diff(old, new)
-    assert result["is_diff"] is False
-
-
-def test_render_diff_produces_diff_for_two_strings():
-    result = render_diff("hello world", "hello there")
-
-    assert result["is_diff"] is True
-    assert str(result["old_html"]) == "hello <del>world</del>"
-    assert str(result["new_html"]) == "hello <ins>there</ins>"
-
-
-def test_render_diff_keeps_surrounding_whitespace():
-    result = render_diff("  hello world  ", "  hello there  ")
-
-    assert result["is_diff"] is True
-    assert str(result["old_html"]) == "  hello <del>world</del>  "
-    assert str(result["new_html"]) == "  hello <ins>there</ins>  "
-
-
-def test_render_diff_escapes_html_in_content():
-    result = render_diff("a <b>bold</b> word", "a <b>bold</b> change")
-
-    assert result["is_diff"] is True
-    assert str(result["old_html"]) == "a &lt;b&gt;bold&lt;/b&gt; <del>word</del>"
-    assert str(result["new_html"]) == "a &lt;b&gt;bold&lt;/b&gt; <ins>change</ins>"
+def test_render_diff_without_diff(old, new, kwargs, expected):
+    assert render_diff(old, new, **kwargs) == expected
 
 
 @pytest.mark.parametrize(
-    ("old", "new", "threshold", "expected"),
-    (("hi", "hello world", 200, False), ("hi there", "hello world", 2, True)),
+    ("old", "new", "kwargs", "old_html", "new_html"),
+    (
+        (
+            "hello world",
+            "hello there",
+            {},
+            "hello <del>world</del>",
+            "hello <ins>there</ins>",
+        ),
+        (
+            "hi there",
+            "hello world",
+            {"threshold": 2},
+            "<del>hi there</del>",
+            "<ins>hello world</ins>",
+        ),
+        (
+            "  hello world  ",
+            "  hello there  ",
+            {},
+            "  hello <del>world</del>  ",
+            "  hello <ins>there</ins>  ",
+        ),
+        (
+            "a <b>bold</b> word",
+            "a <b>bold</b> change",
+            {},
+            "a &lt;b&gt;bold&lt;/b&gt; <del>word</del>",
+            "a &lt;b&gt;bold&lt;/b&gt; <ins>change</ins>",
+        ),
+        (
+            "- old item",
+            "- new item",
+            {},
+            "<ul>\n<li><del>old</del> item</li>\n</ul>",
+            "<ul>\n<li><ins>new</ins> item</li>\n</ul>",
+        ),
+        (
+            "Line 1\nLine 2",
+            "Line 1\nLine 2\nLine 3",
+            {},
+            "<p>Line 1<br>\nLine 2</p>",
+            "<p>Line 1<br>\nLine 2<br>\n<ins>Line 3</ins></p>",
+        ),
+        (
+            "# header {\n}",
+            "# header {\n  color: red;\n}",
+            {"markdown": False},
+            "# header {\n}",
+            "# header {\n  <ins>color: red;</ins>\n}",
+        ),
+    ),
+    ids=(
+        "words",
+        "above_threshold",
+        "surrounding_whitespace",
+        "escapes_html",
+        "markdown_list",
+        "added_line",
+        "plain_without_markdown",
+    ),
 )
-def test_render_diff_threshold(old, new, threshold, expected):
-    result = render_diff(old, new, threshold=threshold)
-    assert result["is_diff"] is expected
-
-
-def test_render_diff_non_string_values_skip_diff():
-    result = render_diff(42, 99)
-    assert result["is_diff"] is False
-
-
-@pytest.mark.parametrize(
-    ("old", "new", "expected_key"),
-    (("**bold**", None, "old_html"), (None, "**bold**", "new_html")),
-)
-def test_render_diff_no_diff_renders_markdown_value(old, new, expected_key):
-    result = render_diff(old, new)
-
-    assert result["is_diff"] is False
-    assert str(result[expected_key]) == "<p><strong>bold</strong></p>"
-
-
-def test_render_diff_no_diff_omits_html_for_plain_text():
-    result = render_diff(None, "plain text")
-
-    assert result["is_diff"] is False
-    assert "new_html" not in result
-
-
-def test_render_diff_markdown_content_renders_as_html():
-    result = render_diff("- old item", "- new item")
+def test_render_diff_marks_changes(old, new, kwargs, old_html, new_html):
+    result = render_diff(old, new, **kwargs)
 
     assert result["is_diff"] is True
-    assert str(result["old_html"]) == "<ul>\n<li><del>old</del> item</li>\n</ul>"
-    assert str(result["new_html"]) == "<ul>\n<li><ins>new</ins> item</li>\n</ul>"
-
-
-def test_render_diff_multiline_shows_added_line():
-    result = render_diff("Line 1\nLine 2", "Line 1\nLine 2\nLine 3")
-
-    assert result["is_diff"] is True
-    assert str(result["old_html"]) == "<p>Line 1<br>\nLine 2</p>"
-    assert str(result["new_html"]) == "<p>Line 1<br>\nLine 2<br>\n<ins>Line 3</ins></p>"
+    assert str(result["old_html"]) == old_html
+    assert str(result["new_html"]) == new_html
 
 
 def test_render_diff_markdown_list_addition():
@@ -186,21 +211,6 @@ def test_render_diff_marks_changes_in_long_text():
 
     assert new_html.count("<ins>") > 10
     assert new_html.rindex("<ins>") > len(new_html) * 0.8
-
-
-def test_render_diff_without_markdown_omits_html():
-    result = render_diff(None, "# header {\n}", markdown=False)
-
-    assert result == {"is_diff": False}
-
-
-def test_render_diff_without_markdown_keeps_plain_text():
-    result = render_diff(
-        "# header {\n}", "# header {\n  color: red;\n}", markdown=False
-    )
-
-    assert result["is_diff"] is True
-    assert str(result["new_html"]) == "# header {\n  <ins>color: red;</ins>\n}"
 
 
 def test_preformat_diff_keeps_whitespace_only_change():

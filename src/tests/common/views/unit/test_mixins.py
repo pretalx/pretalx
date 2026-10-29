@@ -113,48 +113,60 @@ class ConcretePermissionRequired(PermissionRequired):
         return self._obj
 
 
-def test_permission_required_permission_object_delegates_to_get_permission_object(
-    event,
-):
+def test_permission_required_permission_object_delegates_to_get_object(event):
     obj = FakePermissionObject()
     request = make_request(event)
     view = ConcretePermissionRequired(request, obj=obj)
-    result = PermissionRequired.permission_object.__get__(view)
-    assert result is obj
 
-
-def test_permission_required_object_cached_property(event):
-    obj = FakePermissionObject()
-    request = make_request(event)
-    view = ConcretePermissionRequired(request, obj=obj)
+    assert PermissionRequired.permission_object.__get__(view) is obj
     assert PermissionRequired.object.__get__(view) is obj
 
 
-def test_permission_required_permission_action_edit_with_write_perm(event):
-    user = make_orga_user(event, can_change_event_settings=True)
+@pytest.mark.parametrize(
+    ("is_orga", "kwargs", "create_perm", "write_perm", "expected"),
+    (
+        pytest.param(True, {"pk": 1}, None, "event.update_event", "edit", id="edit"),
+        pytest.param(False, {"pk": 1}, None, "test.change_thing", "view", id="view"),
+        pytest.param(
+            True,
+            {"event": "test"},
+            "event.update_event",
+            "test.change_thing",
+            "create",
+            id="create_with_create_perm",
+        ),
+        pytest.param(
+            True,
+            {"event": "test"},
+            None,
+            "event.update_event",
+            "create",
+            id="create_falls_back_to_write_perm",
+        ),
+        pytest.param(
+            False,
+            {"event": "test"},
+            None,
+            "test.change_thing",
+            "view",
+            id="view_without_create_or_write_perm",
+        ),
+    ),
+)
+def test_permission_required_permission_action(
+    event, is_orga, kwargs, create_perm, write_perm, expected
+):
+    user = (
+        make_orga_user(event, can_change_event_settings=True)
+        if is_orga
+        else UserFactory()
+    )
     request = make_request(event, user=user)
-    view = ConcretePermissionRequired(request, obj=event, pk=1)
-    view.write_permission_required = "event.update_event"
-    result = PermissionRequired.permission_action.__get__(view)
-    assert result == "edit"
+    view = ConcretePermissionRequired(request, obj=event, **kwargs)
+    view.create_permission_required = create_perm
+    view.write_permission_required = write_perm
 
-
-def test_permission_required_permission_action_view_without_write_perm(event):
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = ConcretePermissionRequired(request, obj=event, pk=1)
-    result = PermissionRequired.permission_action.__get__(view)
-    assert result == "view"
-
-
-def test_permission_required_permission_action_create_with_create_perm(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    # Non-empty kwargs without pk/code triggers the create branch
-    view = ConcretePermissionRequired(request, obj=event, event="test")
-    view.create_permission_required = "event.update_event"
-    result = PermissionRequired.permission_action.__get__(view)
-    assert result == "create"
+    assert PermissionRequired.permission_action.__get__(view) == expected
 
 
 def test_permission_required_permission_action_create_raises_404_without_perm(event):
@@ -166,37 +178,14 @@ def test_permission_required_permission_action_create_raises_404_without_perm(ev
         PermissionRequired.permission_action.__get__(view)
 
 
-def test_permission_required_permission_action_create_fallback(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = ConcretePermissionRequired(request, obj=event, event="test")
-    view.create_permission_required = None
-    view.write_permission_required = "event.update_event"
-    result = PermissionRequired.permission_action.__get__(view)
-    assert result == "create"
-
-
-def test_permission_required_permission_action_view_when_no_create_no_write(event):
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = ConcretePermissionRequired(request, obj=event, event="test")
-    view.create_permission_required = None
-    result = PermissionRequired.permission_action.__get__(view)
-    assert result == "view"
-
-
-def test_permission_required_get_login_url_raises_404(event):
-    request = make_request(event)
-    view = ConcretePermissionRequired(request, obj=None)
-    with pytest.raises(Http404):
-        view.get_login_url()
-
-
-def test_permission_required_handle_no_permission_raises_404(event):
+def test_permission_required_handle_no_permission_raises_404_outside_cfp(event):
     user = UserFactory.build()
     request = make_request(event, user=user)
     request.resolver_match = SimpleNamespace(namespaces=["orga"])
     view = ConcretePermissionRequired(request, obj=None)
+
+    with pytest.raises(Http404):
+        view.get_login_url()
     with pytest.raises(Http404):
         view.handle_no_permission()
 
@@ -204,21 +193,15 @@ def test_permission_required_handle_no_permission_raises_404(event):
 def test_permission_required_handle_no_permission_redirects_anonymous_cfp(event):
     request = make_request(event, path="/test/cfp/submit/")
     request.resolver_match = SimpleNamespace(namespaces=["cfp"])
-    view = ConcretePermissionRequired(request, obj=None)
-    response = view.handle_no_permission()
-    assert response.status_code == 302
-    assert response.url.startswith(event.urls.login.full())
-    assert f"next={quote('/test/cfp/submit/')}" in response.url
-
-
-def test_permission_required_handle_no_permission_anonymous_cfp_with_params(event):
-    request = make_request(event, path="/test/cfp/submit/")
-    request.resolver_match = SimpleNamespace(namespaces=["cfp"])
     request.GET = _qd(token="abc123")
     view = ConcretePermissionRequired(request, obj=None)
+
     response = view.handle_no_permission()
+
     assert response.status_code == 302
-    assert "token=abc123" in response.url
+    assert response.url == (
+        f"{event.urls.login.full()}?next={quote('/test/cfp/submit/')}&token=abc123"
+    )
 
 
 class EventSettingsPermissionRequired(ConcretePermissionRequired):
@@ -274,23 +257,21 @@ def test_permission_required_has_permission_via_session_event_access(
     assert view.has_permission() is expected
 
 
-def test_permission_required_session_event_access_checks_granting_user_permission(
+def test_permission_required_session_event_access_denies_unusable_parent_sessions(
     event,
 ):
-    user = make_orga_user(event, can_change_event_settings=False)
-    request = _make_event_access_request(event, user)
+    unprivileged = make_orga_user(event, can_change_event_settings=False)
+    unknown = make_request(event)
+    unknown.session[f"pretalx_event_access_{event.pk}"] = "nosuchsessionkey"
+    requests = (
+        _make_event_access_request(event, unprivileged),
+        _make_event_access_request(event),
+        unknown,
+    )
 
-    view = EventSettingsPermissionRequired(request, obj=event)
-    assert view.has_permission() is False
-
-
-def test_permission_required_session_event_access_ignores_anonymous_parent_session(
-    event,
-):
-    request = _make_event_access_request(event)
-
-    view = EventSettingsPermissionRequired(request, obj=event)
-    assert view.has_permission() is False
+    for request in requests:
+        view = EventSettingsPermissionRequired(request, obj=event)
+        assert view.has_permission() is False
 
 
 @override_settings(
@@ -342,26 +323,14 @@ def test_permission_required_session_event_access_does_not_refresh_parent_sessio
     assert session_store(parent_key).load()["pretalx_auth_last_used"] == last_used
 
 
-def test_permission_required_session_event_access_ignores_unknown_parent_session(event):
-    request = make_request(event)
-    request.session[f"pretalx_event_access_{event.pk}"] = "nosuchsessionkey"
-
-    view = EventSettingsPermissionRequired(request, obj=event)
-    assert view.has_permission() is False
-
-
 def test_permission_required_has_permission_returns_false_without_access(event):
     user = UserFactory()
     request = make_request(event, user=user)
     view = ConcretePermissionRequired(request, obj=event)
+
     assert view.has_permission() is False
 
-
-def test_permission_required_has_permission_no_event_on_request(event):
-    user = UserFactory()
-    request = make_request(event, user=user)
     del request.event
-    view = ConcretePermissionRequired(request, obj=event)
     assert view.has_permission() is False
 
 
@@ -493,64 +462,74 @@ def _wizard_post_data(current_step="step1", **extra):
     return rf.post("/wizard/", data=data)
 
 
-def test_sensible_back_wizard_post_valid_form_next_step():
-    request = _wizard_post_data("step1")
-    view = ConcreteWizard(request, steps_current="step1", steps_last="step2")
+class _FakeForm:
+    def __init__(self, valid=True, **cleaned_data):
+        self.valid = valid
+        self.cleaned_data = cleaned_data
 
-    class FakeForm:
-        cleaned_data = {"field": "value"}
-
-        def is_valid(self):
-            return True
-
-    view._form = FakeForm()
-    result = view.post()
-    assert result == "next"
-    assert view.storage.step_data["step1"] == {"field": "value"}
+    def is_valid(self):
+        return self.valid
 
 
-def test_sensible_back_wizard_post_valid_form_last_step():
-    request = _wizard_post_data("step2")
-    view = ConcreteWizard(request, steps_current="step2", steps_last="step2")
+@pytest.mark.parametrize(
+    ("current_step", "post_step", "extra", "form", "expected", "expected_step_data"),
+    (
+        pytest.param(
+            "step1",
+            "step1",
+            {},
+            _FakeForm(field="value"),
+            "next",
+            {"step1": {"field": "value"}},
+            id="next_step",
+        ),
+        pytest.param(
+            "step2",
+            "step2",
+            {},
+            _FakeForm(field="done"),
+            "done",
+            {"step2": {"field": "done"}},
+            id="last_step",
+        ),
+        pytest.param(
+            "step2",
+            "step2",
+            {"wizard_goto_step": "step1"},
+            _FakeForm(field="saved"),
+            "goto:step1",
+            {"step2": {"field": "saved"}},
+            id="goto_step",
+        ),
+        pytest.param(
+            "step1",
+            "step1",
+            {},
+            _FakeForm(valid=False),
+            "invalid",
+            {},
+            id="invalid_form",
+        ),
+        pytest.param(
+            "step3",
+            "step3",
+            {},
+            _FakeForm(),
+            "goto:step1",
+            {},
+            id="unknown_step_restarts",
+        ),
+    ),
+)
+def test_sensible_back_wizard_post(
+    current_step, post_step, extra, form, expected, expected_step_data
+):
+    request = _wizard_post_data(post_step, **extra)
+    view = ConcreteWizard(request, steps_current=current_step, steps_last="step2")
+    view._form = form
 
-    class FakeForm:
-        cleaned_data = {"field": "done"}
-
-        def is_valid(self):
-            return True
-
-    view._form = FakeForm()
-    result = view.post()
-    assert result == "done"
-
-
-def test_sensible_back_wizard_post_valid_form_goto_step():
-    request = _wizard_post_data("step2", wizard_goto_step="step1")
-    view = ConcreteWizard(request, steps_current="step2", steps_last="step2")
-
-    class FakeForm:
-        cleaned_data = {"field": "saved"}
-
-        def is_valid(self):
-            return True
-
-    view._form = FakeForm()
-    result = view.post()
-    assert result == "goto:step1"
-    assert view.storage.step_data["step2"] == {"field": "saved"}
-
-
-def test_sensible_back_wizard_post_invalid_form():
-    request = _wizard_post_data("step1")
-    view = ConcreteWizard(request, steps_current="step1", steps_last="step2")
-
-    class FakeForm:
-        def is_valid(self):
-            return False
-
-    view._form = FakeForm()
-    result = view.post()
-    assert result == "invalid"
+    assert view.post() == expected
+    assert view.storage.step_data == expected_step_data
 
 
 def test_sensible_back_wizard_post_invalid_management_form():
@@ -565,15 +544,10 @@ def test_sensible_back_wizard_post_step_mismatch():
     request = _wizard_post_data("step2")
     view = ConcreteWizard(request, steps_current="step1", steps_last="step2")
     view.storage.current_step = "step1"
+    view._form = _FakeForm(field="value")
 
-    class FakeForm:
-        cleaned_data = {"field": "value"}
-
-        def is_valid(self):
-            return True
-
-    view._form = FakeForm()
     view.post()
+
     assert view.storage.current_step == "step2"
 
 
@@ -584,16 +558,6 @@ def test_sensible_back_wizard_post_aborts_on_failed_prerequisites():
 
     request = _wizard_post_data("step2")
     view = GuardedWizard(request, steps_current="step2", steps_last="step2")
-
-    result = view.post()
-
-    assert result == "goto:step1"
-    assert view.storage.step_data == {}
-
-
-def test_sensible_back_wizard_post_restarts_on_unknown_step():
-    request = _wizard_post_data("step3")
-    view = ConcreteWizard(request, steps_current="step3", steps_last="step2")
 
     result = view.post()
 
@@ -676,69 +640,42 @@ class ConcretePagination(PaginationMixin):
         self.request = request
 
 
-def test_pagination_get_paginate_by_default(event):
+def test_pagination_get_paginate_by_without_query_param(event):
     request = make_request(event)
     request.resolver_match = SimpleNamespace(url_name="test_list")
     view = ConcretePagination(request)
+
     assert view.get_paginate_by() == 50
 
-
-def test_pagination_get_paginate_by_from_session(event):
-    request = make_request(event)
-    request.resolver_match = SimpleNamespace(url_name="test_list")
-    request.session["stored_page_size_test_list"] = 25
-    view = ConcretePagination(request)
-    assert view.get_paginate_by() == 25
-
-
-def test_pagination_get_paginate_by_from_class_attribute(event):
-    request = make_request(event)
-    request.resolver_match = SimpleNamespace(url_name="test_list")
-    view = ConcretePagination(request)
     view.paginate_by = 10
     assert view.get_paginate_by() == 10
 
+    request.session["stored_page_size_test_list"] = 25
+    assert view.get_paginate_by() == 25
+
 
 @pytest.mark.parametrize(
-    ("page_size", "expected"), (("20", 20), ("100", 100), ("250", 250))
+    ("page_size", "max_limit", "expected", "stored"),
+    (
+        ("20", 100, 20, 20),
+        ("250", 0, 250, 250),
+        ("200", 100, 100, 100),
+        ("9999", 0, 9999, 9999),
+        ("abc", 100, 50, None),
+    ),
+    ids=("explicit", "large_without_limit", "clamped", "unclamped", "invalid"),
 )
-def test_pagination_get_paginate_by_from_get_param(event, page_size, expected):
+def test_pagination_get_paginate_by_from_get_param(
+    event, settings, page_size, max_limit, expected, stored
+):
+    settings.MAX_PAGINATION_LIMIT = max_limit
     request = make_request(event)
     request.resolver_match = SimpleNamespace(url_name="test_list")
     request.GET = {"page_size": page_size}
     view = ConcretePagination(request)
-    result = view.get_paginate_by()
-    assert result == expected
-    assert request.session["stored_page_size_test_list"] == expected
 
-
-def test_pagination_get_paginate_by_respects_max_page_size(event, settings):
-    settings.MAX_PAGINATION_LIMIT = 100
-    request = make_request(event)
-    request.resolver_match = SimpleNamespace(url_name="test_list")
-    request.GET = {"page_size": "200"}
-    view = ConcretePagination(request)
-    result = view.get_paginate_by()
-    assert result == 100
-
-
-def test_pagination_get_paginate_by_no_max_limit(event, settings):
-    settings.MAX_PAGINATION_LIMIT = 0
-    request = make_request(event)
-    request.resolver_match = SimpleNamespace(url_name="test_list")
-    request.GET = {"page_size": "9999"}
-    view = ConcretePagination(request)
-    view.max_page_size = 0
-    result = view.get_paginate_by()
-    assert result == 9999
-
-
-def test_pagination_get_paginate_by_invalid_page_size(event):
-    request = make_request(event)
-    request.resolver_match = SimpleNamespace(url_name="test_list")
-    request.GET = {"page_size": "abc"}
-    view = ConcretePagination(request)
-    assert view.get_paginate_by() == 50
+    assert view.get_paginate_by() == expected
+    assert request.session.get("stored_page_size_test_list") == stored
 
 
 def test_pagination_get_context_data_non_crud(event):
@@ -766,32 +703,22 @@ class ConcreteActionConfirm(ActionConfirmMixin, _BaseContext):
         self.request = request
 
 
-def test_action_confirm_action_back_url_from_next_param(event):
+@pytest.mark.parametrize(
+    ("query", "expected"),
+    (
+        ({"next": "/orga/event/"}, "/orga/event/"),
+        ({"next": "http://evil.example.com/"}, "/orga/event"),
+        ({"back": "/orga/speakers/"}, "/orga/speakers/"),
+        ({}, "/orga/event"),
+    ),
+    ids=("next", "rejects_external_next", "back", "fallback"),
+)
+def test_action_confirm_action_back_url(event, query, expected):
     request = make_request(event, path="/orga/event/delete/")
-    request.GET = _qd(next="/orga/event/")
+    request.GET = _qd(**query)
     view = ConcreteActionConfirm(request)
-    assert view.action_back_url == "/orga/event/"
 
-
-def test_action_confirm_action_back_url_rejects_external_next(event):
-    request = make_request(event, path="/orga/event/delete/")
-    request.GET = _qd(next="http://evil.example.com/")
-    view = ConcreteActionConfirm(request)
-    assert view.action_back_url == "/orga/event"
-
-
-def test_action_confirm_action_back_url_from_back_param(event):
-    request = make_request(event, path="/orga/event/delete/")
-    request.GET = _qd(back="/orga/speakers/")
-    view = ConcreteActionConfirm(request)
-    assert view.action_back_url == "/orga/speakers/"
-
-
-def test_action_confirm_action_back_url_fallback(event):
-    request = make_request(event, path="/orga/event/delete/")
-    request.GET = _qd()
-    view = ConcreteActionConfirm(request)
-    assert view.action_back_url == "/orga/event"
+    assert view.action_back_url == expected
 
 
 def test_action_confirm_get_context_data(event):
@@ -903,7 +830,7 @@ def test_confirm_dialog_patches_string_template_name(event):
     assert response.headers["Pretalx-Dialog"] == "1"
 
 
-def test_reorder_queryset_updates_positions(event):
+def test_reorder_queryset_updates_positions_and_rejects_unknown_pks(event):
     t1 = TrackFactory(event=event, name="First", position=0, color="#111111")
     t2 = TrackFactory(event=event, name="Second", position=1, color="#222222")
     t3 = TrackFactory(event=event, name="Third", position=2, color="#333333")
@@ -912,16 +839,12 @@ def test_reorder_queryset_updates_positions(event):
         Track.objects.filter(event=event), [str(t3.pk), str(t1.pk), str(t2.pk)]
     )
 
-    t1.refresh_from_db()
-    t2.refresh_from_db()
-    t3.refresh_from_db()
-    assert t3.position == 0
-    assert t1.position == 1
-    assert t2.position == 2
+    assert list(
+        Track.objects.filter(event=event)
+        .order_by("position")
+        .values_list("pk", flat=True)
+    ) == [t3.pk, t1.pk, t2.pk]
 
-
-def test_reorder_queryset_raises_404_for_unknown_pk(event):
-    TrackFactory(event=event, name="First", position=0, color="#111111")
     with pytest.raises(Http404):
         reorder_queryset(Track.objects.filter(event=event), ["99999"])
 
@@ -944,30 +867,17 @@ def test_order_action_mixin_order_handler(event):
     request = make_request(event, method="post", path="/order/")
     request.POST = {"order": f"{t2.pk},{t1.pk}"}
     view = ConcreteOrderView(request, event)
-    result = view.order_handler(request)
-    assert result == "list_response"
 
+    assert view.order_handler(request) == "list_response"
     t1.refresh_from_db()
     t2.refresh_from_db()
-    assert t2.position == 0
-    assert t1.position == 1
+    assert (t2.position, t1.position) == (0, 1)
 
-
-def test_order_action_mixin_order_handler_empty_order(event):
-    TrackFactory(event=event, name="A", position=0, color="#111111")
-
-    class ConcreteOrderView(OrderActionMixin):
-        def __init__(self, request, _event):
-            self.request = request
-            self._event = _event
-
-        def list(self, request, *args, **kwargs):
-            return "ok"
-
-    request = make_request(event, method="post", path="/order/")
     request.POST = {"order": ""}
-    view = ConcreteOrderView(request, event)
-    assert view.order_handler(request) == "ok"
+    assert view.order_handler(request) == "list_response"
+    t1.refresh_from_db()
+    t2.refresh_from_db()
+    assert (t2.position, t1.position) == (0, 1)
 
 
 def _add_messages(request):
@@ -1047,24 +957,16 @@ def test_async_download_handle_cached_file_of_foreign_session_redirects(
     assert response.url == "/error/"
 
 
-def test_async_download_handle_cached_file_missing_redirects(event):
+def test_async_download_handle_unusable_cached_file_param_redirects(event):
     cf = CachedFileFactory()
-
     request = make_request(event, path="/orga/export/")
-    request.GET = {"cached_file": str(cf.id)}
     view = ConcreteAsyncDownload(request)
-    response = view.handle_async_download(request)
-    assert response.status_code == 302
-    assert response.url == "/error/"
 
-
-def test_async_download_handle_invalid_cached_file_id(event):
-    request = make_request(event, path="/orga/export/")
-    request.GET = {"cached_file": "not-a-uuid"}
-    view = ConcreteAsyncDownload(request)
-    response = view.handle_async_download(request)
-    assert response.status_code == 302
-    assert response.url == "/error/"
+    for value in (str(cf.id), "not-a-uuid"):
+        request.GET = {"cached_file": value}
+        response = view.handle_async_download(request)
+        assert response.status_code == 302
+        assert response.url == "/error/"
 
 
 def test_async_download_start_task_eager_mode(event, settings):
@@ -1092,7 +994,7 @@ def test_async_download_start_task_non_eager_binds_file_and_redirects(event, set
     request = make_request(event, path="/orga/export/")
     request.GET = {}
     view = ConcreteAsyncDownload(request)
-    response = view._start_task(request)
+    response = view.handle_async_download(request)
 
     cached_file = CachedFile.objects.get()
     assert cached_file.filename == "test-export.zip"
@@ -1102,50 +1004,61 @@ def test_async_download_start_task_non_eager_binds_file_and_redirects(event, set
     assert "async_id=fake-task-id" in response.url
 
 
-def test_async_download_check_task_ready_success_htmx(event):
-    request = make_request(event, path="/orga/export/", headers={"HX-Request": "true"})
-    view = ConcreteAsyncDownload(request)
-    cf = CachedFileFactory()
-    cf.bind_to_session(request, view.async_download_salt)
-    cf.file.save("export.zip", ContentFile(b"zipdata"))
-
-    view._async_result = _FakeAsyncResult(
-        ready=True, successful=True, result=str(cf.id)
-    )
-    response = view._check_task_status(request, "test-id")
-    content = response.content.decode()
-    assert f"cached_file={cf.id}" in content
-
-
-def test_async_download_check_task_ready_failed_htmx(event):
-    request = make_request(event, path="/orga/export/", headers={"HX-Request": "true"})
-    view = ConcreteAsyncDownload(request)
-    view._async_result = _FakeAsyncResult(ready=True, successful=False)
-    response = view._check_task_status(request, "test-id")
-    content = response.content.decode()
-    assert "/error/" in content
-
-
-def test_async_download_check_task_pending_htmx(event):
-    request = make_request(event, path="/orga/export/", headers={"HX-Request": "true"})
-    view = ConcreteAsyncDownload(request)
-    view._async_result = _FakeAsyncResult(ready=False, successful=False)
-    response = view._check_task_status(request, "test-id")
-    assert response.status_code == 200
-
-
-def test_async_download_check_task_ready_success_non_htmx(event):
+def test_async_download_check_task_success_serves_file(event):
     request = make_request(event, path="/orga/export/")
     view = ConcreteAsyncDownload(request)
     cf = CachedFileFactory()
     cf.bind_to_session(request, view.async_download_salt)
     cf.file.save("export.zip", ContentFile(b"zipdata"))
-
     view._async_result = _FakeAsyncResult(
         ready=True, successful=True, result=str(cf.id)
     )
+
     response = view._check_task_status(request, "test-id")
     assert "attachment" in response["Content-Disposition"]
+
+    htmx_request = make_request(
+        event, path="/orga/export/", headers={"HX-Request": "true"}
+    )
+    htmx_request.session = request.session
+    response = view._check_task_status(htmx_request, "test-id")
+    assert f"cached_file={cf.id}" in response.content.decode()
+
+
+@pytest.mark.parametrize(
+    "result",
+    (
+        _FakeAsyncResult(ready=True, successful=False),
+        _FakeAsyncResult(ready=True, successful=True, result=None),
+        _FakeAsyncResult(ready=True, successful=True, result="not-a-valid-uuid"),
+    ),
+    ids=("failed", "no_result", "invalid_uuid"),
+)
+def test_async_download_check_task_failure_redirects_to_error(event, result):
+    request = make_request(event, path="/orga/export/")
+    view = ConcreteAsyncDownload(request)
+    view._async_result = result
+    response = view._check_task_status(request, "test-id")
+    assert response.status_code == 302
+    assert response.url == "/error/"
+
+    htmx_request = make_request(
+        event, path="/orga/export/", headers={"HX-Request": "true"}
+    )
+    response = view._check_task_status(htmx_request, "test-id")
+    assert "/error/" in response.content.decode()
+
+
+def test_async_download_check_task_pending(event):
+    request = make_request(event, path="/orga/export/")
+    htmx_request = make_request(
+        event, path="/orga/export/", headers={"HX-Request": "true"}
+    )
+    view = ConcreteAsyncDownload(request)
+    view._async_result = _FakeAsyncResult(ready=False, successful=False)
+
+    assert view._check_task_status(request, "test-id").status_code == 200
+    assert view._check_task_status(htmx_request, "test-id").status_code == 200
 
 
 def test_async_download_check_task_result_of_other_session_redirects(event):
@@ -1162,23 +1075,6 @@ def test_async_download_check_task_result_of_other_session_redirects(event):
     assert response.url == "/error/"
 
 
-def test_async_download_check_task_ready_failed_non_htmx(event):
-    request = make_request(event, path="/orga/export/")
-    view = ConcreteAsyncDownload(request)
-    view._async_result = _FakeAsyncResult(ready=True, successful=False)
-    response = view._check_task_status(request, "test-id")
-    assert response.status_code == 302
-    assert response.url == "/error/"
-
-
-def test_async_download_check_task_pending_non_htmx(event):
-    request = make_request(event, path="/orga/export/")
-    view = ConcreteAsyncDownload(request)
-    view._async_result = _FakeAsyncResult(ready=False, successful=False)
-    response = view._check_task_status(request, "test-id")
-    assert response.status_code == 200
-
-
 def test_async_download_serve_cached_file_missing_file(event):
     cf = CachedFileFactory()
     cf.file.name = "nonexistent/path.zip"
@@ -1191,35 +1087,6 @@ def test_async_download_serve_cached_file_missing_file(event):
     assert response.url == "/error/"
 
 
-def test_async_download_check_task_result_invalid_uuid(event):
-    request = make_request(event, path="/orga/export/")
-    view = ConcreteAsyncDownload(request)
-    view._async_result = _FakeAsyncResult(
-        ready=True, successful=True, result="not-a-valid-uuid"
-    )
-    response = view._check_task_status(request, "test-id")
-    assert response.status_code == 302
-    assert response.url == "/error/"
-
-
-def test_async_download_check_task_result_none_non_htmx(event):
-    request = make_request(event, path="/orga/export/")
-    view = ConcreteAsyncDownload(request)
-    view._async_result = _FakeAsyncResult(ready=True, successful=True, result=None)
-    response = view._check_task_status(request, "test-id")
-    assert response.status_code == 302
-    assert response.url == "/error/"
-
-
-def test_async_download_check_task_result_none_htmx(event):
-    request = make_request(event, path="/orga/export/", headers={"HX-Request": "true"})
-    view = ConcreteAsyncDownload(request)
-    view._async_result = _FakeAsyncResult(ready=True, successful=True, result=None)
-    response = view._check_task_status(request, "test-id")
-    content = response.content.decode()
-    assert "/error/" in content
-
-
 def test_async_download_handle_routes_to_check_task(event):
     request = make_request(event, path="/orga/export/")
     request.GET = {"async_id": "some-id"}
@@ -1228,17 +1095,6 @@ def test_async_download_handle_routes_to_check_task(event):
     response = view.handle_async_download(request)
     assert response.status_code == 302
     assert response.url == "/error/"
-
-
-def test_async_download_handle_starts_task_when_no_params(event, settings):
-    settings.CELERY_TASK_ALWAYS_EAGER = False
-
-    request = make_request(event, path="/orga/export/")
-    request.GET = {}
-    view = ConcreteAsyncDownload(request)
-    response = view.handle_async_download(request)
-    assert response.status_code == 302
-    assert "async_id=fake-task-id" in response.url
 
 
 class _FakeTaskAsyncResult:
@@ -1278,35 +1134,31 @@ class ConcreteTaskProgress(AsyncTaskProgressMixin, View):
         return super()._get_async_result(async_id)
 
 
-def test_async_task_progress_get_task_success_message_default():
-    view = AsyncTaskProgressMixin()
-    msg = view.get_task_success_message(None)
-    assert str(msg) == "The task has been completed."
-
-
 def test_async_task_progress_get_async_result_returns_celery_result(event):
     request = make_request(event, path="/orga/test/")
     view = ConcreteTaskProgress(request)
+
     result = view._get_async_result("test-task-id")
+
     assert isinstance(result, celery.result.AsyncResult)
     assert result.id == "test-task-id"
+    assert (
+        str(AsyncTaskProgressMixin().get_task_success_message(None))
+        == "The task has been completed."
+    )
 
 
-def test_async_task_progress_get_without_async_id_calls_super(event):
+def test_async_task_progress_get_checks_progress_only_with_async_id(event):
     request = make_request(event, path="/orga/test/")
     view = ConcreteTaskProgress(request)
 
     with pytest.raises(AttributeError):
         view.get(request)
 
-
-def test_async_task_progress_get_with_async_id_checks_progress(event):
-    request = make_request(event, path="/orga/test/")
     request.GET = {"async_id": "some-id"}
-    view = ConcreteTaskProgress(request)
     view._async_result = _FakeTaskAsyncResult(ready=True, successful=True, result={})
-
     response = view.get(request)
+
     assert response.status_code == 302
     assert response.url == "/success/"
 
@@ -1359,53 +1211,76 @@ def test_async_task_progress_dispatch_async_task_non_eager_redirects(event, sett
     assert "async_id=task-uuid-123" in response.url
 
 
-def test_async_task_progress_dispatch_async_task_connection_error(event, settings):
+@pytest.mark.parametrize(
+    "error", (OSError("Connection refused"), OperationalError("broker down"))
+)
+def test_async_task_progress_dispatch_async_task_broker_error(event, settings, error):
     settings.CELERY_TASK_ALWAYS_EAGER = False
 
     request = make_request(event, path="/orga/test/")
     view = ConcreteTaskProgress(request)
 
-    def raise_os_error(**kw):
-        raise OSError("Connection refused")
+    def raise_error(**kw):
+        raise error
 
-    task = SimpleNamespace(apply_async=raise_os_error)
+    task = SimpleNamespace(apply_async=raise_error)
 
     response = view.dispatch_async_task(request, task, event_id=1)
     assert response.status_code == 302
     assert response.url == "/error/"
-    msgs = list(request._messages)
-    assert len(msgs) == 1
-    assert str(msgs[0]) == "Could not start background task. Please try again."
+    assert [str(m) for m in request._messages] == [
+        "Could not start background task. Please try again."
+    ]
 
 
-def test_async_task_progress_check_progress_htmx_complete_success(event):
-    request = make_request(event, path="/orga/test/", headers={"HX-Request": "true"})
+@pytest.mark.parametrize(
+    ("headers", "successful", "status", "redirect_header", "url", "message"),
+    (
+        pytest.param(
+            {"HX-Request": "true"},
+            True,
+            286,
+            "HX-Redirect",
+            "/success/",
+            "Done",
+            id="htmx_success",
+        ),
+        pytest.param(
+            {"HX-Request": "true"},
+            False,
+            286,
+            "HX-Redirect",
+            "/error/",
+            "An error occurred. Please try again.",
+            id="htmx_failure",
+        ),
+        pytest.param(None, True, 302, "Location", "/success/", "Done", id="success"),
+        pytest.param(
+            None,
+            False,
+            302,
+            "Location",
+            "/error/",
+            "An error occurred. Please try again.",
+            id="failure",
+        ),
+    ),
+)
+def test_async_task_progress_check_progress_complete(
+    event, headers, successful, status, redirect_header, url, message
+):
+    request = make_request(event, path="/orga/test/", headers=headers)
     request.GET = {"async_id": "done-id"}
     view = ConcreteTaskProgress(request)
     view._async_result = _FakeTaskAsyncResult(
-        ready=True, successful=True, result={"count": 3}
+        ready=True, successful=successful, result={"count": 3}
     )
 
     response = view._check_task_progress(request)
-    assert response.status_code == 286
-    assert response["HX-Redirect"] == "/success/"
-    msgs = list(request._messages)
-    assert len(msgs) == 1
-    assert str(msgs[0]) == "Done"
 
-
-def test_async_task_progress_check_progress_htmx_complete_failure(event):
-    request = make_request(event, path="/orga/test/", headers={"HX-Request": "true"})
-    request.GET = {"async_id": "fail-id"}
-    view = ConcreteTaskProgress(request)
-    view._async_result = _FakeTaskAsyncResult(ready=True, successful=False)
-
-    response = view._check_task_progress(request)
-    assert response.status_code == 286
-    assert response["HX-Redirect"] == "/error/"
-    msgs = list(request._messages)
-    assert len(msgs) == 1
-    assert str(msgs[0]) == "An error occurred. Please try again."
+    assert response.status_code == status
+    assert response[redirect_header] == url
+    assert [str(m) for m in request._messages] == [message]
 
 
 def test_async_task_progress_check_progress_htmx_in_progress(event):
@@ -1441,33 +1316,6 @@ def test_async_task_progress_check_progress_htmx_pending_no_info(event):
     assert "/error/" in content
 
 
-def test_async_task_progress_check_progress_non_htmx_complete(event):
-    request = make_request(event, path="/orga/test/")
-    request.GET = {"async_id": "done-id"}
-    view = ConcreteTaskProgress(request)
-    view._async_result = _FakeTaskAsyncResult(
-        ready=True, successful=True, result={"count": 3}
-    )
-
-    response = view._check_task_progress(request)
-    assert response.status_code == 302
-    assert response.url == "/success/"
-    msgs = list(request._messages)
-    assert len(msgs) == 1
-    assert str(msgs[0]) == "Done"
-
-
-def test_async_task_progress_check_progress_non_htmx_failure(event):
-    request = make_request(event, path="/orga/test/")
-    request.GET = {"async_id": "fail-id"}
-    view = ConcreteTaskProgress(request)
-    view._async_result = _FakeTaskAsyncResult(ready=True, successful=False)
-
-    response = view._check_task_progress(request)
-    assert response.status_code == 302
-    assert response.url == "/error/"
-
-
 def test_async_task_progress_check_progress_non_htmx_pending(event):
     request = make_request(event, path="/orga/test/")
     request.GET = {"async_id": "pending-id"}
@@ -1481,22 +1329,3 @@ def test_async_task_progress_check_progress_non_htmx_pending(event):
     content = response.content.decode()
     assert "pending-id" in content
     assert "/error/" in content
-
-
-def test_async_task_progress_dispatch_async_task_operational_error(event, settings):
-    settings.CELERY_TASK_ALWAYS_EAGER = False
-
-    request = make_request(event, path="/orga/test/")
-    view = ConcreteTaskProgress(request)
-
-    def raise_operational(**kw):
-        raise OperationalError("broker down")
-
-    task = SimpleNamespace(apply_async=raise_operational)
-
-    response = view.dispatch_async_task(request, task, event_id=1)
-    assert response.status_code == 302
-    assert response.url == "/error/"
-    msgs = list(request._messages)
-    assert len(msgs) == 1
-    assert str(msgs[0]) == "Could not start background task. Please try again."

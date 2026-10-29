@@ -17,24 +17,21 @@ rf = RequestFactory()
 pytestmark = pytest.mark.unit
 
 
-def test_cachedfile_name_uses_id_and_extension():
+@pytest.mark.parametrize(
+    ("filename", "suffix"),
+    (("report.pdf", ".pdf"), ("noextension", ".noextension")),
+    ids=("with_extension", "dotless"),
+)
+def test_cachedfile_name_uses_id_secret_and_extension(filename, suffix):
     instance = CachedFile(id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
 
-    result = cachedfile_name(instance, "report.pdf")
+    result = cachedfile_name(instance, filename)
 
     assert result.startswith("cachedfiles/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.")
-    assert result.endswith(".pdf")
+    assert result.endswith(suffix)
     # Middle part is a 12-char random secret
     parts = result.split(".")
     assert len(parts[1]) == 12
-
-
-def test_cachedfile_name_handles_dotless_filename():
-    instance = CachedFile(id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
-
-    result = cachedfile_name(instance, "noextension")
-
-    assert result.endswith(".noextension")
 
 
 def test_cachedfile_str():
@@ -113,33 +110,22 @@ def test_cachedfile_allowed_for_session(file_key, request_key, salt, expected):
     assert cached_file.allowed_for_session(request, salt) is expected
 
 
-def test_build_absolute_url_returns_none_for_falsy_file():
+def test_build_absolute_url_returns_none_for_unusable_file():
     request = rf.get("/")
 
     assert CachedFile.build_absolute_url(None, request) is None
     assert CachedFile.build_absolute_url("", request) is None
-
-
-def test_build_absolute_url_returns_none_without_url():
-    request = rf.get("/")
-
     assert CachedFile.build_absolute_url(object(), request) is None
 
 
 @pytest.mark.django_db
-def test_build_absolute_url_returns_none_without_request():
-    uploaded = SimpleUploadedFile("test.txt", b"content")
-    cached_file = CachedFileFactory(file=uploaded)
-
-    assert CachedFile.build_absolute_url(cached_file.file, None) is None
-
-
-@pytest.mark.django_db
-def test_build_absolute_url_returns_absolute_uri():
+def test_build_absolute_url_needs_request():
     uploaded = SimpleUploadedFile("test.txt", b"content")
     cached_file = CachedFileFactory(file=uploaded)
     request = rf.get("/api/test/")
 
-    result = CachedFile.build_absolute_url(cached_file.file, request)
-
-    assert result == f"http://testserver{cached_file.file.url}"
+    assert CachedFile.build_absolute_url(cached_file.file, None) is None
+    assert (
+        CachedFile.build_absolute_url(cached_file.file, request)
+        == f"http://testserver{cached_file.file.url}"
+    )

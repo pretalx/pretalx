@@ -29,380 +29,209 @@ from tests.utils import make_request
 pytestmark = pytest.mark.unit
 
 
-@pytest.mark.django_db
-def test_base_cfp_step_done_is_noop():
-    assert BaseCfPStep(event=None).done(request=None) is None
-
-
-def test_base_cfp_step_get_next_applicable_returns_next():
-    step_a = BaseCfPStep(event=None)
-    step_b = BaseCfPStep(event=None)
-    step_a._next = step_b
-
-    assert step_a.get_next_applicable(request=None) is step_b
-
-
-def test_base_cfp_step_get_next_applicable_skips_non_applicable():
+def test_base_cfp_step_navigation_skips_non_applicable_steps():
     step_a = BaseCfPStep(event=None)
     step_b = BaseCfPStep(event=None)
     step_c = BaseCfPStep(event=None)
-    step_b.is_applicable = lambda req: False
+    step_a._next = step_b
+    step_b._previous = step_a
     step_b._next = step_c
-    step_a._next = step_b
-
-    assert step_a.get_next_applicable(request=None) is step_c
-
-
-@pytest.mark.parametrize(
-    "method", ("get_next_applicable", "get_prev_applicable"), ids=("next", "prev")
-)
-def test_base_cfp_step_get_next_prev_applicable_returns_none_without_neighbor(method):
-    assert getattr(BaseCfPStep(event=None), method)(request=None) is None
-
-
-def test_base_cfp_step_get_prev_applicable_returns_previous():
-    step_a = BaseCfPStep(event=None)
-    step_b = BaseCfPStep(event=None)
-    step_b._previous = step_a
-
-    assert step_b.get_prev_applicable(request=None) is step_a
-
-
-def test_base_cfp_step_get_prev_applicable_skips_non_applicable():
-    step_a = BaseCfPStep(event=None)
-    step_b = BaseCfPStep(event=None)
-    step_c = BaseCfPStep(event=None)
-    step_b.is_applicable = lambda req: False
-    step_b._previous = step_a
     step_c._previous = step_b
+    lone = BaseCfPStep(event=None)
+    request = make_request(event=None)
 
-    assert step_c.get_prev_applicable(request=None) is step_a
+    assert step_a.get_next_applicable(request) is step_b
+    assert step_c.get_prev_applicable(request) is step_b
+    assert lone.get_next_applicable(request) is None
+    assert lone.get_prev_applicable(request) is None
+    assert lone.get_next_url(request) is None
+    assert lone.get_prev_url(request) is None
+    assert lone.done(request) is None
 
+    step_b.is_applicable = lambda req: False
 
-@pytest.mark.django_db
-def test_base_cfp_step_get_step_url_builds_correct_url():
-    event = EventFactory()
-    flow = CfPFlow(event)
-    step = flow.steps_dict["info"]
-    request = make_request(
-        event, resolver_match=make_resolver(event=event.slug, step="old")
-    )
-
-    url = step.get_step_url(request)
-
-    assert f"/{event.slug}/submit/abc123/info/" in url
+    assert step_a.get_next_applicable(request) is step_c
+    assert step_c.get_prev_applicable(request) is step_a
 
 
 @pytest.mark.django_db
 def test_base_cfp_step_get_step_url_merges_query_params():
     event = EventFactory()
-    flow = CfPFlow(event)
-    step = flow.steps_dict["info"]
-    request = make_request(
-        event,
-        path="/?access_code=XYZ",
-        resolver_match=make_resolver(event=event.slug, step="old"),
+    step = CfPFlow(event).steps_dict["info"]
+
+    def step_url(path, query=None):
+        request = make_request(
+            event, path=path, resolver_match=make_resolver(event=event.slug, step="old")
+        )
+        return step.get_step_url(request, query=query)
+
+    base = f"/{event.slug}/submit/abc123/info/"
+    assert step_url("/") == base
+    assert (
+        step_url("/?access_code=XYZ", {"draft": "1"})
+        == f"{base}?access_code=XYZ&draft=1"
     )
-
-    url = step.get_step_url(request, query={"draft": "1"})
-
-    assert "access_code=XYZ" in url
-    assert "draft=1" in url
+    assert (
+        step_url("/?draft=1&access_code=XYZ", {"draft": False})
+        == f"{base}?access_code=XYZ"
+    )
+    assert step_url("/?draft=1", {"draft": False}) == base
 
 
 @pytest.mark.django_db
-def test_base_cfp_step_get_step_url_removes_false_query_params():
-    event = EventFactory()
-    flow = CfPFlow(event)
-    step = flow.steps_dict["info"]
-    request = make_request(
-        event,
-        path="/?draft=1&access_code=XYZ",
-        resolver_match=make_resolver(event=event.slug, step="old"),
-    )
-
-    url = step.get_step_url(request, query={"draft": False})
-
-    assert "draft" not in url
-    assert "access_code=XYZ" in url
-
-
-@pytest.mark.django_db
-def test_base_cfp_step_get_step_url_no_query_string_when_all_removed():
-    event = EventFactory()
-    flow = CfPFlow(event)
-    step = flow.steps_dict["info"]
-    request = make_request(
-        event,
-        path="/?draft=1",
-        resolver_match=make_resolver(event=event.slug, step="old"),
-    )
-
-    url = step.get_step_url(request, query={"draft": False})
-
-    assert "?" not in url
-
-
-@pytest.mark.django_db
-def test_base_cfp_step_get_next_url_returns_url_when_next_exists():
+def test_base_cfp_step_get_next_and_prev_url():
     event = EventFactory()
     QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
     flow = CfPFlow(event)
-    info_step = flow.steps_dict["info"]
-    request = make_request(
+    session = make_cfp_session(
+        data={"info": {"submission_type": event.cfp.default_type.pk}}
+    )
+    info_request = make_request(
         event,
         resolver_match=make_resolver(event=event.slug, step="info"),
-        session=make_cfp_session(
-            data={"info": {"submission_type": event.cfp.default_type.pk}}
-        ),
+        session=session,
     )
-
-    url = info_step.get_next_url(request)
-
-    assert f"/{event.slug}/submit/abc123/questions/" in url
-
-
-@pytest.mark.parametrize(
-    "method", ("get_next_url", "get_prev_url"), ids=("next", "prev")
-)
-def test_base_cfp_step_get_next_prev_url_returns_none_without_neighbor(method):
-    assert (
-        getattr(BaseCfPStep(event=None), method)(request=make_request(event=None))
-        is None
-    )
-
-
-@pytest.mark.django_db
-def test_base_cfp_step_get_prev_url_returns_url_when_prev_exists():
-    event = EventFactory()
-    flow = CfPFlow(event)
-    questions_step = flow.steps_dict["questions"]
-    request = make_request(
+    questions_request = make_request(
         event, resolver_match=make_resolver(event=event.slug, step="questions")
     )
 
-    url = questions_step.get_prev_url(request)
-
-    assert f"/{event.slug}/submit/abc123/info/" in url
-    assert "draft" not in url
+    assert (
+        flow.steps_dict["info"].get_next_url(info_request)
+        == f"/{event.slug}/submit/abc123/questions/"
+    )
+    assert (
+        flow.steps_dict["questions"].get_prev_url(questions_request)
+        == f"/{event.slug}/submit/abc123/info/"
+    )
 
 
 @pytest.mark.django_db
-def test_form_flow_step_set_data_serializes_to_session():
+def test_form_flow_step_set_data_serializes_non_file_fields_to_session():
     event = EventFactory()
     step = ProfileStep(event=event)
-    request = make_request(
+    step.request = make_request(
         event, resolver_match=make_resolver(), session=make_cfp_session()
     )
-    step.request = request
 
-    step.set_data({"name": "Alice", "biography": "A speaker"})
-
-    assert step.cfp_session["data"]["profile"]["name"] == "Alice"
-    assert step.cfp_session["data"]["profile"]["biography"] == "A speaker"
-
-
-@pytest.mark.django_db
-def test_form_flow_step_set_data_skips_file_fields():
-    event = EventFactory()
-    step = ProfileStep(event=event)
-    request = make_request(
-        event, resolver_match=make_resolver(), session=make_cfp_session()
+    step.set_data(
+        {
+            "name": "Alice",
+            "biography": "A speaker",
+            "avatar": SimpleNamespace(file=True),
+        }
     )
-    step.request = request
-    file_obj = SimpleNamespace(file=True)
 
-    step.set_data({"name": "Alice", "avatar": file_obj})
-
-    assert "avatar" not in step.cfp_session["data"]["profile"]
-    assert step.cfp_session["data"]["profile"]["name"] == "Alice"
+    assert step.cfp_session["data"]["profile"] == {
+        "name": "Alice",
+        "biography": "A speaker",
+    }
 
 
 @pytest.mark.django_db
-def test_form_flow_step_get_form_data_returns_session_data():
+def test_form_flow_step_get_form_data_and_initial_copy_session():
     event = EventFactory()
     step = ProfileStep(event=event)
-    request = make_request(
+    step.request = make_request(
         event,
         resolver_match=make_resolver(),
-        session=make_cfp_session(data={"profile": {"name": "Alice"}}),
+        session=make_cfp_session(
+            data={"profile": {"name": "Alice"}},
+            initial={"profile": {"name": "Default"}},
+        ),
     )
-    step.request = request
-
-    assert step.get_form_data() == {"name": "Alice"}
-
-
-@pytest.mark.django_db
-def test_form_flow_step_get_form_data_returns_empty_when_no_data():
-    event = EventFactory()
-    step = ProfileStep(event=event)
-    request = make_request(
+    empty_step = ProfileStep(event=event)
+    empty_step.request = make_request(
         event, resolver_match=make_resolver(), session=make_cfp_session()
     )
-    step.request = request
 
-    assert step.get_form_data() == {}
+    data = step.get_form_data()
+    data["name"] = "Bob"
 
-
-@pytest.mark.django_db
-def test_form_flow_step_get_form_initial_returns_session_initial():
-    event = EventFactory()
-    step = ProfileStep(event=event)
-    request = make_request(
-        event,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(initial={"profile": {"name": "Default"}}),
-    )
-    step.request = request
-
+    assert data == {"name": "Bob"}
+    assert step.cfp_session["data"]["profile"] == {"name": "Alice"}
     assert step.get_form_initial() == {"name": "Default"}
+    assert empty_step.get_form_data() == {}
 
 
-@pytest.mark.django_db
-def test_form_flow_step_get_form_data_deep_copies():
-    event = EventFactory()
-    step = ProfileStep(event=event)
-    request = make_request(
-        event,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(data={"profile": {"name": "Alice"}}),
-    )
-    step.request = request
-
-    result = step.get_form_data()
-    result["name"] = "Bob"
-
-    assert step.cfp_session["data"]["profile"]["name"] == "Alice"
-
-
-def test_form_flow_step_annotate_stored_filenames_noop_without_files():
+def test_form_flow_step_annotate_stored_filenames_names_held_file_fields_only():
     step = ProfileStep(event=None)
     file_field = ImageField()
-    form = SimpleNamespace(fields={"avatar": file_field})
+    char_field = CharField()
+    form = SimpleNamespace(fields={"avatar": file_field, "name": char_field})
 
     step._annotate_stored_filenames(form, None)
-
     assert file_field.widget.stored_filename is None
 
-
-def test_form_flow_step_annotate_stored_filenames_names_held_file():
-    step = ProfileStep(event=None)
-    file_field = ImageField()
-    form = SimpleNamespace(fields={"avatar": file_field})
-
-    step._annotate_stored_filenames(form, {"avatar": SimpleNamespace(name="photo.jpg")})
-
+    step._annotate_stored_filenames(
+        form,
+        {
+            "avatar": SimpleNamespace(name="photo.jpg"),
+            "name": SimpleNamespace(name="x"),
+        },
+    )
     assert file_field.widget.stored_filename == "photo.jpg"
-
-
-def test_form_flow_step_annotate_stored_filenames_skips_non_file_fields():
-    step = ProfileStep(event=None)
-    char_field = CharField()
-    form = SimpleNamespace(fields={"name": char_field})
-
-    step._annotate_stored_filenames(form, {"name": SimpleNamespace(name="file.txt")})
-
     assert getattr(char_field.widget, "stored_filename", None) is None
 
 
 @pytest.mark.django_db
-def test_form_flow_step_config_reads_from_event():
-    event = EventFactory(
-        cfp__settings={
-            "flow": json.dumps({"steps": {"info": {"icon": "rocket", "fields": []}}})
-        }
-    )
-
-    step = InfoStep(event=event)
-
-    assert step.config.get("icon") == "rocket"
-
-
-@pytest.mark.django_db
-def test_form_flow_step_config_returns_empty_without_config():
-    event = EventFactory()
-
-    assert InfoStep(event=event).config == {}
-
-
-@pytest.mark.django_db
-def test_form_flow_step_title_uses_config():
+def test_form_flow_step_reads_header_and_fields_from_config():
     event = EventFactory(
         cfp__settings={
             "flow": json.dumps(
-                {"steps": {"info": {"title": "Custom Title", "fields": []}}}
+                {
+                    "steps": {
+                        "info": {
+                            "icon": "rocket",
+                            "title": "Custom Title",
+                            "text": "Custom Text",
+                            "fields": [{"key": "title"}],
+                        }
+                    }
+                }
             )
         }
     )
-
-    assert InfoStep(event=event).title.data["en"] == "Custom Title"
-
-
-@pytest.mark.django_db
-def test_form_flow_step_title_falls_back_to_default():
-    event = EventFactory()
-
-    title = InfoStep(event=event).title
-    assert isinstance(title, LazyI18nString)
-    assert title.data["en"]  # has a non-empty default
-
-
-@pytest.mark.django_db
-def test_form_flow_step_text_uses_config():
-    event = EventFactory(
-        cfp__settings={
-            "flow": json.dumps(
-                {"steps": {"info": {"text": "Custom Text", "fields": []}}}
-            )
-        }
-    )
-
-    assert InfoStep(event=event).text.data["en"] == "Custom Text"
-
-
-@pytest.mark.django_db
-def test_form_flow_step_get_form_kwargs_includes_event():
-    event = EventFactory()
     step = InfoStep(event=event)
-    request = make_request(
+    step.request = make_request(
         event, resolver_match=make_resolver(), session=make_cfp_session()
     )
-    step.request = request
 
-    assert step.get_form_kwargs()["event"] == event
-
-
-@pytest.mark.django_db
-def test_form_flow_step_get_form_kwargs_includes_field_configuration():
-    event = EventFactory(
-        cfp__settings={
-            "flow": json.dumps({"steps": {"info": {"fields": [{"key": "title"}]}}})
-        }
-    )
-    step = InfoStep(event=event)
-    request = make_request(
-        event, resolver_match=make_resolver(), session=make_cfp_session()
-    )
-    step.request = request
-
-    config = step.get_form_kwargs()["field_configuration"]
-    assert len(config) == 1
-    assert config[0]["key"] == "title"
+    assert step.config["icon"] == "rocket"
+    assert step.title == LazyI18nString({"en": "Custom Title"})
+    assert step.text == LazyI18nString({"en": "Custom Text"})
+    kwargs = step.get_form_kwargs()
+    assert kwargs["event"] == event
+    assert kwargs["field_configuration"] == [{"key": "title"}]
 
 
 @pytest.mark.django_db
-def test_form_flow_step_get_form_post_merges_stored_files():
+def test_form_flow_step_falls_back_to_defaults_without_config():
+    step = InfoStep(event=EventFactory())
+
+    assert step.config == {}
+    assert isinstance(step.title, LazyI18nString)
+    assert step.title.data["en"]
+
+
+@pytest.mark.django_db
+def test_form_flow_step_get_form_uses_stored_file():
     event = EventFactory()
     session = make_cfp_session()
 
-    # Phase 1: store a file via set_files on a GET request
     step = InfoStep(event=event)
     step.request = make_request(event, resolver_match=make_resolver(), session=session)
     step.set_files(
         {"image": SimpleUploadedFile("image.png", b"\x89PNG", content_type="image/png")}
     )
+    assert step.cfp_session["files"]["info"]["image"]["name"] == "image.png"
 
-    # Phase 2: fresh step (clears cached_property), POST request reusing same session
+    step = InfoStep(event=event)
+    step.request = make_request(event, resolver_match=make_resolver(), session=session)
+    form = step.get_form()
+
+    assert form.is_bound is False
+    assert form.fields["image"].widget.stored_filename == "image.png"
+
     step = InfoStep(event=event)
     request = make_request(
         event, method="post", resolver_match=make_resolver(), session=session
@@ -411,30 +240,10 @@ def test_form_flow_step_get_form_post_merges_stored_files():
         "title=Test&submission_type=" + str(event.cfp.default_type.pk)
     )
     step.request = request
-
     form = step.get_form()
 
+    assert form.is_bound is True
     assert form.files["image"].name == "image.png"
-
-
-@pytest.mark.django_db
-def test_form_flow_step_get_form_get_with_stored_file_is_unbound():
-    event = EventFactory()
-    session = make_cfp_session()
-
-    step = InfoStep(event=event)
-    step.request = make_request(event, resolver_match=make_resolver(), session=session)
-    step.set_files(
-        {"image": SimpleUploadedFile("image.png", b"\x89PNG", content_type="image/png")}
-    )
-
-    step = InfoStep(event=event)
-    step.request = make_request(event, resolver_match=make_resolver(), session=session)
-
-    form = step.get_form()
-
-    assert form.is_bound is False
-    assert form.fields["image"].widget.stored_filename == "image.png"
 
 
 @pytest.mark.parametrize(
@@ -566,6 +375,14 @@ def test_form_flow_step_is_valid_does_not_restore_stored_upload(make_image):
     assert step.cfp_session["files"]["info"]["image"] == stored
 
 
+def _vanished_temporary_upload():
+    tmp_file = TemporaryUploadedFile("slides.pdf", "application/pdf", 4, "utf-8")
+    tmp_file.write(b"%PDF")
+    tmp_file.seek(0)
+    Path(tmp_file.temporary_file_path()).unlink()
+    return tmp_file
+
+
 @pytest.mark.django_db
 def test_form_flow_step_is_valid_false_when_set_files_raises():
     class _AttachmentForm(Form):
@@ -583,17 +400,11 @@ def test_form_flow_step_is_valid_false_when_set_files_raises():
 
     event = EventFactory()
     step = _AttachmentStep(event=event)
-
-    tmp_file = TemporaryUploadedFile("slides.pdf", "application/pdf", 4, "utf-8")
-    tmp_file.write(b"%PDF")
-    tmp_file.seek(0)
-    Path(tmp_file.temporary_file_path()).unlink()
-
     request = make_request(
         event, method="post", resolver_match=make_resolver(), session=make_cfp_session()
     )
     request.POST = QueryDict("")
-    request._files = MultiValueDict({"attachment": [tmp_file]})
+    request._files = MultiValueDict({"attachment": [_vanished_temporary_upload()]})
     request._messages = FallbackStorage(request)
     step.request = request
 
@@ -612,30 +423,10 @@ def test_form_flow_step_set_files_raises_when_tmp_file_missing():
         event, resolver_match=make_resolver(), session=make_cfp_session()
     )
 
-    tmp_file = TemporaryUploadedFile("slides.pdf", "application/pdf", 4, "utf-8")
-    tmp_file.write(b"%PDF")
-    tmp_file.seek(0)
-    Path(tmp_file.temporary_file_path()).unlink()
-
     with pytest.raises(ValidationError):
-        step.set_files({"resource-0-resource": tmp_file})
+        step.set_files({"resource-0-resource": _vanished_temporary_upload()})
 
     assert step.cfp_session["files"].get("info", {}) == {}
-
-
-@pytest.mark.django_db
-def test_form_flow_step_set_files_persists_on_success():
-    event = EventFactory()
-    step = InfoStep(event=event)
-    step.request = make_request(
-        event, resolver_match=make_resolver(), session=make_cfp_session()
-    )
-
-    step.set_files(
-        {"image": SimpleUploadedFile("image.png", b"\x89PNG", content_type="image/png")}
-    )
-
-    assert "image" in step.cfp_session["files"]["info"]
 
 
 @pytest.mark.django_db
@@ -667,89 +458,29 @@ def test_form_flow_step_get_files_drops_missing_stored_file():
 
 
 @pytest.mark.django_db
-def test_dedraft_mixin_returns_draft_for_authenticated_speaker():
+def test_dedraft_mixin_returns_own_draft_only():
     event = EventFactory()
     user = UserFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
     speaker = SpeakerFactory(user=user, event=event)
-    submission.speakers.add(speaker)
-    step = InfoStep(event=event)
-    request = make_request(
-        event,
-        user=user,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(code=submission.code),
-    )
-    step.request = request
+    draft = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
+    draft.speakers.add(speaker)
+    submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    submitted.speakers.add(speaker)
+    other_draft = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
+    other_draft.speakers.add(SpeakerFactory(event=event))
 
-    assert step.dedraft_submission == submission
+    def dedraft(user=None, **session):
+        step = InfoStep(event=event)
+        step.request = make_request(
+            event,
+            user=user,
+            resolver_match=make_resolver(),
+            session=make_cfp_session(**session),
+        )
+        return step.dedraft_submission
 
-
-@pytest.mark.django_db
-def test_dedraft_mixin_returns_none_for_anonymous():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
-    step = InfoStep(event=event)
-    request = make_request(
-        event,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(code=submission.code),
-    )
-    step.request = request
-
-    assert step.dedraft_submission is None
-
-
-@pytest.mark.django_db
-def test_dedraft_mixin_returns_none_without_code():
-    event = EventFactory()
-    UserFactory()
-    step = InfoStep(event=event)
-    request = make_request(
-        event,
-        user=UserFactory(),
-        resolver_match=make_resolver(),
-        session=make_cfp_session(),
-    )
-    step.request = request
-
-    assert step.dedraft_submission is None
-
-
-@pytest.mark.django_db
-def test_dedraft_mixin_returns_none_for_non_draft():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    speaker = SpeakerFactory(user=user, event=event)
-    submission.speakers.add(speaker)
-    step = InfoStep(event=event)
-    request = make_request(
-        event,
-        user=user,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(code=submission.code),
-    )
-    step.request = request
-
-    assert step.dedraft_submission is None
-
-
-@pytest.mark.django_db
-def test_dedraft_mixin_returns_none_for_wrong_speaker():
-    event = EventFactory()
-    user = UserFactory()
-    other_user = UserFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
-    other_speaker = SpeakerFactory(user=other_user, event=event)
-    submission.speakers.add(other_speaker)
-    step = InfoStep(event=event)
-    request = make_request(
-        event,
-        user=user,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(code=submission.code),
-    )
-    step.request = request
-
-    assert step.dedraft_submission is None
+    assert dedraft(user=user, code=draft.code) == draft
+    assert dedraft(code=draft.code) is None
+    assert dedraft(user=user) is None
+    assert dedraft(user=user, code=submitted.code) is None
+    assert dedraft(user=user, code=other_draft.code) is None

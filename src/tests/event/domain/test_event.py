@@ -65,83 +65,40 @@ from tests.utils import refresh
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def _common_fields():
-    return {
-        "name": "Test Event",
-        "timezone": "UTC",
-        "email": "test@example.com",
-        "locale": "en",
-        "date_from": dt.date(2025, 6, 10),
-        "date_to": dt.date(2025, 6, 12),
-    }
-
-
-def test_create_event_lowercases_slug():
+@pytest.mark.parametrize("with_user", (True, False), ids=("logged", "unlogged"))
+def test_create_event_persists_fields_initialises_and_logs(with_user):
     organiser = OrganiserFactory()
-
-    event = create_event(
-        organiser=organiser, locales=["en"], slug="MixedCase", **_common_fields()
-    )
-
-    assert event.slug == "mixedcase"
-    assert Event.objects.get(pk=event.pk).slug == "mixedcase"
-
-
-def test_create_event_writes_locales():
-    organiser = OrganiserFactory()
-
-    event = create_event(
-        organiser=organiser, locales=["en", "de"], slug="evt", **_common_fields()
-    )
-
-    assert event.locales == ["en", "de"]
-    assert event.content_locales == ["en", "de"]
-
-
-def test_create_event_passes_through_extra_fields():
-    organiser = OrganiserFactory()
+    user = UserFactory() if with_user else None
 
     event = create_event(
         organiser=organiser,
-        locales=["en"],
-        slug="evt",
+        locales=["en", "de"],
+        user=user,
+        slug="MixedCase",
         primary_color="#ff0000",
-        **_common_fields(),
+        name="Test Event",
+        timezone="UTC",
+        email="test@example.com",
+        locale="en",
+        date_from=dt.date(2025, 6, 10),
+        date_to=dt.date(2025, 6, 12),
     )
 
+    event = refresh(event)
+    assert event.slug == "mixedcase"
+    assert event.locales == ["en", "de"]
+    assert event.content_locales == ["en", "de"]
     assert event.primary_color == "#ff0000"
-
-
-def test_create_event_initialises_event():
-    organiser = OrganiserFactory()
-
-    event = create_event(
-        organiser=organiser, locales=["en"], slug="evt", **_common_fields()
-    )
-
     with scope(event=event):
         assert event.cfp.event == event
-        assert event.schedules.filter(version__isnull=True).exists()
         assert event.mail_templates.count() == len(MailTemplateRoles.choices)
-        assert event.review_phases.count() == 2
-        assert event.score_categories.count() == 1
-
-
-def test_create_event_logs_action_when_user_passed():
-    organiser = OrganiserFactory()
-    user = UserFactory()
-
-    event = create_event(
-        organiser=organiser, locales=["en"], user=user, slug="evt", **_common_fields()
-    )
-
-    with scope(event=event):
         assert (
             event.logged_actions().filter(action_type="pretalx.event.create").exists()
+            is with_user
         )
 
 
-def test_post_create_event_sets_cfp_deadline(event):
+def test_post_create_event_with_umbrella_rights_writes_settings_without_team(event):
     deadline = dt.datetime(2025, 7, 1, 12, 0)
     user = UserFactory()
     TeamFactory(
@@ -150,50 +107,43 @@ def test_post_create_event_sets_cfp_deadline(event):
         can_change_event_settings=True,
         can_change_submissions=True,
     ).members.add(user)
+    original_display = dict(event.display_settings)
+    team_count = event.organiser.teams.count()
+    event.logo = "fake/path.png"
 
-    post_create_event(event, user=user, deadline=deadline)
+    with patch("pretalx.event.models.event.Event.process_image") as mock_process:
+        post_create_event(
+            event,
+            user=user,
+            deadline=deadline,
+            display_settings={"header_pattern": "topo", "header_image": ""},
+        )
 
+    mock_process.assert_called_once_with("logo")
+    event.refresh_from_db(fields=["display_settings"])
     with scope(event=event):
         assert event.cfp.deadline == deadline.replace(tzinfo=event.tz)
+    assert event.display_settings == {**original_display, "header_pattern": "topo"}
+    assert event.organiser.teams.count() == team_count
 
 
-def test_post_create_event_writes_display_settings(event):
-    user = UserFactory()
-    TeamFactory(
-        organiser=event.organiser,
-        all_events=True,
-        can_change_event_settings=True,
-        can_change_submissions=True,
-    ).members.add(user)
-
-    post_create_event(event, user=user, display_settings={"header_pattern": "topo"})
-
-    event.refresh_from_db()
-    assert event.display_settings["header_pattern"] == "topo"
-
-
-def test_post_create_event_skips_empty_display_setting_values(event):
-    user = UserFactory()
-    TeamFactory(
-        organiser=event.organiser,
-        all_events=True,
-        can_change_event_settings=True,
-        can_change_submissions=True,
-    ).members.add(user)
-    original = dict(event.display_settings)
-
-    post_create_event(event, user=user, display_settings={"header_pattern": ""})
-
-    event.refresh_from_db()
-    assert event.display_settings == original
-
-
-def test_post_create_event_creates_creator_team_when_user_lacks_umbrella_rights(event):
+@pytest.mark.parametrize(
+    "display_settings", (None, {"header_pattern": ""}), ids=("absent", "empty_values")
+)
+def test_post_create_event_without_umbrella_rights_creates_creator_team(
+    event, display_settings
+):
     user = UserFactory()
     initial_team_count = event.organiser.teams.count()
+    original_display = dict(event.display_settings)
+    event.logo = None
 
-    post_create_event(event, user=user)
+    with patch("pretalx.event.models.event.Event.process_image") as mock_process:
+        post_create_event(event, user=user, display_settings=display_settings)
 
+    mock_process.assert_not_called()
+    event.refresh_from_db(fields=["display_settings"])
+    assert event.display_settings == original_display
     assert event.organiser.teams.count() == initial_team_count + 1
     new_team = event.organiser.teams.exclude(
         pk__in=event.organiser.teams.filter(all_events=True).values("pk")
@@ -201,111 +151,34 @@ def test_post_create_event_creates_creator_team_when_user_lacks_umbrella_rights(
     assert new_team.can_change_event_settings
     assert new_team.can_change_submissions
     assert not new_team.all_events
-    assert user in new_team.members.all()
-    assert event in new_team.limit_events.all()
+    assert list(new_team.members.all()) == [user]
+    assert list(new_team.limit_events.all()) == [event]
 
 
-def test_post_create_event_skips_creator_team_when_user_has_umbrella_rights(event):
-    user = UserFactory()
-    TeamFactory(
-        organiser=event.organiser,
-        all_events=True,
-        can_change_event_settings=True,
-        can_change_submissions=True,
-    ).members.add(user)
-    initial_team_count = event.organiser.teams.count()
-
-    post_create_event(event, user=user)
-
-    assert event.organiser.teams.count() == initial_team_count
-
-
-def test_post_create_event_processes_logo_when_present(event):
-    user = UserFactory()
-    TeamFactory(
-        organiser=event.organiser,
-        all_events=True,
-        can_change_event_settings=True,
-        can_change_submissions=True,
-    ).members.add(user)
-    event.logo = "fake/path.png"
-
-    with patch("pretalx.event.models.event.Event.process_image") as mock_process:
-        post_create_event(event, user=user)
-
-    mock_process.assert_called_once_with("logo")
-
-
-def test_post_create_event_skips_logo_processing_when_absent(event):
-    user = UserFactory()
-    TeamFactory(
-        organiser=event.organiser,
-        all_events=True,
-        can_change_event_settings=True,
-        can_change_submissions=True,
-    ).members.add(user)
-    event.logo = None
-
-    with patch("pretalx.event.models.event.Event.process_image") as mock_process:
-        post_create_event(event, user=user)
-
-    mock_process.assert_not_called()
-
-
-def test_initialise_event_creates_cfp(event):
+def test_initialise_event_creates_supporting_data(event):
     with scope(event=event):
         assert event.cfp.event == event
         assert event.cfp.default_type.event_id == event.pk
-
-
-def test_initialise_event_creates_wip_schedule(event):
-    with scope(event=event):
         assert event.schedules.filter(version__isnull=True).exists()
-
-
-def test_initialise_event_creates_mail_templates(event):
-    with scope(event=event):
         assert event.mail_templates.count() == len(MailTemplateRoles.choices)
-
-
-def test_initialise_event_creates_review_phases(event):
-    with scope(event=event):
         assert event.review_phases.count() == 2
-
-
-def test_initialise_event_creates_score_categories(event):
-    with scope(event=event):
-        assert event.score_categories.count() == 1
-        category = event.score_categories.first()
+        category = event.score_categories.get()
         assert category.scores.count() == 3
 
 
-def test_initialise_event_is_idempotent(event):
+def test_initialise_event_is_idempotent_and_recreates_deleted_parts(event):
     with scope(event=event):
         template_count = event.mail_templates.count()
         schedule_count = event.schedules.count()
+        existing_type = event.cfp.default_type
 
         initialise_event(event)
 
         assert event.mail_templates.count() == template_count
         assert event.schedules.count() == schedule_count
 
-
-def test_initialise_event_recreates_after_deletion(event):
-    with scope(event=event):
         event.cfp.delete()
         event.mail_templates.all().delete()
-        initialise_event(event)
-
-        assert event.cfp.event == event
-        assert event.cfp.default_type.event_id == event.pk
-        assert event.mail_templates.count() == len(MailTemplateRoles.choices)
-
-
-def test_initialise_event_reuses_existing_submission_type(event):
-    with scope(event=event):
-        existing_type = event.cfp.default_type
-        event.cfp.delete()
 
     event = refresh(event)
     with scope(event=event):
@@ -313,216 +186,80 @@ def test_initialise_event_reuses_existing_submission_type(event):
 
         assert event.cfp.default_type == existing_type
         assert SubmissionType.objects.filter(event=event).count() == 1
+        assert event.mail_templates.count() == template_count
 
 
-def test_copy_event_data_copies_attributes(event):
-    other_event = EventFactory(
+def test_copy_event_data_copies_configuration(event):
+    user = UserFactory()
+    deadline = tz_now() + dt.timedelta(days=30)
+    source = EventFactory(
         organiser=event.organiser,
         primary_color="#ff0000",
         locale="de",
         locales=["de", "en"],
         feature_flags={"testing": True},
+        custom_domain="https://custom.example.org",
+        mail_settings={"signature": "-- The Team", "reply_to": "team@example.org"},
+        attendee_signup_settings={"signup_domains": ["example.org"]},
+        cfp__deadline=deadline,
     )
+    source.settings.custom_value = "test123"
+    MailTemplateFactory(
+        event=source, subject="Custom Template", is_auto_created=False, role=None
+    )
+    EventExtraLinkFactory(
+        event=source, label="Blog", url="https://blog.example.com", role="footer"
+    )
+    TagFactory(event=source, tag="Sponsored", color="#00ff00", is_public=True)
+    TagFactory(event=source, tag="Keynote")
+    UserEventPreferencesFactory(user=user, event=source, preferences={"theme": "dark"})
 
-    copy_event_data(event=event, source=other_event)
+    copy_event_data(event=event, source=source)
 
+    event = refresh(event)
     assert event.primary_color == "#ff0000"
     assert event.locale == "de"
-    assert event.feature_flags == other_event.feature_flags
-
-
-def test_copy_event_data_does_not_copy_custom_domain(event):
-    other_event = EventFactory(
-        organiser=event.organiser, custom_domain="https://custom.example.org"
-    )
-
-    copy_event_data(event=event, source=other_event)
-
+    assert event.feature_flags == source.feature_flags
     assert event.custom_domain is None
-
-
-def test_copy_event_data_respects_skip_attributes(event):
-    other_event = EventFactory(
-        organiser=event.organiser,
-        primary_color="#ff0000",
-        feature_flags={"testing": True},
-    )
-
-    original_flags = event.feature_flags.copy()
-    copy_event_data(event=event, source=other_event, skip_attributes=["feature_flags"])
-
-    assert event.feature_flags == original_flags
-    assert event.primary_color == "#ff0000"
-
-
-def test_copy_event_data_copies_submission_types(event):
-    other_event = EventFactory(organiser=event.organiser)
-    SubmissionTypeFactory(event=other_event, name="Workshop")
-
-    with scope(event=other_event):
-        source_type_count = other_event.submission_types.count()
-
-    copy_event_data(event=event, source=other_event)
-
-    with scope(event=event):
-        assert event.submission_types.count() == source_type_count
-
-
-def test_copy_event_data_copies_tracks(event):
-    other_event = EventFactory(organiser=event.organiser)
-    TrackFactory(event=other_event, name="Security")
-
-    copy_event_data(event=event, source=other_event)
-
-    with scope(event=event):
-        track_names = [str(t.name) for t in event.tracks.all()]
-        assert track_names == ["Security"]
-
-
-def test_copy_event_data_adds_event_and_copied_tracks_to_teams(event):
-    source = EventFactory(organiser=event.organiser)
-    limited = TrackFactory(event=source, name="Security")
-    TrackFactory(event=source, name="Design")
-    foreign_track = TrackFactory(event=EventFactory(organiser=event.organiser))
-    team = TeamFactory(organiser=event.organiser, all_events=False)
-    team.limit_events.add(source)
-    team.limit_tracks.add(limited, foreign_track)
-    untracked_team = TeamFactory(organiser=event.organiser, all_events=False)
-    untracked_team.limit_events.add(source)
-
-    copy_event_data(event=event, source=source, teams=[team, untracked_team])
-
-    with scope(event=event):
-        copied = event.tracks.get(name="Security")
-    assert set(team.limit_events.all()) == {source, event}
-    assert set(team.limit_tracks.all()) == {limited, foreign_track, copied}
-    assert set(untracked_team.limit_events.all()) == {source, event}
-    assert list(untracked_team.limit_tracks.all()) == []
-
-
-def test_copy_event_data_copies_mail_templates(event):
-    other_event = EventFactory(organiser=event.organiser)
-    MailTemplateFactory(
-        event=other_event, subject="Custom Template", is_auto_created=False, role=None
-    )
-
-    copy_event_data(event=event, source=other_event)
-
-    with scope(event=event):
-        subjects = [str(t.subject) for t in event.mail_templates.all()]
-        assert "Custom Template" in subjects
-
-
-def test_copy_event_data_copies_mail_settings(event):
-    other_event = EventFactory(
-        organiser=event.organiser,
-        mail_settings={"signature": "-- The Team", "reply_to": "team@example.org"},
-    )
-
-    copy_event_data(event=event, source=other_event)
-
-    event = refresh(event)
     assert event.mail_settings["signature"] == "-- The Team"
     assert event.mail_settings["reply_to"] == "team@example.org"
-
-
-def test_copy_event_data_copies_attendee_signup_settings(event):
-    other_event = EventFactory(
-        organiser=event.organiser,
-        attendee_signup_settings={"signup_domains": ["example.org"]},
-    )
-
-    copy_event_data(event=event, source=other_event)
-
-    event = refresh(event)
     assert event.attendee_signup_settings["signup_domains"] == ["example.org"]
-
-
-def test_copy_event_data_copies_tags(event):
-    other_event = EventFactory(organiser=event.organiser)
-    TagFactory(event=other_event, tag="Sponsored", color="#00ff00", is_public=True)
-    TagFactory(event=other_event, tag="Keynote")
-
-    copy_event_data(event=event, source=other_event)
-
+    assert event.settings.custom_value == "test123"
     with scope(event=event):
+        assert event.cfp.deadline == deadline
+        assert [
+            str(t.subject) for t in event.mail_templates.filter(role__isnull=True)
+        ] == ["Custom Template"]
+        assert event.mail_templates.count() == len(MailTemplateRoles.choices) + 1
+        link = event.extra_links.get()
+        assert (str(link.label), link.url, link.role) == (
+            "Blog",
+            "https://blog.example.com",
+            "footer",
+        )
         tags = {t.tag: t for t in event.tags.all()}
     assert set(tags) == {"Sponsored", "Keynote"}
     assert tags["Sponsored"].color == "#00ff00"
     assert tags["Sponsored"].is_public is True
-    with scope(event=other_event):
-        assert other_event.tags.count() == 2
+    with scope(event=source):
+        assert source.tags.count() == 2
+    prefs = UserEventPreferences.objects.get(event=event, user=user)
+    assert prefs.preferences == {"theme": "dark"}
 
 
-def test_copy_event_data_copies_extra_links(event):
-    other_event = EventFactory(organiser=event.organiser)
-    EventExtraLinkFactory(
-        event=other_event, label="Blog", url="https://blog.example.com", role="footer"
-    )
-
-    copy_event_data(event=event, source=other_event)
-
-    with scope(event=event):
-        links = list(event.extra_links.all())
-        assert len(links) == 1
-        assert str(links[0].label) == "Blog"
-        assert links[0].url == "https://blog.example.com"
-
-
-def test_copy_event_data_copies_rooms_and_availabilities(event):
-    other_event = EventFactory(
-        organiser=event.organiser,
-        date_from=dt.date(2025, 1, 1),
-        date_to=dt.date(2025, 1, 3),
-    )
-    room = RoomFactory(event=other_event, name="Main Hall")
-    avail = AvailabilityFactory(event=other_event, room=room)
-    event.rooms.all().delete()
-
-    copy_event_data(event=event, source=other_event)
-
-    delta = event.date_from - other_event.date_from
-    with scope(event=event):
-        rooms = list(event.rooms.all())
-        assert len(rooms) == 1
-        assert str(rooms[0].name) == "Main Hall"
-        copied_avail = rooms[0].availabilities.first()
-        assert copied_avail is not None
-        assert copied_avail.start == avail.start + delta
-        assert copied_avail.end == avail.end + delta
-
-
-def test_copy_event_data_omits_hidden_rooms(event):
-    other_event = EventFactory(organiser=event.organiser)
-    RoomFactory(event=other_event, name="Main Hall")
-    RoomFactory(event=other_event, name="Attic", hidden=True)
-    event.rooms.all().delete()
-
-    copy_event_data(event=event, source=other_event)
-
-    with scope(event=event):
-        assert [str(room.name) for room in event.rooms.all()] == ["Main Hall"]
-
-
-def test_copy_event_data_skips_rooms_when_target_has_rooms(event):
-    other_event = EventFactory(organiser=event.organiser)
-    RoomFactory(event=other_event, name="Source Room")
-    RoomFactory(event=event, name="Existing Room")
-
-    copy_event_data(event=event, source=other_event)
-
-    with scope(event=event):
-        room_names = [str(r.name) for r in event.rooms.all()]
-        assert "Existing Room" in room_names
-        assert "Source Room" not in room_names
-
-
-def test_copy_event_data_copies_questions_with_options_and_tracks(event):
-    other_event = EventFactory(organiser=event.organiser)
-    track = TrackFactory(event=other_event, name="DevTrack")
-    sub_type = SubmissionTypeFactory(event=other_event, name="Lightning")
+def test_copy_event_data_copies_structure_and_remaps_track_and_type_links(event):
+    source = EventFactory(organiser=event.organiser)
+    track = TrackFactory(event=source, name="Security")
+    TrackFactory(event=source, name="Design")
+    foreign_track = TrackFactory(event=EventFactory(organiser=event.organiser))
+    sub_type = SubmissionTypeFactory(event=source, name="Workshop")
+    team = TeamFactory(organiser=event.organiser, all_events=False)
+    team.limit_events.add(source)
+    team.limit_tracks.add(track, foreign_track)
+    untracked_team = TeamFactory(organiser=event.organiser, all_events=False)
+    untracked_team.limit_events.add(source)
     question = QuestionFactory(
-        event=other_event,
+        event=source,
         question="What is your experience level?",
         variant="choices",
         target="submission",
@@ -531,171 +268,125 @@ def test_copy_event_data_copies_questions_with_options_and_tracks(event):
     AnswerOptionFactory(question=question, answer="Expert")
     question.tracks.add(track)
     question.submission_types.add(sub_type)
-
-    copy_event_data(event=event, source=other_event)
-
-    with scope(event=event):
-        questions = list(event.questions.all())
-        assert len(questions) == 1
-        copied_q = questions[0]
-        assert str(copied_q.question) == "What is your experience level?"
-        assert copied_q.options.count() == 2
-        assert copied_q.tracks.count() == 1
-        assert copied_q.submission_types.count() == 1
-
-
-def test_copy_event_data_does_not_copy_question_answers(event):
-    other_event = EventFactory(organiser=event.organiser)
-    question = QuestionFactory(
-        event=other_event,
-        question="Dietary needs?",
-        variant="choices",
-        target="speaker",
+    AnswerFactory(
+        question=question, answer="Expert", submission=SubmissionFactory(event=source)
     )
-    AnswerOptionFactory(question=question, answer="Vegan")
-    sub = SubmissionFactory(event=other_event)
-    AnswerFactory(question=question, answer="Vegan", submission=sub)
-
-    copy_event_data(event=event, source=other_event)
-
-    with scope(event=event):
-        copied_q = event.questions.first()
-        assert copied_q is not None
-        assert str(copied_q.question) == "Dietary needs?"
-        assert Answer.objects.filter(question=copied_q).count() == 0
-
-
-def test_copy_event_data_copies_speaker_information(event):
-    other_event = EventFactory(organiser=event.organiser)
-    track = TrackFactory(event=other_event, name="InfoTrack")
-    sub_type = SubmissionTypeFactory(event=other_event, name="Workshop")
     info = SpeakerInformationFactory(
-        event=other_event, title="Travel Info", text="We cover travel costs."
+        event=source, title="Travel Info", text="We cover travel costs."
     )
     info.limit_tracks.add(track)
     info.limit_types.add(sub_type)
-
-    copy_event_data(event=event, source=other_event)
-
-    with scope(event=event):
-        infos = list(event.information.all())
-        assert len(infos) == 1
-        copied_info = infos[0]
-        assert str(copied_info.title) == "Travel Info"
-        assert copied_info.limit_tracks.count() == 1
-        assert copied_info.limit_types.count() == 1
-
-
-def test_copy_event_data_copies_user_preferences(event):
-    user = UserFactory()
-    other_event = EventFactory(organiser=event.organiser)
-    UserEventPreferencesFactory(
-        user=user, event=other_event, preferences={"theme": "dark"}
-    )
-
-    copy_event_data(event=event, source=other_event)
-
-    prefs = UserEventPreferences.objects.filter(event=event, user=user).first()
-    assert prefs is not None
-    assert prefs.preferences == {"theme": "dark"}
-
-
-def test_copy_event_data_copies_score_categories_with_tracks(event):
-    other_event = EventFactory(organiser=event.organiser)
-    track = TrackFactory(event=other_event, name="ScoreTrack")
-    other_event.score_categories.all().delete()
-    category = ReviewScoreCategoryFactory(event=other_event, name="Quality")
+    source.score_categories.all().delete()
+    category = ReviewScoreCategoryFactory(event=source, name="Quality")
     category.limit_tracks.add(track)
     ReviewScoreFactory(category=category, value=0, label="Bad")
     ReviewScoreFactory(category=category, value=1, label="Good")
+    with scope(event=source):
+        source_type_count = source.submission_types.count()
 
-    copy_event_data(event=event, source=other_event)
-
-    with scope(event=event):
-        categories = list(event.score_categories.all())
-        assert len(categories) == 1
-        quality_cat = categories[0]
-        assert str(quality_cat.name) == "Quality"
-        assert quality_cat.scores.count() == 2
-        assert quality_cat.limit_tracks.count() == 1
-
-
-def test_copy_event_data_copies_hierarkey_settings(event):
-    other_event = EventFactory(organiser=event.organiser)
-    other_event.settings.custom_value = "test123"
-
-    copy_event_data(event=event, source=other_event)
-
-    assert event.settings.custom_value == "test123"
-
-
-def test_copy_event_data_copies_cfp_deadline(event):
-    deadline = tz_now() + dt.timedelta(days=30)
-    other_event = EventFactory(organiser=event.organiser, cfp__deadline=deadline)
-
-    copy_event_data(event=event, source=other_event)
+    copy_event_data(event=event, source=source, teams=[team, untracked_team])
 
     with scope(event=event):
-        assert event.cfp.deadline == deadline
+        assert event.submission_types.count() == source_type_count
+        copied_type = event.submission_types.get(name="Workshop")
+        assert sorted(str(t.name) for t in event.tracks.all()) == ["Design", "Security"]
+        copied_track = event.tracks.get(name="Security")
+        copied_q = event.questions.get()
+        assert str(copied_q.question) == "What is your experience level?"
+        assert sorted(o.answer for o in copied_q.options.all()) == [
+            "Beginner",
+            "Expert",
+        ]
+        assert list(copied_q.tracks.all()) == [copied_track]
+        assert list(copied_q.submission_types.all()) == [copied_type]
+        assert Answer.objects.filter(question=copied_q).count() == 0
+        copied_info = event.information.get()
+        assert str(copied_info.title) == "Travel Info"
+        assert list(copied_info.limit_tracks.all()) == [copied_track]
+        assert list(copied_info.limit_types.all()) == [copied_type]
+        quality = event.score_categories.get()
+        assert str(quality.name) == "Quality"
+        assert sorted(quality.scores.values_list("value", "label")) == [
+            (0, "Bad"),
+            (1, "Good"),
+        ]
+        assert list(quality.limit_tracks.all()) == [copied_track]
+    assert set(team.limit_events.all()) == {source, event}
+    assert set(team.limit_tracks.all()) == {track, foreign_track, copied_track}
+    assert set(untracked_team.limit_events.all()) == {source, event}
+    assert list(untracked_team.limit_tracks.all()) == []
 
 
-def test_copy_event_data_copies_review_phases_with_date_shift(event):
-    other_event = EventFactory(
+def test_copy_event_data_shifts_dates_and_omits_hidden_rooms(event):
+    source = EventFactory(
         organiser=event.organiser,
         date_from=dt.date(2025, 1, 1),
         date_to=dt.date(2025, 1, 3),
     )
-
-    delta = event.date_from - other_event.date_from
-    with scope(event=other_event):
-        other_event.review_phases.all().delete()
-        phase_start = tz_now()
-        phase_end = tz_now() + dt.timedelta(days=14)
+    room = RoomFactory(event=source, name="Main Hall")
+    RoomFactory(event=source, name="Attic", hidden=True)
+    avail = AvailabilityFactory(event=source, room=room)
+    phase_start = tz_now()
+    phase_end = tz_now() + dt.timedelta(days=14)
+    with scope(event=source):
+        source.review_phases.all().delete()
         ReviewPhaseFactory(
-            event=other_event,
+            event=source,
             name="Source Phase",
             start=phase_start,
             end=phase_end,
             is_active=True,
         )
+    delta = event.date_from - source.date_from
 
-    copy_event_data(event=event, source=other_event)
+    copy_event_data(event=event, source=source)
 
     with scope(event=event):
-        phases = list(event.review_phases.all())
-        assert len(phases) == 1
-        phase = phases[0]
+        copied_room = event.rooms.get()
+        assert str(copied_room.name) == "Main Hall"
+        copied_avail = copied_room.availabilities.get()
+        assert copied_avail.start == avail.start + delta
+        assert copied_avail.end == avail.end + delta
+        phase = event.review_phases.get()
         assert str(phase.name) == "Source Phase"
         assert phase.is_active is False
         assert phase.start == phase_start + delta
         assert phase.end == phase_end + delta
 
 
+def test_copy_event_data_respects_skip_attributes_and_existing_rooms(event):
+    source = EventFactory(
+        organiser=event.organiser,
+        primary_color="#ff0000",
+        feature_flags={"testing": True},
+    )
+    RoomFactory(event=source, name="Source Room")
+    RoomFactory(event=event, name="Existing Room")
+    original_flags = event.feature_flags.copy()
+
+    copy_event_data(event=event, source=source, skip_attributes=["feature_flags"])
+
+    assert event.feature_flags == original_flags
+    assert event.primary_color == "#ff0000"
+    with scope(event=event):
+        assert [str(r.name) for r in event.rooms.all()] == ["Existing Room"]
+
+
 def _reload(event):
     return Event.objects.get(pk=event.pk)
 
 
-def test_apply_date_edit_moves_wip_slots():
-    event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
-    sub = SubmissionFactory(event=event)
-    slot = TalkSlotFactory(submission=sub, schedule=event.wip_schedule)
-    original_start = slot.start
-    old_event = _reload(event)
-
-    event.date_from = dt.date(2024, 6, 11)
-    event.date_to = dt.date(2024, 6, 13)
-    apply_date_edit(event, old_event)
-
-    slot.refresh_from_db()
-    assert slot.start == original_start + dt.timedelta(days=1)
-
-
-def test_apply_date_edit_leaves_published_slots_alone():
+def test_apply_date_edit_moves_wip_slots_and_availabilities_not_published():
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
     sub = SubmissionFactory(event=event)
     released = ScheduleFactory(event=event, version="v1")
     published_slot = TalkSlotFactory(submission=sub, schedule=released)
     wip_slot = TalkSlotFactory(submission=sub, schedule=event.wip_schedule)
+    avail = AvailabilityFactory(
+        event=event,
+        start=dt.datetime(2024, 6, 10, 9, 0, tzinfo=dt.UTC),
+        end=dt.datetime(2024, 6, 10, 17, 0, tzinfo=dt.UTC),
+    )
     published_original_start = published_slot.start
     wip_original_start = wip_slot.start
     old_event = _reload(event)
@@ -706,32 +397,28 @@ def test_apply_date_edit_leaves_published_slots_alone():
 
     published_slot.refresh_from_db()
     wip_slot.refresh_from_db()
+    avail.refresh_from_db()
     assert published_slot.start == published_original_start
     assert wip_slot.start == wip_original_start + dt.timedelta(days=1)
+    assert avail.start == dt.datetime(2024, 6, 11, 9, 0, tzinfo=dt.UTC)
+    assert avail.end == dt.datetime(2024, 6, 11, 17, 0, tzinfo=dt.UTC)
 
 
-def test_apply_date_edit_shortening_deschedules_outside_talks():
+def test_apply_date_edit_shortening_deschedules_and_deletes_outside_range():
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 14))
     sub = SubmissionFactory(event=event)
-    slot = TalkSlotFactory(
+    inside_slot = TalkSlotFactory(
+        submission=sub,
+        schedule=event.wip_schedule,
+        start=dt.datetime(2024, 6, 10, 10, 0, tzinfo=dt.UTC),
+        end=dt.datetime(2024, 6, 10, 11, 0, tzinfo=dt.UTC),
+    )
+    outside_slot = TalkSlotFactory(
         submission=sub,
         schedule=event.wip_schedule,
         start=dt.datetime(2024, 6, 14, 10, 0, tzinfo=dt.UTC),
         end=dt.datetime(2024, 6, 14, 11, 0, tzinfo=dt.UTC),
     )
-    old_event = _reload(event)
-
-    event.date_to = dt.date(2024, 6, 12)
-    apply_date_edit(event, old_event)
-
-    slot.refresh_from_db()
-    assert slot.start is None
-    assert slot.end is None
-    assert slot.room is None
-
-
-def test_apply_date_edit_shortening_deletes_outside_availabilities():
-    event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 14))
     inside = AvailabilityFactory(
         event=event,
         start=dt.datetime(2024, 6, 10, 9, 0, tzinfo=dt.UTC),
@@ -742,88 +429,44 @@ def test_apply_date_edit_shortening_deletes_outside_availabilities():
         start=dt.datetime(2024, 6, 14, 9, 0, tzinfo=dt.UTC),
         end=dt.datetime(2024, 6, 14, 17, 0, tzinfo=dt.UTC),
     )
-    # Need a WIP slot so apply_date_edit does not short-circuit on the
-    # "no scheduled talks" guard.
-    sub = SubmissionFactory(event=event)
-    TalkSlotFactory(submission=sub, schedule=event.wip_schedule)
     old_event = _reload(event)
 
     event.date_to = dt.date(2024, 6, 12)
     apply_date_edit(event, old_event)
 
+    inside_slot.refresh_from_db()
+    outside_slot.refresh_from_db()
+    assert inside_slot.start == dt.datetime(2024, 6, 10, 10, 0, tzinfo=dt.UTC)
+    assert (outside_slot.start, outside_slot.end, outside_slot.room) == (
+        None,
+        None,
+        None,
+    )
     assert Availability.objects.filter(pk=inside.pk).exists()
     assert not Availability.objects.filter(pk=outside.pk).exists()
 
 
-def test_apply_date_edit_no_slots_does_nothing():
+def test_apply_date_edit_without_slots_or_with_extended_end_moves_nothing():
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
     old_event = _reload(event)
-
     event.date_from = dt.date(2024, 6, 11)
     event.date_to = dt.date(2024, 6, 13)
-    apply_date_edit(event, old_event)  # must not raise
 
+    apply_date_edit(event, old_event)
 
-def test_apply_date_edit_only_end_extended_does_not_move_slots():
-    event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
+    event = _reload(event)
     sub = SubmissionFactory(event=event)
     slot = TalkSlotFactory(submission=sub, schedule=event.wip_schedule)
     original_start = slot.start
-    old_event = _reload(event)
-
     event.date_to = dt.date(2024, 6, 14)
+
     apply_date_edit(event, old_event)
 
     slot.refresh_from_db()
     assert slot.start == original_start
 
 
-def test_apply_date_edit_moves_availabilities_by_delta():
-    event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
-    sub = SubmissionFactory(event=event)
-    TalkSlotFactory(submission=sub, schedule=event.wip_schedule)
-    avail = AvailabilityFactory(
-        event=event,
-        start=dt.datetime(2024, 6, 10, 9, 0, tzinfo=dt.UTC),
-        end=dt.datetime(2024, 6, 10, 17, 0, tzinfo=dt.UTC),
-    )
-    original_start = avail.start
-    original_end = avail.end
-    old_event = _reload(event)
-
-    event.date_from = dt.date(2024, 6, 11)
-    event.date_to = dt.date(2024, 6, 13)
-    apply_date_edit(event, old_event)
-
-    avail.refresh_from_db()
-    assert avail.start == original_start + dt.timedelta(days=1)
-    assert avail.end == original_end + dt.timedelta(days=1)
-
-
-def test_apply_timezone_edit_preserves_apparent_local_time():
-    event = EventFactory(
-        date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12), timezone="UTC"
-    )
-    sub = SubmissionFactory(event=event)
-    slot = TalkSlotFactory(
-        submission=sub,
-        schedule=event.wip_schedule,
-        start=dt.datetime(2024, 6, 10, 10, 0, tzinfo=dt.UTC),
-        end=dt.datetime(2024, 6, 10, 11, 0, tzinfo=dt.UTC),
-    )
-    old_event = _reload(event)
-    event = _reload(event)  # drop cached tz
-    event.timezone = "Europe/Berlin"
-
-    apply_timezone_edit(event, old_event)
-
-    slot.refresh_from_db()
-    # 10:00 UTC was 10:00 wall-clock under UTC; preserving the wall
-    # clock under Berlin (UTC+2 in June) means 08:00 UTC.
-    assert slot.start == dt.datetime(2024, 6, 10, 8, 0, tzinfo=dt.UTC)
-
-
-def test_apply_timezone_edit_moves_published_slots_too():
+def test_apply_timezone_edit_preserves_apparent_local_time_across_schedules():
     event = EventFactory(
         date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12), timezone="UTC"
     )
@@ -835,60 +478,7 @@ def test_apply_timezone_edit_moves_published_slots_too():
         start=dt.datetime(2024, 6, 10, 10, 0, tzinfo=dt.UTC),
         end=dt.datetime(2024, 6, 10, 11, 0, tzinfo=dt.UTC),
     )
-    TalkSlotFactory(
-        submission=sub,
-        schedule=event.wip_schedule,
-        start=dt.datetime(2024, 6, 10, 10, 0, tzinfo=dt.UTC),
-        end=dt.datetime(2024, 6, 10, 11, 0, tzinfo=dt.UTC),
-    )
-    old_event = _reload(event)
-    event = _reload(event)
-    event.timezone = "Europe/Berlin"
-
-    apply_timezone_edit(event, old_event)
-
-    published_slot.refresh_from_db()
-    assert published_slot.start == dt.datetime(2024, 6, 10, 8, 0, tzinfo=dt.UTC)
-
-
-def test_apply_timezone_edit_no_slots_does_nothing():
-    event = EventFactory(timezone="UTC")
-    old_event = _reload(event)
-    event = _reload(event)
-    event.timezone = "Europe/Berlin"
-
-    apply_timezone_edit(event, old_event)  # must not raise
-
-
-def test_apply_timezone_edit_same_offset_does_not_move():
-    event = EventFactory(
-        date_from=dt.date(2024, 6, 10),
-        date_to=dt.date(2024, 6, 12),
-        timezone="Europe/Berlin",
-    )
-    sub = SubmissionFactory(event=event)
-    slot = TalkSlotFactory(
-        submission=sub,
-        schedule=event.wip_schedule,
-        start=dt.datetime(2024, 6, 10, 8, 0, tzinfo=dt.UTC),
-        end=dt.datetime(2024, 6, 10, 9, 0, tzinfo=dt.UTC),
-    )
-    old_event = _reload(event)
-    event = _reload(event)
-    event.timezone = "Europe/Paris"
-
-    apply_timezone_edit(event, old_event)
-
-    slot.refresh_from_db()
-    assert slot.start == dt.datetime(2024, 6, 10, 8, 0, tzinfo=dt.UTC)
-
-
-def test_apply_timezone_edit_moves_availabilities():
-    event = EventFactory(
-        date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12), timezone="UTC"
-    )
-    sub = SubmissionFactory(event=event)
-    TalkSlotFactory(
+    wip_slot = TalkSlotFactory(
         submission=sub,
         schedule=event.wip_schedule,
         start=dt.datetime(2024, 6, 10, 10, 0, tzinfo=dt.UTC),
@@ -900,45 +490,49 @@ def test_apply_timezone_edit_moves_availabilities():
         end=dt.datetime(2024, 6, 10, 17, 0, tzinfo=dt.UTC),
     )
     old_event = _reload(event)
-    event = _reload(event)
+    event = _reload(event)  # drop cached tz
     event.timezone = "Europe/Berlin"
 
     apply_timezone_edit(event, old_event)
 
+    published_slot.refresh_from_db()
+    wip_slot.refresh_from_db()
     avail.refresh_from_db()
+    # 10:00 UTC was 10:00 wall-clock under UTC; preserving the wall
+    # clock under Berlin (UTC+2 in June) means 08:00 UTC.
+    assert wip_slot.start == dt.datetime(2024, 6, 10, 8, 0, tzinfo=dt.UTC)
+    assert published_slot.start == dt.datetime(2024, 6, 10, 8, 0, tzinfo=dt.UTC)
     assert avail.start == dt.datetime(2024, 6, 10, 7, 0, tzinfo=dt.UTC)
     assert avail.end == dt.datetime(2024, 6, 10, 15, 0, tzinfo=dt.UTC)
 
 
-def test_apply_event_changes_persists_event():
-    event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
+def test_apply_timezone_edit_without_slots_or_same_offset_moves_nothing():
+    event = EventFactory(
+        date_from=dt.date(2024, 6, 10),
+        date_to=dt.date(2024, 6, 12),
+        timezone="Europe/Berlin",
+    )
+    old_event = _reload(event)
     event = _reload(event)
-    event.date_from = dt.date(2024, 6, 11)
-    event.date_to = dt.date(2024, 6, 13)
+    event.timezone = "Europe/Paris"
 
-    apply_event_changes(event, {"date_from", "date_to"})
+    apply_timezone_edit(event, old_event)
 
-    event.refresh_from_db()
-    assert event.date_from == dt.date(2024, 6, 11)
-    assert event.date_to == dt.date(2024, 6, 13)
-
-
-def test_apply_event_changes_invokes_apply_date_edit():
-    event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
     sub = SubmissionFactory(event=event)
-    slot = TalkSlotFactory(submission=sub, schedule=event.wip_schedule)
-    original_start = slot.start
-    event = _reload(event)
+    slot = TalkSlotFactory(
+        submission=sub,
+        schedule=event.wip_schedule,
+        start=dt.datetime(2024, 6, 10, 8, 0, tzinfo=dt.UTC),
+        end=dt.datetime(2024, 6, 10, 9, 0, tzinfo=dt.UTC),
+    )
 
-    event.date_from = dt.date(2024, 6, 11)
-    event.date_to = dt.date(2024, 6, 13)
-    apply_event_changes(event, {"date_from", "date_to"})
+    apply_timezone_edit(event, old_event)
 
     slot.refresh_from_db()
-    assert slot.start == original_start + dt.timedelta(days=1)
+    assert slot.start == dt.datetime(2024, 6, 10, 8, 0, tzinfo=dt.UTC)
 
 
-def test_apply_event_changes_invokes_apply_timezone_edit():
+def test_apply_event_changes_persists_and_shifts_listed_fields():
     event = EventFactory(
         date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12), timezone="UTC"
     )
@@ -951,11 +545,17 @@ def test_apply_event_changes_invokes_apply_timezone_edit():
     )
     event = _reload(event)
 
+    event.date_from = dt.date(2024, 6, 11)
+    event.date_to = dt.date(2024, 6, 13)
     event.timezone = "Europe/Berlin"
-    apply_event_changes(event, {"timezone"})
+    apply_event_changes(event, {"date_from", "date_to", "timezone"})
 
+    event.refresh_from_db()
     slot.refresh_from_db()
-    assert slot.start == dt.datetime(2024, 6, 10, 8, 0, tzinfo=dt.UTC)
+    assert event.date_from == dt.date(2024, 6, 11)
+    assert event.date_to == dt.date(2024, 6, 13)
+    assert event.timezone == "Europe/Berlin"
+    assert slot.start == dt.datetime(2024, 6, 11, 8, 0, tzinfo=dt.UTC)
 
 
 def test_apply_event_changes_does_not_shift_when_field_not_listed():
@@ -975,39 +575,18 @@ def test_apply_event_changes_does_not_shift_when_field_not_listed():
     assert slot.start == original_start
 
 
-def test_apply_event_changes_processes_image_when_field_changed():
+@pytest.mark.parametrize(
+    ("changed", "processed"),
+    (({"logo"}, True), ({"date_from"}, False)),
+    ids=("image_changed", "image_unchanged"),
+)
+def test_apply_event_changes_processes_image_only_when_changed(changed, processed):
     event = EventFactory()
 
     with patch("pretalx.event.models.event.Event.process_image") as mock_process:
-        apply_event_changes(event, {"logo"})
+        apply_event_changes(event, changed)
 
-    mock_process.assert_called_once_with("logo")
-
-
-def test_apply_event_changes_skips_image_when_field_not_changed():
-    event = EventFactory()
-
-    with patch("pretalx.event.models.event.Event.process_image") as mock_process:
-        apply_event_changes(event, {"date_from"})
-
-    mock_process.assert_not_called()
-
-
-def test_shred_event_deletes_event(event):
-    pk = event.pk
-    shred_event(event)
-    assert not Event.objects.filter(pk=pk).exists()
-
-
-def test_shred_event_deletes_related_data(event):
-    with scope(event=event):
-        sub = SubmissionFactory(event=event)
-        template_pks = list(event.mail_templates.values_list("pk", flat=True))
-
-    shred_event(event)
-
-    assert not Submission.all_objects.filter(pk=sub.pk).exists()
-    assert not MailTemplate.objects.filter(pk__in=template_pks).exists()
+    assert mock_process.call_args_list == ([(("logo",),)] if processed else [])
 
 
 def test_shred_event_deletes_all_related_data(populated_event):
@@ -1049,19 +628,44 @@ def test_shred_event_audit_log_survives_delete_failure(event):
     ).exists()
 
 
-def test_activate_event_sets_public_and_logs():
+def test_activate_then_deactivate_event_toggles_public_and_logs(
+    register_signal_handler,
+):
     event = EventFactory(is_public=False)
     user = UserFactory()
+    checks = []
+
+    def responder(signal, sender, check=None, **kwargs):
+        checks.append(check)
+        return "all good"
+
+    def silent(signal, sender, **kwargs):
+        return None
+
+    register_signal_handler(activate_event_signal, responder)
+    register_signal_handler(activate_event_signal, silent)
 
     exceptions, extra = activate_event(event, user=user)
 
     event.refresh_from_db()
     assert event.is_public
     assert exceptions == []
-    assert extra == []
+    assert extra == ["all good"]
+    assert checks == [False]
     with scope(event=event):
         assert (
             event.logged_actions().filter(action_type="pretalx.event.activate").exists()
+        )
+
+    deactivate_event(event, user=user)
+
+    event.refresh_from_db()
+    assert not event.is_public
+    with scope(event=event):
+        assert (
+            event.logged_actions()
+            .filter(action_type="pretalx.event.deactivate")
+            .exists()
         )
 
 
@@ -1091,27 +695,6 @@ def test_activate_event_returns_plugin_exceptions_and_does_not_activate(
         )
 
 
-def test_activate_event_collects_string_messages_from_plugins(register_signal_handler):
-    event = EventFactory(is_public=False)
-    user = UserFactory()
-
-    def responder(signal, sender, **kwargs):
-        return "all good"
-
-    def silent(signal, sender, **kwargs):
-        return None
-
-    register_signal_handler(activate_event_signal, responder)
-    register_signal_handler(activate_event_signal, silent)
-
-    exceptions, extra = activate_event(event, user=user)
-
-    event.refresh_from_db()
-    assert event.is_public
-    assert exceptions == []
-    assert extra == ["all good"]
-
-
 def test_activation_blockers_check_splits_exceptions_and_messages_without_activating(
     register_signal_handler,
 ):
@@ -1137,48 +720,7 @@ def test_activation_blockers_check_splits_exceptions_and_messages_without_activa
     assert not event.is_public
 
 
-def test_activate_event_sends_signal_without_check(register_signal_handler):
-    event = EventFactory(is_public=False)
-    checks = []
-
-    def recorder(signal, sender, check=None, **kwargs):
-        checks.append(check)
-
-    register_signal_handler(activate_event_signal, recorder)
-
-    activate_event(event, user=UserFactory())
-
-    assert checks == [False]
-
-
-def test_deactivate_event_clears_public_and_logs():
-    event = EventFactory(is_public=True)
-    user = UserFactory()
-
-    deactivate_event(event, user=user)
-
-    event.refresh_from_db()
-    assert not event.is_public
-    with scope(event=event):
-        assert (
-            event.logged_actions()
-            .filter(action_type="pretalx.event.deactivate")
-            .exists()
-        )
-
-
-def test_move_full_event_shifts_event_dates():
-    event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
-    new_start = dt.date(2024, 6, 15)
-
-    move_full_event(event, new_start)
-
-    event.refresh_from_db()
-    assert event.date_from == new_start
-    assert event.date_to == dt.date(2024, 6, 17)
-
-
-def test_move_full_event_shifts_all_slots_across_schedules():
+def test_move_full_event_shifts_dates_all_slots_and_availabilities():
     event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
     sub = SubmissionFactory(event=event)
     released = ScheduleFactory(event=event, version="v1")
@@ -1194,28 +736,24 @@ def test_move_full_event_shifts_all_slots_across_schedules():
         start=dt.datetime(2024, 6, 11, 10, 0, tzinfo=dt.UTC),
         end=dt.datetime(2024, 6, 11, 11, 0, tzinfo=dt.UTC),
     )
-
-    move_full_event(event, dt.date(2024, 6, 13))
-
-    published_slot.refresh_from_db()
-    wip_slot.refresh_from_db()
-    assert published_slot.start == dt.datetime(2024, 6, 13, 10, 0, tzinfo=dt.UTC)
-    assert wip_slot.start == dt.datetime(2024, 6, 14, 10, 0, tzinfo=dt.UTC)
-
-
-def test_move_full_event_shifts_availabilities():
-    event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
     avail = AvailabilityFactory(
         event=event,
         start=dt.datetime(2024, 6, 10, 9, 0, tzinfo=dt.UTC),
         end=dt.datetime(2024, 6, 10, 17, 0, tzinfo=dt.UTC),
     )
 
-    move_full_event(event, dt.date(2024, 6, 17))
+    move_full_event(event, dt.date(2024, 6, 13))
 
+    event.refresh_from_db()
+    published_slot.refresh_from_db()
+    wip_slot.refresh_from_db()
     avail.refresh_from_db()
-    assert avail.start == dt.datetime(2024, 6, 17, 9, 0, tzinfo=dt.UTC)
-    assert avail.end == dt.datetime(2024, 6, 17, 17, 0, tzinfo=dt.UTC)
+    assert event.date_from == dt.date(2024, 6, 13)
+    assert event.date_to == dt.date(2024, 6, 15)
+    assert published_slot.start == dt.datetime(2024, 6, 13, 10, 0, tzinfo=dt.UTC)
+    assert wip_slot.start == dt.datetime(2024, 6, 14, 10, 0, tzinfo=dt.UTC)
+    assert avail.start == dt.datetime(2024, 6, 13, 9, 0, tzinfo=dt.UTC)
+    assert avail.end == dt.datetime(2024, 6, 13, 17, 0, tzinfo=dt.UTC)
 
 
 def test_move_full_event_same_date_noop():

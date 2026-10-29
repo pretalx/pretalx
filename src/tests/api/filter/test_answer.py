@@ -27,28 +27,18 @@ def test_answer_filter_filters_by_question(event):
     assert list(fs.qs) == [a1]
 
 
-def test_answer_filter_filters_by_submission_code(event):
+def test_answer_filter_filters_by_submission_code_case_insensitively(event):
     sub1 = SubmissionFactory(event=event)
     sub2 = SubmissionFactory(event=event)
     q = QuestionFactory(event=event)
     a1 = AnswerFactory(question=q, submission=sub1)
     AnswerFactory(question=q, submission=sub2)
 
-    fs = AnswerFilterSet(data={"submission": sub1.code}, queryset=Answer.objects.all())
-
-    assert list(fs.qs) == [a1]
-
-
-def test_answer_filter_submission_code_is_case_insensitive(event):
-    sub = SubmissionFactory(event=event)
-    q = QuestionFactory(event=event)
-    a = AnswerFactory(question=q, submission=sub)
-
     fs = AnswerFilterSet(
-        data={"submission": sub.code.lower()}, queryset=Answer.objects.all()
+        data={"submission": sub1.code.swapcase()}, queryset=Answer.objects.all()
     )
 
-    assert list(fs.qs) == [a]
+    assert list(fs.qs) == [a1]
 
 
 def test_answer_filter_filters_by_speaker_code(event):

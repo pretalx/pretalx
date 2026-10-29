@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import pytest
 from django.core.exceptions import SuspiciousOperation
-from django.utils.safestring import SafeString, mark_safe
+from django.utils.safestring import mark_safe
 from i18nfield.strings import LazyI18nString
 
 from pretalx.common.text.formatting import (
@@ -22,9 +22,6 @@ pytestmark = pytest.mark.unit
 
 def test_plain_mode_passes_strings_verbatim():
     assert format_map("Hi {name}!", {"name": "Jane"}, mode=MODE_PLAIN) == "Hi Jane!"
-
-
-def test_plain_mode_does_not_escape_html_chars():
     assert format_map("Hi {name}", {"name": "<br>"}, mode=MODE_PLAIN) == "Hi <br>"
 
 
@@ -52,6 +49,7 @@ def test_html_mode_respects_safe_string_from_mark_safe():
     url = mark_safe("https://foo.test/path?a=1&b=2")
     result = format_map("See {url}", {"url": url}, mode=MODE_HTML)
     assert result == "See https://foo.test/path?a=1&b=2"
+    assert isinstance(result, FormattedString)
 
 
 def test_email_alternative_dispatches_on_mode():
@@ -65,28 +63,12 @@ def test_email_alternative_dispatches_on_mode():
     )
 
 
-def test_non_string_values_are_coerced():
-    assert format_map("Count: {n}", {"n": 42}, mode=MODE_PLAIN) == "Count: 42"
-    assert format_map("Count: {n}", {"n": 42}, mode=MODE_HTML) == "Count: 42"
-    assert (
-        format_map("Total: {n}", {"n": Decimal("19.95")}, mode=MODE_PLAIN)
-        == "Total: 19.95"
-    )
-    assert (
-        format_map("Lazy: {msg}", {"msg": LazyI18nString("hello")}, mode=MODE_HTML)
-        == "Lazy: hello"
-    )
-
-
-def test_missing_placeholder_raises_by_default():
+def test_missing_placeholder_raises_unless_tolerated():
     # Strict mode so typos in organiser templates fail loudly instead
-    # of delivering a literal ``{foo}``.
+    # of delivering a literal ``{foo}``; tolerant mode for live previews
+    # while the organiser types.
     with pytest.raises(KeyError):
         format_map("Hi {name}", {}, mode=MODE_PLAIN)
-
-
-def test_missing_placeholder_is_left_literal_when_tolerated():
-    # Tolerant mode for live previews while the organiser types.
     assert (
         format_map("Hi {name}", {}, mode=MODE_PLAIN, raise_on_missing=False)
         == "Hi {name}"
@@ -101,17 +83,12 @@ def test_attribute_access_is_blocked():
 
     with pytest.raises(KeyError):
         format_map("{obj.password}", {"obj": Thing()}, mode=MODE_PLAIN)
-
-
-def test_attribute_access_returns_literal_in_tolerant_mode():
-    class Thing:
-        password = "hunter2"
-
-    result = format_map(
-        "{obj.password}", {"obj": Thing()}, mode=MODE_PLAIN, raise_on_missing=False
+    assert (
+        format_map(
+            "{obj.password}", {"obj": Thing()}, mode=MODE_PLAIN, raise_on_missing=False
+        )
+        == "{obj.password}"
     )
-    assert result == "{obj.password}"
-    assert "hunter2" not in result
 
 
 def test_format_spec_is_stripped():
@@ -194,9 +171,11 @@ def test_non_string_placeholder_value_is_rejected():
 def test_allowed_value_types_round_trip():
     assert format_map("{x}", {"x": "hi"}, mode=MODE_PLAIN) == "hi"
     assert format_map("{x}", {"x": 42}, mode=MODE_PLAIN) == "42"
+    assert format_map("{x}", {"x": 42}, mode=MODE_HTML) == "42"
     assert format_map("{x}", {"x": 3.14}, mode=MODE_PLAIN) == "3.14"
     assert format_map("{x}", {"x": Decimal("19.95")}, mode=MODE_PLAIN) == "19.95"
     assert format_map("{x}", {"x": LazyI18nString("hello")}, mode=MODE_PLAIN) == "hello"
+    assert format_map("{x}", {"x": LazyI18nString("hello")}, mode=MODE_HTML) == "hello"
     assert format_map("{x}", {"x": mark_safe("safe")}, mode=MODE_PLAIN) == "safe"
     assert (
         format_map(
@@ -213,71 +192,42 @@ def test_format_map_refuses_to_double_format():
         format_map(once, {})
 
 
-def test_mark_safe_value_stays_safe_after_format():
-    url = mark_safe("https://foo.test/?x=1&y=2")
-    result = format_map("{url}", {"url": url}, mode=MODE_HTML)
-    assert isinstance(result, FormattedString)
-    assert "&y=2" in result
-    assert "&amp;y=2" not in result
-
-
 def test_safe_string_mixed_with_escaped_content():
     context = {
         "url": mark_safe("https://foo.test/?a=1&b=2"),
         "name": "<script>alert(1)</script>",
     }
     result = format_map("{name} at {url}", context, mode=MODE_HTML)
-    assert "<script>" not in result
-    assert "&lt;script&gt;" in result
-    assert "https://foo.test/?a=1&b=2" in result
-
-
-def test_safe_string_input_detection():
-    # Sanity check: our escape-bypass assumes mark_safe returns SafeString.
-    assert isinstance(mark_safe("x"), SafeString)
-
-
-def test_defuse_markdown_links_html_replaces_brackets():
-    assert defuse_markdown_links("[click](url)") == "&#91;click&#93;(url)"
-
-
-def test_defuse_markdown_links_html_leaves_other_chars_alone():
-    assert defuse_markdown_links("no brackets here") == "no brackets here"
-    assert defuse_markdown_links("<b>bold</b>") == "<b>bold</b>"
-
-
-def test_defuse_markdown_links_html_handles_nested_brackets():
-    assert defuse_markdown_links("[[nested]]") == "&#91;&#91;nested&#93;&#93;"
-
-
-def test_defuse_markdown_links_plain_escapes_brackets():
-    assert defuse_markdown_links("[click](url)", mode=MODE_PLAIN) == r"\[click\](url)"
-
-
-def test_defuse_markdown_links_plain_escapes_backslash():
-    assert defuse_markdown_links(r"\[escaped\]", mode=MODE_PLAIN) == r"\\\[escaped\\\]"
-
-
-def test_defuse_markdown_links_plain_leaves_other_chars_alone():
     assert (
-        defuse_markdown_links("no brackets here", mode=MODE_PLAIN) == "no brackets here"
+        result == "&lt;script&gt;alert(1)&lt;/script&gt; at https://foo.test/?a=1&b=2"
     )
-    assert (
-        defuse_markdown_links("**bold** and _italic_", mode=MODE_PLAIN)
-        == "**bold** and _italic_"
-    )
-    assert defuse_markdown_links("Jane (she/her)", mode=MODE_PLAIN) == "Jane (she/her)"
 
 
-def test_email_alternative_accepts_plain_strings():
+@pytest.mark.parametrize(
+    ("text", "mode", "expected"),
+    (
+        ("[click](url)", MODE_HTML, "&#91;click&#93;(url)"),
+        ("no brackets here", MODE_HTML, "no brackets here"),
+        ("<b>bold</b>", MODE_HTML, "<b>bold</b>"),
+        ("[[nested]]", MODE_HTML, "&#91;&#91;nested&#93;&#93;"),
+        ("[click](url)", MODE_PLAIN, r"\[click\](url)"),
+        (r"\[escaped\]", MODE_PLAIN, r"\\\[escaped\\\]"),
+        ("no brackets here", MODE_PLAIN, "no brackets here"),
+        ("**bold** and _italic_", MODE_PLAIN, "**bold** and _italic_"),
+        ("Jane (she/her)", MODE_PLAIN, "Jane (she/her)"),
+    ),
+)
+def test_defuse_markdown_links(text, mode, expected):
+    assert defuse_markdown_links(text, mode=mode) == expected
+
+
+def test_email_alternative_accepts_plain_and_safe_strings():
     alt = EmailAlternativeString("text", "<b>text</b>")
     assert alt.plain == "text"
     assert alt.html == "<b>text</b>"
-
-
-def test_email_alternative_accepts_safe_strings():
-    alt = EmailAlternativeString("text", mark_safe("<b>text</b>"))
-    assert alt.html == "<b>text</b>"
+    assert (
+        EmailAlternativeString("text", mark_safe("<b>text</b>")).html == "<b>text</b>"
+    )
 
 
 @pytest.mark.parametrize(

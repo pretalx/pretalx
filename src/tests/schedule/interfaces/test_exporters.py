@@ -33,40 +33,24 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_schedule_data_metadata_with_schedule(event, talk_slot):
-    sd = ScheduleData(talk_slot.schedule)
-
-    metadata = sd.metadata
-
-    assert "url" in metadata
-    assert "base_url" in metadata
+def _days_with_talks(data):
+    return [day for day in data if day["rooms"]]
 
 
-def test_schedule_data_data_returns_day_entries(event, talk_slot):
+def test_schedule_data_describes_days_rooms_and_talks(event, talk_slot):
     sd = ScheduleData(talk_slot.schedule)
 
     with scope(event=event):
         data = list(sd.data)
 
+    assert set(sd.metadata) >= {"url", "base_url"}
     assert len(data) == event.duration
-    day = data[0]
-    assert day["index"] == 1
-    assert "start" in day
-    assert "end" in day
-    assert "rooms" in day
-
-
-def test_schedule_data_data_includes_visible_talks(event, talk_slot):
-    sd = ScheduleData(talk_slot.schedule)
-
-    with scope(event=event):
-        data = list(sd.data)
-
-    rooms_with_talks = [day for day in data if day["rooms"]]
-    assert len(rooms_with_talks) == 1
-    room = rooms_with_talks[0]["rooms"][0]
-    assert len(room["talks"]) == 1
-    assert room["talks"][0].submission is not None
+    assert data[0]["index"] == 1
+    assert {"start", "end", "rooms"} <= set(data[0])
+    (day,) = _days_with_talks(data)
+    assert [room["talks"] for room in day["rooms"]] == [[talk_slot]]
+    assert day["first_start"] == talk_slot.start
+    assert day["last_end"] == talk_slot.local_end
 
 
 @pytest.mark.parametrize(
@@ -85,8 +69,7 @@ def test_schedule_data_data_invisible_talk_visibility(
     with scope(event=event):
         data = list(sd.data)
 
-    rooms_with_talks = [day for day in data if day["rooms"]]
-    assert len(rooms_with_talks) == expected_count
+    assert len(_days_with_talks(data)) == expected_count
 
 
 @pytest.mark.parametrize(
@@ -104,8 +87,7 @@ def test_schedule_data_data_skips_incomplete_talk(event, slot_overrides):
     with scope(event=event):
         data = list(sd.data)
 
-    rooms_with_talks = [day for day in data if day["rooms"]]
-    assert rooms_with_talks == []
+    assert _days_with_talks(data) == []
 
 
 def test_schedule_data_data_talks_filter_limits_talks(event):
@@ -124,103 +106,93 @@ def test_schedule_data_data_talks_filter_limits_talks(event):
     with scope(event=event):
         data = list(sd.data)
 
-    rooms_with_talks = [day for day in data if day["rooms"]]
     talks = [
         talk
-        for day in rooms_with_talks
+        for day in _days_with_talks(data)
         for room in day["rooms"]
         for talk in room["talks"]
     ]
     assert talks == [shown_slot]
 
 
-def test_schedule_data_data_rooms_sorted_by_position(event):
+def test_schedule_data_data_groups_talks_by_room_sorted_by_position(event):
     room_b = RoomFactory(event=event, name="Room B", position=2)
     room_a = RoomFactory(event=event, name="Room A", position=1)
-    sub1 = SubmissionFactory(event=event)
-    sub2 = SubmissionFactory(event=event)
-    TalkSlotFactory(submission=sub1, room=room_b, is_visible=True)
-    TalkSlotFactory(submission=sub2, room=room_a, is_visible=True)
-    schedule = event.wip_schedule
+    start = event.datetime_from
+    TalkSlotFactory(
+        submission=SubmissionFactory(event=event),
+        room=room_b,
+        is_visible=True,
+        start=start,
+        end=start + dt.timedelta(hours=1),
+    )
+    TalkSlotFactory(
+        submission=SubmissionFactory(event=event),
+        room=room_a,
+        is_visible=True,
+        start=start,
+        end=start + dt.timedelta(hours=1),
+    )
+    TalkSlotFactory(
+        submission=SubmissionFactory(event=event),
+        room=room_a,
+        is_visible=True,
+        start=start + dt.timedelta(hours=2),
+        end=start + dt.timedelta(hours=3),
+    )
 
-    sd = ScheduleData(schedule, with_accepted=True)
+    sd = ScheduleData(event.wip_schedule, with_accepted=True)
 
     with scope(event=event):
         data = list(sd.data)
 
-    rooms_with_talks = [day for day in data if day["rooms"]]
-    room_names = [str(r["name"]) for r in rooms_with_talks[0]["rooms"]]
-    assert room_names == ["Room A", "Room B"]
+    (day,) = _days_with_talks(data)
+    assert [(str(r["name"]), len(r["talks"])) for r in day["rooms"]] == [
+        ("Room A", 2),
+        ("Room B", 1),
+    ]
 
 
-def test_schedule_data_export_rooms_omits_empty_hidden_rooms(event):
+def test_schedule_data_export_rooms_omits_only_hidden_rooms_without_sessions(event):
     visible = RoomFactory(event=event, name="Room A")
     RoomFactory(event=event, name="Attic", hidden=True)
-    schedule = event.wip_schedule
-
-    sd = ScheduleData(schedule, with_accepted=True)
-
-    with scope(event=event):
-        assert list(sd.export_rooms) == [visible]
-
-
-def test_schedule_data_export_rooms_keeps_hidden_rooms_with_sessions(event):
-    hidden = RoomFactory(event=event, name="Attic", hidden=True)
-    submission = SubmissionFactory(event=event)
-    slot = TalkSlotFactory(submission=submission, room=hidden, is_visible=True)
-
-    sd = ScheduleData(slot.schedule, with_accepted=True)
-
-    with scope(event=event):
-        assert list(sd.export_rooms) == [hidden]
-
-
-def test_frab_json_exporter_omits_hidden_rooms_without_sessions(event, talk_slot):
-    RoomFactory(event=event, name="Attic", hidden=True)
-    exporter = FrabJsonExporter(talk_slot.schedule)
-
-    with scope(event=event):
-        result = json.loads(exporter.get_data())
-
-    room_names = [room["name"] for room in result["schedule"]["conference"]["rooms"]]
-    assert "Attic" not in room_names
-    assert str(talk_slot.room.name) in room_names
-
-
-def test_schedule_data_data_late_night_talk_assigned_to_previous_day(event):
-    submission = SubmissionFactory(event=event)
-    late_start = event.datetime_from + dt.timedelta(days=1, hours=2)
+    used_hidden = RoomFactory(event=event, name="Basement", hidden=True)
     TalkSlotFactory(
-        submission=submission,
+        submission=SubmissionFactory(event=event), room=used_hidden, is_visible=True
+    )
+
+    sd = ScheduleData(event.wip_schedule, with_accepted=True)
+
+    with scope(event=event):
+        assert set(sd.export_rooms) == {visible, used_hidden}
+
+
+def test_schedule_data_data_assigns_late_night_talk_to_previous_day_and_skips_out_of_range(
+    event,
+):
+    late_start = event.datetime_from + dt.timedelta(days=1, hours=2)
+    late_slot = TalkSlotFactory(
+        submission=SubmissionFactory(event=event),
         is_visible=True,
         start=late_start,
         end=late_start + dt.timedelta(hours=1),
     )
-    schedule = event.wip_schedule
+    out_of_range_start = event.datetime_from - dt.timedelta(days=7)
+    TalkSlotFactory(
+        submission=SubmissionFactory(event=event),
+        is_visible=True,
+        start=out_of_range_start,
+        end=out_of_range_start + dt.timedelta(hours=1),
+    )
 
-    sd = ScheduleData(schedule, with_accepted=True)
-
-    with scope(event=event):
-        data = list(sd.data)
-
-    # The talk at 02:00 on day 2 should be assigned to day 1
-    data = list(data)
-    day1 = data[0]
-    day2_rooms = [day for day in data[1:] if day["rooms"]]
-    assert len(day1["rooms"]) == 1
-    assert day2_rooms == []
-
-
-def test_schedule_data_tracks_first_start_and_last_end(event, talk_slot):
-    sd = ScheduleData(talk_slot.schedule)
+    sd = ScheduleData(event.wip_schedule, with_accepted=True)
 
     with scope(event=event):
         data = list(sd.data)
 
-    rooms_with_talks = [day for day in data if day["rooms"]]
-    day = rooms_with_talks[0]
-    assert day["first_start"] == talk_slot.start
-    assert day["last_end"] == talk_slot.local_end
+    # The talk at 02:00 on day 2 is assigned to day 1, the one a week early is dropped.
+    assert [room["talks"] for room in data[0]["rooms"]] == [[late_slot]]
+    assert _days_with_talks(data[1:]) == []
 
 
 def test_frab_xml_exporter_get_data(event, talk_slot):
@@ -245,38 +217,8 @@ def test_frab_xcal_exporter_get_data(event, talk_slot):
     assert "vevent" in result.lower()
 
 
-def test_frab_json_exporter_get_data_returns_valid_json(event, talk_slot):
-    exporter = FrabJsonExporter(talk_slot.schedule)
-
-    with scope(event=event):
-        result = exporter.get_data()
-
-    parsed = json.loads(result)
-    assert "$schema" in parsed
-    assert "generator" in parsed
-    assert parsed["generator"]["name"] == "pretalx"
-    assert parsed["generator"]["url"] == "http://testserver"
-    assert "schedule" in parsed
-
-
-def test_frab_json_exporter_get_data_conference_structure(event, talk_slot):
-    exporter = FrabJsonExporter(talk_slot.schedule)
-
-    with scope(event=event):
-        result = json.loads(exporter.get_data())
-
-    conference = result["schedule"]["conference"]
-    assert conference["acronym"] == event.slug
-    assert conference["title"] == str(event.name)
-    assert conference["start"] == event.date_from.strftime("%Y-%m-%d")
-    assert conference["end"] == event.date_to.strftime("%Y-%m-%d")
-    assert conference["time_zone_name"] == event.timezone
-    assert "days" in conference
-    assert "rooms" in conference
-    assert "tracks" in conference
-
-
-def test_frab_json_exporter_get_data_includes_talk(event, talk_slot):
+def test_frab_json_exporter_get_data(event, talk_slot):
+    RoomFactory(event=event, name="Attic", hidden=True)
     exporter = FrabJsonExporter(talk_slot.schedule)
 
     with scope(event=event):
@@ -285,19 +227,26 @@ def test_frab_json_exporter_get_data_includes_talk(event, talk_slot):
         expected_end = talk_slot.local_end.isoformat()
         expected_duration = talk_slot.export_duration
 
-    days = result["schedule"]["conference"]["days"]
+    assert "$schema" in result
+    assert result["generator"]["name"] == "pretalx"
+    assert result["generator"]["url"] == "http://testserver"
+    conference = result["schedule"]["conference"]
+    assert conference["acronym"] == event.slug
+    assert conference["title"] == str(event.name)
+    assert conference["start"] == event.date_from.strftime("%Y-%m-%d")
+    assert conference["end"] == event.date_to.strftime("%Y-%m-%d")
+    assert conference["time_zone_name"] == event.timezone
+    assert "tracks" in conference
+    assert [room["name"] for room in conference["rooms"]] == [str(talk_slot.room.name)]
     all_talks = [
         talk
-        for day in days
+        for day in conference["days"]
         for room_talks in day["rooms"].values()
         for talk in room_talks
     ]
     assert len(all_talks) == 1
     talk = all_talks[0]
-    assert "title" in talk
-    assert "code" in talk
-    assert "persons" in talk
-    assert "room" in talk
+    assert {"title", "code", "persons", "room"} <= set(talk)
     assert talk["date"] == expected_date
     assert talk["end"] == expected_end
     assert talk["duration"] == expected_duration
@@ -344,78 +293,20 @@ def test_faved_ical_exporter_is_public(rf, event, namespaces, user_type, expecte
     assert exporter.is_public(request) is expected
 
 
-def test_faved_ical_exporter_get_data_unauthenticated(rf, event):
-    exporter = FavedICalExporter(event.wip_schedule)
-    request = rf.get("/")
-    request.user = AnonymousUser()
-
-    assert exporter.get_data(request=request) is None
-
-
-def test_schedule_data_data_out_of_bounds_talk_skipped(event):
-    submission = SubmissionFactory(event=event)
-    # Schedule a talk a week before the event
-    out_of_range_start = event.datetime_from - dt.timedelta(days=7)
-    TalkSlotFactory(
-        submission=submission,
-        is_visible=True,
-        start=out_of_range_start,
-        end=out_of_range_start + dt.timedelta(hours=1),
-    )
-    schedule = event.wip_schedule
-
-    sd = ScheduleData(schedule, with_accepted=True)
-
-    with scope(event=event):
-        data = list(sd.data)
-
-    rooms_with_talks = [day for day in data if day["rooms"]]
-    assert rooms_with_talks == []
-
-
-def test_schedule_data_data_multiple_talks_same_room(event):
-    room = RoomFactory(event=event)
-    sub1 = SubmissionFactory(event=event)
-    sub2 = SubmissionFactory(event=event)
-    start1 = event.datetime_from
-    start2 = event.datetime_from + dt.timedelta(hours=2)
-    TalkSlotFactory(
-        submission=sub1,
-        room=room,
-        is_visible=True,
-        start=start1,
-        end=start1 + dt.timedelta(hours=1),
-    )
-    TalkSlotFactory(
-        submission=sub2,
-        room=room,
-        is_visible=True,
-        start=start2,
-        end=start2 + dt.timedelta(hours=1),
-    )
-    schedule = event.wip_schedule
-
-    sd = ScheduleData(schedule, with_accepted=True)
-
-    with scope(event=event):
-        data = list(sd.data)
-
-    rooms_with_talks = [day for day in data if day["rooms"]]
-    assert len(rooms_with_talks) == 1
-    room_data = rooms_with_talks[0]["rooms"][0]
-    assert len(room_data["talks"]) == 2
-
-
-def test_faved_ical_exporter_get_data_authenticated(rf, published_talk_slot):
+def test_faved_ical_exporter_get_data_only_for_authenticated_users(
+    rf, published_talk_slot
+):
     event = published_talk_slot.submission.event
-    user = UserFactory()
-
     exporter = FavedICalExporter(event.wip_schedule)
+    anonymous = rf.get("/")
+    anonymous.user = AnonymousUser()
+    anonymous.event = event
     request = rf.get("/")
-    request.user = user
+    request.user = UserFactory()
     request.event = event
 
     with scope(event=event):
+        assert exporter.get_data(request=anonymous) is None
         result = exporter.get_data(request=request)
 
     assert "BEGIN:VCALENDAR" in result

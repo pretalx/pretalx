@@ -10,71 +10,27 @@ from tests.utils import make_api_request, make_orga_user, make_view
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_roomviewset_get_queryset_returns_event_rooms():
-    room = RoomFactory()
-    other_room = RoomFactory()
-    request = make_api_request(event=room.event)
-    view = make_view(RoomViewSet, request)
-    view.action = "list"
-
-    qs = list(view.get_queryset())
-
-    assert qs == [room]
-    assert other_room not in qs
-
-
-def test_roomviewset_get_queryset_hides_hidden_rooms_from_public():
-    room = RoomFactory()
-    hidden = RoomFactory(event=room.event, hidden=True)
-    request = make_api_request(event=room.event)
-    view = make_view(RoomViewSet, request)
-    view.action = "list"
-
-    qs = list(view.get_queryset())
-
-    assert qs == [room]
-    assert hidden not in qs
-
-
-def test_roomviewset_get_queryset_shows_hidden_rooms_to_orga():
-    room = RoomFactory()
-    hidden = RoomFactory(event=room.event, hidden=True)
-    user = make_orga_user(room.event, can_change_event_settings=True)
-    request = make_api_request(event=room.event, user=user)
-    view = make_view(RoomViewSet, request)
-    view.action = "list"
-
-    assert set(view.get_queryset()) == {room, hidden}
-
-
-def test_roomviewset_get_queryset_prefetches_availabilities_for_orga(
+def test_roomviewset_get_queryset_hides_hidden_rooms_from_public(
     django_assert_num_queries,
 ):
     room = RoomFactory()
-    AvailabilityFactory(event=room.event, room=room)
-    user = make_orga_user(room.event, can_change_event_settings=True)
-    request = make_api_request(event=room.event, user=user)
-    view = make_view(RoomViewSet, request)
-    view.action = "list"
+    event = room.event
+    hidden = RoomFactory(event=event, hidden=True)
+    RoomFactory()
+    AvailabilityFactory(event=event, room=room)
+    user = make_orga_user(event, can_change_event_settings=True)
 
-    rooms = list(view.get_queryset())
+    public_view = make_view(RoomViewSet, make_api_request(event=event))
+    orga_view = make_view(RoomViewSet, make_api_request(event=event, user=user))
+    public_rooms = list(public_view.get_queryset())
+    orga_rooms = list(orga_view.get_queryset())
 
-    with django_assert_num_queries(0):
-        availabilities = list(rooms[0].availabilities.all())
-    assert len(availabilities) == 1
-
-
-def test_roomviewset_get_queryset_no_prefetch_for_public(django_assert_num_queries):
-    room = RoomFactory()
-    AvailabilityFactory(event=room.event, room=room)
-    request = make_api_request(event=room.event)
-    view = make_view(RoomViewSet, request)
-    view.action = "list"
-
-    rooms = list(view.get_queryset())
-
+    assert public_rooms == [room]
     with django_assert_num_queries(1):
-        list(rooms[0].availabilities.all())
+        assert len(public_rooms[0].availabilities.all()) == 1
+    assert set(orga_rooms) == {room, hidden}
+    with django_assert_num_queries(0):
+        assert len(orga_rooms[orga_rooms.index(room)].availabilities.all()) == 1
 
 
 def test_roomviewset_perform_destroy_raises_on_protected_room():

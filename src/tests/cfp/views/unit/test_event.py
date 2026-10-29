@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
-from urllib.parse import parse_qs, urlparse
 
 import pytest
 from django.http import QueryDict
@@ -15,19 +14,20 @@ from tests.utils import make_request, make_view
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_event_startpage_has_featured_true_when_featured_exists(event):
-    SubmissionFactory(event=event, is_featured=True)
+def make_startpage(event, **query_params):
     request = make_request(event)
-    view = make_view(EventStartpage, request)
+    request.GET = QueryDict(mutable=True)
+    request.GET.update(query_params)
+    return make_view(EventStartpage, request)
+
+
+def test_event_startpage_has_featured(event):
+    view = make_startpage(event)
+    assert view.has_featured() is False
+
+    SubmissionFactory(event=event, is_featured=True)
 
     assert view.has_featured() is True
-
-
-def test_event_startpage_has_featured_false_when_none(event):
-    request = make_request(event)
-    view = make_view(EventStartpage, request)
-
-    assert view.has_featured() is False
 
 
 @pytest.mark.parametrize(
@@ -45,49 +45,19 @@ def test_event_startpage_has_featured_false_when_none(event):
     ),
 )
 def test_event_startpage_submit_qs(event, query_params, expected_qs):
-    request = make_request(event)
-    qd = QueryDict(mutable=True)
-    for k, v in query_params.items():
-        qd[k] = v
-    request.GET = qd
-    view = make_view(EventStartpage, request)
+    view = make_startpage(event, **query_params)
 
-    result = view.submit_qs()
-    if expected_qs:
-        assert parse_qs(urlparse("http://x" + result).query) == parse_qs(
-            urlparse("http://x" + expected_qs).query
-        )
-    else:
-        assert result == ""
+    assert view.submit_qs() == expected_qs
 
 
-def test_event_startpage_access_code_returns_code_when_valid(event):
+def test_event_startpage_access_code_resolves_valid_code_only(event):
     access_code = SubmitterAccessCodeFactory(event=event)
 
-    request = make_request(event)
-    qd = QueryDict(mutable=True)
-    qd["access_code"] = access_code.code
-    request.GET = qd
-    view = make_view(EventStartpage, request)
-
-    assert view.access_code == access_code
-
-
-def test_event_startpage_access_code_returns_none_when_invalid(event):
-    request = make_request(event)
-    qd = QueryDict(mutable=True)
-    qd["access_code"] = "nonexistentcode"
-    request.GET = qd
-    view = make_view(EventStartpage, request)
-
-    assert view.access_code is None
-
-
-def test_event_startpage_access_code_returns_none_when_no_param(event):
-    request = make_request(event)
-    view = make_view(EventStartpage, request)
-
-    assert view.access_code is None
+    assert make_startpage(event).access_code is None
+    assert make_startpage(event, access_code="nonexistentcode").access_code is None
+    assert (
+        make_startpage(event, access_code=access_code.code).access_code == access_code
+    )
 
 
 @pytest.mark.parametrize(
@@ -99,8 +69,7 @@ def test_event_startpage_can_submit_without_access_code(
     event, requires_access_code, expected
 ):
     event.submission_types.update(requires_access_code=requires_access_code)
-    request = make_request(event)
-    view = make_view(EventStartpage, request)
+    view = make_startpage(event)
 
     assert view.can_submit() is expected
 
@@ -117,11 +86,7 @@ def test_event_startpage_can_submit_with_access_code(
     access_code = SubmitterAccessCodeFactory(
         event=event, valid_until=now() + valid_until_offset
     )
-    request = make_request(event)
-    qd = QueryDict(mutable=True)
-    qd["access_code"] = access_code.code
-    request.GET = qd
-    view = make_view(EventStartpage, request)
+    view = make_startpage(event, access_code=access_code.code)
 
     assert view.can_submit() is expected
 

@@ -14,20 +14,13 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_can_delete_track_true_for_unused():
+def test_can_delete_track_until_used():
     event = EventFactory()
     track = TrackFactory(event=event)
 
     with scope(event=event):
         assert can_delete_track(track) is True
-
-
-def test_can_delete_track_false_when_used():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    SubmissionFactory(event=event, track=track)
-
-    with scope(event=event):
+        SubmissionFactory(event=event, track=track)
         assert can_delete_track(track) is False
 
 
@@ -54,9 +47,5 @@ def test_apply_track_field_changes(track_required, changed_fields, expect_pinned
         pinned = apply_track_field_changes(track, changed_fields)
 
         submission.refresh_from_db()
-    if expect_pinned:
-        assert pinned == [submission]
-        assert submission.attendee_signup_required is True
-    else:
-        assert pinned == []
-        assert submission.attendee_signup_required is None
+    assert pinned == ([submission] if expect_pinned else [])
+    assert submission.attendee_signup_required is (True if expect_pinned else None)

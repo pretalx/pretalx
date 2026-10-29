@@ -38,58 +38,77 @@ from tests.factories import (
     SubmissionTypeFactory,
     TrackFactory,
 )
+from tests.utils import refresh
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_questions_form_init_loads_existing_answer():
-    event = EventFactory()
-    q = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    submission = SubmissionFactory(event=event)
-    answer = AnswerFactory(question=q, submission=submission, answer="42")
-
-    form = QuestionsForm(event=event, submission=submission)
-
-    field = form.fields[f"question_{q.pk}"]
-    assert field.initial == "42"
-    assert field.answer == answer
+def _orga_data(**overrides):
+    return {
+        "target": "submission",
+        "question_0": "Pick one",
+        "variant": QuestionVariant.CHOICES,
+        "question_required": QuestionRequired.OPTIONAL,
+        "contains_personal_data": False,
+        **overrides,
+    }
 
 
-def test_questions_form_init_loads_file_answer_initial():
-    event = EventFactory()
-    q = QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.FILE
+def _orga_form(event, files=None, instance=None, **overrides):
+    return QuestionOrgaForm(
+        data=_orga_data(**overrides),
+        files=files,
+        instance=instance,
+        event=event,
+        locales=event.locales,
     )
-    submission = SubmissionFactory(event=event)
-    answer = AnswerFactory(question=q, submission=submission, answer="file://test.pdf")
-    answer.answer_file.name = "test.pdf"
-    answer.save()
+
+
+def test_questions_form_init_loads_answers_defaults_and_scope():
+    event = EventFactory()
+    track = TrackFactory(event=event)
+    submission = SubmissionFactory(event=event, track=track)
+    q = QuestionFactory(event=event, default_answer="Default value")
+    file_q = QuestionFactory(event=event, variant=QuestionVariant.FILE)
+    track_q = QuestionFactory(event=event)
+    track_q.tracks.add(track)
+    other_q = QuestionFactory(event=event)
+    other_q.tracks.add(TrackFactory(event=event))
+    speaker_q = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    answer = AnswerFactory(question=q, submission=submission, answer="42")
+    file_answer = AnswerFactory(
+        question=file_q, submission=submission, answer="file://test.pdf"
+    )
+    file_answer.answer_file.name = "test.pdf"
+    file_answer.save()
 
     form = QuestionsForm(event=event, submission=submission)
 
-    field = form.fields[f"question_{q.pk}"]
-    assert field.initial == answer.answer_file
+    assert set(form.fields) == {
+        f"question_{q.pk}",
+        f"question_{file_q.pk}",
+        f"question_{track_q.pk}",
+    }
+    assert form.fields[f"question_{q.pk}"].initial == "42"
+    assert form.fields[f"question_{q.pk}"].answer == answer
+    assert form.fields[f"question_{file_q.pk}"].initial == file_answer.answer_file
+    assert form.serialize_answers() == {
+        f"question-{q.pk}": "42",
+        f"question-{file_q.pk}": file_answer.answer_string,
+        f"question-{track_q.pk}": None,
+    }
 
+    form = QuestionsForm(event=event, target=None, read_only=True)
 
-@pytest.mark.parametrize(
-    ("prop_name", "included_target", "excluded_target"),
-    (
-        ("speaker_fields", QuestionTarget.SPEAKER, QuestionTarget.SUBMISSION),
-        ("submission_fields", QuestionTarget.SUBMISSION, QuestionTarget.SPEAKER),
-    ),
-)
-def test_questions_form_fields_property_filters_by_target(
-    prop_name, included_target, excluded_target
-):
-    event = EventFactory()
-    included_q = QuestionFactory(event=event, target=included_target)
-    excluded_q = QuestionFactory(event=event, target=excluded_target)
-
-    form = QuestionsForm(event=event, target=None)
-
-    field_names = [f.name for f in getattr(form, prop_name)]
-    assert f"question_{included_q.pk}" in field_names
-    assert f"question_{excluded_q.pk}" not in field_names
+    assert form.fields[f"question_{q.pk}"].initial == "Default value"
+    assert all(field.disabled for field in form.fields.values())
+    assert [f.name for f in form.speaker_fields] == [f"question_{speaker_q.pk}"]
+    assert [f.name for f in form.submission_fields] == [
+        f"question_{q.pk}",
+        f"question_{file_q.pk}",
+        f"question_{track_q.pk}",
+        f"question_{other_q.pk}",
+    ]
 
 
 def test_questions_form_speaker_submissions_filters_restricted_questions():
@@ -113,13 +132,6 @@ def test_questions_form_speaker_submissions_filters_restricted_questions():
         f"question_{matching.pk}",
     }
 
-
-def test_questions_form_speaker_submissions_empty_keeps_only_unrestricted():
-    event = EventFactory()
-    unrestricted = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
-    restricted = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
-    restricted.tracks.add(TrackFactory(event=event))
-
     form = QuestionsForm(
         event=event, target=QuestionTarget.SPEAKER, speaker_submissions=[]
     )
@@ -127,394 +139,188 @@ def test_questions_form_speaker_submissions_empty_keeps_only_unrestricted():
     assert set(form.fields) == {f"question_{unrestricted.pk}"}
 
 
-def test_questions_form_serialize_answers_with_existing_answer():
+def test_questions_form_save_creates_updates_and_deletes_answers():
     event = EventFactory()
-    q = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    submission = SubmissionFactory(event=event)
-    AnswerFactory(question=q, submission=submission, answer="My answer")
-
-    form = QuestionsForm(event=event, submission=submission)
-
-    serialized = form.serialize_answers()
-    assert serialized[f"question-{q.pk}"] == "My answer"
-
-
-def test_questions_form_serialize_answers_without_answer():
-    event = EventFactory()
-    q = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-
-    form = QuestionsForm(event=event)
-
-    serialized = form.serialize_answers()
-    assert serialized[f"question-{q.pk}"] is None
-
-
-def test_questions_form_save_creates_answer():
-    event = EventFactory()
-    q = QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.STRING
-    )
-    submission = SubmissionFactory(event=event)
-
-    form = QuestionsForm(
-        event=event, submission=submission, data={f"question_{q.pk}": "New answer"}
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    answer = submission.answers.get(question=q)
-
-    assert answer.answer == "New answer"
-
-
-def test_questions_form_save_updates_existing_answer():
-    event = EventFactory()
-    q = QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.STRING
-    )
-    submission = SubmissionFactory(event=event)
-    AnswerFactory(question=q, submission=submission, answer="Old answer")
-
-    form = QuestionsForm(
-        event=event, submission=submission, data={f"question_{q.pk}": "Updated answer"}
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    answer = submission.answers.get(question=q)
-
-    assert answer.answer == "Updated answer"
-
-
-def test_questions_form_save_deletes_answer_when_empty():
-    event = EventFactory()
-    q = QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.STRING
-    )
-    submission = SubmissionFactory(event=event)
-    AnswerFactory(question=q, submission=submission, answer="Old answer")
-
-    form = QuestionsForm(
-        event=event, submission=submission, data={f"question_{q.pk}": ""}
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    assert not submission.answers.filter(question=q).exists()
-
-
-def test_questions_form_save_choice_question():
-    event = EventFactory()
-    q = QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.CHOICES
-    )
-    option = AnswerOptionFactory(question=q)
-    submission = SubmissionFactory(event=event)
-
-    form = QuestionsForm(
-        event=event, submission=submission, data={f"question_{q.pk}": str(option.pk)}
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    answer = submission.answers.get(question=q)
-
-    assert answer.answer == option.answer
-    assert list(answer.options.all()) == [option]
-
-
-def test_questions_form_save_multiple_choice_question():
-    event = EventFactory()
-    q = QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.MULTIPLE
-    )
-    opt1 = AnswerOptionFactory(question=q)
-    opt2 = AnswerOptionFactory(question=q)
+    q = QuestionFactory(event=event, variant=QuestionVariant.STRING)
+    choice_q = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
+    option = AnswerOptionFactory(question=choice_q)
+    multiple_q = QuestionFactory(event=event, variant=QuestionVariant.MULTIPLE)
+    opt1 = AnswerOptionFactory(question=multiple_q)
+    opt2 = AnswerOptionFactory(question=multiple_q)
+    boolean_q = QuestionFactory(event=event, variant=QuestionVariant.BOOLEAN)
     submission = SubmissionFactory(event=event)
 
     form = QuestionsForm(
         event=event,
         submission=submission,
-        data={f"question_{q.pk}": [str(opt1.pk), str(opt2.pk)]},
+        data={
+            f"question_{q.pk}": "New answer",
+            f"question_{choice_q.pk}": str(option.pk),
+            f"question_{multiple_q.pk}": [str(opt1.pk), str(opt2.pk)],
+            f"question_{boolean_q.pk}": "True",
+        },
     )
     assert form.is_valid(), form.errors
     form.save()
 
-    answer = submission.answers.get(question=q)
-
-    assert set(answer.options.all()) == {opt1, opt2}
-
-
-def test_questions_form_save_boolean_question():
-    event = EventFactory()
-    q = QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.BOOLEAN
-    )
-    submission = SubmissionFactory(event=event)
+    assert submission.answers.get(question=q).answer == "New answer"
+    choice_answer = submission.answers.get(question=choice_q)
+    assert choice_answer.answer == option.answer
+    assert list(choice_answer.options.all()) == [option]
+    assert set(submission.answers.get(question=multiple_q).options.all()) == {
+        opt1,
+        opt2,
+    }
+    assert submission.answers.get(question=boolean_q).answer == "True"
 
     form = QuestionsForm(
-        event=event, submission=submission, data={f"question_{q.pk}": "True"}
+        event=event,
+        submission=submission,
+        data={f"question_{q.pk}": "Updated answer", f"question_{boolean_q.pk}": "True"},
     )
     assert form.is_valid(), form.errors
     form.save()
 
-    answer = submission.answers.get(question=q)
+    assert submission.answers.get(question=q).answer == "Updated answer"
+    assert not submission.answers.filter(question=choice_q).exists()
+    assert not submission.answers.get(question=multiple_q).options.exists()
 
-    assert answer.answer == "True"
+    form = QuestionsForm(event=event, submission=submission, data={})
+    assert form.is_valid(), form.errors
+    form.save()
+
+    assert list(submission.answers.filter(question=q)) == []
 
 
-def test_questions_form_init_uses_default_answer():
+def test_questions_form_save_resolves_target_per_question():
     event = EventFactory()
-    q = QuestionFactory(
-        event=event,
-        target=QuestionTarget.SUBMISSION,
-        variant=QuestionVariant.STRING,
-        default_answer="Default value",
-    )
-
-    form = QuestionsForm(event=event)
-
-    field = form.fields[f"question_{q.pk}"]
-    assert field.initial == "Default value"
-
-
-def test_questions_form_init_read_only_disables_fields():
-    event = EventFactory()
-    QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-
-    form = QuestionsForm(event=event, read_only=True)
-
-    for field in form.fields.values():
-        assert field.disabled is True
-
-
-def test_questions_form_init_track_from_submission():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    submission = SubmissionFactory(event=event, track=track)
-    track_q = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    track_q.tracks.add(track)
-    other_track = TrackFactory(event=event)
-    other_q = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    other_q.tracks.add(other_track)
-
-    form = QuestionsForm(event=event, submission=submission)
-
-    assert f"question_{track_q.pk}" in form.fields
-    assert f"question_{other_q.pk}" not in form.fields
-
-
-def test_questions_form_save_speaker_question():
-    event = EventFactory()
-    q = QuestionFactory(
+    speaker_q = QuestionFactory(
         event=event, target=QuestionTarget.SPEAKER, variant=QuestionVariant.STRING
+    )
+    reviewer_q = QuestionFactory(
+        event=event, target=QuestionTarget.REVIEWER, variant=QuestionVariant.STRING
     )
     speaker = SpeakerFactory(event=event)
-
-    form = QuestionsForm(
-        event=event,
-        speaker=speaker,
-        target=QuestionTarget.SPEAKER,
-        data={f"question_{q.pk}": "Speaker answer"},
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    answer = speaker.answers.get(question=q)
-
-    assert answer.answer == "Speaker answer"
-
-
-def test_questions_form_save_reviewer_question():
-    event = EventFactory()
-    q = QuestionFactory(
-        event=event, target=QuestionTarget.REVIEWER, variant=QuestionVariant.STRING
-    )
     review = ReviewFactory(submission__event=event)
 
     form = QuestionsForm(
         event=event,
-        review=review,
-        target=QuestionTarget.REVIEWER,
-        data={f"question_{q.pk}": "Reviewer answer"},
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    answer = review.answers.get(question=q)
-
-    assert answer.answer == "Reviewer answer"
-
-
-def test_questions_form_save_accepts_review_override():
-    event = EventFactory()
-    q = QuestionFactory(
-        event=event, target=QuestionTarget.REVIEWER, variant=QuestionVariant.STRING
-    )
-    review = ReviewFactory(submission__event=event)
-
-    form = QuestionsForm(
-        event=event,
-        target=QuestionTarget.REVIEWER,
-        data={f"question_{q.pk}": "Late-bound review"},
-    )
-    assert form.is_valid(), form.errors
-    form.save(review=review)
-
-    answer = review.answers.get(question=q)
-    assert answer.answer == "Late-bound review"
-    assert form.review is None
-
-
-def test_questions_form_save_raises_without_required_target():
-    event = EventFactory()
-    q = QuestionFactory(
-        event=event, target=QuestionTarget.SPEAKER, variant=QuestionVariant.STRING
-    )
-
-    form = QuestionsForm(
-        event=event,
         target=QuestionTarget.SPEAKER,
-        data={f"question_{q.pk}": "Speaker answer"},
+        data={f"question_{speaker_q.pk}": "Speaker answer"},
     )
     assert form.is_valid(), form.errors
     with pytest.raises(ValueError, match="no speaker target object"):
         form.save()
 
-
-def test_build_question_field_boolean():
-    question = QuestionFactory(
-        variant=QuestionVariant.BOOLEAN, question_required="required"
+    form = QuestionsForm(
+        event=event,
+        speaker=speaker,
+        target=QuestionTarget.SPEAKER,
+        data={f"question_{speaker_q.pk}": "Speaker answer"},
     )
+    assert form.is_valid(), form.errors
+    form.save()
 
-    field = build_question_field(question=question)
+    assert speaker.answers.get(question=speaker_q).answer == "Speaker answer"
 
+    form = QuestionsForm(
+        event=event,
+        target=QuestionTarget.REVIEWER,
+        data={f"question_{reviewer_q.pk}": "Late-bound review"},
+    )
+    assert form.is_valid(), form.errors
+    form.save(review=review)
+
+    assert review.answers.get(question=reviewer_q).answer == "Late-bound review"
+    assert form.review is None
+
+    form = QuestionsForm(
+        event=event,
+        review=review,
+        target=QuestionTarget.REVIEWER,
+        data={f"question_{reviewer_q.pk}": "Reviewer answer"},
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    assert review.answers.get(question=reviewer_q).answer == "Reviewer answer"
+
+
+def test_build_question_field_boolean_number_url_file():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    boolean_q = QuestionFactory(
+        event=event, variant=QuestionVariant.BOOLEAN, question_required="required"
+    )
+    number_q = QuestionFactory(
+        event=event, variant=QuestionVariant.NUMBER, min_number=1, max_number=100
+    )
+    url_q = QuestionFactory(event=event, variant=QuestionVariant.URL)
+    file_q = QuestionFactory(event=event, variant=QuestionVariant.FILE)
+    AnswerFactory(question=boolean_q, submission=submission, answer="True")
+    AnswerFactory(question=number_q, submission=submission, answer="42")
+    AnswerFactory(question=url_q, submission=submission, answer="https://example.com")
+
+    field = build_question_field(question=boolean_q)
     assert isinstance(field, forms.BooleanField)
     assert field.required is True
+    assert field.initial is False
 
-
-def test_build_question_field_boolean_with_initial_true():
-    question = QuestionFactory(variant=QuestionVariant.BOOLEAN)
-    submission = SubmissionFactory(event=question.event)
-    AnswerFactory(question=question, submission=submission, answer="True")
-
-    field = build_question_field(question=question, target_object=submission)
-
+    field = build_question_field(question=boolean_q, target_object=submission)
     assert field.initial is True
 
-
-def test_build_question_field_number():
-    question = QuestionFactory(
-        variant=QuestionVariant.NUMBER, min_number=1, max_number=100
-    )
-    submission = SubmissionFactory(event=question.event)
-    AnswerFactory(question=question, submission=submission, answer="42")
-
-    field = build_question_field(question=question, target_object=submission)
-
+    field = build_question_field(question=number_q, target_object=submission)
     assert isinstance(field, forms.DecimalField)
-    assert field.min_value == 1
-    assert field.max_value == 100
-    assert field.initial == "42"
+    assert (field.min_value, field.max_value, field.initial) == (1, 100, "42")
 
-
-def test_build_question_field_string_with_char_counting():
-    question = QuestionFactory(
-        variant=QuestionVariant.STRING, min_length=10, max_length=200
-    )
-
-    field = build_question_field(question=question)
-
-    assert isinstance(field, forms.CharField)
-    assert field.widget.attrs.get("data-minlength") == 10
-    assert field.widget.attrs.get("data-maxlength") == 200
-    assert field.widget.attrs.get("data-count-in") == "chars"
-
-
-def test_build_question_field_string_with_word_counting():
-    event = EventFactory(cfp__settings={"count_length_in": "words"})
-    question = QuestionFactory(
-        event=event, variant=QuestionVariant.STRING, min_length=5, max_length=50
-    )
-
-    field = build_question_field(question=question)
-
-    assert isinstance(field, forms.CharField)
-    assert field.widget.attrs.get("data-minlength") == 5
-    assert field.widget.attrs.get("data-maxlength") == 50
-    assert field.widget.attrs.get("data-count-in") == "words"
-
-
-def test_build_question_field_string_without_length_constraints():
-    question = QuestionFactory(variant=QuestionVariant.STRING)
-
-    field = build_question_field(question=question)
-
-    assert isinstance(field, forms.CharField)
-    assert "data-minlength" not in field.widget.attrs
-    assert "data-maxlength" not in field.widget.attrs
-    assert "data-count-in" not in field.widget.attrs
-
-
-def test_build_question_field_url():
-    question = QuestionFactory(variant=QuestionVariant.URL)
-    submission = SubmissionFactory(event=question.event)
-    AnswerFactory(
-        question=question, submission=submission, answer="https://example.com"
-    )
-
-    field = build_question_field(question=question, target_object=submission)
-
+    field = build_question_field(question=url_q, target_object=submission)
     assert isinstance(field, forms.URLField)
     assert field.initial == "https://example.com"
 
+    assert isinstance(build_question_field(question=file_q), forms.FileField)
 
-def test_build_question_field_text_with_char_counting():
+
+@pytest.mark.parametrize(
+    ("variant", "widget"),
+    ((QuestionVariant.STRING, forms.TextInput), (QuestionVariant.TEXT, forms.Textarea)),
+    ids=("string", "text"),
+)
+@pytest.mark.parametrize(
+    ("count_in", "min_length", "max_length", "attrs"),
+    (
+        (
+            "chars",
+            10,
+            200,
+            {"data-minlength": 10, "data-maxlength": 200, "data-count-in": "chars"},
+        ),
+        (
+            "words",
+            5,
+            50,
+            {"data-minlength": 5, "data-maxlength": 50, "data-count-in": "words"},
+        ),
+        ("chars", None, None, {}),
+    ),
+    ids=("chars", "words", "unconstrained"),
+)
+def test_build_question_field_text_length_attributes(
+    variant, widget, count_in, min_length, max_length, attrs
+):
+    event = EventFactory(cfp__settings={"count_length_in": count_in})
     question = QuestionFactory(
-        variant=QuestionVariant.TEXT, min_length=20, max_length=500
+        event=event, variant=variant, min_length=min_length, max_length=max_length
     )
 
     field = build_question_field(question=question)
 
     assert isinstance(field, forms.CharField)
-    assert isinstance(field.widget, forms.Textarea)
-    assert field.widget.attrs.get("data-minlength") == 20
-    assert field.widget.attrs.get("data-maxlength") == 500
-    assert field.widget.attrs.get("data-count-in") == "chars"
-
-
-def test_build_question_field_text_with_word_counting():
-    event = EventFactory(cfp__settings={"count_length_in": "words"})
-    question = QuestionFactory(
-        event=event, variant=QuestionVariant.TEXT, min_length=5, max_length=100
-    )
-
-    field = build_question_field(question=question)
-
-    assert isinstance(field, forms.CharField)
-    assert field.widget.attrs.get("data-minlength") == 5
-    assert field.widget.attrs.get("data-maxlength") == 100
-    assert field.widget.attrs.get("data-count-in") == "words"
-
-
-def test_build_question_field_text_without_length_constraints():
-    question = QuestionFactory(variant=QuestionVariant.TEXT)
-
-    field = build_question_field(question=question)
-
-    assert isinstance(field, forms.CharField)
-    assert isinstance(field.widget, forms.Textarea)
-    assert "data-minlength" not in field.widget.attrs
-    assert "data-maxlength" not in field.widget.attrs
-    assert "data-count-in" not in field.widget.attrs
-
-
-def test_build_question_field_file():
-    question = QuestionFactory(variant=QuestionVariant.FILE)
-
-    field = build_question_field(question=question)
-
-    assert isinstance(field, forms.FileField)
+    assert isinstance(field.widget, widget)
+    assert {
+        key: value
+        for key, value in field.widget.attrs.items()
+        if key.startswith("data-")
+    } == attrs
 
 
 def test_build_question_field_choices_radio_has_no_empty_option():
@@ -523,6 +329,9 @@ def test_build_question_field_choices_radio_has_no_empty_option():
     )
     opt1 = AnswerOptionFactory(question=question, answer="Option A")
     opt2 = AnswerOptionFactory(question=question, answer="Option B")
+    submission = SubmissionFactory(event=question.event)
+    answer = AnswerFactory(question=question, submission=submission)
+    answer.options.add(opt1)
 
     field = build_question_field(question=question)
 
@@ -530,6 +339,11 @@ def test_build_question_field_choices_radio_has_no_empty_option():
     assert set(field.queryset) == {opt1, opt2}
     assert isinstance(field.widget, forms.RadioSelect)
     assert [str(label) for _, label in field.choices] == ["Option A", "Option B"]
+    assert field.initial is None
+
+    field = build_question_field(question=question, target_object=submission)
+
+    assert field.initial == opt1
 
 
 @pytest.mark.parametrize(
@@ -574,26 +388,6 @@ def test_build_question_field_choices_dropdown_preselects_nothing(
         assert f'<option value="{option.pk}">' in html
 
 
-def test_build_question_field_multiple_ignores_default_answer():
-    event = EventFactory()
-    question = QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.MULTIPLE
-    )
-    options = [
-        AnswerOptionFactory(question=question, answer=f"Option {index}")
-        for index in range(2)
-    ]
-    question.default_answer = str(options[0].pk)
-    question.save()
-
-    form = QuestionsForm(event=event)
-    html = str(form[f"question_{question.pk}"])
-
-    assert "checked" not in html
-    for option in options:
-        assert f'value="{option.pk}"' in html
-
-
 def test_build_question_field_choices_optional_dropdown_can_be_unset():
     question = QuestionFactory(
         variant=QuestionVariant.CHOICES, question_required=QuestionRequired.OPTIONAL
@@ -618,48 +412,53 @@ def test_build_question_field_choices_optional_dropdown_can_be_unset():
     ]
 
 
-def test_build_question_field_multiple():
-    question = QuestionFactory(variant=QuestionVariant.MULTIPLE)
-    opt1 = AnswerOptionFactory(question=question, answer="Option A")
-    opt2 = AnswerOptionFactory(question=question, answer="Option B")
-
-    field = build_question_field(question=question)
-
-    assert isinstance(field, forms.ModelMultipleChoiceField)
-    assert set(field.queryset) == {opt1, opt2}
-
-
-@pytest.mark.parametrize(
-    ("min_options", "max_options", "expected_help_text"),
-    (
-        (1, 2, "<p>Pick some</p> Please select between 1 and 2 options."),
-        (None, None, "<p>Pick some</p>"),
-    ),
-    ids=("with_limits", "without_limits"),
-)
-def test_build_question_field_multiple_option_limits_help_text(
-    min_options, max_options, expected_help_text
-):
+def test_build_question_field_multiple_ignores_default_answer_and_loads_initial():
+    event = EventFactory()
     question = QuestionFactory(
+        event=event,
+        target=QuestionTarget.SUBMISSION,
         variant=QuestionVariant.MULTIPLE,
-        min_options=min_options,
-        max_options=max_options,
+        min_options=1,
+        max_options=2,
         help_text="Pick some",
     )
-    AnswerOptionFactory(question=question)
+    options = [
+        AnswerOptionFactory(question=question, answer=f"Option {index}")
+        for index in range(2)
+    ]
+    question.default_answer = str(options[0].pk)
+    question.save()
+    submission = SubmissionFactory(event=event)
+    answer = AnswerFactory(question=question, submission=submission)
+    answer.options.add(*options)
 
-    field = build_question_field(question=question)
+    form = QuestionsForm(event=event)
+    field = form.fields[f"question_{question.pk}"]
+    html = str(form[f"question_{question.pk}"])
 
-    assert field.help_text == expected_help_text
+    assert isinstance(field, forms.ModelMultipleChoiceField)
+    assert set(field.queryset) == set(options)
+    assert field.help_text == "<p>Pick some</p> Please select between 1 and 2 options."
+    assert "checked" not in html
+    for option in options:
+        assert f'value="{option.pk}"' in html
+
+    field = build_question_field(question=question, target_object=submission)
+
+    assert set(field.initial) == set(options)
+
+    question.min_options = question.max_options = None
+    assert build_question_field(question=question).help_text == "<p>Pick some</p>"
 
 
 @pytest.mark.parametrize(
     ("min_options", "max_options", "selected", "expected_error"),
     (
-        (2, None, 1, "Please select at least 2 options. You selected 1 options."),
-        (None, 1, 2, "Please select at most 1 options. You selected 2 options."),
+        (2, None, [0], "Please select at least 2 options. You selected 1 options."),
+        (None, 1, [0, 1], "Please select at most 1 options. You selected 2 options."),
+        (2, 2, [0, 0], "Please select exactly 2 options. You selected 1 options."),
     ),
-    ids=("too_few", "too_many"),
+    ids=("too_few", "too_many", "repeated_counts_once"),
 )
 def test_questions_form_rejects_option_count_outside_limits(
     min_options, max_options, selected, expected_error
@@ -679,7 +478,7 @@ def test_questions_form_rejects_option_count_outside_limits(
         event=event,
         submission=submission,
         data={
-            f"question_{question.pk}": [str(option.pk) for option in options[:selected]]
+            f"question_{question.pk}": [str(options[index].pk) for index in selected]
         },
     )
 
@@ -687,625 +486,284 @@ def test_questions_form_rejects_option_count_outside_limits(
     assert form.errors[f"question_{question.pk}"] == [expected_error]
 
 
-def test_questions_form_accepts_option_count_within_limits():
+def test_questions_form_accepts_option_counts_within_limits():
     event = EventFactory()
-    question = QuestionFactory(
+    bounded = QuestionFactory(
         event=event,
         target=QuestionTarget.SUBMISSION,
         variant=QuestionVariant.MULTIPLE,
         min_options=1,
         max_options=2,
     )
-    opt1 = AnswerOptionFactory(question=question)
-    opt2 = AnswerOptionFactory(question=question)
-    submission = SubmissionFactory(event=event)
-
-    form = QuestionsForm(
-        event=event,
-        submission=submission,
-        data={f"question_{question.pk}": [str(opt1.pk), str(opt2.pk)]},
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    assert set(submission.answers.get(question=question).options.all()) == {opt1, opt2}
-
-
-def test_questions_form_counts_repeated_options_only_once():
-    event = EventFactory()
-    question = QuestionFactory(
-        event=event,
-        target=QuestionTarget.SUBMISSION,
-        variant=QuestionVariant.MULTIPLE,
-        min_options=2,
-        max_options=2,
-    )
-    option = AnswerOptionFactory(question=question)
-    AnswerOptionFactory(question=question)
-    submission = SubmissionFactory(event=event)
-
-    form = QuestionsForm(
-        event=event,
-        submission=submission,
-        data={f"question_{question.pk}": [str(option.pk), str(option.pk)]},
-    )
-
-    assert not form.is_valid()
-    assert form.errors[f"question_{question.pk}"] == [
-        "Please select exactly 2 options. You selected 1 options."
-    ]
-
-
-def test_questions_form_accepts_repeated_option_within_maximum():
-    event = EventFactory()
-    question = QuestionFactory(
+    opt1 = AnswerOptionFactory(question=bounded)
+    opt2 = AnswerOptionFactory(question=bounded)
+    capped = QuestionFactory(
         event=event,
         target=QuestionTarget.SUBMISSION,
         variant=QuestionVariant.MULTIPLE,
         max_options=1,
     )
-    option = AnswerOptionFactory(question=question)
-    submission = SubmissionFactory(event=event)
-
-    form = QuestionsForm(
-        event=event,
-        submission=submission,
-        data={f"question_{question.pk}": [str(option.pk), str(option.pk)]},
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    assert list(submission.answers.get(question=question).options.all()) == [option]
-
-
-def test_questions_form_optional_min_options_allows_empty_selection():
-    event = EventFactory()
-    question = QuestionFactory(
+    single = AnswerOptionFactory(question=capped)
+    optional = QuestionFactory(
         event=event,
         target=QuestionTarget.SUBMISSION,
         variant=QuestionVariant.MULTIPLE,
         question_required=QuestionRequired.OPTIONAL,
         min_options=2,
     )
-    AnswerOptionFactory(question=question)
-    AnswerOptionFactory(question=question)
+    AnswerOptionFactory(question=optional)
+    AnswerOptionFactory(question=optional)
     submission = SubmissionFactory(event=event)
 
-    form = QuestionsForm(event=event, submission=submission, data={})
+    form = QuestionsForm(
+        event=event,
+        submission=submission,
+        data={
+            f"question_{bounded.pk}": [str(opt1.pk), str(opt2.pk)],
+            f"question_{capped.pk}": [str(single.pk), str(single.pk)],
+        },
+    )
     assert form.is_valid(), form.errors
     form.save()
 
-    assert not submission.answers.get(question=question).options.exists()
+    assert set(submission.answers.get(question=bounded).options.all()) == {opt1, opt2}
+    assert list(submission.answers.get(question=capped).options.all()) == [single]
+    assert not submission.answers.get(question=optional).options.exists()
 
 
-def test_build_question_field_date_with_constraints():
-    question = QuestionFactory(
+def test_build_question_field_date_and_datetime():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    date_q = QuestionFactory(
+        event=event,
         variant=QuestionVariant.DATE,
         min_date=dt.date(2025, 1, 1),
         max_date=dt.date(2025, 12, 31),
     )
-
-    field = build_question_field(question=question)
-
-    assert isinstance(field, forms.DateField)
-    assert field.widget.attrs.get("data-date-start-date") == "2025-01-01"
-    assert field.widget.attrs.get("data-date-end-date") == "2025-12-31"
-    assert len(field.validators) == 2
-
-
-def test_build_question_field_date_with_initial():
-    question = QuestionFactory(variant=QuestionVariant.DATE)
-    submission = SubmissionFactory(event=question.event)
-    AnswerFactory(question=question, submission=submission, answer="2025-06-15")
-
-    field = build_question_field(question=question, target_object=submission)
-
-    assert field.initial == dt.date(2025, 6, 15)
-
-
-def test_build_question_field_datetime_with_constraints():
+    plain_date_q = QuestionFactory(event=event, variant=QuestionVariant.DATE)
     min_dt = dt.datetime(2025, 1, 1, 0, 0, tzinfo=dt.UTC)
     max_dt = dt.datetime(2025, 12, 31, 23, 59, tzinfo=dt.UTC)
-    question = QuestionFactory(
-        variant=QuestionVariant.DATETIME, min_datetime=min_dt, max_datetime=max_dt
+    datetime_q = QuestionFactory(
+        event=event,
+        variant=QuestionVariant.DATETIME,
+        min_datetime=min_dt,
+        max_datetime=max_dt,
     )
-
-    field = build_question_field(question=question)
-
-    assert isinstance(field, forms.DateTimeField)
-    assert field.widget.attrs.get("min") == min_dt.isoformat()
-    assert field.widget.attrs.get("max") == max_dt.isoformat()
-    assert len(field.validators) == 2
-
-
-def test_build_question_field_datetime_with_initial():
-    question = QuestionFactory(variant=QuestionVariant.DATETIME)
-    submission = SubmissionFactory(event=question.event)
+    plain_datetime_q = QuestionFactory(event=event, variant=QuestionVariant.DATETIME)
+    AnswerFactory(question=date_q, submission=submission, answer="2025-06-15")
     AnswerFactory(
-        question=question, submission=submission, answer="2025-06-15T10:30:00+00:00"
+        question=datetime_q, submission=submission, answer="2025-06-15T10:30:00+00:00"
     )
 
-    field = build_question_field(question=question, target_object=submission)
+    field = build_question_field(question=date_q, target_object=submission)
+    assert isinstance(field, forms.DateField)
+    assert field.widget.attrs["data-date-start-date"] == "2025-01-01"
+    assert field.widget.attrs["data-date-end-date"] == "2025-12-31"
+    assert len(field.validators) == 2
+    assert field.initial == dt.date(2025, 6, 15)
 
-    expected = dt.datetime(2025, 6, 15, 10, 30, tzinfo=dt.UTC).astimezone(
-        question.event.tz
+    field = build_question_field(question=plain_date_q)
+    assert isinstance(field, forms.DateField)
+    assert "data-date-start-date" not in field.widget.attrs
+    assert "data-date-end-date" not in field.widget.attrs
+    assert field.initial is None
+
+    field = build_question_field(question=datetime_q, target_object=submission)
+    assert isinstance(field, forms.DateTimeField)
+    assert field.widget.attrs["min"] == min_dt.isoformat()
+    assert field.widget.attrs["max"] == max_dt.isoformat()
+    assert len(field.validators) == 2
+    assert field.initial == dt.datetime(2025, 6, 15, 10, 30, tzinfo=dt.UTC).astimezone(
+        event.tz
     )
-    assert field.initial == expected
 
-
-def test_build_question_field_datetime_rejects_value_outside_utc_range():
-    question = QuestionFactory(variant=QuestionVariant.DATETIME)
-    field = build_question_field(question=question)
-
+    field = build_question_field(question=plain_datetime_q)
+    assert isinstance(field, forms.DateTimeField)
+    assert "min" not in field.widget.attrs
+    assert "max" not in field.widget.attrs
     with (
         timezone.override(zoneinfo.ZoneInfo("Europe/Berlin")),
         pytest.raises(forms.ValidationError) as excinfo,
     ):
         field.clean("0001-01-01T00:00")
-
     assert excinfo.value.code == "invalid"
 
 
-def test_build_question_field_read_only_via_freeze():
-    question = QuestionFactory(
+def test_build_question_field_read_only_via_freeze_or_parameter():
+    frozen = QuestionFactory(
         variant=QuestionVariant.STRING,
         freeze_after=dt.datetime(2020, 1, 1, tzinfo=dt.UTC),
     )
+    open_question = QuestionFactory(event=frozen.event, variant=QuestionVariant.STRING)
 
-    field = build_question_field(question=question)
-
-    assert field.disabled is True
-
-
-def test_build_question_field_read_only_param():
-    question = QuestionFactory(variant=QuestionVariant.STRING)
-
-    field = build_question_field(question=question, read_only=True)
-
-    assert field.disabled is True
-
-
-def test_build_question_field_date_no_constraints():
-    question = QuestionFactory(variant=QuestionVariant.DATE)
-
-    field = build_question_field(question=question)
-
-    assert isinstance(field, forms.DateField)
-    assert "data-date-start-date" not in field.widget.attrs
-    assert "data-date-end-date" not in field.widget.attrs
-
-
-def test_build_question_field_datetime_no_constraints():
-    question = QuestionFactory(variant=QuestionVariant.DATETIME)
-
-    field = build_question_field(question=question)
-
-    assert isinstance(field, forms.DateTimeField)
-    assert "min" not in field.widget.attrs
-    assert "max" not in field.widget.attrs
-
-
-def test_build_question_field_choices_with_initial_object():
-    question = QuestionFactory(variant=QuestionVariant.CHOICES)
-    opt = AnswerOptionFactory(question=question, answer="Selected")
-    AnswerOptionFactory(question=question, answer="Other")
-    submission = SubmissionFactory(event=question.event)
-    answer = AnswerFactory(question=question, submission=submission)
-    answer.options.add(opt)
-
-    field = build_question_field(question=question, target_object=submission)
-
-    assert field.initial == opt
-
-
-def test_build_question_field_multiple_with_initial_object():
-    question = QuestionFactory(variant=QuestionVariant.MULTIPLE)
-    opt1 = AnswerOptionFactory(question=question, answer="A")
-    opt2 = AnswerOptionFactory(question=question, answer="B")
-    submission = SubmissionFactory(event=question.event)
-    answer = AnswerFactory(question=question, submission=submission)
-    answer.options.add(opt1, opt2)
-
-    field = build_question_field(question=question, target_object=submission)
-
-    assert set(field.initial) == {opt1, opt2}
+    assert build_question_field(question=frozen).disabled is True
+    assert not build_question_field(question=open_question).disabled
+    assert build_question_field(question=open_question, read_only=True).disabled
 
 
 @pytest.mark.parametrize(
-    ("target", "expected"),
+    ("target", "reviewer_visibility", "limits"),
     (
-        (QuestionTarget.SUBMISSION, True),
-        (QuestionTarget.SPEAKER, True),
-        (QuestionTarget.REVIEWER, False),
+        (QuestionTarget.SUBMISSION, True, True),
+        (QuestionTarget.SPEAKER, True, False),
+        (QuestionTarget.REVIEWER, False, False),
     ),
 )
-def test_question_orga_form_reviewer_visibility_by_target(target, expected):
-    event = EventFactory()
-    instance = Question(event=event, target=target)
-
-    form = QuestionOrgaForm(event=event, locales=event.locales, instance=instance)
-
-    assert ("is_visible_to_reviewers" in form.fields) is expected
-
-
-@pytest.mark.parametrize(
-    ("target", "expected"),
-    (
-        (QuestionTarget.SUBMISSION, True),
-        (QuestionTarget.SPEAKER, False),
-        (QuestionTarget.REVIEWER, False),
-    ),
-)
-def test_question_orga_form_proposal_limits_by_target(target, expected):
+def test_question_orga_form_fields_by_target(target, reviewer_visibility, limits):
     event = EventFactory(feature_flags={"use_tracks": True})
     TrackFactory(event=event)
     instance = Question(event=event, target=target)
 
     form = QuestionOrgaForm(event=event, locales=event.locales, instance=instance)
 
-    assert ("tracks" in form.fields) is expected
-    assert ("submission_types" in form.fields) is expected
+    assert ("is_visible_to_reviewers" in form.fields) is reviewer_visibility
+    assert ("tracks" in form.fields) is limits
+    assert ("submission_types" in form.fields) is limits
 
 
-def test_question_orga_form_init_removes_tracks_when_not_configured():
+def test_question_orga_form_init_limits_follow_event_configuration():
     event = EventFactory(feature_flags={"use_tracks": False})
-
-    form = QuestionOrgaForm(event=event, locales=event.locales)
-
-    assert "tracks" not in form.fields
-
-
-def test_question_orga_form_init_removes_tracks_when_no_tracks_exist():
-    event = EventFactory(feature_flags={"use_tracks": True})
-
-    form = QuestionOrgaForm(event=event, locales=event.locales)
-
-    assert "tracks" not in form.fields
-
-
-def test_question_orga_form_init_shows_tracks_when_configured():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    track = TrackFactory(event=event)
-
-    form = QuestionOrgaForm(event=event, locales=event.locales)
-
-    assert "tracks" in form.fields
-    assert track in form.fields["tracks"].queryset
-
-
-def test_question_orga_form_init_sets_submission_types_queryset():
-    event = EventFactory()
     extra_type = SubmissionTypeFactory(event=event)
 
     form = QuestionOrgaForm(event=event, locales=event.locales)
 
-    assert "submission_types" in form.fields
-    assert extra_type in form.fields["submission_types"].queryset
+    assert "tracks" not in form.fields
+    assert set(form.fields["submission_types"].queryset) == {
+        event.cfp.default_type,
+        extra_type,
+    }
 
+    event.feature_flags["use_tracks"] = True
+    event.save()
+    form = QuestionOrgaForm(event=event, locales=event.locales)
 
-def test_question_orga_form_init_removes_submission_types_when_none_exist():
-    event = EventFactory()
-    other_event = EventFactory()
-    SubmissionType.objects.filter(event=event).update(event=other_event)
+    assert "tracks" not in form.fields
 
+    track = TrackFactory(event=event)
+    event = refresh(event)
+    form = QuestionOrgaForm(event=event, locales=event.locales)
+
+    assert list(form.fields["tracks"].queryset) == [track]
+
+    SubmissionType.objects.filter(event=event).update(event=EventFactory())
     form = QuestionOrgaForm(event=event, locales=event.locales)
 
     assert "submission_types" not in form.fields
 
 
-def test_question_orga_form_clean_options_plain_text():
-    event = EventFactory()
-    content = b"Option A\nOption B\nOption C\n"
-    upload = SimpleUploadedFile("options.txt", content, content_type="text/plain")
-
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": "Pick one",
-            "variant": QuestionVariant.CHOICES,
-            "question_required": QuestionRequired.OPTIONAL,
-            "contains_personal_data": False,
-        },
-        files={"options": upload},
-        event=event,
-        locales=event.locales,
-    )
-    form.is_valid()
-
-    assert form.cleaned_data["options"] == ["Option A", "Option B", "Option C"]
-
-
-def test_question_orga_form_clean_options_json():
-    event = EventFactory()
-    data = [{"en": "English", "de": "Deutsch"}, {"en": "Yes", "de": "Ja"}]
-    content = json.dumps(data).encode()
-    upload = SimpleUploadedFile("opts.json", content, content_type="application/json")
-
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": "Pick one",
-            "variant": QuestionVariant.CHOICES,
-            "question_required": QuestionRequired.OPTIONAL,
-            "contains_personal_data": False,
-        },
-        files={"options": upload},
-        event=event,
-        locales=event.locales,
-    )
-    form.is_valid()
-
-    options = form.cleaned_data["options"]
-    assert len(options) == 2
-    assert options[0].data == {"en": "English", "de": "Deutsch"}
-
-
-def test_question_orga_form_clean_options_invalid_file():
-    event = EventFactory()
-    upload = SimpleUploadedFile(
-        "bad.bin", b"\x80\x81\x82", content_type="application/octet-stream"
-    )
-
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": "Pick one",
-            "variant": QuestionVariant.CHOICES,
-            "question_required": QuestionRequired.OPTIONAL,
-            "contains_personal_data": False,
-        },
-        files={"options": upload},
-        event=event,
-        locales=event.locales,
-    )
-    form.is_valid()
-
-    assert "options" in form.errors
-
-
-def test_question_orga_form_clean_options_json_not_list():
-    event = EventFactory()
-    content = json.dumps({"key": "value"}).encode()
-    upload = SimpleUploadedFile("bad.json", content, content_type="application/json")
-
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": "Pick one",
-            "variant": QuestionVariant.CHOICES,
-            "question_required": QuestionRequired.OPTIONAL,
-            "contains_personal_data": False,
-        },
-        files={"options": upload},
-        event=event,
-        locales=event.locales,
-    )
-    form.is_valid()
-
-    assert len(form.cleaned_data["options"]) == 1
-
-
-def test_question_orga_form_clean_options_json_list_of_non_dicts():
-    event = EventFactory()
-    content = json.dumps(["Option A", "Option B"]).encode()
-    upload = SimpleUploadedFile("opts.json", content, content_type="application/json")
-
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": "Pick one",
-            "variant": QuestionVariant.CHOICES,
-            "question_required": QuestionRequired.OPTIONAL,
-            "contains_personal_data": False,
-        },
-        files={"options": upload},
-        event=event,
-        locales=event.locales,
-    )
-    form.is_valid()
-
-    assert form.cleaned_data["options"] == ['["Option A", "Option B"]']
-
-
-def test_question_orga_form_clean_options_empty_file():
-    event = EventFactory()
-
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": "Pick one",
-            "variant": QuestionVariant.CHOICES,
-            "question_required": QuestionRequired.OPTIONAL,
-            "contains_personal_data": False,
-        },
-        event=event,
-        locales=event.locales,
-    )
-    form.is_valid()
-
-    assert form.cleaned_data.get("options") is None
-
-
-def test_question_orga_form_clean_after_deadline_requires_deadline():
-    event = EventFactory()
-
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": "Pick one",
-            "variant": QuestionVariant.STRING,
-            "question_required": QuestionRequired.AFTER_DEADLINE,
-            "deadline": "",
-            "contains_personal_data": False,
-        },
-        event=event,
-        locales=event.locales,
-    )
-    valid = form.is_valid()
-
-    assert not valid
-    assert "deadline" in form.errors
-
-
 @pytest.mark.parametrize(
-    "question_required",
-    (QuestionRequired.REQUIRED, QuestionRequired.OPTIONAL),
-    ids=["required", "optional"],
+    ("filename", "content", "expected"),
+    (
+        (
+            "options.txt",
+            b"Option A\nOption B\nOption C\n",
+            ["Option A", "Option B", "Option C"],
+        ),
+        (
+            "opts.json",
+            json.dumps(
+                [{"en": "English", "de": "Deutsch"}, {"en": "Yes", "de": "Ja"}]
+            ).encode(),
+            [{"en": "English", "de": "Deutsch"}, {"en": "Yes", "de": "Ja"}],
+        ),
+        ("bad.json", json.dumps({"key": "value"}).encode(), ['{"key": "value"}']),
+        (
+            "opts.json",
+            json.dumps(["Option A", "Option B"]).encode(),
+            ['["Option A", "Option B"]'],
+        ),
+        ("bad.bin", b"\x80\x81\x82", None),
+    ),
+    ids=(
+        "plain_text",
+        "json",
+        "json_not_list",
+        "json_list_of_non_dicts",
+        "undecodable",
+    ),
 )
-def test_question_orga_form_clean_required_or_optional_clears_deadline(
-    question_required,
-):
+def test_question_orga_form_clean_options(filename, content, expected):
     event = EventFactory()
+    upload = SimpleUploadedFile(filename, content)
 
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": "Pick one",
-            "variant": QuestionVariant.STRING,
-            "question_required": question_required,
-            "deadline": now().isoformat(),
-            "contains_personal_data": False,
-        },
-        event=event,
-        locales=event.locales,
-    )
+    form = _orga_form(event, files={"options": upload})
     form.is_valid()
 
-    assert form.cleaned_data["deadline"] is None
+    if expected is None:
+        assert form.errors == {"options": ["Could not read file."]}
+        return
+    assert [
+        option.data if hasattr(option, "data") else option
+        for option in form.cleaned_data["options"]
+    ] == expected
 
 
-def test_question_orga_form_clean_replace_without_options_is_error():
-    event = EventFactory()
-
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": "Pick one",
-            "variant": QuestionVariant.CHOICES,
-            "question_required": QuestionRequired.OPTIONAL,
-            "options_replace": True,
-            "contains_personal_data": False,
-        },
-        event=event,
-        locales=event.locales,
-    )
-    valid = form.is_valid()
-
-    assert not valid
-    assert "options_replace" in form.errors
-
-
-def test_question_orga_form_clean_public_clears_limit_teams():
-    event = EventFactory()
-
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": "Pick one",
-            "variant": QuestionVariant.STRING,
-            "question_required": QuestionRequired.OPTIONAL,
-            "is_public": True,
-            "contains_personal_data": False,
-        },
-        event=event,
-        locales=event.locales,
-    )
-    form.is_valid()
-
-    assert "limit_teams" not in form.cleaned_data
-
-
-def test_question_orga_form_clean_identifier_validates_uniqueness():
+def test_question_orga_form_clean_rules():
     event = EventFactory()
     QuestionFactory(event=event, identifier="MY-ID")
 
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": "Another question",
-            "variant": QuestionVariant.STRING,
-            "question_required": QuestionRequired.OPTIONAL,
-            "identifier": "MY-ID",
-            "contains_personal_data": False,
-        },
-        event=event,
-        locales=event.locales,
+    form = _orga_form(event)
+    form.is_valid()
+    assert form.cleaned_data.get("options") is None
+
+    form = _orga_form(
+        event,
+        variant=QuestionVariant.STRING,
+        question_required=QuestionRequired.AFTER_DEADLINE,
+        deadline="",
     )
-    valid = form.is_valid()
+    assert not form.is_valid()
+    assert "deadline" in form.errors
 
-    assert not valid
-    assert "identifier" in form.errors
+    for question_required in (QuestionRequired.REQUIRED, QuestionRequired.OPTIONAL):
+        form = _orga_form(
+            event,
+            variant=QuestionVariant.STRING,
+            question_required=question_required,
+            deadline=now().isoformat(),
+        )
+        form.is_valid()
+        assert form.cleaned_data["deadline"] is None
+
+    form = _orga_form(event, options_replace=True)
+    assert form.errors == {
+        "options_replace": ["You cannot replace options without uploading new ones."]
+    }
+
+    form = _orga_form(event, variant=QuestionVariant.STRING, is_public=True)
+    form.is_valid()
+    assert "limit_teams" not in form.cleaned_data
+
+    form = _orga_form(event, variant=QuestionVariant.STRING, identifier="MY-ID")
+    assert not form.is_valid()
+    assert list(form.errors) == ["identifier"]
 
 
-def test_question_orga_form_clean_identifier_allows_same_instance():
-    event = EventFactory()
-    question = QuestionFactory(event=event, identifier="MY-ID")
-
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": "Updated question",
-            "variant": QuestionVariant.STRING,
-            "question_required": QuestionRequired.OPTIONAL,
-            "identifier": "MY-ID",
-            "contains_personal_data": False,
-        },
-        instance=question,
-        event=event,
-        locales=event.locales,
-    )
-    valid = form.is_valid()
-
-    assert valid, form.errors
-
-
-def test_question_orga_form_save_without_options_returns_instance():
+def test_question_orga_form_save_keeps_identifier_and_replaces_options():
     event = EventFactory()
     question = QuestionFactory(
-        event=event, variant=QuestionVariant.STRING, identifier="MY-ID"
+        event=event, variant=QuestionVariant.CHOICES, identifier="MY-ID"
     )
+    old_option = AnswerOptionFactory(question=question, answer="Old")
+    AnswerFactory(question=question, answer="Old")
 
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": "Updated text",
-            "variant": QuestionVariant.STRING,
-            "question_required": QuestionRequired.OPTIONAL,
-            "contains_personal_data": False,
-        },
-        instance=question,
-        event=event,
-        locales=event.locales,
+    form = _orga_form(
+        event, instance=question, question_0="Updated text", identifier="MY-ID"
     )
     assert form.is_valid(), form.errors
     result = form.save()
 
     assert result.pk == question.pk
     assert result.identifier == "MY-ID"
+    assert str(result.question) == "Updated text"
+    assert list(question.options.all()) == [old_option]
 
-
-def test_question_orga_form_save_creates_options_with_replace():
-    event = EventFactory()
-    question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
-    old_option = AnswerOptionFactory(question=question, answer="Old")
-    AnswerFactory(question=question, answer="Old")
-
-    content = b"New A\nNew B\n"
-    upload = SimpleUploadedFile("options.txt", content, content_type="text/plain")
-
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": str(question.question),
-            "variant": QuestionVariant.CHOICES,
-            "question_required": QuestionRequired.OPTIONAL,
-            "options_replace": True,
-            "contains_personal_data": False,
-        },
-        files={"options": upload},
+    form = _orga_form(
+        event,
+        files={"options": SimpleUploadedFile("options.txt", b"New A\nNew B\n")},
         instance=question,
-        event=event,
-        locales=event.locales,
+        question_0="Updated text",
+        options_replace=True,
     )
     assert form.is_valid(), form.errors
     form.save()
@@ -1321,18 +779,8 @@ def test_question_orga_form_save_creates_options_with_replace():
 def test_question_orga_form_saves_option_limits():
     event = EventFactory()
 
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": "Pick some",
-            "variant": QuestionVariant.MULTIPLE,
-            "question_required": QuestionRequired.OPTIONAL,
-            "contains_personal_data": False,
-            "min_options": "1",
-            "max_options": "3",
-        },
-        event=event,
-        locales=event.locales,
+    form = _orga_form(
+        event, variant=QuestionVariant.MULTIPLE, min_options="1", max_options="3"
     )
     assert form.is_valid(), form.errors
     question = form.save()
@@ -1340,196 +788,86 @@ def test_question_orga_form_saves_option_limits():
     assert (question.min_options, question.max_options) == (1, 3)
 
 
-def test_question_orga_form_rejects_min_options_above_max_options():
+@pytest.mark.parametrize(
+    ("overrides", "errors"),
+    (
+        (
+            {"min_options": "3", "max_options": "2"},
+            {
+                "min_options": [
+                    "Minimum number of options cannot be greater than maximum number of options."
+                ]
+            },
+        ),
+        (
+            {"min_options": "0"},
+            {"min_options": ["Ensure this value is greater than or equal to 1."]},
+        ),
+        (
+            {"max_options": "0"},
+            {"max_options": ["Ensure this value is greater than or equal to 1."]},
+        ),
+    ),
+    ids=("min_above_max", "zero_min", "zero_max"),
+)
+def test_question_orga_form_rejects_invalid_option_limits(overrides, errors):
     event = EventFactory()
 
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": "Pick some",
-            "variant": QuestionVariant.MULTIPLE,
-            "question_required": QuestionRequired.OPTIONAL,
-            "contains_personal_data": False,
-            "min_options": "3",
-            "max_options": "2",
-        },
-        event=event,
-        locales=event.locales,
-    )
+    form = _orga_form(event, variant=QuestionVariant.MULTIPLE, **overrides)
 
     assert not form.is_valid()
-    assert form.errors == {
-        "min_options": [
-            "Minimum number of options cannot be greater than maximum number of options."
-        ]
-    }
+    assert form.errors == errors
 
 
-@pytest.mark.parametrize("field", ("min_options", "max_options"))
-def test_question_orga_form_rejects_zero_option_limits(field):
-    event = EventFactory()
-
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": "Pick some",
-            "variant": QuestionVariant.MULTIPLE,
-            "question_required": QuestionRequired.OPTIONAL,
-            "contains_personal_data": False,
-            field: "0",
-        },
-        event=event,
-        locales=event.locales,
-    )
-
-    assert not form.is_valid()
-    assert form.errors == {field: ["Ensure this value is greater than or equal to 1."]}
-
-
-def test_question_orga_form_rejects_min_options_above_option_count():
+@pytest.mark.parametrize(
+    ("existing", "variant", "upload", "replace", "error_count", "final_count"),
+    (
+        (2, QuestionVariant.MULTIPLE, None, False, 2, 2),
+        (2, QuestionVariant.CHOICES, None, False, None, 2),
+        (1, QuestionVariant.MULTIPLE, b"New A\nNew B\nNew C\n", True, None, 3),
+        (3, QuestionVariant.MULTIPLE, b"Only one\n", True, 1, 3),
+        (1, QuestionVariant.MULTIPLE, b"New A\nNew B\n", False, None, 3),
+    ),
+    ids=(
+        "above_option_count",
+        "ignored_for_other_variants",
+        "matches_uploaded_replacement",
+        "above_uploaded_replacement",
+        "counts_merged_upload",
+    ),
+)
+def test_question_orga_form_validates_min_options_against_pending_options(
+    existing, variant, upload, replace, error_count, final_count
+):
     event = EventFactory()
     question = QuestionFactory(event=event, variant=QuestionVariant.MULTIPLE)
-    AnswerOptionFactory(question=question)
-    AnswerOptionFactory(question=question)
+    for index in range(existing):
+        AnswerOptionFactory(question=question, answer=f"Existing {index}")
+    files = {"options": SimpleUploadedFile("options.txt", upload)} if upload else None
 
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": str(question.question),
-            "variant": QuestionVariant.MULTIPLE,
-            "question_required": QuestionRequired.OPTIONAL,
-            "contains_personal_data": False,
-            "min_options": "3",
-        },
+    form = _orga_form(
+        event,
+        files=files,
         instance=question,
-        event=event,
-        locales=event.locales,
+        question_0=str(question.question),
+        variant=variant,
+        options_replace=replace,
+        min_options="3",
     )
 
-    assert not form.is_valid()
-    assert form.errors == {
-        "min_options": [
-            "This custom field only has 2 options, so it cannot require 3 of them."
-        ]
-    }
-
-
-def test_question_orga_form_ignores_min_options_for_other_variants():
-    event = EventFactory()
-    question = QuestionFactory(
-        event=event, variant=QuestionVariant.MULTIPLE, min_options=3
-    )
-    AnswerOptionFactory(question=question)
-    AnswerOptionFactory(question=question)
-
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": str(question.question),
-            "variant": QuestionVariant.CHOICES,
-            "question_required": QuestionRequired.OPTIONAL,
-            "contains_personal_data": False,
-            "min_options": "3",
-        },
-        instance=question,
-        event=event,
-        locales=event.locales,
-    )
-    assert form.is_valid(), form.errors
-    question = form.save()
-
-    assert question.variant == QuestionVariant.CHOICES
-
-
-def test_question_orga_form_accepts_min_options_matching_uploaded_replacement():
-    event = EventFactory()
-    question = QuestionFactory(event=event, variant=QuestionVariant.MULTIPLE)
-    AnswerOptionFactory(question=question)
-
-    upload = SimpleUploadedFile(
-        "options.txt", b"New A\nNew B\nNew C\n", content_type="text/plain"
-    )
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": str(question.question),
-            "variant": QuestionVariant.MULTIPLE,
-            "question_required": QuestionRequired.OPTIONAL,
-            "contains_personal_data": False,
-            "options_replace": True,
-            "min_options": "3",
-        },
-        files={"options": upload},
-        instance=question,
-        event=event,
-        locales=event.locales,
-    )
-
-    assert form.is_valid(), form.errors
-    form.save()
-
-    assert question.options.count() == 3
-
-
-def test_question_orga_form_rejects_min_options_above_uploaded_replacement():
-    event = EventFactory()
-    question = QuestionFactory(event=event, variant=QuestionVariant.MULTIPLE)
-    for _unused in range(3):
-        AnswerOptionFactory(question=question)
-
-    upload = SimpleUploadedFile("options.txt", b"Only one\n", content_type="text/plain")
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": str(question.question),
-            "variant": QuestionVariant.MULTIPLE,
-            "question_required": QuestionRequired.OPTIONAL,
-            "contains_personal_data": False,
-            "options_replace": True,
-            "min_options": "3",
-        },
-        files={"options": upload},
-        instance=question,
-        event=event,
-        locales=event.locales,
-    )
-
-    assert not form.is_valid()
-    assert form.errors == {
-        "min_options": [
-            "This custom field only has 1 options, so it cannot require 3 of them."
-        ]
-    }
-    assert question.options.count() == 3
-
-
-def test_question_orga_form_counts_merged_uploaded_options():
-    event = EventFactory()
-    question = QuestionFactory(event=event, variant=QuestionVariant.MULTIPLE)
-    AnswerOptionFactory(question=question, answer="Existing")
-
-    upload = SimpleUploadedFile(
-        "options.txt", b"New A\nNew B\n", content_type="text/plain"
-    )
-    form = QuestionOrgaForm(
-        data={
-            "target": "submission",
-            "question_0": str(question.question),
-            "variant": QuestionVariant.MULTIPLE,
-            "question_required": QuestionRequired.OPTIONAL,
-            "contains_personal_data": False,
-            "min_options": "3",
-        },
-        files={"options": upload},
-        instance=question,
-        event=event,
-        locales=event.locales,
-    )
-
-    assert form.is_valid(), form.errors
-    form.save()
-
-    assert question.options.count() == 3
+    if error_count is not None:
+        assert form.errors == {
+            "min_options": [
+                (
+                    f"This custom field only has {error_count} options, so it cannot "
+                    "require 3 of them."
+                )
+            ]
+        }
+    else:
+        assert form.is_valid(), form.errors
+        assert form.save().variant == variant
+    assert question.options.count() == final_count
 
 
 def test_answer_option_form_valid_with_answer():
@@ -1541,59 +879,27 @@ def test_answer_option_form_valid_with_answer():
     assert form.is_valid(), form.errors
 
 
-def test_question_reminder_form_hides_track_when_disabled():
+def test_question_reminder_form_fields_and_scope():
     event = EventFactory(feature_flags={"use_tracks": False})
+    sub_q = QuestionFactory(event=event, target="submission", freeze_after=None)
+    spk_q = QuestionFactory(event=event, target="speaker")
+    QuestionFactory(event=event, target="reviewer")
+    QuestionFactory(
+        event=event, target="submission", freeze_after=now() - dt.timedelta(days=1)
+    )
+    confirmed_speaker = SpeakerFactory(event=event)
+    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    confirmed.speakers.add(confirmed_speaker)
+    submitter = SpeakerFactory(event=event)
+    submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    submitted.speakers.add(submitter)
+    standalone = SpeakerFactory(event=event, user=None, origin="orga")
 
     form = QuestionReminderForm(event=event)
 
     assert "track" not in form.fields
-
-
-def test_question_reminder_form_offers_the_events_tracks_and_types():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    track = TrackFactory(event=event)
-
-    form = QuestionReminderForm(event=event)
-
-    assert track in form.fields["track"].queryset
-    assert event.cfp.default_type in form.fields["submission_type"].queryset
-
-
-def test_question_reminder_form_questions_queryset_excludes_frozen():
-    event = EventFactory()
-    active_q = QuestionFactory(event=event, target="submission", freeze_after=None)
-    QuestionFactory(
-        event=event, target="submission", freeze_after=now() - dt.timedelta(days=1)
-    )
-
-    form = QuestionReminderForm(event=event)
-
-    qs = form.fields["questions"].queryset
-    assert active_q in qs
-    assert qs.count() == 1
-
-
-def test_question_reminder_form_includes_speaker_and_submission_questions():
-    event = EventFactory()
-    sub_q = QuestionFactory(event=event, target="submission")
-    spk_q = QuestionFactory(event=event, target="speaker")
-    QuestionFactory(event=event, target="reviewer")
-
-    form = QuestionReminderForm(event=event)
-
-    qs = form.fields["questions"].queryset
-    assert sub_q in qs
-    assert spk_q in qs
-    assert qs.count() == 2
-
-
-def test_question_reminder_form_scope_narrows_submissions_and_speakers():
-    event = EventFactory()
-    confirmed_speaker = SpeakerFactory(event=event)
-    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    confirmed.speakers.add(confirmed_speaker)
-    submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    submitted.speakers.add(SpeakerFactory(event=event))
+    assert set(form.fields["questions"].queryset) == {sub_q, spk_q}
+    assert list(form.fields["submission_type"].queryset) == [event.cfp.default_type]
 
     form = QuestionReminderForm(
         data={"role": "confirmed", "submission_type": ""}, event=event
@@ -1605,16 +911,14 @@ def test_question_reminder_form_scope_narrows_submissions_and_speakers():
     assert list(form.get_speakers(submissions=submissions)) == [confirmed_speaker]
     assert list(form.get_speakers()) == [confirmed_speaker]
 
-
-def test_question_reminder_form_without_a_scope_covers_every_submitter():
-    event = EventFactory()
-    submitter = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    submission.speakers.add(submitter)
-    standalone = SpeakerFactory(event=event, user=None, origin="orga")
-
     form = QuestionReminderForm(data={"role": "", "submission_type": ""}, event=event)
     assert form.is_valid(), form.errors
 
-    assert set(form.get_submissions()) == {submission}
-    assert set(form.get_speakers()) == {submitter, standalone}
+    assert set(form.get_submissions()) == {confirmed, submitted}
+    assert set(form.get_speakers()) == {confirmed_speaker, submitter, standalone}
+
+    event = EventFactory(feature_flags={"use_tracks": True})
+    track = TrackFactory(event=event)
+    form = QuestionReminderForm(event=event)
+
+    assert list(form.fields["track"].queryset) == [track]

@@ -83,9 +83,7 @@ def test_questionviewset_list_organiser_sees_all(
 
     content = response.json()
     assert response.status_code == 200
-    assert len(content["results"]) == item_count
-    result_ids = {r["id"] for r in content["results"]}
-    assert all(q.id in result_ids for q in questions)
+    assert {r["id"] for r in content["results"]} == {q.id for q in questions}
 
 
 def test_questionviewset_list_reviewer_sees_visible_questions(
@@ -108,8 +106,7 @@ def test_questionviewset_list_reviewer_sees_visible_questions(
 
     content = response.json()
     assert response.status_code == 200
-    assert len(content["results"]) == 1
-    assert content["results"][0]["id"] == visible_q.id
+    assert [r["id"] for r in content["results"]] == [visible_q.id]
 
 
 @pytest.mark.parametrize("target", ("submission", "speaker", "reviewer"))
@@ -131,6 +128,7 @@ def test_questionviewset_create_organiser(client, event, orga_write_token, targe
 
     assert response.status_code == 201, response.text
     assert response.json()["target"] == target
+    assert len(response.json()["identifier"]) == 8
     with scopes_disabled():
         assert event.questions(manager="all_objects").count() == count + 1
         q = event.questions(manager="all_objects").first()
@@ -138,124 +136,80 @@ def test_questionviewset_create_organiser(client, event, orga_write_token, targe
         assert q.variant == "text"
         assert q.target == target
         assert q.help_text == "hellllp"
+        assert q.identifier == response.json()["identifier"]
         assert q.logged_actions().filter(action_type="pretalx.question.create").exists()
 
 
 def test_questionviewset_create_with_options(client, event, orga_write_token):
+    headers = {"Authorization": f"Token {orga_write_token.token}"}
+
     response = client.post(
         event.api_urls.questions,
         data={
             "question": "A choice question",
             "variant": "choices",
             "target": "submission",
+            "identifier": "MY-CUSTOM-ID",
             "options": [{"answer": "Option 1"}, {"answer": "Option 2"}],
         },
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
     )
-
-    assert response.status_code == 201, response.text
-    with scopes_disabled():
-        q = event.questions(manager="all_objects").first()
-        assert q.variant == "choices"
-        assert q.options.count() == 2
-        option_answers = [str(a) for a in q.options.values_list("answer", flat=True)]
-        assert "Option 1" in option_answers
-        assert "Option 2" in option_answers
-
-
-def test_questionviewset_create_with_custom_identifier(client, event, orga_write_token):
-    response = client.post(
+    rejected = client.post(
         event.api_urls.questions,
         data={
-            "question": "A question with identifier",
-            "variant": "text",
+            "question": "Pick some",
+            "variant": "multiple_choice",
             "target": "submission",
-            "identifier": "MY-CUSTOM-ID",
+            "min_options": 3,
+            "options": [{"answer": "First"}, {"answer": "Second"}],
         },
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
     )
 
     assert response.status_code == 201, response.text
     assert response.json()["identifier"] == "MY-CUSTOM-ID"
+    with scopes_disabled():
+        q = event.questions(manager="all_objects").get()
+        assert q.variant == "choices"
+        assert sorted(str(a) for a in q.options.values_list("answer", flat=True)) == [
+            "Option 1",
+            "Option 2",
+        ]
+    assert rejected.status_code == 400, rejected.text
+    assert rejected.json() == {
+        "min_options": [
+            "This custom field only has 2 options, so it cannot require 3 of them."
+        ]
+    }
 
 
-def test_questionviewset_create_without_identifier_auto_generates(
-    client, event, orga_write_token
-):
-    response = client.post(
-        event.api_urls.questions,
-        data={
-            "question": "A question without identifier",
-            "variant": "text",
-            "target": "submission",
-        },
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 201, response.text
-    identifier = response.json()["identifier"]
-    assert identifier is not None
-    assert len(identifier) == 8
-
-
-def test_questionviewset_create_read_only_token_returns_403(
+def test_questionviewset_create_rejected_with_read_token(
     client, event, orga_read_token
 ):
-    with scopes_disabled():
-        count = event.questions(manager="all_objects").count()
+    other_event = EventFactory()
+    headers = {"Authorization": f"Token {orga_read_token.token}"}
+    data = {"question": "A question", "variant": "text", "target": "submission"}
 
     response = client.post(
         event.api_urls.questions,
-        data={"question": "A question", "variant": "text", "target": "submission"},
+        data=data,
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+        headers=headers,
+    )
+    other = client.post(
+        other_event.api_urls.questions,
+        data=data,
+        content_type="application/json",
+        headers=headers,
     )
 
     assert response.status_code == 403, response.text
+    assert other.status_code == 403
     with scopes_disabled():
-        assert event.questions(manager="all_objects").count() == count
-
-
-def test_questionviewset_create_other_event_returns_403(client, orga_read_token):
-    other_event = EventFactory()
-    with scopes_disabled():
-        count = other_event.questions(manager="all_objects").count()
-
-    response = client.post(
-        other_event.api_urls.questions,
-        data={"question": "A question", "variant": "text", "target": "submission"},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    assert response.status_code == 403
-    with scopes_disabled():
-        assert other_event.questions(manager="all_objects").count() == count
-
-
-def test_questionviewset_edit_organiser(client, event, orga_write_token):
-    with scopes_disabled():
-        question = QuestionFactory(
-            event=event,
-            variant=QuestionVariant.NUMBER,
-            target="submission",
-            question_required=QuestionRequired.OPTIONAL,
-        )
-
-    response = client.patch(
-        event.api_urls.questions + f"{question.pk}/",
-        data={"help_text": "hellllp"},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 200, response.text
-    with scopes_disabled():
-        question.refresh_from_db()
-        assert question.help_text == "hellllp"
+        assert not event.questions(manager="all_objects").exists()
+        assert not other_event.questions(manager="all_objects").exists()
 
 
 @pytest.mark.parametrize("method", ("patch", "put"))
@@ -272,7 +226,12 @@ def test_questionviewset_edit_cannot_change_target(
 
     response = getattr(client, method)(
         event.api_urls.questions + f"{question.pk}/",
-        data={"question": "A question", "variant": "number", "target": "speaker"},
+        data={
+            "question": "A question",
+            "variant": "number",
+            "target": "speaker",
+            "help_text": "hellllp",
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -282,6 +241,7 @@ def test_questionviewset_edit_cannot_change_target(
     with scopes_disabled():
         question.refresh_from_db()
         assert question.target == "submission"
+        assert question.help_text == "hellllp"
 
 
 def test_questionviewset_edit_options(client, event, orga_write_token, choice_question):
@@ -297,35 +257,10 @@ def test_questionviewset_edit_options(client, event, orga_write_token, choice_qu
 
     assert response.status_code == 200, response.text
     with scopes_disabled():
-        choice_question.refresh_from_db()
-        assert choice_question.options.count() == 2
-        new_options = [o.answer for o in choice_question.options.all()]
-        assert "Updated Option 1" in new_options
-        assert "Original Option 1" not in new_options
-
-
-def test_questionviewset_create_rejects_min_options_above_options(
-    client, event, orga_write_token
-):
-    response = client.post(
-        event.api_urls.questions,
-        data={
-            "question": "Pick some",
-            "variant": "multiple_choice",
-            "target": "submission",
-            "min_options": 3,
-            "options": [{"answer": "First"}, {"answer": "Second"}],
-        },
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 400, response.text
-    assert response.json()["min_options"] == [
-        "This custom field only has 2 options, so it cannot require 3 of them."
-    ]
-    with scopes_disabled():
-        assert not event.questions(manager="all_objects").exists()
+        assert sorted(str(o.answer) for o in choice_question.options.all()) == [
+            "New Option",
+            "Updated Option 1",
+        ]
 
 
 def test_questionviewset_edit_raises_min_options_and_adds_options_at_once(
@@ -403,62 +338,39 @@ def test_questionviewset_delete_with_answers_returns_400(
         assert event.questions(manager="all_objects").filter(pk=pk).exists()
 
 
-def test_questionviewset_filter_by_target(client, event, orga_read_token):
+def test_questionviewset_list_filters_and_search(client, event, orga_read_token):
     with scopes_disabled():
-        QuestionFactory(event=event, variant="text", target="submission")
-        QuestionFactory(event=event, variant="text", target="speaker")
-
-    response = client.get(
-        event.api_urls.questions + "?target=speaker",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    content = response.json()
-    assert response.status_code == 200
-    assert content["count"] == 1
-    assert content["results"][0]["target"] == "speaker"
-
-
-def test_questionviewset_filter_by_variant(client, event, orga_read_token):
-    with scopes_disabled():
-        QuestionFactory(event=event, variant="text", target="submission")
-        QuestionFactory(event=event, variant="boolean", target="submission")
-
-    response = client.get(
-        event.api_urls.questions + "?variant=boolean",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    content = response.json()
-    assert response.status_code == 200
-    assert content["count"] == 1
-    assert content["results"][0]["variant"] == "boolean"
-
-
-def test_questionviewset_search(client, event, orga_read_token):
-    with scopes_disabled():
-        QuestionFactory(
+        special = QuestionFactory(
             event=event,
             question="Special question",
             variant="text",
             target="submission",
         )
-        QuestionFactory(
+        boolean = QuestionFactory(
             event=event,
             question="Regular question",
-            variant="text",
+            variant="boolean",
             target="submission",
         )
+        speaker = QuestionFactory(
+            event=event, question="Regular question", variant="text", target="speaker"
+        )
+    headers = {"Authorization": f"Token {orga_read_token.token}"}
 
-    response = client.get(
-        event.api_urls.questions + "?q=special",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+    by_target = client.get(
+        event.api_urls.questions + "?target=speaker", headers=headers
     )
+    by_variant = client.get(
+        event.api_urls.questions + "?variant=boolean", headers=headers
+    )
+    searched = client.get(event.api_urls.questions + "?q=special", headers=headers)
 
-    content = response.json()
-    assert response.status_code == 200
-    assert content["count"] == 1
-    assert content["results"][0]["question"]["en"] == "Special question"
+    assert by_target.status_code == 200
+    assert [r["id"] for r in by_target.json()["results"]] == [speaker.pk]
+    assert by_variant.status_code == 200
+    assert [r["id"] for r in by_variant.json()["results"]] == [boolean.pk]
+    assert searched.status_code == 200
+    assert [r["id"] for r in searched.json()["results"]] == [special.pk]
 
 
 def test_questionviewset_expand_options_tracks_submission_types(
@@ -513,99 +425,90 @@ def test_questionviewset_question_field_required(
     assert response.data.get("question")[0] == "This field is required."
 
 
-def test_questionviewset_icon_returns_svg(client, event, orga_read_token):
+def test_questionviewset_icon(client, event, orga_read_token):
     with scopes_disabled():
         icon_name = next(iter(PLATFORM_ICONS))
-        q = QuestionFactory(
+        with_icon = QuestionFactory(
             event=event,
             variant=QuestionVariant.URL,
             target="submission",
             icon=icon_name,
         )
-
-    response = client.get(
-        event.api_urls.questions + f"{q.pk}/icon/",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    assert response.status_code == 200
-    assert response["Content-Type"] == "image/svg+xml"
-    assert "<svg" in response.content.decode()
-
-
-def test_questionviewset_icon_returns_404_without_icon(client, event, orga_read_token):
-    with scopes_disabled():
-        question = QuestionFactory(
+        without_icon = QuestionFactory(
             event=event,
             variant=QuestionVariant.NUMBER,
             target="submission",
             question_required=QuestionRequired.OPTIONAL,
         )
+    headers = {"Authorization": f"Token {orga_read_token.token}"}
 
     response = client.get(
-        event.api_urls.questions + f"{question.pk}/icon/",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+        event.api_urls.questions + f"{with_icon.pk}/icon/", headers=headers
+    )
+    missing = client.get(
+        event.api_urls.questions + f"{without_icon.pk}/icon/", headers=headers
     )
 
-    assert response.status_code == 404
+    assert response.status_code == 200
+    assert response["Content-Type"] == "image/svg+xml"
+    assert "<svg" in response.content.decode()
+    assert missing.status_code == 404
 
 
-def test_answeroptionviewset_list_organiser(
-    client, event, orga_read_token, choice_question
-):
-    with scopes_disabled():
-        option_count = choice_question.options.count()
-        assert option_count > 0
-
-    response = client.get(
-        event.api_urls.question_options,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    assert response.status_code == 200, response.text
-    content = response.json()
-    assert content["count"] == option_count
-
-
-def test_answeroptionviewset_filter_by_question(
+def test_answeroptionviewset_read_with_orga_token(
     client, event, orga_read_token, choice_question
 ):
     with scopes_disabled():
         other_q = QuestionFactory(
             event=event, variant=QuestionVariant.CHOICES, target="submission"
         )
-        AnswerOptionFactory(question=other_q)
-        option_count = choice_question.options.count()
+        other_option = AnswerOptionFactory(question=other_q)
+        options = list(choice_question.options.order_by("pk"))
+        track = TrackFactory(event=event)
+        choice_question.tracks.add(track)
+    headers = {"Authorization": f"Token {orga_read_token.token}"}
+    url = event.api_urls.question_options
 
-    response = client.get(
-        event.api_urls.question_options + f"?question={choice_question.pk}",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+    listing = client.get(url, headers=headers)
+    filtered = client.get(url + f"?question={choice_question.pk}", headers=headers)
+    detail = client.get(url + f"{options[0].pk}/", headers=headers)
+    expanded = client.get(
+        url + f"?question={choice_question.pk}&expand=question,question.tracks",
+        headers=headers,
     )
 
-    assert response.status_code == 200, response.text
-    content = response.json()
-    assert content["count"] == option_count
-    assert all(opt["question"] == choice_question.pk for opt in content["results"])
-
-
-def test_answeroptionviewset_retrieve(client, event, orga_read_token, choice_question):
-    with scopes_disabled():
-        option = choice_question.options.first()
-
-    response = client.get(
-        event.api_urls.question_options + f"{option.pk}/",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    assert response.status_code == 200, response.text
-    content = response.json()
-    assert content["id"] == option.pk
-    assert content["answer"]["en"] == option.answer
+    assert listing.status_code == 200, listing.text
+    assert {o["id"] for o in listing.json()["results"]} == {
+        other_option.pk,
+        *(o.pk for o in options),
+    }
+    assert filtered.status_code == 200, filtered.text
+    assert {o["id"] for o in filtered.json()["results"]} == {o.pk for o in options}
+    assert all(o["question"] == choice_question.pk for o in filtered.json()["results"])
+    assert detail.status_code == 200, detail.text
+    assert detail.json() == {
+        "id": options[0].pk,
+        "question": choice_question.pk,
+        "answer": {"en": str(options[0].answer)},
+        "position": options[0].position,
+        "identifier": options[0].identifier,
+    }
+    assert expanded.status_code == 200, expanded.text
+    question_data = expanded.json()["results"][0]["question"]
+    assert question_data["id"] == choice_question.pk
+    assert [t["name"]["en"] for t in question_data["tracks"]] == [track.name]
 
 
 def test_answeroptionviewset_create(client, event, orga_write_token, choice_question):
     with scopes_disabled():
         initial_count = choice_question.options.count()
+        number_question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+    headers = {"Authorization": f"Token {orga_write_token.token}"}
 
     response = client.post(
         event.api_urls.question_options,
@@ -613,92 +516,67 @@ def test_answeroptionviewset_create(client, event, orga_write_token, choice_ques
             "question": choice_question.pk,
             "answer": {"en": "New API Option"},
             "position": initial_count + 1,
+            "identifier": "OPT-CUSTOM",
         },
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
+    )
+    rejected = client.post(
+        event.api_urls.question_options,
+        data={"question": number_question.pk, "answer": {"en": "Invalid Option"}},
+        content_type="application/json",
+        headers=headers,
     )
 
     assert response.status_code == 201, response.text
     content = response.json()
     assert content["answer"]["en"] == "New API Option"
     assert content["question"] == choice_question.pk
+    assert content["identifier"] == "OPT-CUSTOM"
     with scopes_disabled():
         assert choice_question.options.count() == initial_count + 1
+    assert rejected.status_code == 400, rejected.text
+    assert rejected.json() == {
+        "question": [f'Invalid pk "{number_question.pk}" - object does not exist.']
+    }
 
 
-def test_answeroptionviewset_create_with_identifier(
+def test_answeroptionviewset_update_and_delete(
     client, event, orga_write_token, choice_question
 ):
-    response = client.post(
-        event.api_urls.question_options,
-        data={
-            "question": choice_question.pk,
-            "answer": {"en": "Option with ID"},
-            "identifier": "OPT-CUSTOM",
-        },
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 201, response.text
-    assert response.json()["identifier"] == "OPT-CUSTOM"
-
-
-def test_answeroptionviewset_create_wrong_question_type_returns_400(
-    client, event, orga_write_token
-):
-    question = QuestionFactory(
-        event=event,
-        variant=QuestionVariant.NUMBER,
-        target="submission",
-        question_required=QuestionRequired.OPTIONAL,
-    )
-
-    response = client.post(
-        event.api_urls.question_options,
-        data={"question": question.pk, "answer": {"en": "Invalid Option"}},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 400, response.text
-    assert "question" in response.data
-    assert "Invalid pk" in str(response.data["question"])
-
-
-def test_answeroptionviewset_update(client, event, orga_write_token, choice_question):
     with scopes_disabled():
-        option = choice_question.options.first()
+        used_option = choice_question.options.first()
+        free_option = choice_question.options.last()
+        answer = AnswerFactory(question=choice_question, answer=str(used_option.answer))
+        answer.options.add(used_option)
+    headers = {"Authorization": f"Token {orga_write_token.token}"}
 
     response = client.patch(
-        event.api_urls.question_options + f"{option.pk}/",
+        event.api_urls.question_options + f"{used_option.pk}/",
         data={"answer": {"en": "Updated via API"}},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
     )
 
     assert response.status_code == 200, response.text
     assert response.json()["answer"]["en"] == "Updated via API"
     with scopes_disabled():
-        option.refresh_from_db()
-        assert str(option.answer) == "Updated via API"
+        used_option.refresh_from_db()
+        assert str(used_option.answer) == "Updated via API"
 
-
-def test_answeroptionviewset_delete(client, event, orga_write_token, choice_question):
-    with scopes_disabled():
-        option = choice_question.options.last()
-        option_id = option.pk
-        initial_count = choice_question.options.count()
-
-    response = client.delete(
-        event.api_urls.question_options + f"{option_id}/",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+    blocked = client.delete(
+        event.api_urls.question_options + f"{used_option.pk}/", headers=headers
+    )
+    deleted = client.delete(
+        event.api_urls.question_options + f"{free_option.pk}/", headers=headers
     )
 
-    assert response.status_code == 204, response.text
+    assert blocked.status_code == 400, blocked.text
+    assert deleted.status_code == 204, deleted.text
     with scopes_disabled():
-        assert choice_question.options.count() == initial_count - 1
-        assert not choice_question.options.filter(pk=option_id).exists()
+        assert AnswerOption.objects.filter(pk=used_option.pk).exists()
+        assert not AnswerOption.objects.filter(pk=free_option.pk).exists()
+        assert choice_question.options.count() == 2
 
 
 def test_answeroptionviewset_reviewer_sees_visible_options(client, event, review_token):
@@ -708,7 +586,7 @@ def test_answeroptionviewset_reviewer_sees_visible_options(client, event, review
         target="speaker",
         is_visible_to_reviewers=True,
     )
-    AnswerOptionFactory(question=question)
+    option = AnswerOptionFactory(question=question)
 
     response = client.get(
         event.api_urls.question_options,
@@ -716,80 +594,33 @@ def test_answeroptionviewset_reviewer_sees_visible_options(client, event, review
     )
 
     assert response.status_code == 200
-    content = response.json()
-    assert len(content["results"]) == 1
+    assert [o["id"] for o in response.json()["results"]] == [option.pk]
 
 
-def test_answeroptionviewset_anonymous_nonpublic_question_empty(client, event):
+def test_answeroptionviewset_anonymous_sees_public_question_options(client, event):
     with scopes_disabled():
-        question = QuestionFactory(
-            event=event,
-            variant=QuestionVariant.CHOICES,
-            target="speaker",
-            is_public=False,
-        )
-        AnswerOptionFactory(question=question)
-        freeze_schedule(event.wip_schedule, "v1")
-
-    response = client.get(event.api_urls.question_options)
-
-    assert response.status_code == 200, response.text
-    assert response.json()["count"] == 0
-
-
-def test_answeroptionviewset_anonymous_public_question(client, event):
-    with scopes_disabled():
-        question = QuestionFactory(
+        public_question = QuestionFactory(
             event=event,
             variant=QuestionVariant.CHOICES,
             target="speaker",
             is_public=True,
         )
-        AnswerOptionFactory.create_batch(3, question=question)
+        public_options = AnswerOptionFactory.create_batch(3, question=public_question)
+        private_question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.CHOICES,
+            target="speaker",
+            is_public=False,
+        )
+        AnswerOptionFactory(question=private_question)
         freeze_schedule(event.wip_schedule, "v1")
 
     response = client.get(event.api_urls.question_options)
 
     assert response.status_code == 200, response.text
-    assert response.json()["count"] == 3
-
-
-def test_answeroptionviewset_expand_question(
-    client, event, orga_read_token, choice_question
-):
-    with scopes_disabled():
-        track = TrackFactory(event=event)
-        choice_question.tracks.add(track)
-
-    response = client.get(
-        event.api_urls.question_options + "?expand=question",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    assert response.status_code == 200, response.text
-    content = response.json()
-    assert isinstance(content["results"][0]["question"], dict)
-    assert content["results"][0]["question"]["id"] == choice_question.pk
-
-
-def test_answeroptionviewset_expand_question_tracks(
-    client, event, orga_read_token, choice_question
-):
-    with scopes_disabled():
-        track = TrackFactory(event=event)
-        choice_question.tracks.add(track)
-
-    response = client.get(
-        event.api_urls.question_options + "?expand=question,question.tracks",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    assert response.status_code == 200, response.text
-    content = response.json()
-    question_data = content["results"][0]["question"]
-    assert isinstance(question_data["tracks"], list)
-    assert len(question_data["tracks"]) == 1
-    assert question_data["tracks"][0]["name"]["en"] == track.name
+    assert {o["id"] for o in response.json()["results"]} == {
+        o.pk for o in public_options
+    }
 
 
 def test_answerviewset_list_anonymous_returns_401(client, event, submission):
@@ -846,75 +677,46 @@ def test_answerviewset_list_organiser(
     assert len(content["results"]) == item_count
     if expand:
         assert content["results"][0]["question"]["id"] == question.pk
+        assert content["results"][0]["question"]["question"]["en"] == question.question
     else:
         assert content["results"][0]["question"] == question.pk
 
 
-def test_answerviewset_list_expand_options(
+def test_answerviewset_list_expand_options_and_person(
     client, event, orga_read_token, choice_question, submission
 ):
     with scopes_disabled():
         option = choice_question.options.first()
-        answer = AnswerFactory(
+        choice_answer = AnswerFactory(
             question=choice_question, submission=submission, answer=str(option.answer)
         )
-        answer.options.add(option)
-
-    response = client.get(
-        event.api_urls.answers + "?expand=options",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    content = response.json()
-    assert response.status_code == 200
-    assert len(content["results"]) >= 1
-    answer_data = next(r for r in content["results"] if r["id"] == answer.pk)
-    assert answer_data["options"][0]["id"] == option.pk
-    assert "answer" in answer_data["options"][0]
-
-
-def test_answerviewset_list_expand_question(client, event, orga_read_token, submission):
-    question = QuestionFactory(
-        event=event,
-        variant=QuestionVariant.NUMBER,
-        target="submission",
-        question_required=QuestionRequired.OPTIONAL,
-    )
-    answer = AnswerFactory(question=question, submission=submission, answer="42")
-
-    response = client.get(
-        event.api_urls.answers + "?expand=question",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    content = response.json()
-    assert response.status_code == 200
-    answer_data = next(r for r in content["results"] if r["id"] == answer.pk)
-    assert answer_data["question"]["question"]["en"] == question.question
-
-
-def test_answerviewset_list_expand_person(client, event, orga_read_token):
-    with scopes_disabled():
+        choice_answer.options.add(option)
         speaker = SpeakerFactory(event=event)
-        question = QuestionFactory(
+        speaker_question = QuestionFactory(
             event=event,
             variant=QuestionVariant.NUMBER,
             target="speaker",
             question_required=QuestionRequired.OPTIONAL,
         )
-        answer = AnswerFactory(
-            question=question, submission=None, speaker=speaker, answer="42"
+        speaker_answer = AnswerFactory(
+            question=speaker_question, submission=None, speaker=speaker, answer="42"
         )
 
     response = client.get(
-        event.api_urls.answers + "?expand=person",
+        event.api_urls.answers + "?expand=options,person",
         headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
-    content = response.json()
     assert response.status_code == 200
-    answer_data = next(r for r in content["results"] if r["id"] == answer.pk)
-    assert answer_data["person"]["code"] == speaker.code
+    results = {r["id"]: r for r in response.json()["results"]}
+    assert set(results) == {choice_answer.pk, speaker_answer.pk}
+    assert [o["id"] for o in results[choice_answer.pk]["options"]] == [option.pk]
+    assert results[choice_answer.pk]["options"][0]["answer"] == {
+        "en": str(option.answer)
+    }
+    assert results[choice_answer.pk]["person"] is None
+    assert results[speaker_answer.pk]["person"]["code"] == speaker.code
+    assert results[speaker_answer.pk]["options"] == []
 
 
 def test_answerviewset_list_reviewer_returns_403(
@@ -947,6 +749,7 @@ def test_answerviewset_create_organiser(client, event, orga_write_token, submiss
     )
     with scopes_disabled():
         count = Answer.objects.filter(question__event=event).count()
+        initial_log_count = submission.logged_actions().count()
 
     response = client.post(
         event.api_urls.answers,
@@ -964,6 +767,10 @@ def test_answerviewset_create_organiser(client, event, orga_write_token, submiss
         assert Answer.objects.filter(question__event=event).count() == count + 1
         new_answer = Answer.objects.get(question=question, submission=submission)
         assert new_answer.answer == "Tralalalala"
+        assert submission.logged_actions().count() == initial_log_count + 1
+        log = submission.logged_actions().latest("timestamp")
+        assert log.action_type == "pretalx.submission.update"
+        assert log.data["changes"][f"question-{question.pk}"]["new"] == "Tralalalala"
     assert response.data == {
         "id": new_answer.pk,
         "question": question.pk,
@@ -1052,16 +859,15 @@ def test_answerviewset_create_duplicate_updates_existing(
         )
         answer = AnswerFactory(question=question, submission=submission, answer="42")
         count = Answer.objects.filter(question__event=event).count()
+        log_count_before = submission.logged_actions().count()
+    headers = {"Authorization": f"Token {orga_write_token.token}"}
+    data = {"question": question.pk, "submission": submission.code}
 
     response = client.post(
         event.api_urls.answers,
-        data={
-            "question": answer.question_id,
-            "submission": answer.submission.code,
-            "answer": "Updated answer",
-        },
+        data={**data, "answer": "Updated answer"},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
     )
 
     assert response.status_code == 201, response.text
@@ -1070,123 +876,30 @@ def test_answerviewset_create_duplicate_updates_existing(
         assert Answer.objects.filter(question__event=event).count() == count
         answer.refresh_from_db()
         assert answer.answer == "Updated answer"
-
-
-def test_answerviewset_create_duplicate_same_value_skips_log(
-    client, event, orga_write_token, submission
-):
-    with scopes_disabled():
-        question = QuestionFactory(
-            event=event,
-            variant=QuestionVariant.NUMBER,
-            target="submission",
-            question_required=QuestionRequired.OPTIONAL,
-        )
-        answer = AnswerFactory(question=question, submission=submission, answer="42")
-        log_count_before = submission.logged_actions().count()
-
-    response = client.post(
-        event.api_urls.answers,
-        data={
-            "question": answer.question_id,
-            "submission": answer.submission.code,
-            "answer": answer.answer,
-        },
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 201, response.text
-    with scopes_disabled():
-        answer.refresh_from_db()
-        assert answer.answer == "42"
-        log_count_after = submission.logged_actions().count()
-        assert log_count_after == log_count_before
-
-
-def test_answeroptionviewset_delete_used_option_returns_400(
-    client, event, orga_write_token, choice_question
-):
-    with scopes_disabled():
-        option = choice_question.options.first()
-        answer = AnswerFactory(question=choice_question, answer=str(option.answer))
-        answer.options.add(option)
-
-    response = client.delete(
-        event.api_urls.question_options + f"{option.pk}/",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 400, response.text
-    with scopes_disabled():
-        assert AnswerOption.objects.filter(pk=option.pk).exists()
-
-
-def test_answerviewset_create_logs_to_submission(
-    client, event, orga_write_token, submission
-):
-    with scopes_disabled():
-        question = QuestionFactory(
-            event=event,
-            variant=QuestionVariant.NUMBER,
-            target="submission",
-            question_required=QuestionRequired.OPTIONAL,
-        )
-        initial_log_count = submission.logged_actions().count()
-
-    response = client.post(
-        event.api_urls.answers,
-        data={
-            "question": question.pk,
-            "submission": submission.code,
-            "answer": "Test answer",
-        },
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 201, response.text
-    with scopes_disabled():
-        assert submission.logged_actions().count() == initial_log_count + 1
+        assert submission.logged_actions().count() == log_count_before + 1
         log = submission.logged_actions().latest("timestamp")
         assert log.action_type == "pretalx.submission.update"
-        assert "changes" in log.data
-        assert log.data["changes"][f"question-{question.pk}"]["new"] == "Test answer"
+        assert log.data["changes"][f"question-{question.pk}"] == {
+            "old": "42",
+            "new": "Updated answer",
+        }
 
-
-def test_answerviewset_update_logs_change(client, event, orga_write_token, submission):
-    with scopes_disabled():
-        question = QuestionFactory(
-            event=event,
-            variant=QuestionVariant.NUMBER,
-            target="submission",
-            question_required=QuestionRequired.OPTIONAL,
-        )
-        answer = AnswerFactory(question=question, submission=submission, answer="42")
-        old_answer = answer.answer
-
-    response = client.post(
+    unchanged = client.post(
         event.api_urls.answers,
-        data={
-            "question": answer.question_id,
-            "submission": answer.submission.code,
-            "answer": "Updated answer",
-        },
+        data={**data, "answer": "Updated answer"},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
     )
 
-    assert response.status_code == 201, response.text
+    assert unchanged.status_code == 201, unchanged.text
     with scopes_disabled():
-        log = answer.submission.logged_actions().latest("timestamp")
-        assert log.action_type == "pretalx.submission.update"
-        key = f"question-{answer.question_id}"
-        assert log.data["changes"][key]["old"] == old_answer
-        assert log.data["changes"][key]["new"] == "Updated answer"
+        answer.refresh_from_db()
+        assert answer.answer == "Updated answer"
+        assert submission.logged_actions().count() == log_count_before + 1
 
 
 def test_answerviewset_validation_submission_question_needs_submission(
-    client, event, orga_write_token, submission
+    client, event, orga_write_token
 ):
     with scopes_disabled():
         q = QuestionFactory(event=event, variant="text", target="submission")
@@ -1199,28 +912,16 @@ def test_answerviewset_validation_submission_question_needs_submission(
     )
 
     assert response.status_code == 400
-    assert "submission" in response.data
-
-    response = client.post(
-        event.api_urls.answers,
-        data={
-            "question": q.pk,
-            "answer": "Test answer",
-            "submission": submission.code,
-            "review": 1,
-        },
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 400
-    assert "review" in response.data
+    assert response.json() == {
+        "submission": ["This field is required for submission questions."]
+    }
 
 
 @pytest.mark.parametrize(
     ("target", "right_input", "wrong_input"),
     (
         ("submission", "submission", "person"),
+        ("submission", "submission", "review"),
         ("speaker", "person", "submission"),
         ("speaker", "person", "review"),
         ("reviewer", "review", "submission"),
@@ -1251,20 +952,29 @@ def test_answerviewset_validation_rejects_other_target_inputs(
     )
 
     assert response.status_code == 400, response.text
-    assert wrong_input in response.data, response.data
+    assert response.json() == {
+        wrong_input: [f"Cannot set {wrong_input} for {target} question."]
+    }
 
 
+@pytest.mark.parametrize(
+    ("variant", "selected"),
+    ((QuestionVariant.CHOICES, 1), (QuestionVariant.MULTIPLE, 2)),
+    ids=("choices", "multiple_choice"),
+)
 def test_answerviewset_create_choice_question(
-    client, event, orga_write_token, submission
+    client, event, orga_write_token, submission, variant, selected
 ):
     with scopes_disabled():
         question = QuestionFactory(
             event=event,
-            variant=QuestionVariant.CHOICES,
+            variant=variant,
             target="submission",
             question_required=QuestionRequired.OPTIONAL,
         )
-        option = AnswerOptionFactory(question=question, answer="Chosen")
+        options = [
+            AnswerOptionFactory(question=question, answer=answer) for answer in "AB"
+        ][:selected]
 
     response = client.post(
         event.api_urls.answers,
@@ -1272,7 +982,7 @@ def test_answerviewset_create_choice_question(
             "question": question.pk,
             "submission": submission.code,
             "answer": "ignored — value comes from options",
-            "options": [option.pk],
+            "options": [option.pk for option in options],
         },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
@@ -1281,39 +991,8 @@ def test_answerviewset_create_choice_question(
     assert response.status_code == 201, response.text
     with scopes_disabled():
         answer = Answer.objects.get(question=question, submission=submission)
-        assert list(answer.options.all()) == [option]
-        assert answer.answer == str(option.answer)
-
-
-def test_answerviewset_create_multiple_choice_question(
-    client, event, orga_write_token, submission
-):
-    with scopes_disabled():
-        question = QuestionFactory(
-            event=event,
-            variant=QuestionVariant.MULTIPLE,
-            target="submission",
-            question_required=QuestionRequired.OPTIONAL,
-        )
-        opt1 = AnswerOptionFactory(question=question, answer="A")
-        opt2 = AnswerOptionFactory(question=question, answer="B")
-
-    response = client.post(
-        event.api_urls.answers,
-        data={
-            "question": question.pk,
-            "submission": submission.code,
-            "answer": "ignored",
-            "options": [opt1.pk, opt2.pk],
-        },
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 201, response.text
-    with scopes_disabled():
-        answer = Answer.objects.get(question=question, submission=submission)
-        assert set(answer.options.all()) == {opt1, opt2}
+        assert set(answer.options.all()) == set(options)
+        assert answer.answer == ", ".join(str(option.answer) for option in options)
 
 
 def test_answerviewset_create_file_question(

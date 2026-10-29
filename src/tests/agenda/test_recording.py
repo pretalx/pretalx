@@ -31,13 +31,20 @@ def test_get_recording_returns_first_usable_response(register_signal_handler, ev
     assert get_recording(submission) == payload
 
 
-def test_get_recording_skips_handler_exceptions(register_signal_handler, event):
+def _raise(signal, sender, **kwargs):
+    raise ValueError("nope")
+
+
+def _return_none(signal, sender, **kwargs):
+    return None
+
+
+@pytest.mark.parametrize(
+    "handler", (_raise, _return_none), ids=["raising_handler", "no_provider"]
+)
+def test_get_recording_skips_unusable_handlers(register_signal_handler, event, handler):
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-
-    def boom(signal, sender, **kwargs):
-        raise ValueError("nope")
-
-    register_signal_handler(register_recording_provider, boom)
+    register_signal_handler(register_recording_provider, handler)
 
     assert get_recording(submission) == {}
 
@@ -63,13 +70,3 @@ def test_get_recording_skips_provider_with_empty_iframe(register_signal_handler,
     result = get_recording(submission)
 
     assert result == {"iframe": "<iframe/>", "csp_header": "cdn"}
-
-
-def test_get_recording_skips_responses_without_provider(register_signal_handler, event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-
-    register_signal_handler(
-        register_recording_provider, lambda signal, sender, **kw: None
-    )
-
-    assert get_recording(submission) == {}

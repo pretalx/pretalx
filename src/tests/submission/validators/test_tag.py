@@ -10,31 +10,17 @@ from tests.factories import EventFactory, TagFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_validate_unique_tag_accepts_unique_name():
+def test_validate_unique_tag():
     event = EventFactory()
-    TagFactory(event=event, tag="python")
+    existing = TagFactory(event=event, tag="python")
 
     validate_unique_tag(Tag(event=event, tag="django"))
-
-
-@pytest.mark.parametrize("new_tag", ("python", "Python"))
-def test_validate_unique_tag_rejects_duplicate(new_tag):
-    existing = TagFactory(tag="python")
-
-    with pytest.raises(ValidationError) as exc_info:
-        validate_unique_tag(Tag(event=existing.event, tag=new_tag))
-
-    assert "tag" in exc_info.value.message_dict
-
-
-def test_validate_unique_tag_allows_self_on_update():
-    existing = TagFactory(tag="python")
-
-    validate_unique_tag(existing)
-
-
-def test_validate_unique_tag_skips_when_event_or_tag_missing():
-    event = EventFactory()
-
     validate_unique_tag(Tag(event=event, tag=""))
     validate_unique_tag(Tag(tag="python"))
+    validate_unique_tag(existing)
+    with pytest.raises(ValidationError) as exc_info:
+        validate_unique_tag(Tag(event=event, tag="Python"))
+
+    assert exc_info.value.message_dict == {
+        "tag": ["You already have a tag by this name!"]
+    }

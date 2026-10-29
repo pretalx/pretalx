@@ -14,48 +14,21 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_feedback_for_speaker_returns_own_and_general(event):
+def test_feedback_for_speaker_returns_own_and_general_on_this_talk(event):
     talk = SubmissionFactory(event=event)
+    other_talk = SubmissionFactory(event=event)
     speaker_a = SpeakerFactory(event=event)
     speaker_b = SpeakerFactory(event=event)
     talk.speakers.add(speaker_a, speaker_b)
+    other_talk.speakers.add(speaker_a)
+    outsider = UserFactory()
 
     own = FeedbackFactory(talk=talk, speaker=speaker_a)
     general = FeedbackFactory(talk=talk, speaker=None)
-    FeedbackFactory(talk=talk, speaker=speaker_b)
+    for_b = FeedbackFactory(talk=talk, speaker=speaker_b)
+    FeedbackFactory(talk=other_talk, speaker=speaker_a)
 
     with scope(event=event):
-        result = set(feedback_for_speaker(talk, speaker_a.user))
-
-    assert result == {own, general}
-
-
-def test_feedback_for_speaker_excludes_other_talks(event):
-    talk = SubmissionFactory(event=event)
-    other_talk = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    talk.speakers.add(speaker)
-    other_talk.speakers.add(speaker)
-
-    own_here = FeedbackFactory(talk=talk, speaker=speaker)
-    FeedbackFactory(talk=other_talk, speaker=speaker)
-
-    with scope(event=event):
-        result = list(feedback_for_speaker(talk, speaker.user))
-
-    assert result == [own_here]
-
-
-def test_feedback_for_speaker_returns_general_only_for_outsider(event):
-    talk = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    talk.speakers.add(speaker)
-    outsider = UserFactory()
-
-    FeedbackFactory(talk=talk, speaker=speaker)
-    general = FeedbackFactory(talk=talk, speaker=None)
-
-    with scope(event=event):
-        result = list(feedback_for_speaker(talk, outsider))
-
-    assert result == [general]
+        assert set(feedback_for_speaker(talk, speaker_a.user)) == {own, general}
+        assert set(feedback_for_speaker(talk, speaker_b.user)) == {for_b, general}
+        assert list(feedback_for_speaker(talk, outsider)) == [general]

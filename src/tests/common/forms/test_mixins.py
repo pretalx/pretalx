@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 from django import forms
 from django.core.files.base import File
+from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from i18nfield.forms import I18nFormField, I18nFormMixin, I18nTextarea, I18nTextInput
 
@@ -56,28 +57,14 @@ class I18nTestForm(PretalxI18nFormMixin, forms.Form):
     name = I18nFormField(widget=I18nTextarea, required=False)
 
 
-@pytest.mark.parametrize(
-    ("read_only", "expected_disabled"),
-    ((True, True), (False, False)),
-    ids=("read_only", "editable"),
-)
-def test_read_only_flag_field_disabled(read_only, expected_disabled):
-    form = ReadOnlyTestForm(read_only=read_only)
-
-    assert form.read_only is read_only
-    assert form.fields["name"].disabled is expected_disabled
-    assert form.fields["email"].disabled is expected_disabled
-
-
-@pytest.mark.parametrize(
-    ("read_only", "expected_valid"),
-    ((True, False), (False, True)),
-    ids=("read_only_rejects", "editable_accepts"),
-)
-def test_read_only_flag_clean(read_only, expected_valid):
+@pytest.mark.parametrize("read_only", (True, False), ids=("read_only", "editable"))
+def test_read_only_flag_disables_fields_and_rejects_data(read_only):
     form = ReadOnlyTestForm(data={"name": "x", "email": "x@x.com"}, read_only=read_only)
 
-    assert form.is_valid() is expected_valid
+    assert form.read_only is read_only
+    assert form.fields["name"].disabled is read_only
+    assert form.fields["email"].disabled is read_only
+    assert form.is_valid() is not read_only
 
 
 @pytest.mark.django_db
@@ -86,6 +73,7 @@ def test_json_subfield_mixin_init_reads_existing_values():
 
     form = JsonSubfieldTestForm(obj=event)
 
+    assert form.instance is event
     for field in ("show_schedule", "use_feedback"):
         assert form.fields[field].initial is event.feature_flags.get(field)
 
@@ -105,48 +93,28 @@ def test_json_subfield_mixin_init_uses_defaults_for_missing_fields():
 
 
 @pytest.mark.django_db
-def test_json_subfield_mixin_save_writes_values():
+def test_json_subfield_mixin_save_writes_values_only_on_commit():
     event = EventFactory()
+    event.feature_flags.update({"show_schedule": False, "use_feedback": False})
+    event.save()
     form = JsonSubfieldTestForm(
         data={"show_schedule": True, "use_feedback": True}, obj=event
     )
     assert form.is_valid()
 
-    form.instance = event
+    result = form.save(commit=False)
+
+    assert result.feature_flags["show_schedule"] is True
+    assert result.feature_flags["use_feedback"] is True
+    event.refresh_from_db()
+    assert event.feature_flags["show_schedule"] is False
+    assert event.feature_flags["use_feedback"] is False
+
     form.save()
 
     event.refresh_from_db()
     assert event.feature_flags["show_schedule"] is True
     assert event.feature_flags["use_feedback"] is True
-
-
-@pytest.mark.django_db
-def test_json_subfield_mixin_save_commit_false():
-    event = EventFactory()
-    original_flags = dict(event.feature_flags)
-    form = JsonSubfieldTestForm(
-        data={"show_schedule": True, "use_feedback": True}, obj=event
-    )
-    assert form.is_valid()
-
-    form.instance = event
-    result = form.save(commit=False)
-
-    # Instance attributes updated in memory
-    assert result.feature_flags["show_schedule"] is True
-    # But database still has original values
-    event.refresh_from_db()
-    assert event.feature_flags.get("show_schedule") == original_flags.get(
-        "show_schedule"
-    )
-
-
-@pytest.mark.django_db
-def test_json_subfield_mixin_init_with_obj_kwarg():
-    event = EventFactory()
-    form = JsonSubfieldTestForm(obj=event)
-
-    assert form.instance is event
 
 
 @pytest.mark.django_db
@@ -238,12 +206,17 @@ def test_hierarkey_mixin_init_loads_settings():
 
 
 @pytest.mark.django_db
-def test_hierarkey_mixin_save_changed_value():
+@pytest.mark.parametrize(
+    ("stored", "submitted"),
+    (("old_value", "new_value"), ("same", "same")),
+    ids=("changed", "unchanged"),
+)
+def test_hierarkey_mixin_save_value(stored, submitted):
     event = EventFactory()
-    event.settings.set("test_setting", "old_value")
+    event.settings.set("test_setting", stored)
 
     form = HierarkeyTestForm(
-        data={"test_setting": "new_value"},
+        data={"test_setting": submitted},
         obj=event,
         attribute_name="settings",
         initial={},
@@ -252,22 +225,7 @@ def test_hierarkey_mixin_save_changed_value():
 
     HierarkeyMixin.save(form)
 
-    assert event.settings.get("test_setting") == "new_value"
-
-
-@pytest.mark.django_db
-def test_hierarkey_mixin_save_unchanged_value():
-    event = EventFactory()
-    event.settings.set("test_setting", "same")
-
-    form = HierarkeyTestForm(
-        data={"test_setting": "same"}, obj=event, attribute_name="settings", initial={}
-    )
-    assert form.is_valid()
-
-    HierarkeyMixin.save(form)
-
-    assert event.settings.get("test_setting") == "same"
+    assert event.settings.get("test_setting") == submitted
 
 
 @pytest.mark.django_db
@@ -284,31 +242,9 @@ def test_hierarkey_mixin_save_none_value_deletes():
 
 
 @pytest.mark.django_db
-def test_hierarkey_mixin_save_uploaded_file():
-    event = EventFactory()
-    upload = SimpleUploadedFile("logo.png", b"png data", content_type="image/png")
-
-    form = HierarkeyTestForm(
-        data={},
-        files={"test_file": upload},
-        obj=event,
-        attribute_name="settings",
-        initial={},
-    )
-    form.cleaned_data = {"test_setting": None, "test_file": upload}
-
-    HierarkeyMixin.save(form)
-
-    stored = event.settings.get("test_file", as_type=File)
-    assert f"event-settings/{event.pk}/" in stored.name
-    assert "logo.png" in stored.name
-
-
-@pytest.mark.django_db
-def test_hierarkey_mixin_save_uploaded_file_deletes_old():
+def test_hierarkey_mixin_save_uploaded_file_replaces_and_clears_old():
     event = EventFactory()
 
-    # First, upload a file through the full save path so it exists in storage
     old_upload = SimpleUploadedFile("old.png", b"old data", content_type="image/png")
     form1 = HierarkeyTestForm(
         data={},
@@ -320,7 +256,11 @@ def test_hierarkey_mixin_save_uploaded_file_deletes_old():
     form1.cleaned_data = {"test_setting": None, "test_file": old_upload}
     HierarkeyMixin.save(form1)
 
-    # Now upload a replacement file
+    old_name = event.settings.get("test_file", as_type=File).name
+    assert f"event-settings/{event.pk}/old.png." in old_name
+    assert old_name.endswith(".png")
+    assert default_storage.exists(old_name)
+
     new_upload = SimpleUploadedFile("new.png", b"new data", content_type="image/png")
     form2 = HierarkeyTestForm(
         data={},
@@ -332,9 +272,19 @@ def test_hierarkey_mixin_save_uploaded_file_deletes_old():
     form2.cleaned_data = {"test_setting": None, "test_file": new_upload}
     HierarkeyMixin.save(form2)
 
-    stored = event.settings.get("test_file", as_type=File)
-    assert f"event-settings/{event.pk}/" in stored.name
-    assert "new.png" in stored.name
+    new_name = event.settings.get("test_file", as_type=File).name
+    assert f"event-settings/{event.pk}/new.png." in new_name
+    assert not default_storage.exists(old_name)
+    assert default_storage.exists(new_name)
+
+    form3 = HierarkeyTestForm(
+        data={"test_setting": ""}, obj=event, attribute_name="settings", initial={}
+    )
+    form3.cleaned_data = {"test_setting": "", "test_file": None}
+    HierarkeyMixin.save(form3)
+
+    assert event.settings.get("test_file") is None
+    assert not default_storage.exists(new_name)
 
 
 @pytest.mark.django_db
@@ -354,34 +304,6 @@ def test_hierarkey_mixin_save_file_unchanged():
     HierarkeyMixin.save(form)
 
     assert event.settings.get("test_setting") == "keep_this"
-
-
-@pytest.mark.django_db
-def test_hierarkey_mixin_save_empty_file_field_deletes():
-    event = EventFactory()
-
-    # First upload a file through the save path so it exists in storage
-    upload = SimpleUploadedFile("logo.png", b"data", content_type="image/png")
-    form1 = HierarkeyTestForm(
-        data={},
-        files={"test_file": upload},
-        obj=event,
-        attribute_name="settings",
-        initial={},
-    )
-    form1.cleaned_data = {"test_setting": None, "test_file": upload}
-    HierarkeyMixin.save(form1)
-    assert "logo.png" in event.settings.get("test_file", as_type=File).name
-
-    # Now submit with empty file value to trigger deletion
-    form2 = HierarkeyTestForm(
-        data={"test_setting": ""}, obj=event, attribute_name="settings", initial={}
-    )
-    form2.cleaned_data = {"test_setting": "", "test_file": None}
-
-    HierarkeyMixin.save(form2)
-
-    assert event.settings.get("test_file") is None
 
 
 @pytest.mark.django_db

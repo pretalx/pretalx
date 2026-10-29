@@ -11,129 +11,42 @@ from tests.factories import EventFactory, ReviewPhaseFactory, TeamFactory, UserF
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def _make_obj(event):
-    fresh_event = Event.objects.get(pk=event.pk)
-    return types.SimpleNamespace(event=fresh_event)
-
-
-def test_can_view_speaker_names_true_when_phase_allows():
-    event = EventFactory()
-    user = UserFactory()
-    event.review_phases.all().delete()
-    ReviewPhaseFactory(event=event, is_active=True, can_see_speaker_names=True)
-    team = TeamFactory(
-        organiser=event.organiser,
-        all_events=True,
-        is_reviewer=True,
-        force_hide_speaker_names=False,
-    )
-    team.members.add(user)
-
-    obj = _make_obj(event)
-    assert can_view_speaker_names(user, obj) is True
-
-
-def test_can_view_speaker_names_false_when_team_forces_hide():
-    event = EventFactory()
-    user = UserFactory()
-    event.review_phases.all().delete()
-    ReviewPhaseFactory(event=event, is_active=True, can_see_speaker_names=True)
-    team = TeamFactory(
-        organiser=event.organiser,
-        all_events=True,
-        is_reviewer=True,
-        force_hide_speaker_names=True,
-    )
-    team.members.add(user)
-
-    obj = _make_obj(event)
-    assert can_view_speaker_names(user, obj) is False
-
-
-def test_can_view_speaker_names_false_when_phase_disallows():
-    event = EventFactory()
-    user = UserFactory()
-    event.review_phases.all().delete()
-    ReviewPhaseFactory(event=event, is_active=True, can_see_speaker_names=False)
-    team = TeamFactory(
-        organiser=event.organiser,
-        all_events=True,
-        is_reviewer=True,
-        force_hide_speaker_names=False,
-    )
-    team.members.add(user)
-
-    obj = _make_obj(event)
-    assert can_view_speaker_names(user, obj) is False
-
-
-def test_can_view_speaker_names_false_when_no_active_phase():
-    event = EventFactory()
-    user = UserFactory()
-    event.review_phases.all().delete()
-    ReviewPhaseFactory(event=event, is_active=False)
-    team = TeamFactory(
-        organiser=event.organiser,
-        all_events=True,
-        is_reviewer=True,
-        force_hide_speaker_names=False,
-    )
-    team.members.add(user)
-
-    obj = _make_obj(event)
-    assert can_view_speaker_names(user, obj) is False
-
-
-def test_can_view_speaker_names_true_when_not_all_teams_hide():
-    event = EventFactory()
-    user = UserFactory()
-    event.review_phases.all().delete()
-    ReviewPhaseFactory(event=event, is_active=True, can_see_speaker_names=True)
-    team_hide = TeamFactory(
-        organiser=event.organiser,
-        all_events=True,
-        is_reviewer=True,
-        force_hide_speaker_names=True,
-    )
-    team_show = TeamFactory(
-        organiser=event.organiser,
-        all_events=True,
-        is_reviewer=True,
-        force_hide_speaker_names=False,
-    )
-    team_hide.members.add(user)
-    team_show.members.add(user)
-
-    obj = _make_obj(event)
-    assert can_view_speaker_names(user, obj) is True
-
-
-def test_can_view_speaker_names_does_not_query_on_repeated_calls(
-    django_assert_num_queries,
+@pytest.mark.parametrize(
+    ("phase_kwargs", "team_hide_flags", "expected"),
+    (
+        ({"is_active": True, "can_see_speaker_names": True}, [False], True),
+        ({"is_active": True, "can_see_speaker_names": True}, [True], False),
+        ({"is_active": True, "can_see_speaker_names": False}, [False], False),
+        ({"is_active": False}, [False], False),
+        ({"is_active": True, "can_see_speaker_names": True}, [True, False], True),
+        ({"is_active": True, "can_see_speaker_names": True}, [], True),
+    ),
+    ids=(
+        "phase-allows",
+        "team-forces-hide",
+        "phase-disallows",
+        "no-active-phase",
+        "not-all-teams-hide",
+        "not-on-reviewer-team",
+    ),
+)
+def test_can_view_speaker_names(
+    django_assert_num_queries, phase_kwargs, team_hide_flags, expected
 ):
     event = EventFactory()
     user = UserFactory()
     event.review_phases.all().delete()
-    ReviewPhaseFactory(event=event, is_active=True, can_see_speaker_names=True)
-    team = TeamFactory(
-        organiser=event.organiser,
-        all_events=True,
-        is_reviewer=True,
-        force_hide_speaker_names=False,
-    )
-    team.members.add(user)
+    ReviewPhaseFactory(event=event, **phase_kwargs)
+    for force_hide in team_hide_flags:
+        team = TeamFactory(
+            organiser=event.organiser,
+            all_events=True,
+            is_reviewer=True,
+            force_hide_speaker_names=force_hide,
+        )
+        team.members.add(user)
+    obj = types.SimpleNamespace(event=Event.objects.get(pk=event.pk))
 
-    obj = _make_obj(event)
-    assert can_view_speaker_names(user, obj) is True
+    assert can_view_speaker_names(user, obj) is expected
     with django_assert_num_queries(0):
-        assert can_view_speaker_names(user, obj) is True
-
-
-def test_can_view_speaker_names_true_when_user_not_on_reviewer_team():
-    event = EventFactory()
-    user = UserFactory()
-    event.review_phases.all().delete()
-    ReviewPhaseFactory(event=event, is_active=True, can_see_speaker_names=True)
-
-    obj = _make_obj(event)
-    assert can_view_speaker_names(user, obj) is True
+        assert can_view_speaker_names(user, obj) is expected

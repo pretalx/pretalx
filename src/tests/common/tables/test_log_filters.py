@@ -12,6 +12,7 @@ from tests.factories import (
     EventFactory,
     RoomFactory,
     SubmissionFactory,
+    TrackFactory,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -22,37 +23,29 @@ def build(event=None, query=""):
     return TableFilterSet(log_filters(context), data=QueryDict(query), context=context)
 
 
-def action_values(filterset):
-    return {choice.value for choice in filterset.filters["action_type"].choices}
-
-
 def test_filters_are_dropped_without_an_event():
     assert build().facets == []
 
 
-def test_object_type_choices_come_from_the_logs():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    ActivityLogFactory(event=event, content_object=submission)
-
-    filterset = build(event)
-
-    content_type = ContentType.objects.get_for_model(submission)
-    values = [c.value for c in filterset.filters["object_type"].choices]
-    assert values == [str(content_type.id)]
-
-
-def test_object_type_choices_are_labelled_with_the_model_verbose_name():
+def test_object_type_choices_come_from_the_event_logs():
     event = EventFactory()
     submission = SubmissionFactory(event=event)
     room = RoomFactory(event=event)
     ActivityLogFactory(event=event, content_object=submission)
     ActivityLogFactory(event=event, content_object=room)
+    other_event = EventFactory()
+    ActivityLogFactory(
+        event=other_event, content_object=TrackFactory(event=other_event)
+    )
 
     filterset = build(event)
 
-    labels = [str(c.label) for c in filterset.filters["object_type"].choices]
-    assert labels == ["Proposals", "Rooms"]
+    assert [
+        (c.value, str(c.label)) for c in filterset.filters["object_type"].choices
+    ] == [
+        (str(ContentType.objects.get_for_model(submission).id), "Proposals"),
+        (str(ContentType.objects.get_for_model(room).id), "Rooms"),
+    ]
 
 
 def test_object_type_label_falls_back_to_the_content_type_name():
@@ -62,31 +55,6 @@ def test_object_type_label_falls_back_to_the_content_type_name():
 
     assert content_type.model_class() is None
     assert content_type_label(content_type) == "gone"
-
-
-def test_object_type_choices_exclude_other_events():
-    event = EventFactory()
-    other_event = EventFactory()
-    other_submission = SubmissionFactory(event=other_event)
-    ActivityLogFactory(event=other_event, content_object=other_submission)
-    room = RoomFactory(event=event)
-    ActivityLogFactory(event=event, content_object=room)
-
-    filterset = build(event)
-
-    room_type = ContentType.objects.get_for_model(room)
-    values = [c.value for c in filterset.filters["object_type"].choices]
-    assert values == [str(room_type.id)]
-
-
-def test_action_type_choices_come_from_the_logs():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    ActivityLogFactory(
-        event=event, content_object=submission, action_type="pretalx.submission.create"
-    )
-
-    assert action_values(build(event)) == {"pretalx.submission.create"}
 
 
 def test_action_type_choices_are_grouped_by_object_type():
@@ -165,67 +133,28 @@ def test_action_type_group_falls_back_to_the_content_type_name():
     ] == [("gone", "Soft delete")]
 
 
-def test_filter_by_object_type():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    log = ActivityLogFactory(event=event, content_object=submission)
-    content_type = ContentType.objects.get_for_model(submission)
-
-    filterset = build(event, f"object_type={content_type.id}")
-
-    assert list(filterset.filter(ActivityLog.objects.filter(event=event))) == [log]
-
-
-def test_filter_by_action_type():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    created = ActivityLogFactory(
-        event=event, content_object=submission, action_type="pretalx.submission.create"
-    )
-    ActivityLogFactory(
-        event=event, content_object=submission, action_type="pretalx.submission.update"
-    )
-
-    filterset = build(event, "action_type=pretalx.submission.create")
-
-    assert list(filterset.filter(ActivityLog.objects.filter(event=event))) == [created]
-
-
-def test_without_filters_everything_is_returned():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    first = ActivityLogFactory(
-        event=event, content_object=submission, action_type="pretalx.submission.create"
-    )
-    second = ActivityLogFactory(
-        event=event, content_object=submission, action_type="pretalx.submission.update"
-    )
-
-    filterset = build(event)
-
-    assert set(filterset.filter(ActivityLog.objects.filter(event=event))) == {
-        first,
-        second,
-    }
-
-
-def test_filters_combine():
+def test_filters_narrow_and_combine():
     event = EventFactory()
     submission = SubmissionFactory(event=event)
     room = RoomFactory(event=event)
     content_type = ContentType.objects.get_for_model(submission)
-    match = ActivityLogFactory(
+    created = ActivityLogFactory(
         event=event, content_object=submission, action_type="pretalx.submission.create"
     )
-    ActivityLogFactory(
+    updated = ActivityLogFactory(
         event=event, content_object=submission, action_type="pretalx.submission.update"
     )
-    ActivityLogFactory(
+    room_created = ActivityLogFactory(
         event=event, content_object=room, action_type="pretalx.room.create"
     )
+    logs = ActivityLog.objects.filter(event=event)
 
-    filterset = build(
-        event, f"object_type={content_type.id}&action_type=pretalx.submission.create"
-    )
+    def filtered(query):
+        return set(build(event, query).filter(logs))
 
-    assert list(filterset.filter(ActivityLog.objects.filter(event=event))) == [match]
+    assert filtered("") == {created, updated, room_created}
+    assert filtered(f"object_type={content_type.id}") == {created, updated}
+    assert filtered("action_type=pretalx.submission.create") == {created}
+    assert filtered(
+        f"object_type={content_type.id}&action_type=pretalx.submission.create"
+    ) == {created}

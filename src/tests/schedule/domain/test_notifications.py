@@ -29,32 +29,24 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
+def _released(event, version):
+    return Schedule.objects.select_related("event", "event__cfp").get(
+        event=event, version=version
+    )
+
+
 def test_get_notification_date_format():
     result = get_notification_date_format()
     assert "," in result
     assert result.startswith(get_day_month_date_format())
 
 
-def test_render_notifications_with_created_slot(event):
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker)
-    slot = TalkSlotFactory(submission=submission, is_visible=True)
-
-    data = {"create": [slot], "update": []}
-
-    result = render_notifications(data, event)
-
-    assert submission.title in result
-
-
-def test_render_notifications_with_moved_slot(event):
+def test_render_notifications_lists_created_and_moved_slots(event):
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     submission.speakers.add(speaker)
     room = RoomFactory(event=event)
     slot = TalkSlotFactory(submission=submission, is_visible=True, room=room)
-
     moved = {
         "submission": submission,
         "old_start": slot.local_start,
@@ -64,20 +56,16 @@ def test_render_notifications_with_moved_slot(event):
         "new_info": "",
         "new_slot": slot,
     }
-    data = {"create": [], "update": [moved]}
 
-    result = render_notifications(data, event)
+    empty = render_notifications({"create": [], "update": []}, event)
+    created = render_notifications({"create": [slot], "update": []}, event)
+    updated = render_notifications({"create": [], "update": [moved]}, event)
 
-    assert submission.title in result
-    assert "moved" in result.lower()
-
-
-def test_render_notifications_empty_data(event):
-    data = {"create": [], "update": []}
-
-    result = render_notifications(data, event)
-
-    assert result.strip() == ""
+    assert empty.strip() == ""
+    assert submission.title in created
+    assert "moved" not in created.lower()
+    assert submission.title in updated
+    assert "moved" in updated.lower()
 
 
 @pytest.mark.parametrize(
@@ -87,81 +75,30 @@ def test_render_notifications_empty_data(event):
         pytest.param(get_current_notifications, id="get_current_notifications"),
     ),
 )
-def test_notifications_no_current_schedule_returns_empty(notification_fn, event):
-    result = notification_fn(SpeakerFactory(event=event), event)
-
-    assert result == {"create": [], "update": []}
-
-
-@pytest.mark.parametrize(
-    "notification_fn",
-    (
-        pytest.param(get_full_notifications, id="get_full_notifications"),
-        pytest.param(get_current_notifications, id="get_current_notifications"),
-    ),
-)
-def test_notifications_returns_speakers_slot(notification_fn, event):
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker)
-    slot = TalkSlotFactory(submission=submission, is_visible=True)
-    freeze_schedule(slot.schedule, "1.0", notify_speakers=False)
-
-    result = notification_fn(speaker, event)
-
-    assert list(result["create"]) == [slot]
-    assert result["update"] == []
-
-
-def test_get_full_notifications_excludes_other_speakers_talks(event):
+def test_notifications_list_only_the_speakers_own_released_slots(
+    notification_fn, event
+):
     speaker = SpeakerFactory(event=event)
     other_speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(other_speaker)
-    TalkSlotFactory(submission=submission, is_visible=True)
-    freeze_schedule(event.wip_schedule, "1.0", notify_speakers=False)
-
-    result = get_full_notifications(speaker, event)
-
-    assert list(result["create"]) == []
-
-
-def test_get_current_notifications_returns_empty_for_unrelated_user(event):
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     submission.speakers.add(speaker)
     slot = TalkSlotFactory(submission=submission, is_visible=True)
+
+    before = notification_fn(speaker, event)
+    assert list(before["create"]) == []
+    assert before["update"] == []
+
     freeze_schedule(slot.schedule, "1.0", notify_speakers=False)
 
-    unrelated_speaker = SpeakerFactory(event=event)
-    result = get_current_notifications(unrelated_speaker, event)
-
-    assert result == {"create": [], "update": []}
-
-
-def test_get_current_notifications_returns_moved_talk(event):
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker)
-    TalkSlotFactory(submission=submission, is_visible=True)
-    freeze_schedule(event.wip_schedule, "1.0", notify_speakers=False)
-
-    # Move the talk to a different room in the WIP schedule
-    wip_slot = event.wip_schedule.talks.get(submission=submission)
-    new_room = RoomFactory(event=event)
-    wip_slot.room = new_room
-    wip_slot.save()
-    freeze_schedule(event.wip_schedule, "2.0", notify_speakers=False)
-
-    result = get_current_notifications(speaker, event)
-
-    assert result["create"] == []
-    assert len(result["update"]) == 1
-    assert result["update"][0]["submission"] == submission
-    assert result["update"][0]["new_room"] == new_room
+    result = notification_fn(speaker, event)
+    other = notification_fn(other_speaker, event)
+    assert list(result["create"]) == [slot]
+    assert result["update"] == []
+    assert list(other["create"]) == []
+    assert other["update"] == []
 
 
-def test_get_current_notifications_empty_after_unchanged_release(event):
+def test_get_current_notifications_reports_moves_since_the_previous_release(event):
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     submission.speakers.add(speaker)
@@ -173,11 +110,24 @@ def test_get_current_notifications_empty_after_unchanged_release(event):
     full = get_full_notifications(speaker, event)
 
     assert current == {"create": [], "update": []}
-    assert list(full["create"])[0].submission == submission
+    assert [slot.submission for slot in full["create"]] == [submission]
     assert full["update"] == []
 
+    wip_slot = event.wip_schedule.talks.get(submission=submission)
+    new_room = RoomFactory(event=event)
+    wip_slot.room = new_room
+    wip_slot.save()
+    freeze_schedule(event.wip_schedule, "3.0", notify_speakers=False)
 
-def test_schedule_speakers_concerned_create(event):
+    result = get_current_notifications(speaker, event)
+
+    assert result["create"] == []
+    assert [(m["submission"], m["new_room"]) for m in result["update"]] == [
+        (submission, new_room)
+    ]
+
+
+def test_schedule_speakers_concerned_create_covers_scheduled_talks_only(event):
     room = RoomFactory(event=event)
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -192,29 +142,10 @@ def test_schedule_speakers_concerned_create(event):
         start=event.datetime_from + dt.timedelta(hours=2),
         end=event.datetime_from + dt.timedelta(hours=3),
     )
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        v1 = Schedule.objects.select_related("event", "event__cfp").get(
-            event=event, version="v1"
-        )
-
-        assert v1.talks.get(submission=accepted).is_visible is False
-        assert set(v1.speakers_concerned) == {speaker, accepted_speaker}
-        assert [
-            slot.submission for slot in v1.speakers_concerned[speaker]["create"]
-        ] == [submission]
-        assert [
-            slot.submission
-            for slot in v1.speakers_concerned[accepted_speaker]["create"]
-        ] == [accepted]
-
-
-def test_schedule_speakers_concerned_create_ignores_breaks(event):
-    room = RoomFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker)
-    TalkSlotFactory(submission=submission, room=room)
+    unscheduled_speaker = SpeakerFactory(event=event)
+    unscheduled = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    unscheduled.speakers.add(unscheduled_speaker)
+    TalkSlotFactory(submission=unscheduled, room=None, start=None, end=None)
     TalkSlotFactory(
         submission=None,
         schedule=event.wip_schedule,
@@ -226,111 +157,79 @@ def test_schedule_speakers_concerned_create_ignores_breaks(event):
     )
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        v1 = Schedule.objects.select_related("event", "event__cfp").get(
-            event=event, version="v1"
-        )
+        v1 = _released(event, "v1")
 
-        assert list(v1.speakers_concerned) == [speaker]
-        assert [
-            slot.submission for slot in v1.speakers_concerned[speaker]["create"]
-        ] == [submission]
+        assert v1.talks.get(submission=accepted).is_visible is False
+        assert {
+            concerned: ([slot.submission for slot in data["create"]], data["update"])
+            for concerned, data in v1.speakers_concerned.items()
+        } == {speaker: ([submission], []), accepted_speaker: ([accepted], [])}
 
 
-def test_schedule_speakers_concerned_update(event):
+def test_schedule_speakers_concerned_update_lists_moves_and_additions_not_cancellations(
+    event,
+):
     room = RoomFactory(event=event)
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     submission.speakers.add(speaker)
     TalkSlotFactory(submission=submission, room=room)
+    new_speaker = SpeakerFactory(event=event)
+    new_submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    new_submission.speakers.add(new_speaker)
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
         wip_slot = event.wip_schedule.talks.get(submission=submission)
         wip_slot.start = event.datetime_from + dt.timedelta(hours=5)
         wip_slot.end = event.datetime_from + dt.timedelta(hours=6)
         wip_slot.save()
+        TalkSlotFactory(submission=new_submission, room=room)
         freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
-        v2 = Schedule.objects.select_related("event", "event__cfp").get(
-            event=event, version="v2"
+        v2 = _released(event, "v2")
+
+        assert {
+            concerned: (
+                [slot.submission for slot in data["create"]],
+                [moved["submission"] for moved in data["update"]],
+            )
+            for concerned, data in v2.speakers_concerned.items()
+        } == {speaker: ([], [submission]), new_speaker: ([new_submission], [])}
+
+        event.wip_schedule.talks.update(
+            room=None, start=None, end=None, is_visible=False
         )
+        freeze_schedule(event.wip_schedule, "v3", notify_speakers=False)
 
-        matched_speaker = [s for s in v2.speakers_concerned if s.user == speaker.user]
-        assert len(matched_speaker) == 1
-        assert len(v2.speakers_concerned[matched_speaker[0]]["update"]) == 1
+        assert _released(event, "v3").speakers_concerned == {}
 
 
-def test_schedule_speakers_concerned_empty_when_only_cancellations(event):
+def test_schedule_generate_notifications_queues_one_mail_per_speaker(event):
     room = RoomFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    TalkSlotFactory(submission=submission, room=room)
+    speaker_a = SpeakerFactory(event=event)
+    speaker_b = SpeakerFactory(event=event)
+    submission_a = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission_b = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission_a.speakers.add(speaker_a)
+    submission_b.speakers.add(speaker_b)
+    TalkSlotFactory(submission=submission_a, room=room)
+    TalkSlotFactory(
+        submission=submission_b,
+        room=room,
+        start=event.datetime_from + dt.timedelta(hours=2),
+        end=event.datetime_from + dt.timedelta(hours=3),
+    )
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        wip_slot = event.wip_schedule.talks.get(submission=submission)
-        wip_slot.room = None
-        wip_slot.start = None
-        wip_slot.end = None
-        wip_slot.is_visible = False
-        wip_slot.save()
-        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
-        v2 = Schedule.objects.select_related("event", "event__cfp").get(
-            event=event, version="v2"
-        )
+        v1 = _released(event, "v1")
 
-        assert v2.speakers_concerned == {}
+        assert count_pending_notifications(v1) == 2
 
-
-def test_schedule_speakers_concerned_create_excludes_unscheduled(event):
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker)
-    TalkSlotFactory(submission=submission, room=None, start=None, end=None)
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        v1 = Schedule.objects.select_related("event", "event__cfp").get(
-            event=event, version="v1"
-        )
-
-        assert speaker not in v1.speakers_concerned
-
-
-def test_schedule_speakers_concerned_new_talk_in_update(event):
-    room = RoomFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker)
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        TalkSlotFactory(submission=submission, room=room)
-        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
-        v2 = Schedule.objects.select_related("event", "event__cfp").get(
-            event=event, version="v2"
-        )
-
-        matched_speaker = [s for s in v2.speakers_concerned if s.user == speaker.user]
-        assert len(matched_speaker) == 1
-        assert len(v2.speakers_concerned[matched_speaker[0]]["create"]) == 1
-
-
-def test_schedule_generate_notifications(event):
-    room = RoomFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker)
-    TalkSlotFactory(submission=submission, room=room)
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        v1 = Schedule.objects.select_related("event", "event__cfp").get(
-            event=event, version="v1"
-        )
-
-    with scope(event=event):
         mails = generate_notifications(v1)
 
-        assert len(mails) == 1
-        assert mails[0].pk is not None
-        assert list(mails[0].to_speakers.all()) == [speaker]
-        assert list(mails[0].submissions.all()) == [submission]
+        assert all(mail.pk is not None for mail in mails)
+        assert {
+            mail.to_speakers.get(): list(mail.submissions.all()) for mail in mails
+        } == {speaker_a: [submission_a], speaker_b: [submission_b]}
 
 
 def test_schedule_generate_notifications_ical_localized(event):
@@ -348,9 +247,7 @@ def test_schedule_generate_notifications_ical_localized(event):
     TalkSlotFactory(submission=submission, room=room)
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        v1 = Schedule.objects.select_related("event", "event__cfp").get(
-            event=event, version="v1"
-        )
+        v1 = _released(event, "v1")
 
     with scope(event=event):
         mails = generate_notifications(v1)
@@ -371,9 +268,7 @@ def test_schedule_generate_notifications_query_count(event, django_assert_num_qu
         TalkSlotFactory(submission=submission, room=room)
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        v1 = Schedule.objects.select_related("event", "event__cfp").get(
-            event=event, version="v1"
-        )
+        v1 = _released(event, "v1")
 
     with scope(event=event), django_assert_num_queries(16):
         mails = generate_notifications(v1)
@@ -381,50 +276,18 @@ def test_schedule_generate_notifications_query_count(event, django_assert_num_qu
     assert len(mails) == 4
 
 
-def test_schedule_generate_notifications_no_speakers(event):
+def test_schedule_generate_notifications_skips_empty_and_unreachable_speakers(event):
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        v1 = Schedule.objects.select_related("event", "event__cfp").get(
-            event=event, version="v1"
-        )
-        mails = generate_notifications(v1)
 
-    assert mails == []
+        assert generate_notifications(_released(event, "v1")) == []
 
+        room = RoomFactory(event=event)
+        speaker = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
+        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        submission.speakers.add(speaker)
+        TalkSlotFactory(submission=submission, room=room)
+        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
 
-def test_count_pending_notifications_matches_speaker_count(event):
-    room = RoomFactory(event=event)
-    speaker_a = SpeakerFactory(event=event)
-    speaker_b = SpeakerFactory(event=event)
-    submission_a = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission_b = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission_a.speakers.add(speaker_a)
-    submission_b.speakers.add(speaker_b)
-    TalkSlotFactory(submission=submission_a, room=room)
-    TalkSlotFactory(submission=submission_b, room=room)
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        v1 = Schedule.objects.select_related("event", "event__cfp").get(
-            event=event, version="v1"
-        )
-
-    with scope(event=event):
-        assert count_pending_notifications(v1) == 2
-
-
-def test_schedule_generate_notifications_skips_unreachable_speaker(event):
-    room = RoomFactory(event=event)
-    speaker = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker)
-    TalkSlotFactory(submission=submission, room=room)
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-        v1 = Schedule.objects.select_related("event", "event__cfp").get(
-            event=event, version="v1"
-        )
-
-        mails = generate_notifications(v1)
-
-        assert mails == []
+        assert generate_notifications(_released(event, "v2")) == []
         assert event.queued_mails.count() == 0

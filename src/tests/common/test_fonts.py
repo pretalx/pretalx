@@ -19,228 +19,117 @@ SAMPLE_FONTS = {
 }
 
 
-def test_get_fonts_returns_empty_when_no_plugins(register_signal_handler):
+def test_get_fonts_merges_dict_responses_of_all_plugins(register_signal_handler):
     event = EventFactory()
-
-    result = get_fonts(event)
-
-    assert result == {}
-
-
-def test_get_fonts_returns_plugin_fonts(register_signal_handler):
-    event = EventFactory()
-
-    def handler(signal, sender, **kwargs):
-        return SAMPLE_FONTS
-
-    register_signal_handler(register_fonts, handler)
-    result = get_fonts(event)
-
-    assert set(result.keys()) == {"TestFont"}
-    assert result["TestFont"]["regular"]["truetype"] == "fonts/test-regular.ttf"
-
-
-def test_get_fonts_merges_multiple_plugins(register_signal_handler):
-    event = EventFactory()
+    assert get_fonts(None) == {}
+    assert get_fonts(event) == {}
 
     def handler_a(signal, sender, **kwargs):
-        return {"FontA": {"regular": {"truetype": "a.ttf", "woff2": "a.woff2"}}}
+        return SAMPLE_FONTS
 
     def handler_b(signal, sender, **kwargs):
         return {"FontB": {"regular": {"truetype": "b.ttf", "woff2": "b.woff2"}}}
 
-    register_signal_handler(register_fonts, handler_a)
-    register_signal_handler(register_fonts, handler_b)
-    result = get_fonts(event)
-
-    assert set(result.keys()) == {"FontA", "FontB"}
-
-
-def test_get_fonts_with_none_event():
-    result = get_fonts(None)
-
-    assert result == {}
-
-
-def test_get_font_css_returns_empty_when_no_custom_fonts():
-    event = EventFactory()
-
-    result = get_font_css(event)
-
-    assert result == ""
-
-
-def test_get_font_css_generates_font_face_and_variables(register_signal_handler):
-    event = EventFactory(
-        display_settings={
-            "schedule": "grid",
-            "imprint_url": None,
-            "header_pattern": "",
-            "html_export_url": "",
-            "meta_noindex": False,
-            "heading_font": "TestFont",
-            "text_font": "",
-            "texts": {"agenda_session_above": "", "agenda_session_below": ""},
-        }
-    )
-
-    def handler(signal, sender, **kwargs):
-        return SAMPLE_FONTS
-
-    register_signal_handler(register_fonts, handler)
-    result = get_font_css(event)
-
-    assert result.count("@font-face {") == 2
-    assert result.count('font-family: "TestFont"') == 2
-    root_block = result.split(":root {\n")[1].split("\n}")[0].strip()
-    assert root_block == '--font-family-title: "TestFont", var(--font-fallback);'
-
-
-def test_get_font_css_both_fonts(register_signal_handler):
-    event = EventFactory(
-        display_settings={
-            "schedule": "grid",
-            "imprint_url": None,
-            "header_pattern": "",
-            "html_export_url": "",
-            "meta_noindex": False,
-            "heading_font": "TestFont",
-            "text_font": "TestFont",
-            "texts": {"agenda_session_above": "", "agenda_session_below": ""},
-        }
-    )
-
-    def handler(signal, sender, **kwargs):
-        return SAMPLE_FONTS
-
-    register_signal_handler(register_fonts, handler)
-    result = get_font_css(event)
-
-    assert result.count("@font-face {") == 2
-    root_block = result.split(":root {\n")[1].split("\n}")[0]
-    root_lines = [line.strip() for line in root_block.strip().splitlines()]
-    assert root_lines == [
-        '--font-family-title: "TestFont", var(--font-fallback);',
-        '--font-family: "TestFont", var(--font-fallback);',
-    ]
-
-
-def test_get_font_css_ignores_unknown_font(register_signal_handler):
-    event = EventFactory(
-        display_settings={
-            "schedule": "grid",
-            "imprint_url": None,
-            "header_pattern": "",
-            "html_export_url": "",
-            "meta_noindex": False,
-            "heading_font": "NonexistentFont",
-            "text_font": "",
-            "texts": {"agenda_session_above": "", "agenda_session_below": ""},
-        }
-    )
-
-    result = get_font_css(event)
-
-    assert result == ""
-
-
-def test_get_fonts_ignores_non_dict_responses(register_signal_handler):
-    event = EventFactory()
-
     def bad_handler(signal, sender, **kwargs):
         return "not a dict"
 
-    def good_handler(signal, sender, **kwargs):
-        return {"GoodFont": {"regular": {"woff2": "fonts/good.woff2"}}}
-
+    register_signal_handler(register_fonts, handler_a)
+    register_signal_handler(register_fonts, handler_b)
     register_signal_handler(register_fonts, bad_handler)
-    register_signal_handler(register_fonts, good_handler)
-    result = get_fonts(event)
 
-    assert set(result.keys()) == {"GoodFont"}
+    assert get_fonts(event) == {
+        **SAMPLE_FONTS,
+        "FontB": {"regular": {"truetype": "b.ttf", "woff2": "b.woff2"}},
+    }
 
 
-def test_get_font_css_text_font_only(register_signal_handler):
-    event = EventFactory(
+def _font_event(heading_font, text_font):
+    return EventFactory(
         display_settings={
             "schedule": "grid",
             "imprint_url": None,
             "header_pattern": "",
             "html_export_url": "",
             "meta_noindex": False,
-            "heading_font": "",
-            "text_font": "TestFont",
+            "heading_font": heading_font,
+            "text_font": text_font,
             "texts": {"agenda_session_above": "", "agenda_session_below": ""},
         }
     )
 
-    def handler(signal, sender, **kwargs):
-        return SAMPLE_FONTS
 
-    register_signal_handler(register_fonts, handler)
-    result = get_font_css(event)
-
-    assert "@font-face {" in result
-    root_block = result.split(":root {\n")[1].split("\n}")[0].strip()
-    assert root_block == '--font-family: "TestFont", var(--font-fallback);'
-    assert "--font-family-title" not in result
+def _root_lines(css):
+    blocks = css.split(":root {\n")
+    if len(blocks) < 2:
+        return []
+    return [line.strip() for line in blocks[1].split("\n}")[0].strip().splitlines()]
 
 
-def test_get_font_css_returns_empty_when_selected_font_not_in_available(
-    register_signal_handler,
+TITLE = '--font-family-title: "TestFont", var(--font-fallback);'
+TEXT = '--font-family: "TestFont", var(--font-fallback);'
+
+
+@pytest.mark.parametrize(
+    ("heading_font", "text_font", "fonts", "font_faces", "root_lines"),
+    (
+        ("", "", SAMPLE_FONTS, 0, []),
+        ("TestFont", "", SAMPLE_FONTS, 2, [TITLE]),
+        ("", "TestFont", SAMPLE_FONTS, 2, [TEXT]),
+        ("TestFont", "TestFont", SAMPLE_FONTS, 2, [TITLE, TEXT]),
+        ("NonexistentFont", "", {}, 0, []),
+        (
+            "WrongName",
+            "",
+            {"ActualFont": {"regular": {"woff2": "fonts/a.woff2"}}},
+            0,
+            [],
+        ),
+        (
+            "TestFont",
+            "",
+            {"TestFont": {"regular": {"svg": "fonts/no-format.svg"}}},
+            0,
+            [TITLE],
+        ),
+    ),
+    ids=(
+        "no_custom_fonts",
+        "heading_font",
+        "text_font",
+        "both_fonts",
+        "unknown_font_without_plugins",
+        "selected_font_not_offered",
+        "font_without_recognised_formats",
+    ),
+)
+def test_get_font_css(
+    register_signal_handler, heading_font, text_font, fonts, font_faces, root_lines
 ):
-    event = EventFactory(
-        display_settings={
-            "schedule": "grid",
-            "imprint_url": None,
-            "header_pattern": "",
-            "html_export_url": "",
-            "meta_noindex": False,
-            "heading_font": "WrongName",
-            "text_font": "",
-            "texts": {"agenda_session_above": "", "agenda_session_below": ""},
-        }
-    )
+    event = _font_event(heading_font, text_font)
 
     def handler(signal, sender, **kwargs):
-        return {"ActualFont": {"regular": {"woff2": "fonts/actual.woff2"}}}
+        return fonts
 
     register_signal_handler(register_fonts, handler)
+
     result = get_font_css(event)
 
-    assert result == ""
+    assert result.count("@font-face {") == font_faces
+    assert result.count('font-family: "TestFont";') == font_faces
+    assert _root_lines(result) == root_lines
+    assert (result == "") is (not root_lines)
 
 
-def test_get_font_css_with_font_having_no_recognized_formats(register_signal_handler):
-    event = EventFactory(
-        display_settings={
-            "schedule": "grid",
-            "imprint_url": None,
-            "header_pattern": "",
-            "html_export_url": "",
-            "meta_noindex": False,
-            "heading_font": "NoFormatFont",
-            "text_font": "",
-            "texts": {"agenda_session_above": "", "agenda_session_below": ""},
-        }
-    )
-
-    def handler(signal, sender, **kwargs):
-        return {"NoFormatFont": {"regular": {"svg": "fonts/no-format.svg"}}}
-
-    register_signal_handler(register_fonts, handler)
-    result = get_font_css(event)
-
-    assert "@font-face" not in result
-    assert "--font-family-title" in result
-
-
-def test_get_font_definitions_skips_unknown_font_names():
-    fonts = {"KnownFont": {"regular": {"woff2": "fonts/known.woff2"}}}
-
-    result = get_font_definitions(fonts, ["UnknownFont"])
-
-    assert result == ""
+@pytest.mark.parametrize(
+    ("fonts", "names"),
+    (
+        ({"KnownFont": {"regular": {"woff2": "fonts/known.woff2"}}}, ["UnknownFont"]),
+        ({"MyFont": {"regular": {"svg": "fonts/my.svg"}}}, ["MyFont"]),
+    ),
+    ids=("unknown_font_name", "no_recognised_formats"),
+)
+def test_get_font_definitions_skips_unusable_fonts(fonts, names):
+    assert get_font_definitions(fonts, names) == ""
 
 
 def test_get_font_definitions_skips_non_dict_variant_values():
@@ -252,14 +141,6 @@ def test_get_font_definitions_skips_non_dict_variant_values():
 
     assert result.count("@font-face {") == 1
     assert "sample" not in result.lower().split("@font-face")[0]
-
-
-def test_get_font_definitions_skips_variant_with_no_recognized_formats():
-    fonts = {"MyFont": {"regular": {"svg": "fonts/my.svg"}}}
-
-    result = get_font_definitions(fonts, ["MyFont"])
-
-    assert result == ""
 
 
 def test_get_font_definitions_italic_and_bolditalic_styles():

@@ -10,9 +10,18 @@ from pretalx.common.templatetags.html_signal import html_signal
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_html_signal_no_receivers(event):
-    result = html_signal("pretalx.cfp.signals.html_head", sender=event, request=None)
-    assert result == ""
+def test_html_signal_without_responses_is_empty(event, register_signal_handler):
+    assert (
+        html_signal("pretalx.cfp.signals.html_head", sender=event, request=None) == ""
+    )
+
+    def handler(signal, sender, **kwargs):
+        return None
+
+    register_signal_handler(html_head, handler)
+    assert (
+        html_signal("pretalx.cfp.signals.html_head", sender=event, request=None) == ""
+    )
 
 
 @pytest.mark.parametrize(
@@ -49,14 +58,4 @@ def test_html_signal_concatenates_responses(event, register_signal_handler):
     register_signal_handler(html_head, handler1)
     register_signal_handler(html_head, handler2)
     result = html_signal("pretalx.cfp.signals.html_head", sender=event, request=None)
-    assert "<span>one</span>" in result
-    assert "<span>two</span>" in result
-
-
-def test_html_signal_skips_none_responses(event, register_signal_handler):
-    def handler(signal, sender, **kwargs):
-        return None
-
-    register_signal_handler(html_head, handler)
-    result = html_signal("pretalx.cfp.signals.html_head", sender=event, request=None)
-    assert result == ""
+    assert result == "<span>one</span><span>two</span>"

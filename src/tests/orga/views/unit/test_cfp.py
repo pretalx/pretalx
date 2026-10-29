@@ -53,48 +53,23 @@ from tests.utils import make_orga_user, make_request, make_view
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_cfp_text_detail_get_object_returns_cfp(event):
+def _editor(event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    return make_view(CfPFlowEditor, make_request(event, user=user))
+
+
+def test_cfp_text_detail_object_and_deadlines(event):
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(CfPTextDetail, request)
 
-    obj = view.get_object()
+    assert view.get_object() == event.cfp
+    assert view.different_deadlines is None
 
-    assert obj == event.cfp
-
-
-def test_cfp_text_detail_different_deadlines_empty(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPTextDetail, request)
-
-    result = view.different_deadlines
-
-    assert result is None
-
-
-def test_cfp_text_detail_different_deadlines_with_types(event):
     deadline = dt.datetime(2025, 6, 1, 12, 0, tzinfo=ZoneInfo("UTC"))
     st = SubmissionTypeFactory(event=event, deadline=deadline)
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPTextDetail, request)
 
-    result = view.different_deadlines
-
-    assert result == {deadline: [st]}
-
-
-def test_question_view_get_queryset(event):
-    question = QuestionFactory(event=event)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(QuestionView, request)
-    view.action = "list"
-
-    qs = list(view.get_queryset())
-
-    assert qs == [question]
+    assert make_view(CfPTextDetail, request).different_deadlines == {deadline: [st]}
 
 
 def test_question_view_get_queryset_answer_count_ignores_team_limits(event):
@@ -113,6 +88,7 @@ def test_question_view_get_queryset_answer_count_ignores_team_limits(event):
 
     qs = list(view.get_queryset())
 
+    assert qs == [question]
     assert [q.answer_count for q in qs] == [2]
 
 
@@ -167,18 +143,21 @@ def test_question_view_get_queryset_answer_count_excludes_draft_only_speakers(ev
     )
 
 
-def test_question_view_get_success_url_delete(event):
+def test_question_view_list_urls(event):
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
-    view = make_view(QuestionView, request)
-    view.action = "delete"
-    view._next_url = None
-    view.namespace = "orga"
-    view.url_name = "cfp.questions"
+    delete = make_view(QuestionView, request)
+    delete.action = "delete"
+    delete._next_url = None
+    delete.namespace = "orga"
+    delete.url_name = "cfp.questions"
+    listing = make_view(QuestionView, request)
+    listing.action = "list"
+    listing.namespace = "orga"
+    listing.url_name = "cfp.questions"
 
-    url = view.get_success_url()
-
-    assert url == event.cfp.urls.questions
+    assert delete.get_success_url() == event.cfp.urls.questions
+    assert listing.get_create_url() == event.cfp.urls.new_question
 
 
 @pytest.mark.parametrize(
@@ -205,17 +184,6 @@ def test_question_view_target_rejects_unknown_slug(event, slug):
 
     with pytest.raises(Http404):
         view.target  # noqa: B018 -- accessing the property is the action under test
-
-
-def test_question_view_create_url_is_the_choice_page(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(QuestionView, request)
-    view.action = "list"
-    view.namespace = "orga"
-    view.url_name = "cfp.questions"
-
-    assert view.get_create_url() == event.cfp.urls.new_question
 
 
 @pytest.mark.parametrize(
@@ -266,40 +234,52 @@ def test_parse_dragsort_order(order, expected):
     assert parse_dragsort_order(order) == expected
 
 
-def test_question_view_base_search_url_submission(event):
-    question = QuestionFactory(event=event, target="submission")
+def _search_url(event, user, question, get_params=None):
+    request = make_request(event, user=user)
+    request.GET = get_params or {}
+    view = make_view(QuestionView, request, pk=question.pk)
+    view.object = question
+    return view.base_search_url
+
+
+def test_question_view_base_search_url_by_target(event):
     user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(
-        event, user=user, path=f"?role=accepted&question={question.pk}"
+    submission_q = QuestionFactory(event=event, target="submission")
+    speaker_q = QuestionFactory(event=event, target="speaker")
+    reviewer_q = QuestionFactory(event=event, target="reviewer")
+
+    assert (
+        _search_url(event, user, submission_q)
+        == f"{event.orga_urls.submissions}?question_{submission_q.id}="
     )
-    view = make_view(QuestionView, request, pk=question.pk)
-    view.object = question
+    assert (
+        _search_url(event, user, speaker_q)
+        == f"{event.orga_urls.speakers}?question_{speaker_q.id}="
+    )
+    assert _search_url(event, user, reviewer_q) is None
 
-    url = view.base_search_url
 
-    assert f"question_{question.id}=" in url
-
-
-def test_question_view_base_search_url_speaker(event):
-    question = QuestionFactory(event=event, target="speaker")
+def test_question_view_base_search_url_role_filters(event):
+    question = QuestionFactory(event=event, target="submission")
+    track = TrackFactory(event=event)
+    st = SubmissionTypeFactory(event=event)
     user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(QuestionView, request, pk=question.pk)
-    view.object = question
 
-    url = view.base_search_url
+    accepted = _search_url(
+        event,
+        user,
+        question,
+        {"role": "accepted", "track": str(track.pk), "submission_type": str(st.pk)},
+    )
+    confirmed = _search_url(event, user, question, {"role": "confirmed"})
 
-    assert url == f"{event.orga_urls.speakers}?question_{question.id}="
-
-
-def test_question_view_base_search_url_reviewer_returns_none(event):
-    question = QuestionFactory(event=event, target="reviewer")
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(QuestionView, request, pk=question.pk)
-    view.object = question
-
-    assert view.base_search_url is None
+    assert "state=accepted" in accepted
+    assert "state=confirmed" in accepted
+    assert f"track={track.pk}" in accepted
+    assert f"submission_type={st.pk}" in accepted
+    assert f"question_{question.id}=" in accepted
+    assert "state=confirmed" in confirmed
+    assert "state=accepted" not in confirmed
 
 
 def test_cfp_question_toggle_get_object(event):
@@ -313,7 +293,7 @@ def test_cfp_question_toggle_get_object(event):
     assert obj == question
 
 
-def test_question_file_download_view_resolves_to_question(event):
+def test_question_file_download_view(event):
     question = QuestionFactory(event=event, variant="file")
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
@@ -322,28 +302,11 @@ def test_question_file_download_view_resolves_to_question(event):
     assert view.question == question
     assert view.get_object() == question
     assert view.get_permission_object() == question
-
-
-def test_question_file_download_get_async_download_filename(event):
-    question = QuestionFactory(event=event, variant="file")
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(QuestionFileDownloadView, request, pk=question.pk)
-
-    filename = view.get_async_download_filename()
-
-    assert filename == f"{event.slug}_question_{question.pk}_files.zip"
-
-
-def test_question_file_download_get_error_redirect_url(event):
-    question = QuestionFactory(event=event, variant="file")
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(QuestionFileDownloadView, request, pk=question.pk)
-
-    url = view.get_error_redirect_url()
-
-    assert url == question.urls.base
+    assert (
+        view.get_async_download_filename()
+        == f"{event.slug}_question_{question.pk}_files.zip"
+    )
+    assert view.get_error_redirect_url() == question.urls.base
 
 
 def test_cfp_question_remind_reminder_template(event):
@@ -362,38 +325,19 @@ def test_submission_type_view_get_queryset(event):
     view = make_view(SubmissionTypeView, request)
     view.action = "list"
 
-    qs = list(view.get_queryset())
-
-    assert len(qs) == 1
-    assert qs[0] == event.cfp.default_type
+    assert list(view.get_queryset()) == [event.cfp.default_type]
 
 
-def test_submission_type_default_get_object(event):
-    st = SubmissionTypeFactory(event=event)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(SubmissionTypeDefault, request, pk=st.pk)
-
-    assert view.object == st
-
-
-def test_submission_type_default_action_text_includes_name(event):
+def test_submission_type_default_view(event):
     st = SubmissionTypeFactory(event=event, name="Workshop")
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(SubmissionTypeDefault, request, pk=st.pk)
-
-    assert str(view.action_text) == (
-        "Are you sure you want to make “Workshop” the default session type?"
-    )
-
-
-def test_submission_type_default_action_back_url_uses_next(event):
-    st = SubmissionTypeFactory(event=event)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user, path="/?next=/orga/event/")
     view = make_view(SubmissionTypeDefault, request, pk=st.pk)
 
+    assert view.object == st
+    assert str(view.action_text) == (
+        "Are you sure you want to make “Workshop” the default session type?"
+    )
     assert view.action_back_url == "/orga/event/"
 
 
@@ -404,21 +348,18 @@ def test_track_view_get_queryset(event):
     view = make_view(TrackView, request)
     view.action = "list"
 
-    qs = list(view.get_queryset())
-
-    assert qs == [track]
+    assert list(view.get_queryset()) == [track]
 
 
-def test_access_code_view_get_queryset(event):
+def test_access_code_view_get_queryset_and_send(event):
     code = SubmitterAccessCodeFactory(event=event)
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
     view = make_view(AccessCodeView, request)
     view.action = "list"
 
-    qs = list(view.get_queryset())
-
-    assert qs == [code]
+    assert list(view.get_queryset()) == [code]
+    assert make_view(AccessCodeSend, request, code=code.code).access_code == code
 
 
 def test_access_code_view_get_context_data_detail_includes_submissions(event):
@@ -454,15 +395,6 @@ def test_access_code_view_get_form_kwargs_with_track(event):
     assert kwargs.get("initial", {}).get("tracks") == [track]
 
 
-def test_access_code_send_resolves_access_code(event):
-    code = SubmitterAccessCodeFactory(event=event)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(AccessCodeSend, request, code=code.code)
-
-    assert view.access_code == code
-
-
 @pytest.mark.parametrize(
     ("field_key", "expected"),
     (
@@ -475,137 +407,89 @@ def test_get_field_label(field_key, expected):
     assert str(get_field_label(field_key, Submission)) == expected
 
 
-def test_cfp_editor_mixin_auto_field_states_single_type(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
+@pytest.mark.parametrize(
+    ("use_tracks", "track_reason"),
+    ((False, "tracks are disabled"), (True, "no tracks exist")),
+    ids=("tracks-disabled", "no-tracks"),
+)
+def test_cfp_editor_mixin_auto_field_states_bare_event(use_tracks, track_reason):
+    event = EventFactory(feature_flags={"use_tracks": use_tracks})
 
-    auto_hidden, auto_required = view.auto_field_states
+    auto_hidden, auto_required = _editor(event).auto_field_states
 
-    assert "submission_type" in auto_hidden
+    assert auto_hidden == {
+        "submission_type": "only one option available",
+        "content_locale": "only one language configured",
+        "track": track_reason,
+        "tags": "no public tags exist",
+    }
+    assert auto_required == set()
 
 
-def test_cfp_editor_mixin_auto_field_states_multiple_types(event):
+def test_cfp_editor_mixin_auto_field_states_configured_event():
+    event = EventFactory(
+        feature_flags={"use_tracks": True}, content_locales=["en", "de"]
+    )
     SubmissionTypeFactory(event=event)
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
+    TrackFactory(event=event)
+    TagFactory(event=event, is_public=True)
 
-    auto_hidden, auto_required = view.auto_field_states
+    auto_hidden, auto_required = _editor(event).auto_field_states
 
-    assert "submission_type" in auto_required
-    assert "submission_type" not in auto_hidden
-
-
-def test_cfp_editor_mixin_auto_hidden_tracks_disabled():
-    event = EventFactory(feature_flags={"use_tracks": False})
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
-
-    auto_hidden, _ = view.auto_field_states
-
-    assert "track" in auto_hidden
+    assert auto_hidden == {}
+    assert auto_required == {"submission_type"}
 
 
-def test_cfp_editor_mixin_auto_hidden_no_tracks():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
+def test_cfp_editor_mixin_get_step_context(event):
+    view = _editor(event)
 
-    auto_hidden, _ = view.auto_field_states
-
-    assert "track" in auto_hidden
-
-
-def test_cfp_editor_mixin_auto_hidden_no_public_tags(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
-
-    auto_hidden, _ = view.auto_field_states
-
-    assert "tags" in auto_hidden
-
-
-def test_cfp_editor_mixin_get_step_context_invalid(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
-
-    ctx = view.get_step_context("nonexistent")
-
-    assert ctx["error"] == "Step not found"
+    assert view.get_step_context("nonexistent")["error"] == "Step not found"
+    user_ctx = view.get_step_context(CfPFlow.STEP_USER)
+    assert user_ctx["is_static"] is True
+    assert user_ctx["fields"] == []
+    questions_ctx = view.get_step_context(CfPFlow.STEP_QUESTIONS)
+    assert questions_ctx["is_questions"] is True
+    assert "submission_questions" in questions_ctx
+    assert "speaker_questions" in questions_ctx
+    info_ctx = view.get_step_context("info")
+    assert info_ctx["is_static"] is False
+    assert "available_fields" in info_ctx
+    type_field = next(f for f in info_ctx["fields"] if f["key"] == "submission_type")
+    assert type_field["form_field"] is None
+    assert type_field["default_value"] == event.cfp.default_type
+    profile_ctx = view.get_step_context("profile")
+    assert profile_ctx["is_static"] is False
+    assert "fields" in profile_ctx
 
 
-def test_cfp_editor_mixin_get_step_context_user(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
+def test_cfp_editor_mixin_helpers(event):
+    active_q = QuestionFactory(event=event, target="submission", active=True)
+    inactive_q = QuestionFactory(event=event, target="submission", active=False)
+    view = _editor(event)
 
-    ctx = view.get_step_context(CfPFlow.STEP_USER)
+    class FakeStep:
+        identifier = "custom_plugin_step"
 
-    assert ctx["is_static"] is True
-    assert ctx["fields"] == []
+    step = view.flow.steps_dict["info"]
+    step_config = view.flow.get_step_config("info")
+    step_config["fields"] = [{"key": "nonexistent_field_xyz"}, {"key": "title"}]
 
-
-def test_cfp_editor_mixin_get_step_context_questions(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
-
-    ctx = view.get_step_context(CfPFlow.STEP_QUESTIONS)
-
-    assert ctx["is_questions"] is True
-    assert "submission_questions" in ctx
-    assert "speaker_questions" in ctx
-
-
-def test_cfp_editor_mixin_get_step_context_info(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
-
-    ctx = view.get_step_context("info")
-
-    assert "fields" in ctx
-    assert "available_fields" in ctx
-    assert ctx["is_static"] is False
-
-
-def test_cfp_editor_mixin_get_step_context_info_single_type_preview(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
-
-    ctx = view.get_step_context("info")
-
-    field = next(f for f in ctx["fields"] if f["key"] == "submission_type")
-    assert field["form_field"] is None
-    assert field["default_value"] == event.cfp.default_type
-
-
-def test_cfp_editor_mixin_get_questions_by_target(event):
-    QuestionFactory(event=event, target="submission", active=True)
-    QuestionFactory(event=event, target="submission", active=False)
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
-
-    active = view._get_questions_by_target(QuestionTarget.SUBMISSION, active=True)
-    inactive = view._get_questions_by_target(QuestionTarget.SUBMISSION, active=False)
-
-    assert len(active) == 1
-    assert len(inactive) == 1
+    assert [
+        q["question_id"]
+        for q in view._get_questions_by_target(QuestionTarget.SUBMISSION)
+    ] == [active_q.pk]
+    assert [
+        q["question_id"]
+        for q in view._get_questions_by_target(QuestionTarget.SUBMISSION, active=False)
+    ] == [inactive_q.pk]
+    assert view._get_preview_form(FakeStep()) is None
+    field_keys = [f["key"] for f in view._get_step_fields(step, step_config)]
+    assert "nonexistent_field_xyz" not in field_keys
+    assert "title" in field_keys
 
 
 def test_cfp_flow_editor_get_context_data(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
-
-    ctx = view.get_context_data()
+    ctx = _editor(event).get_context_data()
 
     assert "steps" in ctx
     assert ctx["active_step"] == CfPFlow.STEP_INFO
@@ -627,148 +511,17 @@ def test_cfp_editor_step_get_template_names(event, get_params, expected_template
     assert view.get_template_names() == [expected_template]
 
 
-def test_cfp_editor_field_field_label(event):
+def test_cfp_editor_field_label_and_initial(event):
     user = make_orga_user(event, can_change_event_settings=True)
     request = make_request(event, user=user)
     view = make_view(CfPEditorField, request, step="info", field_key="abstract")
-
-    label = view.field_label
-
-    assert str(label) == "Abstract"
-
-
-def test_cfp_editor_field_build_form_initial(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPEditorField, request, step="info", field_key="abstract")
-
-    initial = view._build_form_initial()
-
-    assert set(initial.keys()) >= {"visibility", "label"}
-
-
-def test_question_view_base_search_url_accepted_role_with_filters(event):
-    question = QuestionFactory(event=event, target="submission")
-    track = TrackFactory(event=event)
-    st = SubmissionTypeFactory(event=event)
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(
-        event,
-        user=user,
-        path=f"?role=accepted&track={track.pk}&submission_type={st.pk}",
+    no_step = make_view(
+        CfPEditorField, request, step="nonexistent", field_key="abstract"
     )
-    request.GET = {
-        "role": "accepted",
-        "track": str(track.pk),
-        "submission_type": str(st.pk),
-    }
-    view = make_view(QuestionView, request, pk=question.pk)
-    view.object = question
 
-    url = view.base_search_url
-
-    assert "state=accepted" in url
-    assert "state=confirmed" in url
-    assert f"track={track.pk}" in url
-    assert f"submission_type={st.pk}" in url
-    assert f"question_{question.id}=" in url
-
-
-def test_question_view_base_search_url_confirmed_role(event):
-    question = QuestionFactory(event=event, target="submission")
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user, path="?role=confirmed")
-    request.GET = {"role": "confirmed"}
-    view = make_view(QuestionView, request, pk=question.pk)
-    view.object = question
-
-    url = view.base_search_url
-
-    assert "state=confirmed" in url
-    assert "state=accepted" not in url
-
-
-def test_cfp_editor_mixin_auto_field_states_multiple_locales():
-    event = EventFactory(content_locales=["en", "de"])
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
-
-    auto_hidden, _ = view.auto_field_states
-
-    assert "content_locale" not in auto_hidden
-
-
-def test_cfp_editor_mixin_auto_field_states_tracks_exist():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    TrackFactory(event=event)
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
-
-    auto_hidden, _ = view.auto_field_states
-
-    assert "track" not in auto_hidden
-
-
-def test_cfp_editor_mixin_auto_field_states_public_tags_exist(event):
-    TagFactory(event=event, is_public=True)
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
-
-    auto_hidden, _ = view.auto_field_states
-
-    assert "tags" not in auto_hidden
-
-
-def test_cfp_editor_mixin_get_step_context_profile(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
-
-    ctx = view.get_step_context("profile")
-
-    assert ctx["is_static"] is False
-    assert "fields" in ctx
-
-
-def test_cfp_editor_field_label_no_step(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPEditorField, request, step="nonexistent", field_key="abstract")
-
-    label = view.field_label
-
-    assert label == "abstract"
-
-
-def test_cfp_editor_mixin_get_preview_form_returns_none_for_plugin_step(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
-
-    class FakeStep:
-        identifier = "custom_plugin_step"
-
-    result = view._get_preview_form(FakeStep())
-
-    assert result is None
-
-
-def test_cfp_editor_mixin_get_step_fields_skips_invalid_key(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(CfPFlowEditor, request)
-
-    step = view.flow.steps_dict["info"]
-    step_config = view.flow.get_step_config("info")
-    step_config["fields"] = [{"key": "nonexistent_field_xyz"}, {"key": "title"}]
-    fields = view._get_step_fields(step, step_config)
-
-    field_keys = [f["key"] for f in fields]
-    assert "nonexistent_field_xyz" not in field_keys
-    assert "title" in field_keys
+    assert str(view.field_label) == "Abstract"
+    assert set(view._build_form_initial()) >= {"visibility", "label"}
+    assert no_step.field_label == "abstract"
 
 
 @pytest.mark.parametrize(

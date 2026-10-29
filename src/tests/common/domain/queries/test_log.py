@@ -27,20 +27,11 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 def test_actions_by_filters_by_actor():
     user = UserFactory()
-    user.log_action("pretalx.user.test_action")
-
-    actions = actions_by(user)
-
-    assert actions.count() == 1
-    assert actions.first().person == user
-
-
-def test_actions_by_excludes_other_actors():
-    user = UserFactory()
     other = UserFactory()
+    log = user.log_action("pretalx.user.test_action")
     other.log_action("pretalx.user.test", person=other)
 
-    assert list(actions_by(user)) == []
+    assert list(actions_by(user)) == [log]
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -73,20 +64,6 @@ def test_actions_by_prefetches_actor_and_object_event(
         assert [action.content_object.event for action in actions] == [
             action.event for action in actions
         ]
-
-
-def test_event_activity_log_filters_by_event():
-    event = EventFactory()
-    other = EventFactory()
-    with scope(event=event):
-        ActivityLogFactory(event=event, action_type="pretalx.event.update")
-    with scope(event=other):
-        ActivityLogFactory(event=other, action_type="pretalx.event.update")
-
-    qs = event_activity_log(event)
-
-    assert qs.count() == 1
-    assert qs.first().event == event
 
 
 def test_event_activity_log_prefetches_submission_content_object(
@@ -165,9 +142,12 @@ def test_event_activity_log_primes_object_links(
             assert activitylog_object_parts(logs[0])[1] == url
 
 
-def test_event_activity_log_prefetch_ignores_uninstalled_model():
+def test_event_activity_log_filters_by_event_and_ignores_uninstalled_model():
     event = EventFactory()
+    other = EventFactory()
     stale_type = ContentType.objects.create(app_label="ghost_plugin", model="ghost")
+    with scope(event=other):
+        ActivityLogFactory(event=other, action_type="pretalx.event.update")
     with scope(event=event):
         sub = SubmissionFactory(event=event)
         good = ActivityLogFactory(

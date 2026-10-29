@@ -14,6 +14,7 @@ from pretalx.common.models.file import CachedFile
 from pretalx.event.models import Event
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.schedule.models import Room, Schedule, TalkSlot
 from pretalx.schedule.models.slot import SlotType
 from pretalx.submission.models import SubmissionStates
@@ -35,204 +36,137 @@ from tests.utils import make_orga_user
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-def test_schedule_view_anonymous_redirects(client, event):
-    response = client.get(event.orga_urls.schedule)
+def _scheduled_submission(event, room, start_offset=0, **kwargs):
+    submission = SubmissionFactory(
+        event=event, state=SubmissionStates.CONFIRMED, **kwargs
+    )
+    start = event.datetime_from + dt.timedelta(hours=start_offset)
+    TalkSlotFactory(
+        submission=submission,
+        schedule=event.wip_schedule,
+        room=room,
+        start=start,
+        end=start + dt.timedelta(hours=1),
+        is_visible=True,
+    )
+    return submission
 
+
+def test_schedule_view_denied_without_access(client, event):
+    response = client.get(event.orga_urls.schedule)
     assert response.status_code == 302
     assert "/login/" in response.url
 
-
-def test_schedule_view_user_without_permission_gets_404(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=False)
     client.force_login(user)
-
     response = client.get(event.orga_urls.schedule)
-
     assert response.status_code == 404
 
 
-def test_schedule_release_creates_new_schedule(client, talk_slot):
-    event = talk_slot.submission.event
+def test_schedule_release_page_and_release(client, event):
     with scopes_disabled():
+        event.feature_flags["attendee_signup"] = True
+        event.feature_flags["use_tracks"] = True
+        event.save()
+        TrackFactory(event=event)
+        sub_type = event.cfp.default_type
+        sub_type.attendee_signup_required = True
+        sub_type.save()
+        template = mail_template_by_role(event, MailTemplateRoles.NEW_SCHEDULE)
+        template.text = "See {profile_page_url} for {speaker_schedule_new}"
+        template.save()
         user = make_orga_user(event, can_change_submissions=True)
+        large_room = RoomFactory(event=event, capacity=300)
+        unlimited_room = RoomFactory(event=event, capacity=None)
+        plain_room = RoomFactory(event=event)
+        too_small = _scheduled_submission(
+            event,
+            large_room,
+            submission_type=sub_type,
+            attendee_signup_capacity=10,
+            track=None,
+        )
+        unlimited = _scheduled_submission(
+            event,
+            unlimited_room,
+            submission_type=sub_type,
+            attendee_signup_capacity=None,
+            track=None,
+        )
+        unnotifiable = _scheduled_submission(event, plain_room, track=None)
+        unnotifiable.speakers.add(
+            SpeakerFactory(event=event, user=None, email=None, name="No Mail")
+        )
+        account_only = _scheduled_submission(event, plain_room, 2, track=None)
+        account_only.speakers.add(
+            SpeakerFactory(
+                event=event, user=None, email="managed@example.com", name="Managed"
+            )
+        )
         schedule_count = Schedule.objects.filter(event=event).count()
     client.force_login(user)
 
-    response = client.post(
-        event.orga_urls.release_schedule, data={"version": "v1.0"}, follow=True
-    )
+    response = client.get(event.orga_urls.release_schedule)
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "Sessions with room to spare" in body
+    assert f"expand_capacity_{too_small.pk}" in body
+    assert "Sessions with unlimited signups" in body
+    assert f'href="{unlimited_room.urls.settings_base}"' in body
+    assert "cannot be notified" in body
+    assert "No Mail" in body
+    assert "only work with a pretalx account" in body
+    assert "profile_page_url" in body
+    assert "Managed" in body
+    assert "4 sessions have <strong>not yet been assigned a track</strong>" in body
+    for submission in (too_small, unlimited, unnotifiable, account_only):
+        assert f'href="{submission.orga_urls.base}"' in body
 
+    response = client.post(
+        event.orga_urls.release_schedule,
+        data={
+            "version": "v1.0",
+            "comment": "release",
+            "notify_speakers": "on",
+            f"expand_capacity_{too_small.pk}": "on",
+        },
+        follow=True,
+    )
     assert response.status_code == 200
     with scopes_disabled():
         assert Schedule.objects.filter(event=event).count() == schedule_count + 1
         assert Schedule.objects.filter(event=event, version="v1.0").exists()
-
-
-def test_schedule_release_rejects_duplicate_version(client, talk_slot):
-    event = talk_slot.submission.event
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    client.post(event.orga_urls.release_schedule, data={"version": "v1.0"})
-
-    with scopes_disabled():
-        initial_count = Schedule.objects.filter(event=event).count()
+        too_small.refresh_from_db(fields=["attendee_signup_capacity"])
+        log_entries = list(
+            too_small.logged_actions().filter(action_type="pretalx.submission.update")
+        )
+    assert too_small.attendee_signup_capacity == 300
+    # One bulk-created log entry per expanded capacity, recording the
+    # change with old/new values and the user who triggered the freeze.
+    assert len(log_entries) == 1
+    entry = log_entries[0]
+    assert entry.person == user
+    assert entry.is_orga_action is True
+    assert entry.data["changes"]["attendee_signup_capacity"] == {"old": 10, "new": 300}
 
     response = client.post(
         event.orga_urls.release_schedule, data={"version": "v1.0"}, follow=True
     )
-
     assert response.status_code == 200
     with scopes_disabled():
-        assert Schedule.objects.filter(event=event).count() == initial_count
+        assert Schedule.objects.filter(event=event).count() == schedule_count + 1
 
 
-@pytest.mark.parametrize(
-    ("room_capacity", "signup_capacity", "heading", "expected"),
-    (
-        (200, 20, "Sessions with room to spare", "expand_capacity_{submission.pk}"),
-        (
-            None,
-            None,
-            "Sessions with unlimited signups",
-            'href="{room.urls.settings_base}"',
-        ),
-    ),
-    ids=("room_too_large", "no_capacity"),
-)
-def test_schedule_release_shows_signup_warnings(
-    client, event, room_capacity, signup_capacity, heading, expected
-):
-    with scopes_disabled():
-        event.feature_flags["attendee_signup"] = True
-        event.save()
-        sub_type = event.cfp.default_type
-        sub_type.attendee_signup_required = True
-        sub_type.save()
-        user = make_orga_user(event, can_change_submissions=True)
-        room = RoomFactory(event=event, capacity=room_capacity)
-        submission = SubmissionFactory(
-            event=event,
-            state=SubmissionStates.CONFIRMED,
-            submission_type=sub_type,
-            attendee_signup_capacity=signup_capacity,
-        )
-        TalkSlotFactory(
-            submission=submission,
-            schedule=event.wip_schedule,
-            room=room,
-            start=event.datetime_from,
-            end=event.datetime_from + dt.timedelta(hours=1),
-            is_visible=True,
-        )
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.release_schedule)
-
-    assert response.status_code == 200
-    body = response.content.decode()
-    assert heading in body
-    assert expected.format(submission=submission, room=room) in body
-
-
-def test_schedule_release_warns_about_unnotifiable_speakers(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
-        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        submission.speakers.add(managed)
-        TalkSlotFactory(
-            submission=submission,
-            schedule=event.wip_schedule,
-            room=RoomFactory(event=event),
-            start=event.datetime_from,
-            end=event.datetime_from + dt.timedelta(hours=1),
-            is_visible=True,
-        )
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.release_schedule)
-
-    assert response.status_code == 200
-    body = response.content.decode()
-    assert "cannot be notified" in body
-    assert "No Mail" in body
-
-
-def test_schedule_release_warns_about_account_only_links(client, event):
+def test_schedule_release_no_warnings_for_reachable_speakers(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         template = mail_template_by_role(event, MailTemplateRoles.NEW_SCHEDULE)
         template.text = "See {profile_page_url} for {speaker_schedule_new}"
         template.save()
-        managed = SpeakerFactory(
-            event=event, user=None, email="managed@example.com", name="Managed"
-        )
-        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        submission.speakers.add(managed)
-        TalkSlotFactory(
-            submission=submission,
-            schedule=event.wip_schedule,
-            room=RoomFactory(event=event),
-            start=event.datetime_from,
-            end=event.datetime_from + dt.timedelta(hours=1),
-            is_visible=True,
-        )
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.release_schedule)
-
-    assert response.status_code == 200
-    body = response.content.decode()
-    assert "only work with a pretalx account" in body
-    assert "profile_page_url" in body
-    assert "Managed" in body
-
-
-def test_schedule_release_no_account_link_warning_without_managed_speakers(
-    client, event
-):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        template = mail_template_by_role(event, MailTemplateRoles.NEW_SCHEDULE)
-        template.text = "See {profile_page_url} for {speaker_schedule_new}"
-        template.save()
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        submission.speakers.add(speaker)
-        TalkSlotFactory(
-            submission=submission,
-            schedule=event.wip_schedule,
-            room=RoomFactory(event=event),
-            start=event.datetime_from,
-            end=event.datetime_from + dt.timedelta(hours=1),
-            is_visible=True,
-        )
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.release_schedule)
-
-    assert response.status_code == 200
-    assert "only work with a pretalx account" not in response.content.decode()
-
-
-def test_schedule_release_no_warning_for_reachable_speakers(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
         room = RoomFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        submission.speakers.add(speaker)
-        TalkSlotFactory(
-            submission=submission,
-            schedule=event.wip_schedule,
-            room=room,
-            start=event.datetime_from,
-            end=event.datetime_from + dt.timedelta(hours=1),
-            is_visible=True,
-        )
+        submission = _scheduled_submission(event, room)
+        submission.speakers.add(SpeakerFactory(event=event))
         TalkSlotFactory(
             submission=None,
             schedule=event.wip_schedule,
@@ -247,81 +181,9 @@ def test_schedule_release_no_warning_for_reachable_speakers(client, event):
     response = client.get(event.orga_urls.release_schedule)
 
     assert response.status_code == 200
-    assert "cannot be notified" not in response.content.decode()
-
-
-def test_schedule_release_lists_sessions_without_track(client, event):
-    with scopes_disabled():
-        event.feature_flags["use_tracks"] = True
-        event.save()
-        TrackFactory(event=event)
-        user = make_orga_user(event, can_change_submissions=True)
-        submissions = SubmissionFactory.create_batch(
-            2, event=event, state=SubmissionStates.CONFIRMED, track=None
-        )
-        for submission in submissions:
-            TalkSlotFactory(submission=submission, schedule=event.wip_schedule)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.release_schedule)
-
-    assert response.status_code == 200
     body = response.content.decode()
-    assert "2 sessions have <strong>not yet been assigned a track</strong>" in body
-    for submission in submissions:
-        assert f'href="{submission.orga_urls.base}"' in body
-
-
-def test_schedule_release_expand_capacity_applied(client, event):
-    with scopes_disabled():
-        event.feature_flags["attendee_signup"] = True
-        event.save()
-        sub_type = event.cfp.default_type
-        sub_type.attendee_signup_required = True
-        sub_type.save()
-        user = make_orga_user(event, can_change_submissions=True)
-        room = RoomFactory(event=event, capacity=300)
-        submission = SubmissionFactory(
-            event=event,
-            state=SubmissionStates.CONFIRMED,
-            submission_type=sub_type,
-            attendee_signup_capacity=10,
-        )
-        TalkSlotFactory(
-            submission=submission,
-            schedule=event.wip_schedule,
-            room=room,
-            start=event.datetime_from,
-            end=event.datetime_from + dt.timedelta(hours=1),
-            is_visible=True,
-        )
-    client.force_login(user)
-
-    response = client.post(
-        event.orga_urls.release_schedule,
-        data={
-            "version": "v1.0",
-            "comment": "release",
-            "notify_speakers": "on",
-            f"expand_capacity_{submission.pk}": "on",
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        log_entries = list(
-            submission.logged_actions().filter(action_type="pretalx.submission.update")
-        )
-    assert submission.attendee_signup_capacity == 300
-    # One bulk-created log entry per expanded capacity, recording the
-    # change with old/new values and the user who triggered the freeze.
-    assert len(log_entries) == 1
-    entry = log_entries[0]
-    assert entry.person == user
-    assert entry.is_orga_action is True
-    assert entry.data["changes"]["attendee_signup_capacity"] == {"old": 10, "new": 300}
+    assert "cannot be notified" not in body
+    assert "only work with a pretalx account" not in body
 
 
 def test_schedule_toggle_flips_visibility(client, event):
@@ -342,35 +204,29 @@ def test_schedule_toggle_flips_visibility(client, event):
     assert updated.feature_flags["show_schedule"] is True
 
 
-def test_schedule_resend_mails_with_released_schedule(client, published_talk_slot):
-    event = published_talk_slot.submission.event
+def test_schedule_resend_mails(client, talk_slot):
+    event = talk_slot.submission.event
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         initial_mail_count = event.queued_mails.count()
+        title = talk_slot.submission.title
+        room_name = str(talk_slot.room.name)
     client.force_login(user)
 
     response = client.post(event.orga_urls.schedule + "resend_mails", follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert event.queued_mails.count() > initial_mail_count
-        mail = event.queued_mails.last()
-        assert published_talk_slot.submission.title in mail.text
-        assert str(published_talk_slot.room.name) in mail.text
-        assert mail.submissions.count() == 1
-
-
-def test_schedule_resend_mails_without_released_schedule(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        initial_mail_count = event.queued_mails.count()
-    client.force_login(user)
-
-    response = client.post(event.orga_urls.schedule + "resend_mails", follow=True)
-
     assert response.status_code == 200
     with scopes_disabled():
         assert event.queued_mails.count() == initial_mail_count
+        freeze_schedule(talk_slot.schedule, "v1", notify_speakers=False)
+
+    response = client.post(event.orga_urls.schedule + "resend_mails", follow=True)
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert event.queued_mails.count() == initial_mail_count + 1
+        mail = event.queued_mails.last()
+        assert title in mail.text
+        assert room_name in mail.text
+        assert mail.submissions.count() == 1
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -396,14 +252,17 @@ def test_talk_list_returns_talks_json(
     assert data["talks"][0]["title"]
 
 
-def test_talk_list_with_version_parameter(client, published_talk_slot):
+def test_talk_list_with_version_and_warnings_parameters(client, published_talk_slot):
     event = published_talk_slot.submission.event
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
 
-    response = client.get(event.orga_urls.talks_api + "?version=v1")
+    response = client.get(event.orga_urls.talks_api + "?warnings=true")
+    assert response.status_code == 200
+    assert response.json()["warnings"] == {}
 
+    response = client.get(event.orga_urls.talks_api + "?version=v1")
     assert response.status_code == 200
     data = response.json()
     assert [talk["title"] for talk in data["talks"]] == [
@@ -411,146 +270,105 @@ def test_talk_list_with_version_parameter(client, published_talk_slot):
     ]
 
 
-def test_talk_list_with_warnings_parameter(client, talk_slot):
-    event = talk_slot.submission.event
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.talks_api + "?warnings=true")
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["warnings"] == {}
-
-
-def test_talk_list_create_break(client, event):
+def test_talk_list_create_slots(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         room = RoomFactory(event=event)
+        hidden = RoomFactory(event=event, hidden=True)
         initial_count = event.wip_schedule.talks.count()
     client.force_login(user)
 
-    response = client.post(
-        event.orga_urls.talks_api,
-        data=json.dumps({"room": room.pk, "duration": 45, "title": "Coffee Break"}),
-        content_type="application/json",
-    )
+    def create(payload):
+        return client.post(
+            event.orga_urls.talks_api,
+            data=json.dumps(payload),
+            content_type="application/json",
+        )
 
-    assert response.status_code == 200
-    data = response.json()
-    assert data["duration"] == 45
+    for room_data in ({"room": hidden.pk}, {"room": 123456}, {}):
+        response = create({"duration": 45, "title": "Coffee Break", **room_data})
+        assert response.status_code == 400, room_data
+        assert response.json()["error"] == "Room unavailable."
     with scopes_disabled():
-        assert event.wip_schedule.talks.count() == initial_count + 1
+        assert event.wip_schedule.talks.count() == initial_count
+
+    response = create({"room": room.pk, "duration": 45, "title": "Coffee Break"})
+    assert response.status_code == 200
+    assert response.json()["duration"] == 45
+    with scopes_disabled():
         slot = (
             event.wip_schedule.talks.select_related("room")
             .filter(submission__isnull=True)
-            .first()
+            .get()
         )
         assert str(slot.description) == "Coffee Break"
         assert slot.room == room
 
-
-def test_talk_list_create_blocker(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        room = RoomFactory(event=event)
-    client.force_login(user)
-
-    response = client.post(
-        event.orga_urls.talks_api,
-        data=json.dumps(
-            {
-                "room": room.pk,
-                "duration": 30,
-                "title": "Blocked",
-                "slot_type": "blocker",
-            }
-        ),
-        content_type="application/json",
+    response = create(
+        {"room": room.pk, "duration": 30, "title": "Blocked", "slot_type": "blocker"}
     )
-
     assert response.status_code == 200
-    data = response.json()
-    assert data["slot_type"] == "blocker"
+    assert response.json()["slot_type"] == "blocker"
 
-
-def test_talk_list_create_rejects_invalid_slot_type(client, event):
+    response = create({"room": room.pk, "slot_type": "invalid_type"})
+    assert response.status_code == 200
+    assert response.json()["slot_type"] == "break"
     with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        room = RoomFactory(event=event)
-    client.force_login(user)
-
-    response = client.post(
-        event.orga_urls.talks_api,
-        data=json.dumps({"room": room.pk, "slot_type": "invalid_type"}),
-        content_type="application/json",
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["slot_type"] == "break"
+        assert event.wip_schedule.talks.count() == initial_count + 3
 
 
-def test_talk_update_patch_moves_slot(client, talk_slot):
+def test_talk_update_patch_and_delete_submission_slot(client, talk_slot):
     event = talk_slot.submission.event
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
+        hidden_room = RoomFactory(event=event, hidden=True)
         room = talk_slot.room
+        title = str(talk_slot.submission.title)
+        duration = talk_slot.submission.get_duration()
+        initial_count = event.wip_schedule.talks.count()
         new_start = event.datetime_from + dt.timedelta(hours=2)
     client.force_login(user)
+    url = f"{event.orga_urls.schedule_api}talks/{talk_slot.pk}/"
 
-    response = client.patch(
-        f"{event.orga_urls.schedule_api}talks/{talk_slot.pk}/",
-        data=json.dumps({"start": new_start.isoformat(), "room": room.pk}),
-        content_type="application/json",
+    def patch(url, payload):
+        return client.patch(
+            url, data=json.dumps(payload), content_type="application/json"
+        )
+
+    response = patch(
+        f"{event.orga_urls.schedule_api}talks/999999/",
+        {"start": "2024-01-01T10:00:00Z"},
     )
+    assert response.status_code == 404
 
-    assert response.status_code == 200
-    data = response.json()
-    assert data["title"] == str(talk_slot.submission.title)
-    with scopes_disabled():
+    for room_pk in (hidden_room.pk, 123456):
+        response = patch(
+            url, {"room": room_pk, "start": event.datetime_from.isoformat()}
+        )
+        assert response.status_code == 400
+        assert response.json()["error"] == "Room unavailable."
         talk_slot.refresh_from_db()
-        assert talk_slot.start == new_start
         assert talk_slot.room_id == room.pk
 
-
-@pytest.mark.parametrize("room_data", ({"room": None}, {}))
-def test_talk_update_patch_without_room_keeps_existing_room(
-    client, talk_slot, room_data
-):
-    event = talk_slot.submission.event
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        original_room = talk_slot.room
-        new_start = event.datetime_from + dt.timedelta(hours=2)
-    client.force_login(user)
-
-    response = client.patch(
-        f"{event.orga_urls.schedule_api}talks/{talk_slot.pk}/",
-        data=json.dumps({"start": new_start.isoformat(), **room_data}),
-        content_type="application/json",
-    )
-
+    response = patch(url, {"start": new_start.isoformat(), "room": room.pk})
     assert response.status_code == 200
+    assert response.json()["title"] == title
     with scopes_disabled():
         talk_slot.refresh_from_db()
         assert talk_slot.start == new_start
-        assert talk_slot.room_id == original_room.pk
+        assert talk_slot.end == new_start + dt.timedelta(minutes=duration)
+        assert talk_slot.room_id == room.pk
 
+    for room_data in ({"room": None}, {}):
+        later_start = new_start + dt.timedelta(hours=1)
+        response = patch(url, {"start": later_start.isoformat(), **room_data})
+        assert response.status_code == 200
+        with scopes_disabled():
+            talk_slot.refresh_from_db()
+            assert talk_slot.start == later_start
+            assert talk_slot.room_id == room.pk
 
-def test_talk_update_patch_resets_slot(client, talk_slot):
-    event = talk_slot.submission.event
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.patch(
-        f"{event.orga_urls.schedule_api}talks/{talk_slot.pk}/",
-        data=json.dumps({}),
-        content_type="application/json",
-    )
-
+    response = patch(url, {})
     assert response.status_code == 200
     with scopes_disabled():
         talk_slot.refresh_from_db()
@@ -558,82 +376,17 @@ def test_talk_update_patch_resets_slot(client, talk_slot):
         assert talk_slot.end is None
         assert talk_slot.room is None
 
-
-def test_talk_update_patch_break_with_duration(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        room = RoomFactory(event=event)
-        slot = TalkSlotFactory(
-            submission=None, schedule=event.wip_schedule, room=room, is_visible=True
-        )
-        new_start = event.datetime_from + dt.timedelta(hours=1)
-    client.force_login(user)
-
-    response = client.patch(
-        f"{event.orga_urls.schedule_api}talks/{slot.pk}/",
-        data=json.dumps(
-            {
-                "start": new_start.isoformat(),
-                "room": room.pk,
-                "duration": 90,
-                "title": "Long Break",
-            }
-        ),
-        content_type="application/json",
-    )
-
+    response = client.delete(url)
     assert response.status_code == 200
+    assert "error" in response.json()
     with scopes_disabled():
-        slot.refresh_from_db()
-        assert slot.duration == 90
-        assert str(slot.description) == "Long Break"
-        assert slot.start == new_start
+        assert event.wip_schedule.talks.count() == initial_count
 
-
-def test_talk_update_patch_break_with_explicit_end(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        room = RoomFactory(event=event)
-        slot = TalkSlotFactory(
-            submission=None, schedule=event.wip_schedule, room=room, is_visible=True
-        )
-        new_start = event.datetime_from + dt.timedelta(hours=1)
-        new_end = new_start + dt.timedelta(minutes=60)
-    client.force_login(user)
-
-    response = client.patch(
-        f"{event.orga_urls.schedule_api}talks/{slot.pk}/",
-        data=json.dumps(
-            {
-                "start": new_start.isoformat(),
-                "end": new_end.isoformat(),
-                "room": room.pk,
-            }
-        ),
-        content_type="application/json",
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        slot.refresh_from_db()
-        assert slot.duration == 60
-
-
-def test_talk_update_patch_nonexistent_slot_returns_404(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.patch(
-        f"{event.orga_urls.schedule_api}talks/999999/",
-        data=json.dumps({"start": "2024-01-01T10:00:00Z"}),
-        content_type="application/json",
-    )
-
+    response = client.delete(f"{event.orga_urls.schedule_api}talks/999999/")
     assert response.status_code == 404
 
 
-def test_talk_update_delete_break_slot(client, event):
+def test_talk_update_patch_and_delete_break_slot(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         room = RoomFactory(event=event)
@@ -641,41 +394,55 @@ def test_talk_update_delete_break_slot(client, event):
             submission=None, schedule=event.wip_schedule, room=room, is_visible=True
         )
         slot_pk = slot.pk
+        new_start = event.datetime_from + dt.timedelta(hours=1)
     client.force_login(user)
+    url = f"{event.orga_urls.schedule_api}talks/{slot.pk}/"
 
-    response = client.delete(f"{event.orga_urls.schedule_api}talks/{slot_pk}/")
+    def patch(payload):
+        return client.patch(
+            url, data=json.dumps(payload), content_type="application/json"
+        )
 
+    response = patch(
+        {
+            "start": new_start.isoformat(),
+            "room": room.pk,
+            "duration": 90,
+            "title": "Long Break",
+        }
+    )
     assert response.status_code == 200
-    data = response.json()
-    assert data["success"] is True
+    with scopes_disabled():
+        slot.refresh_from_db()
+        assert slot.duration == 90
+        assert str(slot.description) == "Long Break"
+        assert slot.start == new_start
+
+    response = patch(
+        {
+            "start": new_start.isoformat(),
+            "end": (new_start + dt.timedelta(minutes=60)).isoformat(),
+            "room": room.pk,
+        }
+    )
+    assert response.status_code == 200
+    with scopes_disabled():
+        slot.refresh_from_db()
+        assert slot.duration == 60
+
+    later_start = new_start + dt.timedelta(hours=2)
+    response = patch({"start": later_start.isoformat(), "room": room.pk})
+    assert response.status_code == 200
+    with scopes_disabled():
+        slot.refresh_from_db()
+        assert slot.start == later_start
+        assert slot.duration == 60
+
+    response = client.delete(url)
+    assert response.status_code == 200
+    assert response.json()["success"] is True
     with scopes_disabled():
         assert not TalkSlot.objects.filter(pk=slot_pk).exists()
-
-
-def test_talk_update_delete_refuses_submission_slot(client, talk_slot):
-    event = talk_slot.submission.event
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        initial_count = event.wip_schedule.talks.count()
-    client.force_login(user)
-
-    response = client.delete(f"{event.orga_urls.schedule_api}talks/{talk_slot.pk}/")
-
-    assert response.status_code == 200
-    data = response.json()
-    assert "error" in data
-    with scopes_disabled():
-        assert event.wip_schedule.talks.count() == initial_count
-
-
-def test_talk_update_delete_nonexistent_slot_returns_404(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.delete(f"{event.orga_urls.schedule_api}talks/999999/")
-
-    assert response.status_code == 404
 
 
 def test_schedule_warnings_reports_room_overlap(client, event):
@@ -684,18 +451,8 @@ def test_schedule_warnings_reports_room_overlap(client, event):
         room = RoomFactory(event=event)
         submissions = []
         for _ in range(2):
-            submission = SubmissionFactory(
-                event=event, state=SubmissionStates.CONFIRMED
-            )
+            submission = _scheduled_submission(event, room)
             submission.speakers.add(SpeakerFactory(event=event))
-            TalkSlotFactory(
-                submission=submission,
-                schedule=event.wip_schedule,
-                room=room,
-                start=event.datetime_from,
-                end=event.datetime_from + dt.timedelta(hours=1),
-                is_visible=True,
-            )
             submissions.append(submission)
     client.force_login(user)
 
@@ -710,55 +467,62 @@ def test_schedule_warnings_reports_room_overlap(client, event):
     )
 
 
-def test_schedule_availabilities_returns_json(client, talk_slot):
-    event = talk_slot.submission.event
+def test_schedule_availabilities(client, event):
+    day_start = event.datetime_from
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
+        visible = RoomFactory(event=event)
+        hidden = RoomFactory(event=event, hidden=True)
+        AvailabilityFactory(event=event, room=visible)
+        AvailabilityFactory(event=event, room=hidden)
 
-    response = client.get(event.orga_urls.schedule_api + "availabilities/")
-
-    assert response.status_code == 200
-    data = response.json()
-    assert "talks" in data
-    assert "rooms" in data
-
-
-def test_schedule_availabilities_includes_room_availabilities(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        room = RoomFactory(event=event)
-        AvailabilityFactory(event=event, room=room)
-        speaker = SpeakerFactory(event=event)
-        sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        sub.speakers.add(speaker)
-        TalkSlotFactory(submission=sub, is_visible=True)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.schedule_api + "availabilities/")
-
-    assert response.status_code == 200
-    data = response.json()
-    assert str(room.pk) in data["rooms"]
-    assert len(data["rooms"][str(room.pk)]) == 1
-
-
-def test_schedule_availabilities_includes_speaker_availabilities(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
         speaker = SpeakerFactory(event=event)
         AvailabilityFactory(event=event, person=speaker)
-        sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        sub.speakers.add(speaker)
-        slot = TalkSlotFactory(submission=sub, is_visible=True)
+        single = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        single.speakers.add(speaker)
+        single_slot = TalkSlotFactory(submission=single, is_visible=True)
+
+        speaker1 = SpeakerFactory(event=event)
+        speaker2 = SpeakerFactory(event=event)
+        AvailabilityFactory(
+            event=event,
+            person=speaker1,
+            start=day_start + dt.timedelta(hours=8),
+            end=day_start + dt.timedelta(hours=16),
+        )
+        AvailabilityFactory(
+            event=event,
+            person=speaker2,
+            start=day_start + dt.timedelta(hours=12),
+            end=day_start + dt.timedelta(hours=20),
+        )
+        shared = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        shared.speakers.add(speaker1, speaker2)
+        shared_slot = TalkSlotFactory(submission=shared, is_visible=True)
+
+        unavailable = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        unavailable.speakers.add(
+            SpeakerFactory(event=event), SpeakerFactory(event=event)
+        )
+        unavailable_slot = TalkSlotFactory(submission=unavailable, is_visible=True)
     client.force_login(user)
 
     response = client.get(event.orga_urls.schedule_api + "availabilities/")
 
     assert response.status_code == 200
     data = response.json()
-    assert str(slot.pk) in data["talks"]
-    assert len(data["talks"][str(slot.pk)]) == 1
+    assert str(visible.pk) in data["rooms"]
+    assert str(hidden.pk) not in data["rooms"]
+    assert len(data["rooms"][str(visible.pk)]) == 1
+    assert len(data["talks"][str(single_slot.pk)]) == 1
+    assert [
+        (
+            dt.datetime.fromisoformat(window["start"]),
+            dt.datetime.fromisoformat(window["end"]),
+        )
+        for window in data["talks"][str(shared_slot.pk)]
+    ] == [(day_start + dt.timedelta(hours=12), day_start + dt.timedelta(hours=16))]
+    assert data["talks"][str(unavailable_slot.pk)] == []
 
 
 def test_quick_schedule_view_post_schedules_talk(client, talk_slot):
@@ -840,23 +604,11 @@ def test_room_list_shows_rooms(client, event, item_count, django_assert_num_quer
     assert response.status_code == 200
     content = response.content.decode()
     assert all(str(room.name) in content for room in rooms)
-
-
-def test_room_list_renders_dragsort_wiring(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        room = RoomFactory(event=event)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.room_settings)
-
-    assert response.status_code == 200
-    content = response.content.decode()
     assert "dragsort-url=" in content
-    assert f'dragsort-id="{room.pk}"' in content
+    assert all(f'dragsort-id="{room.pk}"' in content for room in rooms)
 
 
-def test_room_create(client, event):
+def test_room_create_update_hide_and_delete(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
         availability = AvailabilityFactory(event=event)
@@ -880,42 +632,81 @@ def test_room_create(client, event):
         },
         follow=True,
     )
-
     assert response.status_code == 200
     with scopes_disabled():
-        assert event.rooms.count() == 1
-        room = event.rooms.first()
+        room = event.rooms.get()
         assert str(room.name) == "Workshop Room"
         assert room.availabilities.count() == 1
+        Room.objects.filter(pk=room.pk).update(guid=None)
+        historic = Schedule.objects.create(event=event, version="v0")
+        TalkSlotFactory(submission=None, room=room, schedule=historic)
 
+    response = client.get(room.urls.settings_base)
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "This room is currently hidden" not in content
+    assert room.urls.unhide not in content
 
-def test_room_update(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-        room = RoomFactory(event=event, name="Old Name")
-        AvailabilityFactory(event=event, room=room)
-    client.force_login(user)
-
-    new_guid = str(uuid4())
     response = client.post(
         room.urls.edit,
         data={
-            "name_0": "New Name",
-            "guid": new_guid,
+            "name_0": "Attic",
+            "guid": str(uuid4()),
             "availabilities": json.dumps({"availabilities": []}),
         },
         follow=True,
     )
-
     assert response.status_code == 200
     with scopes_disabled():
-        room.refresh_from_db()
-        assert str(room.name) == "New Name"
+        room.refresh_from_db(fields=["name", "guid"])
+        assert str(room.name) == "Attic"
         assert room.availabilities.count() == 0
         action = room.logged_actions().get(action_type="pretalx.room.update")
         assert action.data["changes"]["guid"]["new"]
         assert not action.data["changes"]["guid"]["old"]
-        assert action.data["changes"]["name"]["new"] == {"en": "New Name"}
+        assert action.data["changes"]["name"]["new"] == {"en": "Attic"}
+
+    response = client.get(room.urls.hide)
+    assert response.status_code == 200
+    assert "Attic" in response.content.decode()
+
+    response = client.post(room.urls.hide, follow=True)
+    assert response.status_code == 200
+    room.refresh_from_db(fields=["hidden"])
+    assert room.hidden is True
+    with scopes_disabled():
+        assert room.logged_actions().filter(action_type="pretalx.room.hide").exists()
+
+    response = client.get(room.urls.settings_base)
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "This room is currently hidden" in content
+    assert room.urls.unhide in content
+
+    response = client.get(room.urls.unhide)
+    assert response.status_code == 200
+    assert "Attic" in response.content.decode()
+
+    response = client.post(room.urls.unhide, follow=True)
+    assert response.status_code == 200
+    room.refresh_from_db(fields=["hidden", "position"])
+    assert room.hidden is False
+    with scopes_disabled():
+        assert room.logged_actions().filter(action_type="pretalx.room.unhide").exists()
+
+    response = client.post(room.urls.delete, follow=True)
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert Room.objects.filter(pk=room.pk).exists()
+        TalkSlot.objects.filter(schedule=historic).delete()
+
+    response = client.get(room.urls.delete)
+    assert response.status_code == 200
+
+    response = client.post(room.urls.delete, follow=True)
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert not Room.objects.filter(pk=room.pk).exists()
 
 
 @pytest.mark.parametrize(
@@ -967,23 +758,7 @@ def test_room_update_capacity_warns_when_below_signup_count(
         assert room.capacity == new_capacity
 
 
-def test_room_delete_unused_room(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-        room = RoomFactory(event=event)
-    client.force_login(user)
-
-    response = client.get(room.urls.delete)
-    assert response.status_code == 200
-
-    response = client.post(room.urls.delete, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert not Room.objects.filter(pk=room.pk).exists()
-
-
-def test_room_delete_used_room_fails(client, talk_slot):
+def test_room_in_use_cannot_be_deleted_or_hidden(client, talk_slot):
     event = talk_slot.submission.event
     room = talk_slot.room
     with scopes_disabled():
@@ -991,44 +766,13 @@ def test_room_delete_used_room_fails(client, talk_slot):
     client.force_login(user)
 
     response = client.post(room.urls.delete, follow=True)
-
     assert response.status_code == 200
     with scopes_disabled():
         assert Room.objects.filter(pk=room.pk).exists()
 
-
-def test_room_hide_confirm_page_and_post(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-        room = RoomFactory(event=event, name="Attic")
-        historic = Schedule.objects.create(event=event, version="v0")
-        TalkSlotFactory(submission=None, room=room, schedule=historic)
-    client.force_login(user)
-
-    confirm = client.get(room.urls.hide)
-    assert confirm.status_code == 200
-    assert "Attic" in confirm.content.decode()
-
     response = client.post(room.urls.hide, follow=True)
-
     assert response.status_code == 200
-    room.refresh_from_db()
-    assert room.hidden is True
-    with scopes_disabled():
-        assert room.logged_actions().filter(action_type="pretalx.room.hide").exists()
-
-
-def test_room_hide_refused_for_scheduled_room(client, talk_slot):
-    event = talk_slot.submission.event
-    room = talk_slot.room
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    response = client.post(room.urls.hide, follow=True)
-
-    assert response.status_code == 200
-    room.refresh_from_db()
+    room.refresh_from_db(fields=["hidden"])
     assert room.hidden is False
     messages = [
         (message.level, str(message.message))
@@ -1038,53 +782,22 @@ def test_room_hide_refused_for_scheduled_room(client, talk_slot):
     assert "neither be deleted nor hidden" in messages[0][1]
 
 
-def test_room_unhide_confirm_page_and_post(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-        room = RoomFactory(event=event, name="Attic", hidden=True, position=2)
-    client.force_login(user)
-
-    confirm = client.get(room.urls.unhide)
-    assert confirm.status_code == 200
-    assert "Attic" in confirm.content.decode()
-
-    response = client.post(room.urls.unhide, follow=True)
-
-    assert response.status_code == 200
-    room.refresh_from_db()
-    assert room.hidden is False
-    assert room.position == 2
-    with scopes_disabled():
-        assert room.logged_actions().filter(action_type="pretalx.room.unhide").exists()
-
-
-@pytest.mark.parametrize("action", ("hide", "unhide"))
-def test_room_visibility_requires_settings_permission(client, event, action):
+def test_room_visibility_requires_settings_permission(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=False)
-        room = RoomFactory(event=event, hidden=(action == "unhide"))
+        visible = RoomFactory(event=event, hidden=False)
+        hidden = RoomFactory(event=event, hidden=True)
     client.force_login(user)
 
-    response = client.post(getattr(room.urls, action))
-
+    response = client.post(visible.urls.hide)
     assert response.status_code == 404
-    room.refresh_from_db()
-    assert room.hidden is (action == "unhide")
+    visible.refresh_from_db(fields=["hidden"])
+    assert visible.hidden is False
 
-
-@pytest.mark.parametrize("hidden", (True, False), ids=["hidden", "visible"])
-def test_room_update_shows_unhide_notice_only_for_hidden_room(client, event, hidden):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-        room = RoomFactory(event=event, hidden=hidden)
-    client.force_login(user)
-
-    response = client.get(room.urls.settings_base)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert ("This room is currently hidden" in content) is hidden
-    assert (room.urls.unhide in content) is hidden
+    response = client.post(hidden.urls.unhide)
+    assert response.status_code == 404
+    hidden.refresh_from_db(fields=["hidden"])
+    assert hidden.hidden is True
 
 
 def test_schedule_view_with_all_rooms_hidden_shows_configure_notice(client, event):
@@ -1101,71 +814,7 @@ def test_schedule_view_with_all_rooms_hidden_shows_configure_notice(client, even
     assert 'id="app"' not in content
 
 
-@pytest.mark.parametrize(
-    "room_data",
-    (lambda room: {"room": room.pk}, lambda room: {"room": 123456}, lambda room: {}),
-    ids=["hidden", "unknown", "no-visible-room"],
-)
-def test_talk_list_create_break_in_unusable_room_rejected(client, event, room_data):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        hidden = RoomFactory(event=event, hidden=True)
-        initial_count = event.wip_schedule.talks.count()
-    client.force_login(user)
-
-    response = client.post(
-        event.orga_urls.talks_api,
-        data=json.dumps({"duration": 45, "title": "Coffee Break", **room_data(hidden)}),
-        content_type="application/json",
-    )
-
-    assert response.status_code == 400
-    assert response.json()["error"] == "Room unavailable."
-    with scopes_disabled():
-        assert event.wip_schedule.talks.count() == initial_count
-
-
-@pytest.mark.parametrize(
-    "room_pk", (lambda room: room.pk, lambda room: 123456), ids=["hidden", "unknown"]
-)
-def test_talk_update_patch_into_unusable_room_rejected(client, talk_slot, room_pk):
-    event = talk_slot.submission.event
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        hidden_room = RoomFactory(event=event, hidden=True)
-        original_room = talk_slot.room
-    client.force_login(user)
-
-    response = client.patch(
-        event.orga_urls.schedule_api + f"talks/{talk_slot.pk}/",
-        data=json.dumps(
-            {"room": room_pk(hidden_room), "start": event.datetime_from.isoformat()}
-        ),
-        content_type="application/json",
-    )
-
-    assert response.status_code == 400
-    assert response.json()["error"] == "Room unavailable."
-    talk_slot.refresh_from_db()
-    assert talk_slot.room_id == original_room.pk
-
-
-def test_schedule_availabilities_excludes_hidden_rooms(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        visible = RoomFactory(event=event)
-        hidden = RoomFactory(event=event, hidden=True)
-        AvailabilityFactory(event=event, room=visible)
-        AvailabilityFactory(event=event, room=hidden)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.schedule_api + "availabilities/")
-
-    assert response.status_code == 200
-    assert set(response.json()["rooms"].keys()) == {str(visible.pk)}
-
-
-def test_schedule_export_csv(client, event):
+def test_schedule_export(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
         speaker = SpeakerFactory(event=event)
@@ -1176,55 +825,48 @@ def test_schedule_export_csv(client, event):
         )
         AnswerFactory(question=question, submission=submission, answer="Vegan")
     client.force_login(user)
+    data = {"title": "on", "speaker_ids": "on", f"question_{question.id}": "on"}
+
+    response = client.post(
+        event.orga_urls.schedule_export,
+        data={"target": "rejected", "title": "on", "export_format": "json"},
+    )
+    assert response.status_code == 302
+    assert response.url == event.orga_urls.schedule_export
+    messages = list(get_messages(response.wsgi_request))
+    assert [message.level for message in messages] == [message_constants.WARNING]
+    assert str(messages[0]) == "No data to be exported"
+
+    response = client.post(
+        event.orga_urls.schedule_export,
+        data={**data, "target": "all", "export_format": "csv"},
+    )
+    assert response.status_code == 200
+    assert "<!doctype" in response.content.decode().strip().lower()
 
     response = client.post(
         event.orga_urls.schedule_export,
         data={
+            **data,
             "target": "all",
-            "title": "on",
-            "speaker_ids": "on",
-            f"question_{question.id}": "on",
             "export_format": "csv",
             "data_delimiter": "comma",
         },
     )
-
     assert response.status_code == 200
     # CSV exports start with a UTF-8 BOM so Excel detects the encoding.
-    content = response.content.decode("utf-8-sig")
-    assert content == (
+    assert response.content.decode("utf-8-sig") == (
         f"ID,Proposal title,Speaker IDs,Dietary needs\r\n"
         f"{submission.code},{submission.title},{speaker.code},Vegan\r\n"
     )
     assert response.content.startswith(b"\xef\xbb\xbf")
 
-
-def test_schedule_export_json(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        submission.speakers.add(speaker)
-        question = QuestionFactory(
-            event=event, question="Dietary needs", target="submission"
-        )
-        AnswerFactory(question=question, submission=submission, answer="Vegan")
-    client.force_login(user)
-
     response = client.post(
         event.orga_urls.schedule_export,
-        data={
-            "target": "all",
-            "title": "on",
-            "speaker_ids": "on",
-            f"question_{question.id}": "on",
-            "export_format": "json",
-        },
+        data={**data, "target": "all", "export_format": "json"},
     )
-
     assert response.status_code == 200
-    data = json.loads(response.content.decode())
-    assert data == [
+    assert json.loads(response.content.decode()) == [
         {
             "ID": submission.code,
             "Proposal title": submission.title,
@@ -1234,75 +876,54 @@ def test_schedule_export_json(client, event):
     ]
 
 
-def test_schedule_export_csv_without_delimiter_returns_form(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    response = client.post(
-        event.orga_urls.schedule_export,
-        data={"target": "rejected", "title": "on", "export_format": "csv"},
-    )
-
-    assert response.status_code == 200
-    assert "<!doctype" in response.content.decode().strip().lower()
-
-
-def test_schedule_export_empty_data_redirects(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    response = client.post(
-        event.orga_urls.schedule_export,
-        data={"target": "rejected", "title": "on", "export_format": "json"},
-    )
-
-    assert response.status_code == 302
-    assert response.url == event.orga_urls.schedule_export
-    messages = list(get_messages(response.wsgi_request))
-    assert [message.level for message in messages] == [message_constants.WARNING]
-    assert str(messages[0]) == "No data to be exported"
-
-
-def test_schedule_export_trigger_without_cached_file(client, event):
+def test_schedule_export_trigger(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
     response = client.post(event.orga_urls.schedule_export_trigger)
-
     assert response.status_code == 302
     assert response.url == event.orga_urls.schedule_export_download
 
-
-def test_schedule_export_trigger_deletes_cached_file(client, event):
     with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
         cached_file = CachedFileFactory()
         event.cache.set("schedule_export_cached_file", str(cached_file.id), None)
-    client.force_login(user)
 
     response = client.post(event.orga_urls.schedule_export_trigger)
-
     assert response.status_code == 302
     with scopes_disabled():
         assert not CachedFile.objects.filter(id=cached_file.id).exists()
         assert event.cache.get("schedule_export_cached_file") is None
 
 
-def test_schedule_export_download_starts_task(client, published_talk_slot):
+def test_schedule_export_download(client, published_talk_slot):
     event = published_talk_slot.submission.event
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
-    response = client.get(event.orga_urls.schedule_export_download, follow=True)
+    response = client.get(
+        event.orga_urls.schedule_export_download, data={"cached_file": "nonexistent"}
+    )
+    assert response.status_code == 302
+    assert response.url == event.orga_urls.schedule_export
+    messages = list(get_messages(response.wsgi_request))
+    assert [message.level for message in messages] == [message_constants.ERROR]
 
+    response = client.get(event.orga_urls.schedule_export_download, follow=True)
     assert response.status_code == 200
     with scopes_disabled():
         filenames = list(CachedFile.objects.values_list("filename", flat=True))
     assert filenames == [f"{event.slug}_schedule.zip"]
+
+    with scopes_disabled():
+        stale_file = CachedFileFactory()
+    fresh_event = Event.objects.get(pk=event.pk)
+    fresh_event.cache.set("schedule_export_cached_file", str(stale_file.id), None)
+    assert fresh_event.cache.get("schedule_export_cached_file") == str(stale_file.id)
+
+    response = client.get(event.orga_urls.schedule_export_download, follow=True)
+    assert response.status_code == 200
 
 
 def test_schedule_export_download_serves_cached_file(client, event):
@@ -1317,118 +938,6 @@ def test_schedule_export_download_serves_cached_file(client, event):
 
     assert response.status_code == 200
     assert response["Content-Type"] == "application/zip"
-
-
-def test_schedule_export_download_clears_stale_cache(client, published_talk_slot):
-    event = published_talk_slot.submission.event
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-        cached_file = CachedFileFactory()
-    client.force_login(user)
-
-    fresh_event = Event.objects.get(pk=event.pk)
-    fresh_event.cache.set("schedule_export_cached_file", str(cached_file.id), None)
-    assert fresh_event.cache.get("schedule_export_cached_file") == str(cached_file.id)
-
-    response = client.get(event.orga_urls.schedule_export_download, follow=True)
-
-    assert response.status_code == 200
-
-
-def test_schedule_export_download_with_unknown_cached_file_param_redirects_to_export(
-    client, published_talk_slot
-):
-    event = published_talk_slot.submission.event
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    response = client.get(
-        event.orga_urls.schedule_export_download, data={"cached_file": "nonexistent"}
-    )
-
-    assert response.status_code == 302
-    assert response.url == event.orga_urls.schedule_export
-    messages = list(get_messages(response.wsgi_request))
-    assert [message.level for message in messages] == [message_constants.ERROR]
-
-
-def test_schedule_availabilities_multi_speaker_intersection(client, event):
-    day_start = event.datetime_from
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        speaker1 = SpeakerFactory(event=event)
-        speaker2 = SpeakerFactory(event=event)
-        AvailabilityFactory(
-            event=event,
-            person=speaker1,
-            start=day_start + dt.timedelta(hours=8),
-            end=day_start + dt.timedelta(hours=16),
-        )
-        AvailabilityFactory(
-            event=event,
-            person=speaker2,
-            start=day_start + dt.timedelta(hours=12),
-            end=day_start + dt.timedelta(hours=20),
-        )
-        sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        sub.speakers.add(speaker1)
-        sub.speakers.add(speaker2)
-        slot = TalkSlotFactory(submission=sub, is_visible=True)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.schedule_api + "availabilities/")
-
-    assert response.status_code == 200
-    data = response.json()
-    assert [
-        (
-            dt.datetime.fromisoformat(window["start"]),
-            dt.datetime.fromisoformat(window["end"]),
-        )
-        for window in data["talks"][str(slot.pk)]
-    ] == [(day_start + dt.timedelta(hours=12), day_start + dt.timedelta(hours=16))]
-
-
-def test_schedule_availabilities_multi_speaker_no_availabilities(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        speaker1 = SpeakerFactory(event=event)
-        speaker2 = SpeakerFactory(event=event)
-        sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        sub.speakers.add(speaker1)
-        sub.speakers.add(speaker2)
-        slot = TalkSlotFactory(submission=sub, is_visible=True)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.schedule_api + "availabilities/")
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["talks"][str(slot.pk)] == []
-
-
-def test_talk_update_patch_talk_with_submission_uses_submission_duration(
-    client, talk_slot
-):
-    event = talk_slot.submission.event
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        new_start = event.datetime_from + dt.timedelta(hours=3)
-    client.force_login(user)
-
-    response = client.patch(
-        f"{event.orga_urls.schedule_api}talks/{talk_slot.pk}/",
-        data=json.dumps({"start": new_start.isoformat(), "room": talk_slot.room.pk}),
-        content_type="application/json",
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        expected_duration = talk_slot.submission.get_duration()
-        talk_slot.refresh_from_db()
-        assert talk_slot.start == new_start
-        assert talk_slot.end == new_start + dt.timedelta(minutes=expected_duration)
 
 
 def test_talk_update_patch_returns_signup_warning(client, event):
@@ -1468,33 +977,3 @@ def test_talk_update_patch_returns_signup_warning(client, event):
     assert response.status_code == 200
     types = [w["type"] for w in response.json()["warnings"]]
     assert "signup_room_too_small" in types
-
-
-def test_talk_update_patch_break_preserves_duration_when_not_provided(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        room = RoomFactory(event=event)
-        start = event.datetime_from
-        end = start + dt.timedelta(minutes=45)
-        slot = TalkSlotFactory(
-            submission=None,
-            schedule=event.wip_schedule,
-            room=room,
-            start=start,
-            end=end,
-            is_visible=True,
-        )
-        new_start = event.datetime_from + dt.timedelta(hours=2)
-    client.force_login(user)
-
-    response = client.patch(
-        f"{event.orga_urls.schedule_api}talks/{slot.pk}/",
-        data=json.dumps({"start": new_start.isoformat(), "room": room.pk}),
-        content_type="application/json",
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        slot.refresh_from_db()
-        assert slot.start == new_start
-        assert slot.duration == 45

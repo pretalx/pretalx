@@ -54,47 +54,39 @@ def submission_set(event, query="", **options):
     return build(submission_filters, query=query, event=event, **options)
 
 
-def test_signup_state_counts_reflect_signups():
+def state_counts(filterset):
+    return {c.value: c.count for c in filterset.filters["state"].choices}
+
+
+def test_signup_state_filter_counts_and_narrows():
     event = EventFactory(feature_flags={"attendee_signup": True})
     submission = SubmissionFactory(event=event)
-    AttendeeSignupFactory(submission=submission)
-    AttendeeSignupFactory(submission=submission)
-    AttendeeSignupFactory(submission=submission, state=AttendeeSignupStates.CANCELED)
+    confirmed = [
+        AttendeeSignupFactory(submission=submission),
+        AttendeeSignupFactory(submission=submission),
+    ]
+    canceled = AttendeeSignupFactory(
+        submission=submission, state=AttendeeSignupStates.CANCELED
+    )
+    signups = submission.attendee_signups.all()
 
-    choices = {
-        c.value: c.count for c in signup_set(submission).filters["state"].choices
+    assert state_counts(signup_set(submission)) == {
+        AttendeeSignupStates.CONFIRMED: 2,
+        AttendeeSignupStates.CANCELED: 1,
     }
-
-    assert choices[AttendeeSignupStates.CONFIRMED] == 2
-    assert choices[AttendeeSignupStates.CANCELED] == 1
-
-
-def test_signup_state_counts_are_zero_without_submission():
-    choices = {c.value: c.count for c in signup_set(None).filters["state"].choices}
-
-    assert choices[AttendeeSignupStates.CONFIRMED] == 0
-
-
-def test_signup_filter_by_state():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    submission = SubmissionFactory(event=event)
-    confirmed = AttendeeSignupFactory(submission=submission)
-    AttendeeSignupFactory(submission=submission, state=AttendeeSignupStates.CANCELED)
-
-    filterset = signup_set(submission, f"state={AttendeeSignupStates.CONFIRMED}")
-
-    assert list(filterset.filter(submission.attendee_signups.all())) == [confirmed]
-
-
-def test_signup_without_state_returns_all():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    submission = SubmissionFactory(event=event)
-    AttendeeSignupFactory(submission=submission)
-    AttendeeSignupFactory(submission=submission)
-
-    filterset = signup_set(submission)
-
-    assert filterset.filter(submission.attendee_signups.all()).count() == 2
+    assert state_counts(signup_set(None)) == {
+        AttendeeSignupStates.CONFIRMED: 0,
+        AttendeeSignupStates.CANCELED: 0,
+    }
+    assert set(signup_set(submission).filter(signups)) == {*confirmed, canceled}
+    assert (
+        list(
+            signup_set(submission, f"state={AttendeeSignupStates.CONFIRMED}").filter(
+                signups
+            )
+        )
+        == confirmed
+    )
 
 
 def test_submission_state_filter_splits_pending():
@@ -143,50 +135,37 @@ def test_submission_track_filter_dropped_when_single_and_required():
 def test_submission_track_filter_scoped_to_reviewer_tracks():
     event = EventFactory()
     mine = TrackFactory(event=event)
-    TrackFactory(event=event)
+    other = TrackFactory(event=event)
 
-    scoped = submission_set(event, limit_tracks=[mine.pk])
-    unscoped = submission_set(event)
+    def track_choices(filterset):
+        return [c.value for c in filterset.filters["track"].choices]
 
-    assert [c.value for c in scoped.filters["track"].choices] == [str(mine.pk)]
-    assert len(unscoped.filters["track"].choices) == 2
-
-
-def test_submission_track_filter_empty_reviewer_limit_means_all_tracks():
-    event = EventFactory()
-    TrackFactory(event=event)
-    TrackFactory(event=event)
-
-    filterset = submission_set(event, limit_tracks=[])
-
-    assert len(filterset.filters["track"].choices) == 2
+    assert track_choices(submission_set(event, limit_tracks=[mine.pk])) == [
+        str(mine.pk)
+    ]
+    assert track_choices(submission_set(event, limit_tracks=[])) == [
+        str(mine.pk),
+        str(other.pk),
+    ]
+    assert track_choices(submission_set(event)) == [str(mine.pk), str(other.pk)]
 
 
-def test_submission_state_choices_scoped_to_usable_states():
+def test_submission_state_choices_and_values_scoped_to_usable_states():
     event = EventFactory()
     SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     SubmissionFactory(event=event, state=SubmissionStates.WITHDRAWN)
+    usable = [SubmissionStates.SUBMITTED, SubmissionStates.ACCEPTED]
 
-    filterset = submission_set(
-        event, usable_states=[SubmissionStates.SUBMITTED, SubmissionStates.ACCEPTED]
-    )
-    choices = {c.value: c.count for c in filterset.filters["state"].choices}
+    filterset = submission_set(event, usable_states=usable)
+    explicit = submission_set(event, "state=withdrawn", usable_states=usable)
 
-    assert SubmissionStates.WITHDRAWN not in choices
-    assert choices[SubmissionStates.SUBMITTED] == 1
-
-
-def test_submission_state_values_outside_usable_states_are_ignored():
-    event = EventFactory()
-    SubmissionFactory(event=event, state=SubmissionStates.WITHDRAWN)
-
-    filterset = submission_set(
-        event,
-        "state=withdrawn",
-        usable_states=[SubmissionStates.SUBMITTED, SubmissionStates.ACCEPTED],
-    )
-
-    assert filterset.values["state"] == []
+    assert state_counts(filterset) == {
+        SubmissionStates.SUBMITTED: 1,
+        SubmissionStates.ACCEPTED: 0,
+        "pending_state__submitted": 0,
+        "pending_state__accepted": 0,
+    }
+    assert explicit.values["state"] == []
 
 
 def test_submission_type_counts_honour_usable_states():
@@ -203,7 +182,7 @@ def test_submission_type_counts_honour_usable_states():
     filterset = submission_set(event, usable_states=[SubmissionStates.SUBMITTED])
     counts = {c.value: c.count for c in filterset.filters["submission_type"].choices}
 
-    assert counts[str(sub_type.pk)] == 1
+    assert counts == {str(event.cfp.default_type.pk): 1, str(sub_type.pk): 1}
 
 
 def test_locale_counts_honour_usable_states():
@@ -221,15 +200,6 @@ def test_locale_counts_honour_usable_states():
     assert counts == {"en": 1, "de": 0}
 
 
-def test_submission_tags_filter_offers_event_tags():
-    event = EventFactory()
-    tag = TagFactory(event=event)
-
-    filterset = submission_set(event)
-
-    assert [c.value for c in filterset.filters["tags"].choices] == [str(tag.pk)]
-
-
 def test_submission_tags_filter_returns_a_multiply_tagged_proposal_once():
     event = EventFactory()
     tags = [TagFactory(event=event), TagFactory(event=event)]
@@ -238,64 +208,48 @@ def test_submission_tags_filter_returns_a_multiply_tagged_proposal_once():
 
     filterset = submission_set(event, f"tags={tags[0].pk}&tags={tags[1].pk}")
 
+    assert [c.value for c in filterset.filters["tags"].choices] == [
+        str(tags[0].pk),
+        str(tags[1].pk),
+    ]
     assert list(filterset.filter(event.submissions.all())) == [submission]
 
 
-def test_question_filters_need_an_event_and_a_user():
-    assert submission_question_filters(FilterContext()) == []
-
-
-def test_featured_filter_narrows_both_ways():
+def test_submission_boolean_filters_narrow_both_ways():
     event = EventFactory()
-    featured = SubmissionFactory(event=event, is_featured=True)
-    plain = SubmissionFactory(event=event, is_featured=False)
+    marked = SubmissionFactory(event=event, is_featured=True, do_not_record=True)
+    plain = SubmissionFactory(event=event, is_featured=False, do_not_record=False)
+    SubmissionInvitationFactory(submission=plain)
+    submissions = event.submissions.all()
 
-    yes = submission_set(event, "is_featured=true")
-    no = submission_set(event, "is_featured=false")
-
-    assert list(yes.filter(event.submissions.all())) == [featured]
-    assert list(no.filter(event.submissions.all())) == [plain]
-
-
-def test_do_not_record_filter():
-    event = EventFactory()
-    private = SubmissionFactory(event=event, do_not_record=True)
-    SubmissionFactory(event=event, do_not_record=False)
-
-    filterset = submission_set(event, "do_not_record=true")
-
-    assert list(filterset.filter(event.submissions.all())) == [private]
+    assert list(submission_set(event, "is_featured=true").filter(submissions)) == [
+        marked
+    ]
+    assert list(submission_set(event, "is_featured=false").filter(submissions)) == [
+        plain
+    ]
+    assert list(submission_set(event, "do_not_record=true").filter(submissions)) == [
+        marked
+    ]
+    assert list(
+        submission_set(event, "has_pending_invitations=true").filter(submissions)
+    ) == [plain]
+    assert list(
+        submission_set(event, "has_pending_invitations=false").filter(submissions)
+    ) == [marked]
 
 
 def test_requires_signup_filter_needs_the_feature_flag():
     plain = EventFactory()
-    with_signup = EventFactory(feature_flags={"attendee_signup": True})
-
-    assert "requires_signup" not in facet_names(submission_set(plain))
-    assert "requires_signup" in facet_names(submission_set(with_signup))
-
-
-def test_requires_signup_filter_covers_inherited_signup():
     event = EventFactory(feature_flags={"attendee_signup": True})
     required = SubmissionFactory(event=event, attendee_signup_required=True)
     SubmissionFactory(event=event, attendee_signup_required=False)
 
     filterset = submission_set(event, "requires_signup=true")
 
+    assert "requires_signup" not in facet_names(submission_set(plain))
+    assert "requires_signup" in facet_names(filterset)
     assert list(filterset.filter(event.submissions.all())) == [required]
-
-
-def test_pending_invitations_filter():
-    event = EventFactory()
-    invited = SubmissionFactory(event=event)
-    SubmissionInvitationFactory(submission=invited)
-    alone = SubmissionFactory(event=event)
-
-    with_invites = submission_set(event, "has_pending_invitations=true")
-    without = submission_set(event, "has_pending_invitations=false")
-
-    assert list(with_invites.filter(event.submissions.all())) == [invited]
-    assert list(without.filter(event.submissions.all())) == [alone]
 
 
 def test_custom_field_filters_are_grouped_under_their_own_heading():
@@ -310,6 +264,7 @@ def test_custom_field_filters_are_grouped_under_their_own_heading():
 
     assert [str(f.section) for f in filters] == ["Custom fields"]
     assert filters[0].question == question
+    assert submission_question_filters(FilterContext()) == []
 
 
 def review_set(event, query="", max_review_count=5):
@@ -326,37 +281,25 @@ def test_review_count_filter_needs_more_than_one_review_in_the_event():
 
 
 @pytest.mark.parametrize(
-    ("query", "expected"),
+    ("query", "expected", "narrows"),
     (
-        ("", None),
-        ("review-count=nonsense", None),
-        ("review-count=1,", (1, None)),
-        ("review-count=,3", (None, 3)),
-        ("review-count=1,3", (1, 3)),
-        ("review-count=x,y", (None, None)),
+        ("", None, False),
+        ("review-count=nonsense", None, False),
+        ("review-count=x,y", (None, None), False),
+        ("review-count=0,", (0, None), False),
+        ("review-count=,5", (None, 5), False),
+        ("review-count=1,", (1, None), True),
+        ("review-count=,3", (None, 3), True),
+        ("review-count=1,3", (1, 3), True),
     ),
 )
-def test_review_count_filter_parses_its_range(query, expected):
+def test_review_count_filter_parses_its_range(query, expected, narrows):
     event = EventFactory()
 
-    assert review_set(event, query).values["review-count"] == expected
+    filterset = review_set(event, query)
 
-
-@pytest.mark.parametrize(
-    ("query", "narrows"),
-    (
-        ("", False),
-        ("review-count=nonsense", False),
-        ("review-count=0,", False),
-        ("review-count=,5", False),
-        ("review-count=2,", True),
-        ("review-count=,4", True),
-    ),
-)
-def test_review_count_filter_only_counts_as_set_when_it_narrows(query, narrows):
-    event = EventFactory()
-
-    assert review_set(event, query).is_set("review-count") is narrows
+    assert filterset.values["review-count"] == expected
+    assert filterset.is_set("review-count") is narrows
 
 
 def test_review_count_filter_narrows_from_both_ends():
@@ -369,52 +312,14 @@ def test_review_count_filter_narrows_from_both_ends():
 
     # The view annotates before filtering; the filter only narrows.
     submissions = annotate_review_count(event.submissions.all())
+    at_least_two = review_set(event, "review-count=2,")
 
-    assert list(review_set(event, "review-count=2,").filter(submissions)) == [busy]
+    assert list(at_least_two.filter(submissions)) == [busy]
+    assert [pill.label for pill in at_least_two.pills] == ["Reviews: 2–5"]
     assert list(review_set(event, "review-count=,1").filter(submissions)) == [quiet]
 
 
-def test_review_count_filter_pill_names_the_range():
-    event = EventFactory()
-
-    pills = review_set(event, "review-count=2,").pills
-
-    assert [pill.label for pill in pills] == ["Reviews: 2–5"]
-
-
 def test_question_filter_offers_options_and_presence():
-    event = EventFactory()
-    question = QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.CHOICES
-    )
-    option = AnswerOptionFactory(question=question, answer="green")
-
-    values = [
-        choice.value
-        for choice in build([QuestionAnswerFilter(question=question)])
-        .filters[f"question_{question.pk}"]
-        .choices
-    ]
-
-    assert values == [str(option.pk), "__answered__", "__unanswered__"]
-
-
-def test_question_filter_with_options_uses_the_multi_select_widget():
-    event = EventFactory()
-    question = QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.CHOICES
-    )
-    option = AnswerOptionFactory(question=question, answer="green")
-    table_filter = QuestionAnswerFilter(question=question)
-
-    markup = table_filter.render_widget([option.pk])
-
-    assert table_filter.selected_values([option.pk]) == [str(option.pk)]
-    assert f'value="{option.pk}" selected' in markup
-    assert 'type="radio"' not in markup
-
-
-def test_question_filter_matches_option_and_absence():
     event = EventFactory()
     question = QuestionFactory(
         event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.CHOICES
@@ -424,32 +329,25 @@ def test_question_filter_matches_option_and_absence():
     answer = AnswerFactory(question=question, submission=answered)
     answer.options.set([option])
     unanswered = SubmissionFactory(event=event)
-
     param = f"question_{question.pk}"
+    table_filter = QuestionAnswerFilter(question=question)
+
+    markup = table_filter.render_widget([option.pk])
     by_option = build([QuestionAnswerFilter(question=question)], f"{param}={option.pk}")
     by_absence = build(
         [QuestionAnswerFilter(question=question)], f"{param}=__unanswered__"
     )
 
+    assert [c.value for c in by_option.filters[param].choices] == [
+        str(option.pk),
+        "__answered__",
+        "__unanswered__",
+    ]
+    assert table_filter.selected_values([option.pk]) == [str(option.pk)]
+    assert f'value="{option.pk}" selected' in markup
+    assert 'type="radio"' not in markup
     assert list(by_option.filter(event.submissions.all())) == [answered]
     assert list(by_absence.filter(event.submissions.all())) == [unanswered]
-
-
-def test_question_filter_accepts_a_free_text_value():
-    event = EventFactory()
-    question = QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.STRING
-    )
-    match = SubmissionFactory(event=event)
-    AnswerFactory(question=question, submission=match, answer="blue")
-    other = SubmissionFactory(event=event)
-    AnswerFactory(question=question, submission=other, answer="red")
-
-    filterset = build(
-        [QuestionAnswerFilter(question=question)], f"question_{question.pk}=blue"
-    )
-
-    assert list(filterset.filter(event.submissions.all())) == [match]
 
 
 def test_question_filter_offers_both_answers_for_a_boolean_field():
@@ -468,74 +366,49 @@ def test_question_filter_offers_both_answers_for_a_boolean_field():
     assert values == ["True", "False", "__answered__", "__unanswered__"]
 
 
-def test_question_filter_matches_any_answer():
+def test_question_filter_matches_free_text_presence_and_absence():
     event = EventFactory()
     question = QuestionFactory(
         event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.STRING
     )
-    answered = SubmissionFactory(event=event)
-    AnswerFactory(question=question, submission=answered, answer="blue")
-    SubmissionFactory(event=event)
+    blue = SubmissionFactory(event=event, title="Blue talk")
+    AnswerFactory(question=question, submission=blue, answer="blue")
+    red = SubmissionFactory(event=event, title="Red talk")
+    AnswerFactory(question=question, submission=red, answer="red")
+    unanswered = SubmissionFactory(event=event)
+    # An answer with no submission: its NULL key must not poison the NOT IN.
+    AnswerFactory(
+        question=question,
+        submission=None,
+        speaker=SpeakerFactory(event=event),
+        answer="x",
+    )
+    param = f"question_{question.pk}"
 
-    filterset = build(
+    def narrow(query):
+        return list(
+            build([QuestionAnswerFilter(question=question)], query)
+            .filter(event.submissions.all())
+            .order_by("title")
+        )
+
+    combined = build(
         [QuestionAnswerFilter(question=question)],
-        f"question_{question.pk}=__answered__",
+        f"{param}=__unanswered__&{param}=blue",
     )
+    free_text = build([QuestionAnswerFilter(question=question)], f"{param}=blue")
 
-    assert list(filterset.filter(event.submissions.all())) == [answered]
-
-
-def test_question_pills_name_the_field_they_belong_to():
-    event = EventFactory()
-    question = QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.STRING
-    )
-
-    filterset = build(
-        [QuestionAnswerFilter(question=question)],
-        f"question_{question.pk}=__unanswered__&question_{question.pk}=blue",
-    )
-    labels = [pill.label for pill in filterset.pills]
-
-    assert labels == [
+    assert narrow(f"{param}=blue") == [blue]
+    assert narrow(f"{param}=__answered__") == [blue, red]
+    assert narrow(f"{param}=__unanswered__") == [unanswered]
+    assert [pill.label for pill in combined.pills] == [
         f"{question.question}: Not answered",
         f"{question.question}: blue",
     ]
-
-
-def test_question_filter_keeps_free_text_out_of_the_segments():
-    event = EventFactory()
-    question = QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.STRING
-    )
-
-    bound = build(
-        [QuestionAnswerFilter(question=question)], f"question_{question.pk}=blue"
-    ).facets[0]
-
     # "Any" stays unselected while a free-text value filters, so the
     # segments never claim a state the pill contradicts.
+    bound = free_text.facets[0]
     assert bound.selected_values(bound.value) == []
-
-
-def test_question_filter_absence_ignores_answers_of_other_target_types():
-    event = EventFactory()
-    question = QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.STRING
-    )
-    answered = SubmissionFactory(event=event)
-    AnswerFactory(question=question, submission=answered, answer="blue")
-    unanswered = SubmissionFactory(event=event)
-    # An answer with no submission: its NULL key must not poison the NOT IN.
-    speaker = SpeakerFactory(event=event)
-    AnswerFactory(question=question, submission=None, speaker=speaker, answer="x")
-
-    filterset = build(
-        [QuestionAnswerFilter(question=question)],
-        f"question_{question.pk}=__unanswered__",
-    )
-
-    assert list(filterset.filter(event.submissions.all())) == [unanswered]
 
 
 def scope_set(event, query=""):
@@ -573,19 +446,11 @@ def test_question_scope_track_and_type_narrow_submissions():
     assert list(filterset.filter(event.submissions.all())) == [match]
 
 
-def test_question_scope_hides_the_track_filter_without_tracks():
+def test_question_scope_without_tracks_or_query():
     event = EventFactory(feature_flags={"use_tracks": False})
-
-    facets = {facet.name for facet in scope_set(event).facets}
-
-    assert "track" not in facets
-    assert "role" in facets
-
-
-def test_question_scope_is_inactive_without_query():
-    event = EventFactory()
     SubmissionFactory(event=event)
     filterset = scope_set(event)
     filterset.filter(event.submissions.all())
 
+    assert facet_names(filterset) == ["role", "submission_type"]
     assert filterset.is_active is False

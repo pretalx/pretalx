@@ -91,7 +91,11 @@ def test_has_good_contrast_invalid_input_returns_true(invalid_color):
     assert has_good_contrast(invalid_color) is True
 
 
-def test_button_custom_values():
+def _compact(html):
+    return " ".join(str(html).split())
+
+
+def test_button_get_context():
     btn = Button(
         label="Go",
         color="primary",
@@ -104,82 +108,62 @@ def test_button_custom_values():
         _id="go-btn",
     )
 
-    assert btn.label == "Go"
-    assert btn.color == "primary"
-    assert btn.size == "sm"
-    assert btn.icon == "arrow-right"
-    assert btn.extra_classes == "ml-2"
-    assert btn.name == "action"
-    assert btn.value == "go"
-    assert btn.type == "button"
-    assert btn.id == "go-btn"
-
-
-def test_button_get_context():
-    btn = Button(label="Go", color="info", name="x", value="y", _id="myid")
-    ctx = btn.get_context()
-
-    assert ctx == {
+    assert btn.get_context() == {
         "label": "Go",
-        "color": "info",
+        "color": "primary",
+        "size": "sm",
+        "icon": "arrow-right",
+        "extra_classes": "ml-2",
+        "name": "action",
+        "value": "go",
+        "type": "button",
+        "id": "go-btn",
+    }
+    assert Button(label="Go").get_context() == {
+        "label": "Go",
+        "color": "success",
         "size": "",
         "icon": None,
         "extra_classes": "",
-        "name": "x",
-        "value": "y",
+        "name": "",
+        "value": "",
         "type": "submit",
-        "id": "myid",
+        "id": None,
     }
 
 
 def test_button_str_renders_html():
     btn = Button(label="Save it", color="primary", icon="check", name="save", value="1")
-    html = str(btn)
 
-    assert "btn-primary" in html
-    assert "btn-lg" not in html
-    assert "Save it" in html
-    assert "fa-check" in html
-    assert 'name="save"' in html
-    assert 'value="1"' in html
-
-
-def test_button_str_without_icon():
-    btn = Button(label="Plain", icon=None)
-    html = str(btn)
-
-    assert "fa-" not in html
-    assert "Plain" in html
+    assert _compact(btn) == (
+        '<button type="submit" class="btn btn-primary" name="save" value="1" >'
+        ' <i class="fa fa-check"></i> Save it </button>'
+    )
+    assert _compact(Button(label="Plain", icon=None)) == (
+        '<button type="submit" class="btn btn-success" name="" value="" > Plain </button>'
+    )
 
 
-def test_link_button_get_context():
-    lb = LinkButton(href="/test", label="Click", color="info", icon="star")
-    ctx = lb.get_context()
+def test_link_button_renders_anchor():
+    lb = LinkButton(href="/go", label="Go", color="info", icon="arrow-right")
 
-    assert ctx == {
-        "label": "Click",
+    assert lb.get_context() == {
+        "label": "Go",
         "color": "info",
         "size": "",
-        "icon": "star",
+        "icon": "arrow-right",
         "extra_classes": "",
-        "href": "/test",
+        "href": "/go",
         "disabled": "",
         "dialog": False,
     }
+    assert _compact(lb) == (
+        '<a class="btn btn-info" role="button" href="/go" >'
+        ' <i class="fa fa-arrow-right"></i> Go </a>'
+    )
 
 
-def test_link_button_str_renders_anchor():
-    lb = LinkButton(href="/go", label="Go", color="info", icon="arrow-right")
-    html = str(lb)
-
-    assert 'href="/go"' in html
-    assert "btn-info" in html
-    assert "Go" in html
-    assert "fa-arrow-right" in html
-    assert "<button" not in html
-
-
-def test_delete_link_defaults():
+def test_delete_link_renders_confirmed_danger_link():
     lb = delete_link("/remove")
 
     assert isinstance(lb, LinkButton)
@@ -187,77 +171,51 @@ def test_delete_link_defaults():
     assert lb.color == "outline-danger"
     assert lb.label == phrases.base.delete_button
     assert lb.dialog is True
+    assert _compact(lb) == (
+        '<a class="btn btn-outline-danger" role="button" href="/remove"'
+        " data-confirm-dialog > Delete </a>"
+    )
+    custom = delete_link("/remove", label="Remove", color="danger")
+    assert (custom.label, custom.color) == ("Remove", "danger")
 
 
-def test_delete_link_custom_label_and_color():
-    lb = delete_link("/remove", label="Remove", color="danger")
-
-    assert lb.label == "Remove"
-    assert lb.color == "danger"
-
-
-def test_delete_link_disabled_renders_explained_non_link():
-    lb = delete_link("/remove", disabled="Cannot delete the last one")
-    html = str(lb)
-
-    assert lb.disabled == "Cannot delete the last one"
-    assert 'aria-disabled="true"' in html
-    assert 'title="Cannot delete the last one"' in html
-    assert " disabled" in html
-    assert 'href="/remove"' not in html
-
-
-def test_delete_link_disabled_reason_is_html_escaped():
+def test_delete_link_disabled_renders_explained_escaped_non_link():
     lb = delete_link("/remove", disabled='<script>"x"')
-    html = str(lb)
 
-    assert "<script>" not in html
-    assert "&lt;script&gt;" in html
-
-
-def test_delete_link_not_disabled_renders_normal_link():
-    lb = delete_link("/remove")
-    html = str(lb)
-
-    assert 'href="/remove"' in html
-    assert 'aria-disabled="true"' not in html
+    assert lb.disabled == '<script>"x"'
+    assert _compact(lb) == (
+        '<a class="btn btn-outline-danger disabled" role="button"'
+        ' aria-disabled="true" title="&lt;script&gt;&quot;x&quot;" > Delete </a>'
+    )
 
 
-def test_delete_button_returns_danger_button():
+def test_button_factories():
     btn = delete_button()
-
     assert isinstance(btn, Button)
     assert btn.color == "outline-danger"
     assert btn.label == phrases.base.delete_button
 
-
-def test_back_button_returns_secondary_link():
     lb = back_button("/previous")
-
     assert isinstance(lb, LinkButton)
     assert lb.href == "/previous"
     assert lb.color == "secondary"
     assert lb.label == phrases.base.back_button
 
-
-def test_send_button_returns_send_button():
     btn = send_button()
-
     assert isinstance(btn, Button)
     assert btn.label == phrases.base.send
 
 
-@pytest.mark.parametrize("seed", list(range(360)))
-def test_generate_contrast_color_clears_both_thresholds(seed):
-    random.seed(seed)
-    color = generate_contrast_color()
-
+def test_generate_contrast_color_clears_both_thresholds():
     light_bg = (1.0, 1.0, 1.0)
     dark_bg = (18 / 255, 20 / 255, 22 / 255)
-    rgb = _hex_to_rgb_unit(color)
 
-    assert _contrast(rgb, light_bg) >= 2.5
-    assert _contrast(rgb, dark_bg) >= 2.5
+    for seed in range(360):
+        random.seed(seed)
+        rgb = _hex_to_rgb_unit(generate_contrast_color())
+
+        assert _contrast(rgb, light_bg) >= 2.5, seed
+        assert _contrast(rgb, dark_bg) >= 2.5, seed
 
 
 def test_generate_contrast_color_avoids_existing_hue():
@@ -274,24 +232,15 @@ def test_generate_contrast_color_avoids_existing_hue():
     assert circular >= 30 / 360
 
 
-def test_generate_contrast_color_ignores_unparseable_existing():
+def test_generate_contrast_color_ignores_unparseable_and_greyscale_existing():
     random.seed(1)
     baseline = generate_contrast_color(existing_colors=[])
     random.seed(1)
-    with_garbage = generate_contrast_color(existing_colors=["not-a-color", "#ggg", ""])
-
-    assert with_garbage == baseline
-
-
-def test_generate_contrast_color_ignores_greyscale_existing():
-    random.seed(2)
-    baseline = generate_contrast_color(existing_colors=[])
-    random.seed(2)
-    with_grey = generate_contrast_color(
-        existing_colors=["#888888", "#000000", "#ffffff"]
+    with_garbage = generate_contrast_color(
+        existing_colors=["not-a-color", "#ggg", "", "#888888", "#000000", "#ffffff"]
     )
 
-    assert with_grey == baseline
+    assert with_garbage == baseline
 
 
 def test_generate_contrast_color_falls_back_when_no_candidate_clears():
@@ -316,8 +265,8 @@ def test_generate_contrast_color_falls_back_when_no_candidate_clears():
 def test_api_buttons_returns_docs_and_api_links(event):
     buttons = api_buttons(event)
 
-    assert len(buttons) == 2
     assert all(isinstance(b, LinkButton) for b in buttons)
-    assert buttons[0].href == "https://docs.pretalx.org/api/"
-    assert buttons[0].color == "secondary"
-    assert buttons[1].href == event.api_urls.base
+    assert [(b.href, b.color) for b in buttons] == [
+        ("https://docs.pretalx.org/api/", "secondary"),
+        (event.api_urls.base, "success"),
+    ]

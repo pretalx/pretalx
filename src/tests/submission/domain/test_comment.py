@@ -4,12 +4,12 @@ import pytest
 
 from pretalx.submission.domain.comment import create_comment
 from pretalx.submission.models import SubmissionComment
-from tests.factories import SubmissionCommentFactory, SubmissionFactory, UserFactory
+from tests.factories import SubmissionFactory, UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_create_comment_persists_fields():
+def test_create_comment_persists_logs_and_threads():
     submission = SubmissionFactory()
     user = UserFactory()
 
@@ -22,31 +22,15 @@ def test_create_comment_persists_fields():
     assert comment.user == user
     assert comment.text == "Hello."
     assert comment.reply_to is None
-
-
-def test_create_comment_with_reply_to():
-    submission = SubmissionFactory()
-    user = UserFactory()
-    parent = SubmissionCommentFactory(submission=submission)
-
-    comment = create_comment(
-        SubmissionComment(
-            submission=submission, user=user, text="Reply", reply_to=parent
-        )
-    )
-
-    assert comment.reply_to == parent
-
-
-def test_create_comment_logs_action():
-    submission = SubmissionFactory()
-    user = UserFactory()
-
-    comment = create_comment(
-        SubmissionComment(submission=submission, user=user, text="Logging test")
-    )
     log_entries = list(comment.logged_actions())
-
     assert len(log_entries) == 1
     assert log_entries[0].action_type == "pretalx.submission.comment.create"
     assert log_entries[0].person == user
+
+    reply = create_comment(
+        SubmissionComment(
+            submission=submission, user=user, text="Reply", reply_to=comment
+        )
+    )
+
+    assert reply.reply_to == comment

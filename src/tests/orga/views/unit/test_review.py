@@ -27,7 +27,7 @@ from tests.factories import (
     TagFactory,
     TrackFactory,
 )
-from tests.utils import make_orga_user, make_request, make_view, query_dict
+from tests.utils import make_orga_user, make_request, make_view, query_dict, refresh
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -42,163 +42,55 @@ def _make_reviewer(event, **extra_kwargs):
     )
 
 
-def test_review_dashboard_filter_range_no_filter(event):
+def _review_view(event, user, submission, get_params=None):
+    request = make_request(event, user=user)
+    request.GET = query_dict(get_params)
+    return make_view(ReviewSubmission, request, code=submission.code)
+
+
+@pytest.mark.parametrize(
+    ("review_count", "expected"),
+    (
+        (None, {"zero", "one", "two"}),
+        ("1,", {"one", "two"}),
+        (",1", {"zero", "one"}),
+        ("1,1", {"one"}),
+        (",2", {"zero", "one", "two"}),
+        ("invalid", {"zero", "one", "two"}),
+        ("0,", {"zero", "one", "two"}),
+    ),
+    ids=("none", "min", "max", "min-and-max", "max-at-ceiling", "invalid", "zero-min"),
+)
+def test_review_dashboard_filter_review_count_range(event, review_count, expected):
     reviewer = _make_reviewer(event)
-    SubmissionFactory(event=event)
+    SubmissionFactory(event=event, title="zero")
+    ReviewFactory(submission=SubmissionFactory(event=event, title="one"), user=reviewer)
+    two = SubmissionFactory(event=event, title="two")
+    ReviewFactory(submission=two)
+    ReviewFactory(submission=two)
     request = make_request(event, user=reviewer)
-    request.GET = query_dict()
+    request.GET = query_dict({"review-count": review_count} if review_count else {})
     view = make_view(ReviewDashboard, request)
 
-    assert len(list(view.get_queryset())) == 1
+    assert {entry.title for entry in view.get_queryset()} == expected
 
 
-def test_review_dashboard_filter_range_with_min(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    ReviewFactory(submission=submission, user=reviewer)
-    request = make_request(event, user=reviewer)
-    request.GET = query_dict({"review-count": "1,"})
-    view = make_view(ReviewDashboard, request)
+def test_review_dashboard_properties_for_orga():
+    event = EventFactory(feature_flags={"use_tracks": True})
+    user = make_orga_user(event, can_change_submissions=True)
+    bare = make_view(ReviewDashboard, make_request(event, user=user))
 
-    assert len(list(view.get_queryset())) == 1
+    assert bare.can_change_submissions is True
+    assert bare.can_see_all_reviews is True
+    assert bare.can_accept_submissions is False
+    assert bare.show_submission_types is False
+    assert bare.show_tracks is False
 
-
-def test_review_dashboard_filter_range_with_max(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     ReviewFactory(submission=submission)
     ReviewFactory(submission=submission)
-    request = make_request(event, user=reviewer)
-    request.GET = query_dict({"review-count": ",1"})
-    view = make_view(ReviewDashboard, request)
-
-    assert len(list(view.get_queryset())) == 0
-
-
-def test_review_dashboard_filter_range_with_min_and_max(event):
-    reviewer = _make_reviewer(event)
-    sub1 = SubmissionFactory(event=event)
-    ReviewFactory(submission=sub1)
-    sub2 = SubmissionFactory(event=event)
-    ReviewFactory(submission=sub2)
-    ReviewFactory(submission=sub2)
-    ReviewFactory(submission=sub2)
-    request = make_request(event, user=reviewer)
-    request.GET = query_dict({"review-count": "1,2"})
-    view = make_view(ReviewDashboard, request)
-
-    result = list(view.get_queryset())
-    assert len(result) == 1
-    assert result[0].pk == sub1.pk
-
-
-def test_review_dashboard_filter_range_max_at_ceiling(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    ReviewFactory(submission=submission)
-    ReviewFactory(submission=submission)
-    request = make_request(event, user=reviewer)
-    request.GET = query_dict({"review-count": ",2"})
-    view = make_view(ReviewDashboard, request)
-
-    # The ceiling is the highest count there is, so it narrows nothing.
-    assert len(list(view.get_queryset())) == 1
-
-
-def test_review_dashboard_filter_range_invalid(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    request = make_request(event, user=reviewer)
-    request.GET = query_dict({"review-count": "invalid"})
-    view = make_view(ReviewDashboard, request)
-
-    # A nonsense range narrows nothing instead of erroring or hiding rows.
-    assert [entry.pk for entry in view.get_queryset()] == [submission.pk]
-
-
-def test_review_dashboard_can_change_submissions_orga(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(ReviewDashboard, request)
-
-    assert view.can_change_submissions is True
-
-
-def test_review_dashboard_can_change_submissions_reviewer(event):
-    reviewer = _make_reviewer(event)
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewDashboard, request)
-
-    assert view.can_change_submissions is False
-
-
-def test_review_dashboard_can_accept_submissions_with_submitted(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    request = make_request(event, user=user)
-    view = make_view(ReviewDashboard, request)
-
-    assert view.can_accept_submissions is True
-
-
-def test_review_dashboard_can_accept_submissions_without_submitted(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(ReviewDashboard, request)
-
-    assert view.can_accept_submissions is False
-
-
-def test_review_dashboard_can_see_all_reviews_orga(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(ReviewDashboard, request)
-
-    assert view.can_see_all_reviews is True
-
-
-def test_review_dashboard_max_review_count(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-    ReviewFactory(submission=submission)
-    ReviewFactory(submission=submission)
-    request = make_request(event, user=user)
-    view = make_view(ReviewDashboard, request)
-
-    assert view.max_review_count == 2
-
-
-def test_review_dashboard_submissions_reviewed(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    ReviewFactory(submission=submission, user=reviewer)
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewDashboard, request)
-
-    reviewed = list(view.submissions_reviewed)
-
-    assert reviewed == [submission.pk]
-
-
-def test_review_dashboard_show_submission_types_single(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(ReviewDashboard, request)
-
-    assert view.show_submission_types is False
-
-
-def test_review_dashboard_show_submission_types_multiple(event):
-    user = make_orga_user(event, can_change_submissions=True)
     SubmissionTypeFactory(event=event)
-    request = make_request(event, user=user)
-    view = make_view(ReviewDashboard, request)
-
-    assert view.show_submission_types is True
-
-
-def test_review_dashboard_short_questions_orga(event):
-    user = make_orga_user(event, can_change_submissions=True)
+    TrackFactory(event=event)
     visible_q = QuestionFactory(
         event=event,
         target=QuestionTarget.SUBMISSION,
@@ -211,16 +103,24 @@ def test_review_dashboard_short_questions_orga(event):
         variant=QuestionVariant.STRING,
         is_visible_to_reviewers=False,
     )
-    request = make_request(event, user=user)
-    view = make_view(ReviewDashboard, request)
+    independent = ReviewScoreCategoryFactory(
+        event=event, is_independent=True, active=True
+    )
+    ReviewScoreCategoryFactory(event=event, is_independent=False, active=True)
+    view = make_view(ReviewDashboard, make_request(refresh(event), user=user))
 
-    result = list(view.short_questions)
+    assert view.can_accept_submissions is True
+    assert view.max_review_count == 2
+    assert view.show_submission_types is True
+    assert view.show_tracks is True
+    assert set(view.short_questions) == {visible_q, hidden_q}
+    assert list(view.independent_categories) == [independent]
 
-    assert set(result) == {visible_q, hidden_q}
 
-
-def test_review_dashboard_short_questions_reviewer(event):
+def test_review_dashboard_properties_for_reviewer(event):
     reviewer = _make_reviewer(event)
+    submission = SubmissionFactory(event=event)
+    ReviewFactory(submission=submission, user=reviewer)
     visible_q = QuestionFactory(
         event=event,
         target=QuestionTarget.SUBMISSION,
@@ -233,54 +133,12 @@ def test_review_dashboard_short_questions_reviewer(event):
         variant=QuestionVariant.STRING,
         is_visible_to_reviewers=False,
     )
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewDashboard, request)
+    view = make_view(ReviewDashboard, make_request(event, user=reviewer))
 
-    result = list(view.short_questions)
-
-    assert result == [visible_q]
-
-
-def test_review_dashboard_independent_categories(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    independent = ReviewScoreCategoryFactory(
-        event=event, is_independent=True, active=True
-    )
-    ReviewScoreCategoryFactory(event=event, is_independent=False, active=True)
-    request = make_request(event, user=user)
-    view = make_view(ReviewDashboard, request)
-
-    result = list(view.independent_categories)
-
-    assert result == [independent]
-
-
-def test_review_dashboard_show_tracks_when_tracks_exist():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    user = make_orga_user(event, can_change_submissions=True)
-    TrackFactory(event=event)
-    request = make_request(event, user=user)
-    view = make_view(ReviewDashboard, request)
-
-    assert view.show_tracks is True
-
-
-def test_review_dashboard_show_tracks_without(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(ReviewDashboard, request)
-
-    assert view.show_tracks is False
-
-
-def test_review_dashboard_reviews_open(event):
-    reviewer = _make_reviewer(event)
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewDashboard, request)
-
-    result = view.reviews_open
-
-    assert result is True
+    assert view.can_change_submissions is False
+    assert view.reviews_open is True
+    assert list(view.submissions_reviewed) == [submission.pk]
+    assert list(view.short_questions) == [visible_q]
 
 
 @pytest.mark.parametrize(
@@ -296,194 +154,95 @@ def test_review_dashboard_get_pending(event, post_data, expected):
     assert result is expected
 
 
-def test_review_view_mixin_submission(event):
+def test_review_dashboard_get_table_kwargs_shows_filtered_columns():
+    event = EventFactory(feature_flags={"use_tracks": True})
+    user = make_orga_user(event, can_change_submissions=True)
+    TrackFactory(event=event)
+    TrackFactory(event=event)
+    SubmissionTypeFactory(event=event)
+    tag = TagFactory(event=event)
+    request = make_request(event, user=user)
+    request.GET = query_dict({"tags": str(tag.pk)})
+    view = make_view(ReviewDashboard, request)
+    view.object_list = []
+    list(view.get_queryset())
+
+    kwargs = view.get_table_kwargs()
+
+    assert "track" not in kwargs["exclude"]
+    assert "submission_type" not in kwargs["exclude"]
+    assert "tags" not in kwargs["exclude"]
+
+
+def test_review_submission_as_reviewer_with_own_review(event):
     reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
-
-    result = view.submission
-
-    assert result == submission
-
-
-def test_review_view_mixin_context_without_comment_feature(event):
-    event.feature_flags["use_submission_comments"] = False
-    event.save()
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    SubmissionCommentFactory(submission=submission)
-    review = ReviewFactory(submission=submission, user=reviewer)
-    request = make_request(event, user=reviewer)
-    view = make_view(
-        ReviewSubmissionDelete, request, code=submission.code, pk=review.pk
-    )
-
-    ctx = view.get_context_data()
-
-    assert ctx["submission_comment_count"] is None
-    assert ctx["has_submission_feedback"] is False
-
-
-def test_review_view_mixin_object_returns_own_review(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    review = ReviewFactory(submission=submission, user=reviewer)
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
-
-    result = view.object
-
-    assert result == review
-
-
-def test_review_view_mixin_object_returns_none_without_review(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
-
-    result = view.object
-
-    assert result is None
-
-
-def test_review_view_mixin_read_only_for_speaker(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    profile = SpeakerFactory(user=reviewer, event=event)
-    submission.speakers.add(profile)
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
-
-    assert view.read_only is True
-
-
-def test_review_submission_is_speaker_true(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    profile = SpeakerFactory(user=reviewer, event=event)
-    submission.speakers.add(profile)
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
-
-    assert view.is_speaker is True
-
-
-def test_review_submission_is_speaker_false(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
-
-    assert view.is_speaker is False
-
-
-def test_review_submission_review_display_with_review(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    ReviewFactory(submission=submission, user=reviewer, text="Nice talk")
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
-
-    result = view.review_display
-
-    assert result is not None
-    assert result["text"] == "Nice talk"
-    assert result["user"] == reviewer
-
-
-def test_review_submission_review_display_none_for_speaker(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    profile = SpeakerFactory(user=reviewer, event=event)
-    submission.speakers.add(profile)
-    ReviewFactory(submission=submission, user=reviewer)
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
-
-    result = view.review_display
-
-    assert result is None
-
-
-def test_review_submission_speakers_excludes_current_submission(event):
-    reviewer = _make_reviewer(event)
+    other_reviewer = _make_reviewer(event)
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event)
     submission.speakers.add(speaker)
     other = SubmissionFactory(event=event)
     other.speakers.add(speaker)
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
+    review = ReviewFactory(submission=submission, user=reviewer, text="Nice talk")
+    ReviewFactory(submission=submission, user=other_reviewer, text="Other review")
+    view = _review_view(event, reviewer, submission)
 
+    assert view.submission == submission
+    assert view.object == review
+    assert view.is_speaker is False
+    assert view.read_only is False
+    assert view.review_display["text"] == "Nice talk"
+    assert view.review_display["user"] == reviewer
+    assert [r["text"] for r in view.reviews] == ["Other review"]
     assert view.speakers == [{"speaker": speaker, "other_submissions": [other]}]
+    assert view.has_anonymised_review is False
+    assert view.tags_form is None
 
 
-def test_review_submission_has_anonymised_review(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    ReviewPhaseFactory(event=event, can_see_speaker_names=False)
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
-
-    assert view.has_anonymised_review is True
-
-
-def test_review_submission_has_anonymised_review_false(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
-
-    result = view.has_anonymised_review
-
-    assert result is False
-
-
-def test_review_submission_reviews_as_speaker_returns_empty(event):
+def test_review_submission_as_speaker_is_read_only(event):
     reviewer = _make_reviewer(event)
     submission = SubmissionFactory(event=event)
     profile = SpeakerFactory(user=reviewer, event=event)
     submission.speakers.add(profile)
-    ReviewFactory(submission=submission)
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
-
-    result = view.reviews
-
-    assert result == []
-
-
-def test_review_submission_reviews_as_reviewer(event):
-    reviewer = _make_reviewer(event)
-    other_reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
     ReviewFactory(submission=submission, user=reviewer)
-    ReviewFactory(submission=submission, user=other_reviewer, text="Other review")
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
+    ReviewFactory(submission=submission)
+    view = _review_view(event, reviewer, submission)
 
-    result = view.reviews
+    assert view.is_speaker is True
+    assert view.read_only is True
+    assert view.review_display is None
+    assert view.reviews == []
 
-    assert len(result) == 1
-    assert result[0]["text"] == "Other review"
+
+def test_review_submission_without_review_in_anonymised_phase(event):
+    reviewer = _make_reviewer(event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(SpeakerFactory(event=event))
+    ReviewPhaseFactory(event=event, can_see_speaker_names=False)
+    view = _review_view(event, reviewer, submission)
+
+    assert view.object is None
+    assert view.has_anonymised_review is True
+
+
+@pytest.mark.parametrize(
+    ("can_change_submissions", "can_tag_submissions", "expected"),
+    ((False, "never", False), (False, "use_tags", True), (True, "never", True)),
+    ids=("reviewer-disabled", "reviewer-enabled", "orga-permission"),
+)
+def test_review_submission_tags_form(
+    event, can_change_submissions, can_tag_submissions, expected
+):
+    user = make_orga_user(
+        event, is_reviewer=True, can_change_submissions=can_change_submissions
+    )
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(SpeakerFactory(event=event))
+    TagFactory(event=event)
+    event.active_review_phase.can_tag_submissions = can_tag_submissions
+    event.active_review_phase.save()
+    view = _review_view(event, user, submission)
+
+    assert (view.tags_form is not None) is expected
 
 
 def test_review_submission_get_success_url_save(event):
@@ -543,98 +302,42 @@ def test_review_submission_get_success_url_skip_for_now_resets_ignored(event):
     assert url == other.orga_urls.reviews
 
 
-def test_review_submission_tags_form_no_tags(event):
+def test_review_submission_delete_object_and_action_object_name(event):
     reviewer = _make_reviewer(event)
+    other_reviewer = _make_reviewer(event)
     submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
+    submission.speakers.add(SpeakerFactory(event=event))
+    own = ReviewFactory(submission=submission, user=reviewer)
+    other = ReviewFactory(submission=submission, user=other_reviewer)
     request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
+    own_view = make_view(
+        ReviewSubmissionDelete, request, code=submission.code, pk=own.pk
+    )
+    other_view = make_view(
+        ReviewSubmissionDelete, request, code=submission.code, pk=other.pk
+    )
 
-    result = view.tags_form
+    assert own_view.get_object() == own
+    assert "Your review" in str(own_view.action_object_name())
+    assert other_reviewer.get_display_name() in str(other_view.action_object_name())
 
-    assert result is None
 
-
-def test_review_submission_tags_form_tagging_disabled(event):
+def test_review_view_mixin_context_without_comment_feature(event):
+    event.feature_flags["use_submission_comments"] = False
+    event.save()
     reviewer = _make_reviewer(event)
     submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    TagFactory(event=event)
-    event.active_review_phase.can_tag_submissions = "never"
-    event.active_review_phase.save()
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
-
-    result = view.tags_form
-
-    assert result is None
-
-
-def test_review_submission_tags_form_tagging_enabled(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    TagFactory(event=event)
-    event.active_review_phase.can_tag_submissions = "use_tags"
-    event.active_review_phase.save()
-    request = make_request(event, user=reviewer)
-    view = make_view(ReviewSubmission, request, code=submission.code)
-
-    result = view.tags_form
-
-    assert result is not None
-
-
-def test_review_submission_tags_form_orga_permission(event):
-    user = make_orga_user(event, can_change_submissions=True, is_reviewer=True)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    TagFactory(event=event)
-    event.active_review_phase.can_tag_submissions = "never"
-    event.active_review_phase.save()
-    request = make_request(event, user=user)
-    view = make_view(ReviewSubmission, request, code=submission.code)
-
-    result = view.tags_form
-
-    assert result is not None
-
-
-def test_review_submission_delete_action_object_name_own(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
+    SubmissionCommentFactory(submission=submission)
     review = ReviewFactory(submission=submission, user=reviewer)
     request = make_request(event, user=reviewer)
     view = make_view(
         ReviewSubmissionDelete, request, code=submission.code, pk=review.pk
     )
 
-    result = view.action_object_name()
+    ctx = view.get_context_data()
 
-    assert "Your review" in str(result)
-
-
-def test_review_submission_delete_action_object_name_other(event):
-    reviewer = _make_reviewer(event)
-    other_reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    review = ReviewFactory(submission=submission, user=other_reviewer)
-    request = make_request(event, user=reviewer)
-    view = make_view(
-        ReviewSubmissionDelete, request, code=submission.code, pk=review.pk
-    )
-
-    result = view.action_object_name()
-
-    assert other_reviewer.get_display_name() in str(result)
+    assert ctx["submission_comment_count"] is None
+    assert ctx["has_submission_feedback"] is False
 
 
 def test_regenerate_decision_mails_count(event):
@@ -671,19 +374,7 @@ def test_review_assignment_form_type(event, get_params, expected):
     assert view.direction() == expected
 
 
-def test_review_assignment_review_teams(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    _make_reviewer(event)
-    request = make_request(event, user=user)
-    view = make_view(ReviewAssignment, request)
-
-    teams = list(view.review_teams)
-
-    assert len(teams) == 1
-    assert teams[0].is_reviewer is True
-
-
-def test_review_assignment_review_mapping(event):
+def test_review_assignment_review_teams_and_mapping(event):
     user = make_orga_user(event, can_change_submissions=True)
     reviewer = _make_reviewer(event)
     submission = SubmissionFactory(event=event)
@@ -695,91 +386,44 @@ def test_review_assignment_review_mapping(event):
 
     mapping = view.review_mapping
 
-    assert "reviewer_to_submissions" in mapping
-    assert "submission_to_reviewers" in mapping
-    assert "reviewer_to_assigned_submissions" in mapping
-    assert "submission_to_assigned_reviewers" in mapping
-    assert reviewer.pk in mapping["reviewer_to_submissions"]
-    assert submission.pk in mapping["submission_to_assigned_reviewers"]
+    assert [team.is_reviewer for team in view.review_teams] == [True]
+    assert mapping["reviewer_to_submissions"] == {reviewer.pk: [submission.pk]}
+    assert mapping["submission_to_reviewers"] == {submission.pk: [reviewer.pk]}
+    assert mapping["reviewer_to_assigned_submissions"] == {reviewer.pk: [submission.pk]}
+    assert mapping["submission_to_assigned_reviewers"] == {submission.pk: [reviewer.pk]}
 
 
-def test_bulk_review_submissions(event):
+def test_bulk_review_submissions_and_categories(event):
     reviewer = _make_reviewer(event)
     submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
+    submission.speakers.add(SpeakerFactory(event=event))
     request = make_request(event, user=reviewer)
     request.GET = query_dict()
     view = make_view(BulkReview, request)
+    filtered_request = make_request(event, user=reviewer)
+    filtered_request.GET = query_dict({"filter-state": "INVALID_STATE"})
 
-    subs = list(view.submissions)
-
-    assert len(subs) == 1
-
-
-def test_bulk_review_submissions_with_invalid_filter(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    request = make_request(event, user=reviewer)
-    request.GET = query_dict({"filter-state": "INVALID_STATE"})
-    view = make_view(BulkReview, request)
-
-    subs = list(view.submissions)
-
-    assert len(subs) == 1
-    assert subs[0] == submission
-
-
-def test_bulk_review_show_tracks(event):
-    reviewer = _make_reviewer(event)
-    request = make_request(event, user=reviewer)
-    view = make_view(BulkReview, request)
-
+    assert list(view.submissions) == [submission]
+    assert list(make_view(BulkReview, filtered_request).submissions) == [submission]
     assert view.show_tracks is False
+    assert list(view.categories) == [event.score_categories.get()]
 
 
-def test_bulk_review_categories(event):
-    reviewer = _make_reviewer(event)
-    request = make_request(event, user=reviewer)
-    view = make_view(BulkReview, request)
-
-    cats = list(view.categories)
-
-    assert len(cats) == 1
-
-
-def test_bulk_review_categories_by_track():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    reviewer = _make_reviewer(event)
-    track = TrackFactory(event=event)
-    category = event.score_categories.first()
-    category.limit_tracks.add(track)
-    request = make_request(event, user=reviewer)
-    request.GET = query_dict()
-    view = make_view(BulkReview, request)
-
-    result = view._categories_by_track
-
-    assert track.pk in result
-    assert None in result
-
-
-def test_bulk_review_categories_for_submission():
+def test_bulk_review_track_limited_categories():
     event = EventFactory(feature_flags={"use_tracks": True})
     reviewer = _make_reviewer(event)
     track = TrackFactory(event=event)
     category = event.score_categories.first()
     category.limit_tracks.add(track)
     submission = SubmissionFactory(event=event, track=track)
+    submission.speakers.add(SpeakerFactory(event=event))
     request = make_request(event, user=reviewer)
     request.GET = query_dict()
     view = make_view(BulkReview, request)
 
-    cats = view._categories_for_submission(submission)
-
-    assert len(cats) == 2
+    assert set(view._categories_by_track) == {track.pk, None}
+    assert len(view._categories_for_submission(submission)) == 2
+    assert submission.code in view.forms
 
 
 def test_bulk_tagging_submissions(event):
@@ -792,79 +436,3 @@ def test_bulk_tagging_submissions(event):
     subs = list(view.submissions)
 
     assert submission in subs
-
-
-def test_review_dashboard_filter_range_with_zero_min(event):
-    reviewer = _make_reviewer(event)
-    SubmissionFactory(event=event)
-    request = make_request(event, user=reviewer)
-    request.GET = query_dict({"review-count": "0,"})
-    view = make_view(ReviewDashboard, request)
-
-    assert len(list(view.get_queryset())) == 1
-
-
-def test_review_dashboard_get_table_kwargs_tracks_shown():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    user = make_orga_user(event, can_change_submissions=True)
-    TrackFactory(event=event)
-    TrackFactory(event=event)
-    SubmissionTypeFactory(event=event)
-    request = make_request(event, user=user)
-    request.GET = query_dict()
-    view = make_view(ReviewDashboard, request)
-    view.object_list = []
-
-    kwargs = view.get_table_kwargs()
-
-    assert "track" not in kwargs["exclude"]
-    assert "submission_type" not in kwargs["exclude"]
-
-
-def test_review_dashboard_get_table_kwargs_tags_filter_set():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    user = make_orga_user(event, can_change_submissions=True)
-    tag = TagFactory(event=event)
-    request = make_request(event, user=user)
-    request.GET = query_dict({"tags": str(tag.pk)})
-    view = make_view(ReviewDashboard, request)
-    view.object_list = []
-    list(view.get_queryset())
-
-    kwargs = view.get_table_kwargs()
-
-    assert "tags" not in kwargs["exclude"]
-
-
-def test_review_submission_delete_get_object(event):
-    reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    review = ReviewFactory(submission=submission, user=reviewer)
-    request = make_request(event, user=reviewer)
-    view = make_view(
-        ReviewSubmissionDelete, request, code=submission.code, pk=review.pk
-    )
-
-    result = view.get_object()
-
-    assert result == review
-
-
-def test_bulk_review_forms_with_track_limited_categories():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    reviewer = _make_reviewer(event)
-    track = TrackFactory(event=event)
-    category = event.score_categories.first()
-    category.limit_tracks.add(track)
-    submission = SubmissionFactory(event=event, track=track)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    request = make_request(event, user=reviewer)
-    request.GET = query_dict()
-    view = make_view(BulkReview, request)
-
-    forms = view.forms
-
-    assert submission.code in forms

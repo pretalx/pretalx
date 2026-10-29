@@ -17,6 +17,10 @@ def _avail(start_hour, end_hour, day=1, month=1, year=2017, **kwargs):
     )
 
 
+def _hours(availabilities):
+    return [(avail.start.hour, avail.end.hour) for avail in availabilities]
+
+
 def test_availability_hash_depends_on_fields():
     avail1 = _avail(5, 9)
     avail2 = _avail(5, 9)
@@ -50,12 +54,13 @@ def test_availability_all_day(start, end, expected):
 
 
 @pytest.mark.parametrize(
-    ("avail_id", "start", "end", "expected"),
+    ("avail_id", "start", "end", "full", "expected"),
     (
         (
             42,
             dt.datetime(2017, 1, 1, 9),
             dt.datetime(2017, 1, 1, 17),
+            True,
             {
                 "id": 42,
                 "start": "2017-01-01T09:00:00",
@@ -67,6 +72,7 @@ def test_availability_all_day(start, end, expected):
             1,
             dt.datetime(2017, 1, 1, 0, 0),
             dt.datetime(2017, 1, 2, 0, 0),
+            True,
             {
                 "id": 1,
                 "start": "2017-01-01T00:00:00",
@@ -74,32 +80,40 @@ def test_availability_all_day(start, end, expected):
                 "allDay": True,
             },
         ),
+        (
+            None,
+            dt.datetime(2017, 1, 1, 9),
+            dt.datetime(2017, 1, 1, 17),
+            False,
+            {"start": "2017-01-01T09:00:00", "end": "2017-01-01T17:00:00"},
+        ),
     ),
-    ids=["partial_day", "all_day"],
+    ids=["partial_day", "all_day", "minimal"],
 )
-def test_availability_serialize_full(avail_id, start, end, expected):
+def test_availability_serialize(avail_id, start, end, full, expected):
     avail = Availability(id=avail_id, start=start, end=end)
 
-    result = avail.serialize(full=True)
-
-    assert result == expected
+    assert avail.serialize(full=full) == expected
 
 
-def test_availability_serialize_minimal():
-    avail = Availability(
-        start=dt.datetime(2017, 1, 1, 9), end=dt.datetime(2017, 1, 1, 17)
-    )
-
-    result = avail.serialize(full=False)
-
-    assert result == {"start": "2017-01-01T09:00:00", "end": "2017-01-01T17:00:00"}
-
-
-def test_availability_overlaps_raises_for_non_availability():
+@pytest.mark.parametrize(
+    ("method", "kwargs"),
+    (("overlaps", {"strict": False}), ("merge_with", {}), ("intersect_with", {})),
+)
+def test_availability_operations_raise_for_non_availability(method, kwargs):
     avail = _avail(5, 9)
 
     with pytest.raises(TypeError, match="Availability object"):
-        avail.overlaps("not an availability", strict=False)
+        getattr(avail, method)("not an availability", **kwargs)
+
+
+@pytest.mark.parametrize("method", ("merge_with", "intersect_with"))
+def test_availability_operations_raise_for_non_overlapping(method):
+    a = _avail(1, 3)
+    b = _avail(5, 9)
+
+    with pytest.raises(ValueError, match="overlap"):
+        getattr(a, method)(b)
 
 
 @pytest.mark.parametrize(
@@ -160,266 +174,95 @@ def test_availability_contains(one, two, expected):
 
 
 @pytest.mark.parametrize(
-    ("one", "two", "expected_start", "expected_end"),
-    (((4, 7), (5, 9), 4, 9), ((4, 7), (7, 8), 4, 8)),
+    ("one", "two", "expected"),
+    (((4, 7), (5, 9), (4, 9)), ((4, 7), (7, 8), (4, 8))),
     ids=["overlapping", "adjacent"],
 )
-def test_availability_merge_with(one, two, expected_start, expected_end):
-    result = _avail(*one).merge_with(_avail(*two))
+def test_availability_merge_with_is_symmetric(one, two, expected):
+    a = _avail(*one)
+    b = _avail(*two)
 
-    assert result.start == dt.datetime(2017, 1, 1, expected_start)
-    assert result.end == dt.datetime(2017, 1, 1, expected_end)
-
-
-def test_availability_merge_with_is_symmetric():
-    a = _avail(4, 7)
-    b = _avail(5, 9)
-
-    assert a.merge_with(b) == b.merge_with(a)
-
-
-def test_availability_merge_with_raises_for_non_availability():
-    avail = _avail(5, 9)
-
-    with pytest.raises(TypeError, match="Availability object"):
-        avail.merge_with("not an availability")
-
-
-def test_availability_merge_with_raises_for_non_overlapping():
-    a = _avail(1, 3)
-    b = _avail(5, 9)
-
-    with pytest.raises(ValueError, match="overlap"):
-        a.merge_with(b)
-
-
-def test_availability_or_operator():
-    a = _avail(4, 7)
-    b = _avail(5, 9)
-
-    result = a | b
-
-    assert result == a.merge_with(b)
+    assert a.merge_with(b) == b.merge_with(a) == (a | b) == _avail(*expected)
 
 
 @pytest.mark.parametrize(
-    ("one", "two", "expected_start", "expected_end"),
-    (((4, 7), (5, 9), 5, 7), ((5, 9), (5, 9), 5, 9)),
+    ("one", "two", "expected"),
+    (((4, 7), (5, 9), (5, 7)), ((5, 9), (5, 9), (5, 9))),
     ids=["overlapping", "identical"],
 )
-def test_availability_intersect_with(one, two, expected_start, expected_end):
-    result = _avail(*one).intersect_with(_avail(*two))
-
-    assert result.start == dt.datetime(2017, 1, 1, expected_start)
-    assert result.end == dt.datetime(2017, 1, 1, expected_end)
-
-
-def test_availability_intersect_with_is_symmetric():
-    a = _avail(4, 7)
-    b = _avail(5, 9)
-
-    assert a.intersect_with(b) == b.intersect_with(a)
-
-
-def test_availability_intersect_with_raises_for_non_availability():
-    avail = _avail(5, 9)
-
-    with pytest.raises(TypeError, match="Availability object"):
-        avail.intersect_with("not an availability")
-
-
-def test_availability_intersect_with_raises_for_non_overlapping():
-    a = _avail(1, 3)
-    b = _avail(5, 9)
-
-    with pytest.raises(ValueError, match="overlap"):
-        a.intersect_with(b)
-
-
-def test_availability_and_operator():
-    a = _avail(4, 7)
-    b = _avail(5, 9)
-
-    result = a & b
-
-    assert result == a.intersect_with(b)
-
-
-def test_availability_union_empty():
-    assert Availability.union([]) == []
-
-
-def test_availability_union_single():
-    a = _avail(4, 7)
-
-    result = Availability.union([a])
-
-    assert len(result) == 1
-    assert result[0].start == a.start
-    assert result[0].end == a.end
-
-
-def test_availability_union_non_overlapping_preserved():
-    a = _avail(4, 5)
-    b = _avail(6, 7)
-
-    result = Availability.union([a, b])
-
-    assert len(result) == 2
-    assert result[0].start == a.start
-    assert result[1].start == b.start
-
-
-def test_availability_union_adjacent_merged():
-    a = _avail(4, 5)
-    b = _avail(5, 6)
-
-    result = Availability.union([a, b])
-
-    assert len(result) == 1
-    assert result[0].start == dt.datetime(2017, 1, 1, 4)
-    assert result[0].end == dt.datetime(2017, 1, 1, 6)
-
-
-def test_availability_union_overlapping_merged():
-    a = _avail(4, 6)
-    b = _avail(5, 7)
-
-    result = Availability.union([a, b])
-
-    assert len(result) == 1
-    assert result[0].start == dt.datetime(2017, 1, 1, 4)
-    assert result[0].end == dt.datetime(2017, 1, 1, 7)
-
-
-def test_availability_union_unsorted_input():
-    a = _avail(5, 7)
-    b = _avail(4, 6)
-
-    result = Availability.union([a, b])
-
-    assert len(result) == 1
-    assert result[0].start == dt.datetime(2017, 1, 1, 4)
-    assert result[0].end == dt.datetime(2017, 1, 1, 7)
-
-
-def test_availability_union_complex():
-    avails = [
-        _avail(10, 12),
-        _avail(12, 14),
-        _avail(5, 7),
-        _avail(6, 8),
-        _avail(18, 19),
-        _avail(4, 6),
-    ]
-
-    result = Availability.union(avails)
-
-    assert len(result) == 3
-    assert result[0].start == dt.datetime(2017, 1, 1, 4)
-    assert result[0].end == dt.datetime(2017, 1, 1, 8)
-    assert result[1].start == dt.datetime(2017, 1, 1, 10)
-    assert result[1].end == dt.datetime(2017, 1, 1, 14)
-    assert result[2].start == dt.datetime(2017, 1, 1, 18)
-    assert result[2].end == dt.datetime(2017, 1, 1, 19)
-
-
-def test_availability_intersection_empty_sets():
-    assert Availability.intersection() == []
-
-
-def test_availability_intersection_one_set_empty():
-    a = [_avail(5, 7)]
-    assert Availability.intersection(a, []) == []
-
-
-def test_availability_intersection_adjacent_no_strict_overlap():
-    a = [_avail(5, 7)]
-    b = [_avail(7, 9)]
-
-    assert Availability.intersection(a, b) == []
-
-
-def test_availability_intersection_identical():
-    a = [_avail(5, 7)]
-    b = [_avail(5, 7)]
-
-    result = Availability.intersection(a, b)
-
-    assert len(result) == 1
-    assert result[0].start == dt.datetime(2017, 1, 1, 5)
-    assert result[0].end == dt.datetime(2017, 1, 1, 7)
-
-
-def test_availability_intersection_partial_overlap():
-    a = [_avail(5, 7)]
-    b = [_avail(6, 9)]
-
-    result = Availability.intersection(a, b)
-
-    assert len(result) == 1
-    assert result[0].start == dt.datetime(2017, 1, 1, 6)
-    assert result[0].end == dt.datetime(2017, 1, 1, 7)
-
-
-def test_availability_intersection_split_by_gaps():
-    a = [_avail(2, 7)]
-    b = [_avail(0, 3), _avail(6, 8)]
-
-    result = Availability.intersection(a, b)
-
-    assert len(result) == 2
-    assert result[0].start == dt.datetime(2017, 1, 1, 2)
-    assert result[0].end == dt.datetime(2017, 1, 1, 3)
-    assert result[1].start == dt.datetime(2017, 1, 1, 6)
-    assert result[1].end == dt.datetime(2017, 1, 1, 7)
-
-
-def test_availability_intersection_three_sets():
-    a = [_avail(2, 7)]
-    b = [_avail(0, 3), _avail(6, 8)]
-    c = [_avail(9, 7)]  # start > end: code doesn't validate this
-
-    result = Availability.intersection(a, b, c)
-
-    assert len(result) == 1
-    assert result[0].start == dt.datetime(2017, 1, 1, 9)
-    assert result[0].end == dt.datetime(2017, 1, 1, 7)
-
-
-def test_availability_intersection_is_symmetric():
-    a = [_avail(5, 7)]
-    b = [_avail(6, 9)]
-
-    result1 = Availability.intersection(a, b)
-    result2 = Availability.intersection(b, a)
-
-    assert len(result1) == len(result2)
-    for r1, r2 in zip(result1, result2, strict=True):
-        assert r1 == r2
-
-
-def test_availability_intersection_overlapping_within_set():
-    a = [_avail(2, 7)]
-    b = [_avail(0, 3), _avail(3, 4)]
-
-    result = Availability.intersection(a, b)
-
-    assert len(result) == 1
-    assert result[0].start == dt.datetime(2017, 1, 1, 2)
-    assert result[0].end == dt.datetime(2017, 1, 1, 4)
-
-
-def test_availability_intersection_multiple_ranges():
-    a = [_avail(2, 7), _avail(10, 12), _avail(14, 19)]
-    b = [_avail(0, 3), _avail(6, 8), _avail(13, 15)]
-
-    result = Availability.intersection(a, b)
-
-    assert len(result) == 3
-    assert result[0].start == dt.datetime(2017, 1, 1, 2)
-    assert result[0].end == dt.datetime(2017, 1, 1, 3)
-    assert result[1].start == dt.datetime(2017, 1, 1, 6)
-    assert result[1].end == dt.datetime(2017, 1, 1, 7)
-    assert result[2].start == dt.datetime(2017, 1, 1, 14)
-    assert result[2].end == dt.datetime(2017, 1, 1, 15)
+def test_availability_intersect_with_is_symmetric(one, two, expected):
+    a = _avail(*one)
+    b = _avail(*two)
+
+    assert a.intersect_with(b) == b.intersect_with(a) == (a & b) == _avail(*expected)
+
+
+@pytest.mark.parametrize(
+    ("hours", "expected"),
+    (
+        ([], []),
+        ([(4, 7)], [(4, 7)]),
+        ([(4, 5), (6, 7)], [(4, 5), (6, 7)]),
+        ([(4, 5), (5, 6)], [(4, 6)]),
+        ([(4, 6), (5, 7)], [(4, 7)]),
+        ([(5, 7), (4, 6)], [(4, 7)]),
+        (
+            [(10, 12), (12, 14), (5, 7), (6, 8), (18, 19), (4, 6)],
+            [(4, 8), (10, 14), (18, 19)],
+        ),
+    ),
+    ids=[
+        "empty",
+        "single",
+        "non_overlapping_preserved",
+        "adjacent_merged",
+        "overlapping_merged",
+        "unsorted_input",
+        "complex",
+    ],
+)
+def test_availability_union(hours, expected):
+    result = Availability.union([_avail(*pair) for pair in hours])
+
+    assert _hours(result) == expected
+
+
+@pytest.mark.parametrize(
+    ("sets", "expected"),
+    (
+        ([], []),
+        ([[(5, 7)], []], []),
+        ([[(5, 7)], [(7, 9)]], []),
+        ([[(5, 7)], [(5, 7)]], [(5, 7)]),
+        ([[(5, 7)], [(6, 9)]], [(6, 7)]),
+        ([[(6, 9)], [(5, 7)]], [(6, 7)]),
+        ([[(2, 7)], [(0, 3), (6, 8)]], [(2, 3), (6, 7)]),
+        (
+            [[(2, 7)], [(0, 3), (6, 8)], [(9, 7)]],
+            [(9, 7)],
+        ),  # start > end: not validated
+        ([[(2, 7)], [(0, 3), (3, 4)]], [(2, 4)]),
+        (
+            [[(2, 7), (10, 12), (14, 19)], [(0, 3), (6, 8), (13, 15)]],
+            [(2, 3), (6, 7), (14, 15)],
+        ),
+    ),
+    ids=[
+        "no_sets",
+        "one_set_empty",
+        "adjacent_no_strict_overlap",
+        "identical",
+        "partial_overlap",
+        "partial_overlap_swapped",
+        "split_by_gaps",
+        "three_sets",
+        "overlapping_within_set",
+        "multiple_ranges",
+    ],
+)
+def test_availability_intersection(sets, expected):
+    result = Availability.intersection(
+        *([_avail(*pair) for pair in hours] for hours in sets)
+    )
+
+    assert _hours(result) == expected

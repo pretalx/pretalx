@@ -4,23 +4,30 @@
 import pytest
 
 from pretalx.person.domain.picture import assign_avatar, set_avatar
-from pretalx.person.models import User
+from pretalx.person.models import SpeakerProfile, User
 from tests.factories import ProfilePictureFactory, SpeakerFactory, UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_set_avatar_creates_picture_and_assigns_to_user(make_image, event):
+def test_set_avatar_creates_picture_assigns_it_and_bumps_the_old_one(make_image, event):
     user = UserFactory()
+    old_pic = ProfilePictureFactory(user=user, avatar=make_image())
     speaker = SpeakerFactory(event=event, user=user)
+    speaker.profile_picture = old_pic
+    speaker.save(update_fields=["profile_picture"])
+    old_updated = old_pic.updated
 
-    new_pic = set_avatar(speaker, make_image())
+    new_pic = set_avatar(speaker, make_image("new.png"))
 
     assert new_pic is not None
-    speaker.refresh_from_db()
+    assert speaker.profile_picture == new_pic
+    speaker.refresh_from_db(fields=["profile_picture"])
     assert speaker.profile_picture_id == new_pic.pk
     user.refresh_from_db()
     assert user.profile_picture == new_pic
+    old_pic.refresh_from_db()
+    assert old_pic.updated >= old_updated
 
 
 def test_set_avatar_managed_profile_creates_ownerless_picture(make_image, event):
@@ -31,21 +38,6 @@ def test_set_avatar_managed_profile_creates_ownerless_picture(make_image, event)
     speaker.refresh_from_db()
     assert speaker.profile_picture_id == new_pic.pk
     assert new_pic.user is None
-
-
-def test_set_avatar_bumps_old_picture(make_image, event):
-    user = UserFactory()
-    old_pic = ProfilePictureFactory(user=user, avatar=make_image())
-    speaker = SpeakerFactory(event=event, user=user)
-    speaker.profile_picture = old_pic
-    speaker.save(update_fields=["profile_picture"])
-    old_updated = old_pic.updated
-
-    new_pic = set_avatar(speaker, make_image("new.png"))
-
-    old_pic.refresh_from_db()
-    assert old_pic.updated >= old_updated
-    assert speaker.profile_picture == new_pic
 
 
 def test_set_avatar_does_not_override_user_picture(make_image, event):
@@ -71,42 +63,17 @@ def test_set_avatar_on_user_directly(make_image):
     assert user.profile_picture == new_pic
 
 
-def test_assign_avatar_assigns_picture(make_image, event):
+def test_assign_avatar_assigns_keeps_and_clears_picture(make_image, event):
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
     speaker = SpeakerFactory(event=event, user=user)
 
     assign_avatar(speaker, user, pic)
 
-    speaker.refresh_from_db()
     assert speaker.profile_picture_id == pic.pk
+    assert SpeakerProfile.objects.get(pk=speaker.pk).profile_picture_id == pic.pk
     user.refresh_from_db()
     assert user.profile_picture == pic
-
-
-def test_assign_avatar_clears_picture(make_image, event):
-    user = UserFactory()
-    pic = ProfilePictureFactory(user=user, avatar=make_image())
-    speaker = SpeakerFactory(event=event, user=user)
-    speaker.profile_picture = pic
-    speaker.save(update_fields=["profile_picture"])
-    pic.refresh_from_db()
-    old_updated = pic.updated
-
-    assign_avatar(speaker, user, None)
-
-    speaker.refresh_from_db()
-    assert speaker.profile_picture is None
-    pic.refresh_from_db()
-    assert pic.updated > old_updated
-
-
-def test_assign_avatar_noop_when_unchanged(make_image, event):
-    user = UserFactory()
-    pic = ProfilePictureFactory(user=user, avatar=make_image())
-    speaker = SpeakerFactory(event=event, user=user)
-    speaker.profile_picture = pic
-    speaker.save(update_fields=["profile_picture"])
     pic.refresh_from_db()
     timestamp = pic.updated
 
@@ -114,6 +81,13 @@ def test_assign_avatar_noop_when_unchanged(make_image, event):
 
     pic.refresh_from_db()
     assert pic.updated == timestamp
+
+    assign_avatar(speaker, user, None)
+
+    assert speaker.profile_picture_id is None
+    assert SpeakerProfile.objects.get(pk=speaker.pk).profile_picture_id is None
+    pic.refresh_from_db()
+    assert pic.updated > timestamp
 
 
 def test_assign_avatar_does_not_override_user_picture(make_image, event):

@@ -17,16 +17,30 @@ from tests.utils import make_orga_user
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-def test_shortlink_view_submission_orga(client, event):
+def test_shortlink_view_orga_targets(client, event):
     with scopes_disabled():
         submission = SubmissionFactory(event=event)
+        speaker = SpeakerFactory(event=event)
+        managed_speaker = SpeakerFactory(event=event, user=None)
         user = make_orga_user(event, can_change_submissions=True)
+
+    assert client.get(f"/redirect/{submission.code}").status_code == 404
+
     client.force_login(user)
 
     response = client.get(f"/redirect/{submission.code}")
-
     assert response.status_code == 302
     assert response.url == submission.orga_urls.base
+
+    response = client.get(f"/redirect/{speaker.code}")
+    assert response.status_code == 302
+    assert response.url == speaker.orga_urls.base
+
+    response = client.get(f"/redirect/{managed_speaker.code}")
+    assert response.status_code == 302
+    assert response.url == managed_speaker.orga_urls.base
+
+    assert client.get("/redirect/NONEXISTENT").status_code == 404
 
 
 def test_shortlink_view_submission_public(client, published_talk_slot):
@@ -40,30 +54,6 @@ def test_shortlink_view_submission_public(client, published_talk_slot):
     assert response.url == submission.urls.public
 
 
-def test_shortlink_view_speaker_orga(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.get(f"/redirect/{speaker.code}")
-
-    assert response.status_code == 302
-    assert response.url == speaker.orga_urls.base
-
-
-def test_shortlink_view_managed_speaker_orga(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event, user=None)
-        user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.get(f"/redirect/{speaker.code}")
-
-    assert response.status_code == 302
-    assert response.url == speaker.orga_urls.base
-
-
 def test_shortlink_view_speaker_own_profile(client, event):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
@@ -75,85 +65,33 @@ def test_shortlink_view_speaker_own_profile(client, event):
     assert response.url == event.urls.user
 
 
-def test_shortlink_view_unknown_code(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event)
-    client.force_login(user)
-
-    response = client.get("/redirect/NONEXISTENT")
-
-    assert response.status_code == 404
-
-
-def test_shortlink_view_anonymous_no_access(client, event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
-
-    response = client.get(f"/redirect/{submission.code}")
-
-    assert response.status_code == 404
-
-
-def test_shortlink_view_speaker_no_access(client, event):
+def test_shortlink_view_regular_user_has_no_access_to_speaker_or_user_codes(
+    client, event
+):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
-        other_user = UserFactory()
-    client.force_login(other_user)
-
-    response = client.get(f"/redirect/{speaker.code}")
-
-    assert response.status_code == 404
-
-
-def test_shortlink_view_speaker_admin(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        admin = UserFactory(is_administrator=True)
-    client.force_login(admin)
-
-    response = client.get(f"/redirect/{speaker.code}")
-
-    assert response.status_code == 302
-    assert response.url == speaker.user.orga_urls.admin
-
-
-def test_shortlink_view_speaker_public(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        submission.speakers.add(speaker)
-        slot = TalkSlotFactory(submission=submission, is_visible=True)
-        freeze_schedule(slot.schedule, "v1", notify_speakers=False)
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.get(f"/redirect/{speaker.code}")
-
-    assert response.status_code == 302
-    assert response.url == speaker.urls.public
-
-
-def test_shortlink_view_user_code_admin(client):
-    with scopes_disabled():
-        target_user = UserFactory()
-        admin = UserFactory(is_administrator=True)
-    client.force_login(admin)
-
-    response = client.get(f"/redirect/{target_user.code}")
-
-    assert response.status_code == 302
-    assert response.url == target_user.orga_urls.admin
-
-
-def test_shortlink_view_user_code_non_admin_returns_404(client):
-    with scopes_disabled():
         target_user = UserFactory()
         regular_user = UserFactory()
     client.force_login(regular_user)
 
-    response = client.get(f"/redirect/{target_user.code}")
+    assert client.get(f"/redirect/{speaker.code}").status_code == 404
+    assert client.get(f"/redirect/{target_user.code}").status_code == 404
 
-    assert response.status_code == 404
+
+def test_shortlink_view_admin_targets(client, event):
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event)
+        target_user = UserFactory()
+        admin = UserFactory(is_administrator=True)
+    client.force_login(admin)
+
+    response = client.get(f"/redirect/{speaker.code}")
+    assert response.status_code == 302
+    assert response.url == speaker.user.orga_urls.admin
+
+    response = client.get(f"/redirect/{target_user.code}")
+    assert response.status_code == 302
+    assert response.url == target_user.orga_urls.admin
 
 
 def test_shortlink_view_speaker_public_skips_private_event(client):

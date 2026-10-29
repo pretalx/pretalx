@@ -9,143 +9,88 @@ from pretalx.common.templatetags.form_media import form_media
 pytestmark = pytest.mark.unit
 
 
-def test_form_media_singleton():
+class SimpleForm(forms.Form):
+    name = forms.CharField()
+
+
+class FormA(forms.Form):
+    name = forms.CharField()
+
+    class Media:
+        js = ["form_a.js"]
+
+
+class FormB(forms.Form):
+    email = forms.EmailField()
+
+    class Media:
+        js = ["form_b.js"]
+
+
+def test_form_media_renders_base_once():
     context = template.Context({})
-    form_media(context, always_base=True)
+
+    rendered = str(form_media(context, always_base=True))
+
+    assert "base.js" in rendered
+    assert "base.css" in rendered
     assert form_media(context) == ""
 
 
-def test_form_media_always_base():
-    context = template.Context({})
-    result = form_media(context, always_base=True)
-    rendered = str(result)
-    assert "base.js" in rendered
-    assert "base.css" in rendered
+@pytest.mark.parametrize(
+    "context",
+    ({}, {"form": SimpleForm()}, {"items": ["not", "forms"]}),
+    ids=("empty", "form_without_media", "list_without_forms"),
+)
+def test_form_media_without_media_renders_nothing(context):
+    assert str(form_media(template.Context(context))) == ""
 
 
-def test_form_media_with_form_no_custom_media():
-    class SimpleForm(forms.Form):
-        name = forms.CharField()
+@pytest.mark.parametrize(
+    ("context", "scripts"),
+    (
+        ({"form": FormA()}, ["form_a.js"]),
+        ({"my_forms": [FormA(), FormA()]}, ["form_a.js"]),
+        ({"extra_forms": [FormA(), FormB()]}, ["form_a.js", "form_b.js"]),
+        ({"extra_forms": [FormA(), "not_a_form"]}, ["form_a.js"]),
+        ({"my_formset": forms.formset_factory(SimpleForm)()}, ["formsets"]),
+        (
+            {
+                "my_formset": forms.formset_factory(SimpleForm, extra=0)(
+                    data={"form-TOTAL_FORMS": "0", "form-INITIAL_FORMS": "0"}
+                )
+            },
+            [],
+        ),
+    ),
+    ids=(
+        "form",
+        "form_list",
+        "extra_forms",
+        "extra_forms_with_non_form_item",
+        "formset",
+        "empty_formset",
+    ),
+)
+def test_form_media_collects_form_media_with_base(context, scripts):
+    rendered = str(form_media(template.Context(context)))
 
-    context = template.Context({"form": SimpleForm()})
-    result = form_media(context)
-    assert str(result) == ""
-
-
-def test_form_media_with_form_having_media():
-    class FormWithMedia(forms.Form):
-        name = forms.CharField()
-
-        class Media:
-            js = ["custom/widget.js"]
-
-    context = template.Context({"form": FormWithMedia()})
-    result = form_media(context)
-    rendered = str(result)
     assert "base" in rendered
-    assert "custom/widget.js" in rendered
+    for script in scripts:
+        assert script in rendered
 
 
-def test_form_media_with_formset():
-    class SimpleForm(forms.Form):
-        name = forms.CharField()
-
-    simple_formset_cls = forms.formset_factory(SimpleForm)
-    formset = simple_formset_cls()
-    context = template.Context({"my_formset": formset})
-    result = form_media(context)
-    rendered = str(result)
-    assert "base" in rendered
-    assert "formsets" in rendered
-
-
-def test_form_media_with_empty_formset():
-    class SimpleForm(forms.Form):
-        name = forms.CharField()
-
-    simple_formset_cls = forms.formset_factory(SimpleForm, extra=0)
-    formset = simple_formset_cls(
-        data={"form-TOTAL_FORMS": "0", "form-INITIAL_FORMS": "0"}
+def test_form_media_extra_js_and_css():
+    rendered = str(
+        form_media(
+            template.Context({}),
+            extra_js="custom/script.js",
+            extra_css="custom/style.css",
+        )
     )
-    context = template.Context({"my_formset": formset})
-    result = form_media(context)
-    rendered = str(result)
-    assert "base" in rendered
 
-
-def test_form_media_extra_js():
-    context = template.Context({})
-    result = form_media(context, extra_js="custom/script.js")
-    rendered = str(result)
     assert "custom/script.js" in rendered
-
-
-def test_form_media_extra_css():
-    context = template.Context({})
-    result = form_media(context, extra_css="custom/style.css")
-    rendered = str(result)
     assert "custom/style.css" in rendered
-
-
-def test_form_media_with_form_list():
-    class FormWithMedia(forms.Form):
-        name = forms.CharField()
-
-        class Media:
-            js = ["custom/widget.js"]
-
-    context = template.Context({"my_forms": [FormWithMedia(), FormWithMedia()]})
-    result = form_media(context)
-    rendered = str(result)
-    assert "base" in rendered
-    assert "custom/widget.js" in rendered
-
-
-def test_form_media_extra_forms():
-    class FormA(forms.Form):
-        name = forms.CharField()
-
-        class Media:
-            js = ["form_a.js"]
-
-    class FormB(forms.Form):
-        email = forms.EmailField()
-
-        class Media:
-            js = ["form_b.js"]
-
-    context = template.Context({"extra_forms": [FormA(), FormB()]})
-    result = form_media(context)
-    rendered = str(result)
-    assert "base" in rendered
-    assert "form_a.js" in rendered
-    assert "form_b.js" in rendered
-
-
-def test_form_media_empty_context_no_base():
-    context = template.Context({})
-    result = form_media(context)
-    rendered = str(result)
-    assert rendered == ""
-
-
-def test_form_media_list_with_non_form_items():
-    context = template.Context({"items": ["not", "forms"]})
-    result = form_media(context)
-    assert str(result) == ""
-
-
-def test_form_media_extra_forms_with_non_form_item():
-    class FormA(forms.Form):
-        name = forms.CharField()
-
-        class Media:
-            js = ["form_a.js"]
-
-    context = template.Context({"extra_forms": [FormA(), "not_a_form"]})
-    result = form_media(context)
-    rendered = str(result)
-    assert "form_a.js" in rendered
 
 
 def test_form_media_base_js_precedes_dependent_scripts():
@@ -161,31 +106,22 @@ def test_form_media_base_js_precedes_dependent_scripts():
     assert base_position < rendered.index("common/js/forms/select.js")
 
 
-def test_form_media_table_media():
+@pytest.mark.parametrize(
+    ("configuration_form", "scripts"),
+    ((None, ["tables.js"]), (FormA(), ["tables.js", "form_a.js"])),
+    ids=("plain", "with_configuration_form"),
+)
+def test_form_media_table_media(configuration_form, scripts):
     class FakeTable:
-        configuration_form = None
+        pass
 
-    context = template.Context({"table": FakeTable()})
-    result = form_media(context, table_media=True)
-    rendered = str(result)
-    assert "tables.js" in rendered
+    table = FakeTable()
+    table.configuration_form = configuration_form
 
+    rendered = str(form_media(template.Context({"table": table}), table_media=True))
 
-def test_form_media_table_media_with_configuration_form():
-    class ConfigForm(forms.Form):
-        cols = forms.CharField()
-
-        class Media:
-            js = ["config.js"]
-
-    class FakeTable:
-        configuration_form = ConfigForm()
-
-    context = template.Context({"table": FakeTable()})
-    result = form_media(context, table_media=True)
-    rendered = str(result)
-    assert "tables.js" in rendered
-    assert "config.js" in rendered
+    for script in scripts:
+        assert script in rendered
 
 
 def test_form_media_with_media_object():

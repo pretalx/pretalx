@@ -37,22 +37,17 @@ def test_custom_exception_is_raisable(exc_cls):
         raise exc_cls("test")
 
 
-@override_settings(DEBUG=True)
-def test_reporter_get_traceback_text_returns_plain_in_debug():
-    reporter = _make_reporter(is_email=True)
+@pytest.mark.parametrize(
+    ("debug", "is_email"), ((True, True), (False, False)), ids=("debug", "not_email")
+)
+def test_reporter_get_traceback_text_returns_plain_traceback(settings, debug, is_email):
+    settings.DEBUG = debug
+    reporter = _make_reporter(is_email=is_email)
 
     text = reporter.get_traceback_text()
 
     assert "You are receiving this email" not in text
     assert "ValueError" in text
-
-
-def test_reporter_get_traceback_text_returns_plain_when_not_email():
-    reporter = _make_reporter(is_email=False)
-
-    text = reporter.get_traceback_text()
-
-    assert "You are receiving this email" not in text
 
 
 @override_settings(DEBUG=False, SITE_URL="https://example.com")
@@ -83,36 +78,12 @@ def test_reporter_get_traceback_text_without_exc_type():
     assert "The error was Exception at" in text
 
 
-def test_reporter_user_no_request():
+def test_reporter_without_request_has_empty_summary():
     reporter = _make_reporter(request=None)
 
     assert reporter.user == ""
-
-
-def test_reporter_user_anonymous():
-    rf = RequestFactory()
-    request = rf.get("/")
-    request.user = AnonymousUser()
-    reporter = _make_reporter(request=request)
-
-    assert reporter.user == "an anonymous user"
-
-
-@pytest.mark.django_db
-def test_reporter_user_authenticated():
-    rf = RequestFactory()
-    request = rf.get("/")
-    user = UserFactory(name="Ada Lovelace", email="ada@example.com")
-    request.user = user
-    reporter = _make_reporter(request=request)
-
-    assert reporter.user == "Ada Lovelace <ada@example.com>"
-
-
-def test_reporter_get_summary_no_request():
-    reporter = _make_reporter(request=None)
-
     assert reporter.get_summary() == ""
+    assert reporter.get_extra_intro() == ""
 
 
 @override_settings(SITE_URL="https://example.com")
@@ -124,6 +95,7 @@ def test_reporter_get_summary_without_event():
 
     summary = reporter.get_summary()
 
+    assert reporter.user == "an anonymous user"
     assert summary == (
         "URL:   https://example.com/some/path?q=1\nUser:  an anonymous user"
     )
@@ -152,17 +124,12 @@ def test_reporter_get_summary_with_event(event):
 
     summary = reporter.get_summary()
 
+    assert reporter.user == "Ada Lovelace <ada@example.com>"
     assert summary == (
         f"URL:   https://example.com/event/page"
         f"\nEvent: {event.name} <{event.orga_urls.base.full()}>"
         f"\nUser:  Ada Lovelace <ada@example.com>"
     )
-
-
-def test_reporter_get_extra_intro_is_empty():
-    reporter = _make_reporter(request=None)
-
-    assert reporter.get_extra_intro() == ""
 
 
 def test_celery_reporter_get_summary():

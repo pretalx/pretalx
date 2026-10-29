@@ -74,33 +74,24 @@ class _NonPublicExporter(BaseExporter):
     (
         (
             b'<html><body><script src="/static/app.js"></script></body></html>',
-            "/static/app.js",
+            ["/static/app.js"],
         ),
-        (b'<html><body><img src="/media/photo.png"></body></html>', "/media/photo.png"),
+        (
+            b'<html><body><img src="/media/photo.png"></body></html>',
+            ["/media/photo.png"],
+        ),
         (
             b'<html><head><link rel="stylesheet" href="/static/style.css"></head></html>',
-            "/static/style.css",
+            ["/static/style.css"],
         ),
         (
             b'<html><head><link rel="icon" href="/static/favicon.ico"></head></html>',
-            "/static/favicon.ico",
+            ["/static/favicon.ico"],
         ),
         (
             b'<html><body><a data-lightbox="/media/big.jpg">click</a></body></html>',
-            "/media/big.jpg",
+            ["/media/big.jpg"],
         ),
-    ),
-    ids=["script_src", "img_src", "stylesheet_href", "icon_href", "lightbox_data"],
-)
-def test_find_assets_extracts_single_asset(html, expected):
-    result = list(find_assets(html))
-
-    assert result == [expected]
-
-
-@pytest.mark.parametrize(
-    ("html", "expected"),
-    (
         (
             b'<html><body><a data-lightbox="" href="/media/img.jpg">click</a></body></html>',
             ["/media/img.jpg"],
@@ -110,39 +101,32 @@ def test_find_assets_extracts_single_asset(html, expected):
             ["/media/img.jpg"],
         ),
         (b'<html><body><span data-lightbox="">text</span></body></html>', []),
+        (b"<html><body><script>console.log('hi')</script></body></html>", []),
+        (
+            (
+                b'<html><head><link rel="stylesheet" href="/static/a.css">'
+                b'<link rel="icon" href="/static/favicon.ico"></head>'
+                b'<body><script src="/static/b.js"></script>'
+                b'<img src="/media/c.png"></body></html>'
+            ),
+            ["/static/b.js", "/media/c.png", "/static/a.css", "/static/favicon.ico"],
+        ),
     ),
-    ids=["fallback_to_href", "fallback_to_src", "no_url_skipped"],
+    ids=[
+        "script_src",
+        "img_src",
+        "stylesheet_href",
+        "icon_href",
+        "lightbox_data",
+        "lightbox_fallback_to_href",
+        "lightbox_fallback_to_src",
+        "lightbox_without_url_skipped",
+        "inline_script_skipped",
+        "multiple_assets",
+    ],
 )
-def test_find_assets_lightbox_fallback(html, expected):
-    result = list(find_assets(html))
-
-    assert result == expected
-
-
-def test_find_assets_extracts_multiple_assets():
-    html = (
-        b'<html><head><link rel="stylesheet" href="/static/a.css">'
-        b'<link rel="icon" href="/static/favicon.ico"></head>'
-        b'<body><script src="/static/b.js"></script>'
-        b'<img src="/media/c.png"></body></html>'
-    )
-
-    result = list(find_assets(html))
-
-    assert set(result) == {
-        "/static/a.css",
-        "/static/favicon.ico",
-        "/static/b.js",
-        "/media/c.png",
-    }
-
-
-def test_find_assets_ignores_script_without_src():
-    html = b"<html><body><script>console.log('hi')</script></body></html>"
-
-    result = list(find_assets(html))
-
-    assert result == []
+def test_find_assets(html, expected):
+    assert list(find_assets(html)) == expected
 
 
 @pytest.mark.parametrize(
@@ -211,42 +195,37 @@ def test_dump_content_raises_on_path_traversal(tmp_path):
         dump_content(tmp_path, "/../../../etc/passwd", None)
 
 
-def test_get_mediastatic_content_reads_static_file(tmp_path):
-    static_file = tmp_path / "static" / "test.css"
-    static_file.parent.mkdir(parents=True)
-    static_file.write_bytes(b"css content")
+@pytest.mark.parametrize(
+    ("file_path", "url"),
+    (
+        ("static/test.css", "/static/test.css"),
+        ("media/photo.png", "/media/photo.png"),
+        ("static/lüstig.css", "/static/l%C3%BCstig.css"),
+    ),
+    ids=["static_file", "media_file", "urlencoded_path"],
+)
+def test_get_mediastatic_content_reads_file(tmp_path, file_path, url):
+    target = tmp_path / file_path
+    target.parent.mkdir(parents=True)
+    target.write_bytes(b"file content")
 
     with override_settings(
         STATIC_URL="/static/",
-        STATIC_ROOT=tmp_path / "static",
-        MEDIA_ROOT=tmp_path / "media",
-    ):
-        result = get_mediastatic_content("/static/test.css")
-
-    assert result == b"css content"
-
-
-def test_get_mediastatic_content_reads_media_file(tmp_path):
-    media_file = tmp_path / "media" / "photo.png"
-    media_file.parent.mkdir(parents=True)
-    media_file.write_bytes(b"png data")
-
-    with override_settings(
         MEDIA_URL="/media/",
-        MEDIA_ROOT=tmp_path / "media",
         STATIC_ROOT=tmp_path / "static",
+        MEDIA_ROOT=tmp_path / "media",
     ):
-        result = get_mediastatic_content("/media/photo.png")
+        result = get_mediastatic_content(url)
 
-    assert result == b"png data"
-
-
-def test_get_mediastatic_content_raises_for_unknown_prefix():
-    with pytest.raises(FileNotFoundError):
-        get_mediastatic_content("/unknown/path.txt")
+    assert result == b"file content"
 
 
-def test_get_mediastatic_content_raises_for_directory_traversal(tmp_path):
+@pytest.mark.parametrize(
+    "url",
+    ("/unknown/path.txt", "/static/../secret.txt"),
+    ids=["unknown_prefix", "directory_traversal"],
+)
+def test_get_mediastatic_content_raises_for_unservable_path(tmp_path, url):
     static_dir = tmp_path / "static"
     static_dir.mkdir()
     (tmp_path / "secret.txt").write_text("secret")
@@ -257,20 +236,7 @@ def test_get_mediastatic_content_raises_for_directory_traversal(tmp_path):
         ),
         pytest.raises(FileNotFoundError),
     ):
-        get_mediastatic_content("/static/../secret.txt")
-
-
-def test_get_mediastatic_content_decodes_urlencoded_path(tmp_path):
-    static_dir = tmp_path / "static"
-    static_dir.mkdir()
-    (static_dir / "lüstig.css").write_bytes(b"encoded css")
-
-    with override_settings(
-        STATIC_URL="/static/", STATIC_ROOT=static_dir, MEDIA_ROOT=tmp_path / "media"
-    ):
-        result = get_mediastatic_content("/static/l%C3%BCstig.css")
-
-    assert result == b"encoded css"
+        get_mediastatic_content(url)
 
 
 def test_delete_directory_removes_existing(tmp_path):
@@ -288,55 +254,33 @@ def test_delete_directory_ignores_nonexistent(tmp_path):
 
 
 @pytest.mark.django_db
-def test_event_talk_urls_yields_public_ical_and_resource_urls():
+def test_talk_speaker_and_schedule_version_urls_for_released_schedule():
     event = EventFactory()
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     submission.speakers.add(speaker)
     resource = ResourceFactory(submission=submission, is_public=True)
     resource.resource.save("res.pdf", SimpleUploadedFile("res.pdf", b"pdf data"))
-    TalkSlotFactory(submission=submission, is_visible=True)
-    freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-    event = Event.objects.get(pk=event.pk)
-
-    result = list(event_talk_urls(event))
-
-    assert result == [
-        submission.urls.public,
-        submission.urls.ical,
-        resource.resource.url,
-    ]
-
-
-@pytest.mark.django_db
-def test_event_talk_urls_skips_resource_without_file():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker)
     ResourceFactory(submission=submission, is_public=True)
     TalkSlotFactory(submission=submission, is_visible=True)
     freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
     event = Event.objects.get(pk=event.pk)
+    schedule = event.schedules.get(version="v1")
 
-    result = list(event_talk_urls(event))
-
-    assert result == [submission.urls.public, submission.urls.ical]
-
-
-@pytest.mark.django_db
-def test_event_speaker_urls_yields_public_and_ical():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker)
-    TalkSlotFactory(submission=submission, is_visible=True)
-    freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-    event = Event.objects.get(pk=event.pk)
-
-    result = list(event_speaker_urls(event))
-
-    assert result == [speaker.urls.public, speaker.urls.talks_ical]
+    assert list(event_talk_urls(event)) == [
+        submission.urls.public,
+        submission.urls.ical,
+        resource.resource.url,
+    ]
+    assert list(event_speaker_urls(event)) == [
+        speaker.urls.public,
+        speaker.urls.talks_ical,
+    ]
+    assert list(schedule_version_urls(event)) == [
+        schedule.urls.public,
+        schedule.urls.widget_data,
+        schedule.urls.nojs,
+    ]
 
 
 @pytest.mark.django_db
@@ -355,22 +299,6 @@ def test_event_urls_includes_all_url_categories():
     assert event.urls.speakers in result
     assert event.urls.changelog in result
     assert event.urls.feed in result
-
-
-@pytest.mark.django_db
-def test_schedule_version_urls_yields_urls_for_versioned_schedules():
-    event = EventFactory()
-    TalkSlotFactory(submission__event=event, is_visible=True)
-    freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
-    schedule = event.schedules.get(version="v1")
-
-    result = list(schedule_version_urls(event))
-
-    assert result == [
-        schedule.urls.public,
-        schedule.urls.widget_data,
-        schedule.urls.nojs,
-    ]
 
 
 @pytest.mark.django_db
@@ -525,16 +453,14 @@ def test_export_schedule_html_command_wraps_failure_in_command_error():
 
 
 @pytest.mark.django_db
-def test_export_schedule_html_command_requires_event_argument():
-    with pytest.raises(
-        CommandError, match="the following arguments are required: event"
-    ):
-        call_command("export_schedule_html")
-
-
-@pytest.mark.django_db
-def test_export_schedule_html_command_rejects_unknown_event():
-    with pytest.raises(
-        CommandError, match='Could not find event with slug "nonexistent"'
-    ):
-        call_command("export_schedule_html", "nonexistent")
+@pytest.mark.parametrize(
+    ("args", "message"),
+    (
+        ((), "the following arguments are required: event"),
+        (("nonexistent",), 'Could not find event with slug "nonexistent"'),
+    ),
+    ids=["missing_event_argument", "unknown_event"],
+)
+def test_export_schedule_html_command_rejects_invalid_event_argument(args, message):
+    with pytest.raises(CommandError, match=message):
+        call_command("export_schedule_html", *args)

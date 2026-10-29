@@ -7,34 +7,15 @@ from tests.factories import SubmissionCommentFactory, SubmissionFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_comment_str():
-    comment = SubmissionCommentFactory()
-    assert (
-        str(comment)
-        == f'Comment by {comment.user.get_display_name()} on "{comment.submission.title}"'
-    )
-
-
-def test_comment_event():
-    comment = SubmissionCommentFactory()
-    assert comment.event == comment.submission.event
-
-
-def test_comment_ordering():
+def test_comment_thread():
     submission = SubmissionFactory()
     comment1 = SubmissionCommentFactory(submission=submission)
-    comment2 = SubmissionCommentFactory(submission=submission)
+    comment2 = SubmissionCommentFactory(submission=submission, reply_to=comment1)
 
-    comments = list(submission.comments.all())
-
-    assert comments == [comment1, comment2]
-
-
-def test_comment_reply_to():
-    submission = SubmissionFactory()
-    parent = SubmissionCommentFactory(submission=submission)
-    reply = SubmissionCommentFactory(submission=submission, reply_to=parent)
-
-    replies = list(parent.replies.all())
-
-    assert replies == [reply]
+    assert (
+        str(comment1)
+        == f'Comment by {comment1.user.get_display_name()} on "{submission.title}"'
+    )
+    assert comment1.event == submission.event
+    assert list(submission.comments.all()) == [comment1, comment2]
+    assert list(comment1.replies.all()) == [comment2]

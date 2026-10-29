@@ -32,349 +32,189 @@ from tests.utils import refresh
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_create_or_update_review_creates_review():
+def test_create_or_update_review_creates_updates_and_clears_scores():
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event)
     category = ReviewScoreCategoryFactory(event=event, weight=Decimal("1.0"))
-    score = ReviewScoreFactory(category=category, value=Decimal(3))
+    old_score = ReviewScoreFactory(category=category, value=Decimal(3))
+    new_score = ReviewScoreFactory(category=category, value=Decimal(2))
 
     review = create_or_update_review(
-        submission=submission, user=user, text="Nice talk", scores=[score]
+        submission=submission, user=user, text="Nice talk", scores=[old_score]
     )
 
     assert list(submission.reviews.all()) == [review]
     assert review.user == user
     assert review.text == "Nice talk"
-    assert list(review.scores.all()) == [score]
+    assert list(review.scores.all()) == [old_score]
     assert review.score == Decimal("3.0")
 
-
-def test_create_or_update_review_updates_existing_review():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
-    category = ReviewScoreCategoryFactory(event=event, weight=Decimal("1.0"))
-    old_score = ReviewScoreFactory(category=category, value=Decimal(1))
-    new_score = ReviewScoreFactory(category=category, value=Decimal(2))
-    existing = ReviewFactory(submission=submission, user=user, text="First save")
-    existing.scores.add(old_score)
-
-    review = create_or_update_review(
+    updated = create_or_update_review(
         submission=submission, user=user, text="Second save", scores=[new_score]
     )
 
-    assert review.pk == existing.pk
-    assert review.created == existing.created
-    assert review.text == "Second save"
-    assert list(review.scores.all()) == [new_score]
-    assert review.score == Decimal("2.0")
-    assert list(submission.reviews.all()) == [review]
+    assert updated.pk == review.pk
+    assert updated.created == review.created
+    assert updated.text == "Second save"
+    assert list(updated.scores.all()) == [new_score]
+    assert updated.score == Decimal("2.0")
+    assert list(submission.reviews.all()) == [updated]
 
-
-def test_create_or_update_review_clears_scores():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
-    category = ReviewScoreCategoryFactory(event=event, weight=Decimal("1.0"))
-    old_score = ReviewScoreFactory(category=category, value=Decimal(1))
-    existing = ReviewFactory(submission=submission, user=user, score=Decimal(1))
-    existing.scores.add(old_score)
-
-    review = create_or_update_review(
+    cleared = create_or_update_review(
         submission=submission, user=user, text="No more score", scores=[]
     )
 
-    assert review.pk == existing.pk
-    assert list(review.scores.all()) == []
-    assert review.score is None
+    assert cleared.pk == review.pk
+    assert list(cleared.scores.all()) == []
+    assert cleared.score is None
 
 
-def test_update_review_score_empty():
-    submission = SubmissionFactory()
+def test_update_review_score_weights_applicable_categories():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    category1 = ReviewScoreCategoryFactory(event=event, weight=Decimal("2.0"))
+    category2 = ReviewScoreCategoryFactory(event=event, weight=Decimal("1.0"))
+    excluded = ReviewScoreCategoryFactory(event=event, weight=Decimal("1.0"))
+    excluded.limit_tracks.add(event.tracks.create(name="Other"))
     review = ReviewFactory(submission=submission, score=Decimal(99))
 
     update_review_score(review)
-    review.refresh_from_db()
-
+    review.refresh_from_db(fields=["score"])
     assert review.score is None
 
-
-def test_update_review_score_weighted():
-    event = EventFactory()
-    category1 = ReviewScoreCategoryFactory(event=event, weight=Decimal("2.0"))
-    category2 = ReviewScoreCategoryFactory(event=event, weight=Decimal("1.0"))
-    score1 = ReviewScoreFactory(category=category1, value=Decimal(5))
-    score2 = ReviewScoreFactory(category=category2, value=Decimal(3))
-    submission = SubmissionFactory(event=event)
-    review = ReviewFactory(submission=submission, score=None)
-    review.scores.add(score1, score2)
-
+    review.scores.add(ReviewScoreFactory(category=excluded, value=Decimal(99)))
     update_review_score(review)
-    review.refresh_from_db()
+    review.refresh_from_db(fields=["score"])
+    assert review.score is None
 
+    review.scores.add(
+        ReviewScoreFactory(category=category1, value=Decimal(5)),
+        ReviewScoreFactory(category=category2, value=Decimal(3)),
+    )
+    update_review_score(review)
+    review.refresh_from_db(fields=["score"])
     assert review.score == Decimal("13.0")
 
-
-def test_update_review_score_filters_by_submission_categories():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    other_track = submission.event.tracks.create(name="Other")
-    excluded = ReviewScoreCategoryFactory(event=event, weight=Decimal("1.0"))
-    excluded.limit_tracks.add(other_track)
-    excluded_score = ReviewScoreFactory(category=excluded, value=Decimal(99))
-    review = ReviewFactory(submission=submission, score=None)
-    review.scores.add(excluded_score)
-
-    update_review_score(review)
-    review.refresh_from_db()
-
-    assert review.score is None
-
-
-def test_recalculate_event_scores():
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(event=event, weight=Decimal("1.0"))
-    score = ReviewScoreFactory(category=category, value=Decimal(5))
-    submission = SubmissionFactory(event=event)
-    review = ReviewFactory(submission=submission, score=None)
-    review.scores.add(score)
-
     with scope(event=event):
+        review.score = None
+        review.save()
         recalculate_event_scores(event)
+        review.refresh_from_db(fields=["score"])
+        assert review.score == Decimal("13.0")
 
-    review.refresh_from_db()
-    assert review.score == Decimal("5.0")
-
-
-def test_recalculate_submission_scores():
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(event=event, weight=Decimal("1.0"))
-    score = ReviewScoreFactory(category=category, value=Decimal(4))
-    submission = SubmissionFactory(event=event)
-    review = ReviewFactory(submission=submission, score=None)
-    review.scores.add(score)
-
-    with scope(event=event):
+        review.score = None
+        review.save()
         recalculate_submission_scores(submission)
+        review.refresh_from_db(fields=["score"])
+        assert review.score == Decimal("13.0")
 
-    review.refresh_from_db()
-    assert review.score == Decimal("4.0")
 
-
-def test_activate_review_phase_deactivates_all_others():
+def test_activate_review_phase_deactivates_others_and_logs():
     event = EventFactory()
     phase1 = ReviewPhaseFactory(event=event, is_active=True)
-    phase2 = ReviewPhaseFactory(event=event, is_active=False)
+    phase2 = ReviewPhaseFactory(event=event, is_active=False, name="Final review")
     phase3 = ReviewPhaseFactory(event=event, is_active=True)
-
-    activate_review_phase(phase2)
-
-    phase1.refresh_from_db()
-    phase2.refresh_from_db()
-    phase3.refresh_from_db()
-    assert phase2.is_active is True
-    assert phase1.is_active is False
-    assert phase3.is_active is False
-
-
-def test_activate_review_phase_logs_with_phase_name():
-    event = EventFactory()
-    phase = ReviewPhaseFactory(event=event, name="Final review")
     user = UserFactory()
 
-    activate_review_phase(phase, person=user)
+    activate_review_phase(phase2, person=user)
 
+    assert list(event.review_phases.filter(is_active=True)) == [phase2]
+    assert phase1 not in event.review_phases.filter(is_active=True)
+    assert phase3 not in event.review_phases.filter(is_active=True)
     log = ActivityLog.objects.select_related("event", "person").get(
         action_type="pretalx.review_phase.activate"
     )
     assert log.event == event
     assert log.person == user
     assert log.is_orga_action is True
-    assert log.data["name"] == "Final review"
+    assert log.data == {"name": "Final review"}
 
 
-def test_update_review_phase_keeps_current_when_valid(event):
-    with scope(event=event):
-        event.review_phases.all().delete()
-        phase = ReviewPhaseFactory(
-            event=event,
-            name="Active",
-            start=tz_now() - dt.timedelta(days=1),
-            end=tz_now() + dt.timedelta(days=30),
-            is_active=True,
-        )
-
-    event = refresh(event)
-    with scope(event=event):
-        result = update_review_phase(event)
-        assert result == phase
-
-
-def test_update_review_phase_deactivates_expired(event):
-    with scope(event=event):
-        event.review_phases.all().delete()
-        phase = ReviewPhaseFactory(
-            event=event,
-            name="Expired",
-            start=tz_now() - dt.timedelta(days=10),
-            end=tz_now() - dt.timedelta(days=3),
-            is_active=True,
-        )
-
-    event = refresh(event)
-    with scope(event=event):
-        result = update_review_phase(event)
-        assert result is None
-        phase.refresh_from_db()
-        assert not phase.is_active
-
-
-def test_update_review_phase_activates_next(event):
-    with scope(event=event):
-        event.review_phases.all().delete()
-        expired_phase = ReviewPhaseFactory(
-            event=event,
-            name="Expired",
-            start=tz_now() - dt.timedelta(days=10),
-            end=tz_now() - dt.timedelta(days=3),
-            is_active=True,
-        )
-        next_phase = ReviewPhaseFactory(
-            event=event, name="Next", start=expired_phase.end, is_active=False
-        )
-
-    event = refresh(event)
-    with scope(event=event):
-        result = update_review_phase(event)
-        assert result == next_phase
-        next_phase.refresh_from_db()
-        assert next_phase.is_active
-
-
-def test_update_review_phase_activates_when_none_active(event):
-    with scope(event=event):
-        event.review_phases.all().delete()
-        phase = ReviewPhaseFactory(
-            event=event,
-            name="Available",
-            start=tz_now() - dt.timedelta(days=1),
-            end=tz_now() + dt.timedelta(days=30),
-            is_active=False,
-        )
-
-    event = refresh(event)
-    with scope(event=event):
-        result = update_review_phase(event)
-        assert result == phase
-        phase.refresh_from_db()
-        assert phase.is_active
-
-
-def test_update_review_phase_returns_none_when_none_active(event):
-    with scope(event=event):
-        event.review_phases.all().delete()
-        future_phase = ReviewPhaseFactory(
-            event=event,
-            name="Future",
-            start=tz_now() + dt.timedelta(days=30),
-            is_active=False,
-        )
-
-    event = refresh(event)
-    with scope(event=event):
-        result = update_review_phase(event)
-        assert result is None
-        future_phase.refresh_from_db()
-        assert not future_phase.is_active
-
-
-def test_validate_review_phases_accepts_ordered_phases(event):
-    with scope(event=event):
-        event.review_phases.all().delete()
+def _phases(event, specs):
+    moment = tz_now()
+    for name, start, end, is_active in specs:
         ReviewPhaseFactory(
             event=event,
-            name="First",
-            start=tz_now() - dt.timedelta(days=10),
-            end=tz_now() - dt.timedelta(days=5),
-        )
-        ReviewPhaseFactory(
-            event=event, name="Second", start=tz_now() - dt.timedelta(days=4), end=None
+            name=name,
+            start=None if start is None else moment + dt.timedelta(days=start),
+            end=None if end is None else moment + dt.timedelta(days=end),
+            is_active=is_active,
         )
 
-    event = refresh(event)
-    with scope(event=event):
-        validate_review_phases(event)  # must not raise
 
-
-def test_validate_review_phases_rejects_open_ended_non_last_phase(event):
+@pytest.mark.parametrize(
+    ("specs", "expected"),
+    (
+        ((("Active", -1, 30, True),), "Active"),
+        ((("Expired", -10, -3, True),), None),
+        ((("Expired", -10, -3, True), ("Next", -3, None, False)), "Next"),
+        ((("Available", -1, 30, False),), "Available"),
+        ((("Future", 30, None, False),), None),
+        ((("Future", 30, None, True),), None),
+    ),
+    ids=(
+        "keeps_current",
+        "deactivates_expired",
+        "activates_next",
+        "activates_when_none_active",
+        "none_when_none_due",
+        "deactivates_future",
+    ),
+)
+def test_update_review_phase(event, specs, expected):
     with scope(event=event):
         event.review_phases.all().delete()
-        ReviewPhaseFactory(event=event, name="First", end=None)
-        ReviewPhaseFactory(
-            event=event,
-            name="Second",
-            start=tz_now(),
-            end=tz_now() + dt.timedelta(days=1),
-        )
+        _phases(event, specs)
 
     event = refresh(event)
-    with scope(event=event), pytest.raises(ValidationError, match="open-ended"):
+    with scope(event=event):
+        result = update_review_phase(event)
+        assert (result.name if result else None) == expected
+        assert [phase.name for phase in event.review_phases.filter(is_active=True)] == (
+            [expected] if expected else []
+        )
+
+
+def _phase_errors(event):
+    try:
         validate_review_phases(event)
+    except ValidationError as exc:
+        return exc.messages
+    return []
 
 
-def test_validate_review_phases_rejects_missing_start_on_non_first_phase(event):
-    # Review phases are ordered (start asc, end asc, both nulls first).
-    # To get a null-start phase that is *not* the first one we make both
-    # phases null-start with non-null ends; the earlier end sorts first.
+@pytest.mark.parametrize(
+    ("specs", "errors"),
+    (
+        ((("First", -10, -5, False), ("Second", -4, None, False)), []),
+        (
+            (("First", None, None, False), ("Second", 0, 1, False)),
+            ["Only the last review phase may be open-ended."],
+        ),
+        (
+            (("First", None, -10, False), ("Second", None, -5, False)),
+            ["All review phases except for the first one need a start date."],
+        ),
+        (
+            (("First", -10, 5, False), ("Second", -1, 10, False)),
+            [
+                (
+                    "The review phases 'First' and 'Second' overlap. Please make sure "
+                    "that review phases do not overlap, then save again."
+                )
+            ],
+        ),
+    ),
+    ids=("ordered", "open_ended_non_last", "missing_start_non_first", "overlap"),
+)
+def test_validate_review_phases(event, specs, errors):
+    # Phases are ordered (start asc, end asc, nulls first): two null-start
+    # phases with non-null ends put the earlier end first.
     with scope(event=event):
         event.review_phases.all().delete()
-        ReviewPhaseFactory(
-            event=event, name="First", start=None, end=tz_now() - dt.timedelta(days=10)
-        )
-        ReviewPhaseFactory(
-            event=event, name="Second", start=None, end=tz_now() - dt.timedelta(days=5)
-        )
-
-    event = refresh(event)
-    with scope(event=event), pytest.raises(ValidationError, match="start date"):
-        validate_review_phases(event)
-
-
-def test_validate_review_phases_rejects_overlapping_phases(event):
-    with scope(event=event):
-        event.review_phases.all().delete()
-        ReviewPhaseFactory(
-            event=event,
-            name="First",
-            start=tz_now() - dt.timedelta(days=10),
-            end=tz_now() + dt.timedelta(days=5),
-        )
-        ReviewPhaseFactory(
-            event=event,
-            name="Second",
-            start=tz_now() - dt.timedelta(days=1),
-            end=tz_now() + dt.timedelta(days=10),
-        )
-
-    event = refresh(event)
-    with scope(event=event), pytest.raises(ValidationError, match="overlap"):
-        validate_review_phases(event)
-
-
-def test_update_review_phase_deactivates_future_phase(event):
-    with scope(event=event):
-        event.review_phases.all().delete()
-        future_phase = ReviewPhaseFactory(
-            event=event,
-            name="Future",
-            start=tz_now() + dt.timedelta(days=30),
-            is_active=True,
-        )
+        _phases(event, specs)
 
     event = refresh(event)
     with scope(event=event):
-        result = update_review_phase(event)
-        assert result is None
-        future_phase.refresh_from_db()
-        assert not future_phase.is_active
+        assert _phase_errors(event) == errors

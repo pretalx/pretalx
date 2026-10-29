@@ -49,20 +49,6 @@ def test_feedback_write_serializer_rejects_when_talk_does_not_accept_feedback():
     assert "submission" in serializer.errors
 
 
-def test_feedback_write_serializer_accepts_when_talk_accepts_feedback(
-    published_talk_slot,
-):
-    sub = published_talk_slot.submission
-    event = sub.event
-    speaker = sub.speakers.first()
-    serializer = FeedbackWriteSerializer(
-        context={"request": make_api_request(event=event)},
-        data={"submission": sub.code, "speaker": speaker.code, "review": "Nice"},
-    )
-
-    assert serializer.is_valid(), serializer.errors
-
-
 @pytest.mark.parametrize("hide_via", ("is_public", "show_schedule"))
 def test_feedback_write_serializer_hidden_schedule_error_matches_unknown_code(
     published_talk_slot, hide_via
@@ -110,16 +96,25 @@ def test_feedback_write_serializer_rejects_visible_future_session(published_talk
     ]
 
 
-def test_feedback_write_serializer_ignores_rating(published_talk_slot):
+def test_feedback_write_serializer_creates_feedback_for_speaker_and_ignores_rating(
+    published_talk_slot,
+):
     sub = published_talk_slot.submission
     event = sub.event
+    speaker = sub.speakers.first()
     serializer = FeedbackWriteSerializer(
         context={"request": make_api_request(event=event)},
-        data={"submission": sub.code, "review": "Nice", "rating": 999},
+        data={
+            "submission": sub.code,
+            "speaker": speaker.code,
+            "review": "Nice",
+            "rating": 999,
+        },
     )
 
     assert serializer.is_valid(), serializer.errors
     feedback = serializer.save()
+    assert feedback.speaker == speaker
     assert feedback.rating is None
 
 

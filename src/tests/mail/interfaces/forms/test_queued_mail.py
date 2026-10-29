@@ -15,16 +15,18 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_mail_detail_form_init_no_to_speakers_removes_field():
-    event = EventFactory()
-    mail = QueuedMailFactory(event=event, to="test@example.com")
+def _form_data(to, subject="Test", text="Body"):
+    return {
+        "to": to,
+        "reply_to": "",
+        "cc": "",
+        "bcc": "",
+        "subject": subject,
+        "text": text,
+    }
 
-    form = MailDetailForm(instance=mail)
 
-    assert "to_speakers" not in form.fields
-
-
-def test_mail_detail_form_to_speakers_queryset_only_reachable():
+def test_mail_detail_form_offers_reachable_speakers_only_when_mail_has_some():
     event = EventFactory()
     submission = SubmissionFactory(event=event)
     account_backed = SpeakerFactory(event=event)
@@ -35,6 +37,7 @@ def test_mail_detail_form_to_speakers_queryset_only_reachable():
     submission.speakers.add(account_backed, managed_with_email, managed_without_email)
     mail = QueuedMailFactory(event=event, to="")
     mail.to_speakers.add(account_backed)
+    address_only_mail = QueuedMailFactory(event=event, to="test@example.com")
 
     form = MailDetailForm(instance=mail)
 
@@ -43,58 +46,21 @@ def test_mail_detail_form_to_speakers_queryset_only_reachable():
         account_backed,
         managed_with_email,
     }
+    assert "to_speakers" not in MailDetailForm(instance=address_only_mail).fields
 
 
 def test_mail_detail_form_clean_no_recipients():
     event = EventFactory()
     mail = QueuedMailFactory(event=event, to="someone@example.com")
-    form = MailDetailForm(
-        instance=mail,
-        data={
-            "to": "",
-            "reply_to": "",
-            "cc": "",
-            "bcc": "",
-            "subject": "Test",
-            "text": "Body",
-        },
-    )
+    form = MailDetailForm(instance=mail, data=_form_data(to=""))
 
     assert not form.is_valid()
     assert "to" in form.errors
 
 
-def test_mail_detail_form_save_clears_text_html_on_text_change():
+def test_mail_detail_form_save_clears_text_html_only_on_text_change():
     # Edited plain text invalidates the stored HTML body so delivery_html
     # regenerates from self.text at send time.
-    event = EventFactory()
-    mail = QueuedMailFactory(
-        event=event,
-        to="someone@example.com",
-        text="Original body",
-        text_html="<p>Original body rendered</p>",
-    )
-
-    form = MailDetailForm(
-        instance=mail,
-        data={
-            "to": "someone@example.com",
-            "reply_to": "",
-            "cc": "",
-            "bcc": "",
-            "subject": mail.subject,
-            "text": "Edited body",
-        },
-    )
-    assert form.is_valid(), form.errors
-    saved = form.save()
-    saved.refresh_from_db()
-
-    assert saved.text == "Edited body"
-    assert saved.text_html is None
-
-
-def test_mail_detail_form_save_keeps_text_html_when_only_subject_edited():
     event = EventFactory()
     mail = QueuedMailFactory(
         event=event,
@@ -105,15 +71,7 @@ def test_mail_detail_form_save_keeps_text_html_when_only_subject_edited():
     )
 
     form = MailDetailForm(
-        instance=mail,
-        data={
-            "to": "someone@example.com",
-            "reply_to": "",
-            "cc": "",
-            "bcc": "",
-            "subject": "New subject",
-            "text": "Body",
-        },
+        instance=mail, data=_form_data("someone@example.com", "New subject", "Body")
     )
     assert form.is_valid(), form.errors
     saved = form.save()
@@ -122,143 +80,53 @@ def test_mail_detail_form_save_keeps_text_html_when_only_subject_edited():
     assert saved.subject == "New subject"
     assert saved.text_html == "<p>Body rendered</p>"
 
-
-def test_mail_detail_form_clean_with_to_address():
-    event = EventFactory()
-    mail = QueuedMailFactory(event=event, to="someone@example.com")
     form = MailDetailForm(
-        instance=mail,
-        data={
-            "to": "recipient@example.com",
-            "reply_to": "",
-            "cc": "",
-            "bcc": "",
-            "subject": "Test",
-            "text": "Body",
-        },
+        instance=saved,
+        data=_form_data("someone@example.com", "New subject", "Edited body"),
     )
-
     assert form.is_valid(), form.errors
+    saved = form.save()
+    saved.refresh_from_db()
+
+    assert saved.text == "Edited body"
+    assert saved.text_html is None
 
 
-def test_mail_detail_form_save_moves_known_address_to_to_speakers():
+@pytest.mark.parametrize(
+    ("to", "expected_to", "expected_speakers"),
+    (
+        ("old@example.com", "old@example.com", []),
+        ("unknown@example.com", "unknown@example.com", []),
+        ("known@example.com", "", ["account"]),
+        ("managed@example.com,unknown@example.com", "unknown@example.com", ["managed"]),
+        ("FOO@Example.Com,foo@example.com", "foo@example.com", []),
+    ),
+    ids=("unchanged", "unknown", "known_account", "mixed_managed", "case_dedup"),
+)
+def test_mail_detail_form_save_moves_known_addresses_to_speakers(
+    to, expected_to, expected_speakers
+):
     event = EventFactory()
-    speaker = SpeakerFactory(
-        event=event,
-        user=UserFactory(email="known@example.com"),
-        origin=SpeakerProfileOrigin.ORGA,
-    )
+    speakers = {
+        "account": SpeakerFactory(
+            event=event,
+            user=UserFactory(email="known@example.com"),
+            origin=SpeakerProfileOrigin.ORGA,
+        ),
+        "managed": SpeakerFactory(
+            event=event,
+            user=None,
+            email="managed@example.com",
+            origin=SpeakerProfileOrigin.ORGA,
+        ),
+    }
     mail = QueuedMailFactory(event=event, to="old@example.com")
-    form = MailDetailForm(
-        instance=mail,
-        data={
-            "to": "known@example.com",
-            "reply_to": "",
-            "cc": "",
-            "bcc": "",
-            "subject": "Test",
-            "text": "Body",
-        },
-    )
+    form = MailDetailForm(instance=mail, data=_form_data(to, subject="Updated"))
     assert form.is_valid(), form.errors
 
     saved = form.save()
     saved.refresh_from_db()
 
-    assert saved.to == ""
-    assert list(saved.to_speakers.all()) == [speaker]
-
-
-def test_mail_detail_form_save_keeps_unknown_address_in_to():
-    event = EventFactory()
-    mail = QueuedMailFactory(event=event, to="old@example.com")
-    form = MailDetailForm(
-        instance=mail,
-        data={
-            "to": "unknown@example.com",
-            "reply_to": "",
-            "cc": "",
-            "bcc": "",
-            "subject": "Test",
-            "text": "Body",
-        },
-    )
-    assert form.is_valid(), form.errors
-
-    saved = form.save()
-    saved.refresh_from_db()
-
-    assert saved.to == "unknown@example.com"
-    assert list(saved.to_speakers.all()) == []
-
-
-def test_mail_detail_form_save_mixed_known_and_unknown():
-    event = EventFactory()
-    speaker = SpeakerFactory(
-        event=event,
-        user=None,
-        email="known@example.com",
-        origin=SpeakerProfileOrigin.ORGA,
-    )
-    mail = QueuedMailFactory(event=event, to="old@example.com")
-    form = MailDetailForm(
-        instance=mail,
-        data={
-            "to": "known@example.com,unknown@example.com",
-            "reply_to": "",
-            "cc": "",
-            "bcc": "",
-            "subject": "Test",
-            "text": "Body",
-        },
-    )
-    assert form.is_valid(), form.errors
-
-    saved = form.save()
-    saved.refresh_from_db()
-
-    assert saved.to == "unknown@example.com"
-    assert list(saved.to_speakers.all()) == [speaker]
-
-
-def test_mail_detail_form_save_normalizes_email_case():
-    event = EventFactory()
-    mail = QueuedMailFactory(event=event, to="old@example.com")
-    form = MailDetailForm(
-        instance=mail,
-        data={
-            "to": "FOO@Example.Com,foo@example.com",
-            "reply_to": "",
-            "cc": "",
-            "bcc": "",
-            "subject": "Test",
-            "text": "Body",
-        },
-    )
-    assert form.is_valid(), form.errors
-
-    saved = form.save()
-    saved.refresh_from_db()
-
-    assert saved.to == "foo@example.com"
-
-
-def test_mail_detail_form_save_without_to_change():
-    event = EventFactory()
-    mail = QueuedMailFactory(event=event, to="test@example.com")
-    form = MailDetailForm(
-        instance=mail,
-        data={
-            "to": "test@example.com",
-            "reply_to": "",
-            "cc": "",
-            "bcc": "",
-            "subject": "Updated subject",
-            "text": "Updated body",
-        },
-    )
-    assert form.is_valid(), form.errors
-    saved = form.save()
-    saved.refresh_from_db()
-    assert saved.subject == "Updated subject"
-    assert saved.to == "test@example.com"
+    assert saved.subject == "Updated"
+    assert saved.to == expected_to
+    assert list(saved.to_speakers.all()) == [speakers[key] for key in expected_speakers]

@@ -37,38 +37,29 @@ def test_hack_model_fields_removes_alter_option_keys():
 
 
 @pytest.mark.parametrize(
-    ("field", "stripped_attr"),
+    ("field", "expected_kwargs"),
     (
-        (models.CharField(max_length=100, verbose_name="My field"), "verbose_name"),
-        (models.IntegerField(help_text="A helpful text"), "help_text"),
-        (models.CharField(max_length=10, choices=[("a", "A"), ("b", "B")]), "choices"),
+        (
+            models.CharField(max_length=100, verbose_name="My field"),
+            {"max_length": 100},
+        ),
+        (models.IntegerField(help_text="A helpful text"), {}),
+        (
+            models.CharField(max_length=10, choices=[("a", "A"), ("b", "B")]),
+            {"max_length": 10},
+        ),
+        (models.DateField(blank=True), {"blank": True}),
     ),
-    ids=("verbose_name", "help_text", "choices"),
+    ids=("verbose_name", "help_text", "choices", "blank_kept"),
 )
-def test_hack_model_fields_strips_attr_from_field_deconstruct(field, stripped_attr):
+def test_hack_model_fields_strips_display_attrs_from_field_deconstruct(
+    field, expected_kwargs
+):
     hack_model_fields()
 
     _, _, _, kwargs = field.deconstruct()
 
-    assert stripped_attr not in kwargs
-
-
-def test_hack_model_fields_preserves_blank_on_date_field():
-    hack_model_fields()
-    field = models.DateField(blank=True)
-
-    _, _, _, kwargs = field.deconstruct()
-
-    assert "blank" in kwargs
-
-
-def test_hack_model_fields_preserves_max_length_on_char_field():
-    hack_model_fields()
-    field = models.CharField(max_length=255)
-
-    _, _, _, kwargs = field.deconstruct()
-
-    assert kwargs["max_length"] == 255
+    assert kwargs == expected_kwargs
 
 
 @pytest.mark.django_db

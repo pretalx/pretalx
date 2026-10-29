@@ -18,8 +18,65 @@ from tests.utils import make_orga_user
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
+TEAM_DATA = {
+    "all_events": True,
+    "can_change_submissions": True,
+    "can_change_organiser_settings": True,
+    "can_change_event_settings": True,
+    "can_change_teams": True,
+    "can_create_events": True,
+    "form": "team",
+}
 
-def test_organiser_detail_accessible_by_organiser(client, event):
+
+def _team_url(event, name, **kwargs):
+    return reverse(
+        f"orga:organiser.teams.{name}",
+        kwargs={"organiser": event.organiser.slug, **kwargs},
+    )
+
+
+def test_organiser_views_deny_anonymous_and_unrelated_users(client, event):
+    with scopes_disabled():
+        team = TeamFactory(
+            organiser=event.organiser, can_change_teams=True, all_events=True
+        )
+        member = UserFactory()
+        team.members.add(member)
+    organiser = event.organiser
+    get_urls = (
+        organiser.orga_urls.settings,
+        _team_url(event, "list"),
+        reverse("orga:organiser.speakers", kwargs={"organiser": organiser.slug}),
+    )
+    member_kwargs = {"team_pk": team.pk, "user_pk": member.pk}
+    post_urls = (
+        organiser.orga_urls.delete,
+        _team_url(event, "members.delete", **member_kwargs),
+        _team_url(event, "members.reset", **member_kwargs),
+    )
+
+    for url in get_urls:
+        response = client.get(url)
+        assert response.status_code == 302, url
+        assert response.url == f"/orga/login/?next={url}", url
+
+    client.force_login(UserFactory())
+    for url in get_urls:
+        assert client.get(url).status_code == 404, url
+    for url in post_urls:
+        assert client.post(url).status_code == 404, url
+
+    client.force_login(make_orga_user(event, can_change_organiser_settings=True))
+    assert client.post(organiser.orga_urls.delete, follow=True).status_code == 404
+
+    assert Organiser.objects.filter(pk=organiser.pk).exists()
+    assert list(team.members.all()) == [member]
+    member.refresh_from_db()
+    assert not member.pw_reset_token
+
+
+def test_organiser_detail_shows_and_edits_name(client, event):
     user = make_orga_user(event, can_change_organiser_settings=True)
     client.force_login(user)
 
@@ -27,11 +84,6 @@ def test_organiser_detail_accessible_by_organiser(client, event):
 
     assert response.status_code == 200
     assert str(event.organiser.name) in response.content.decode()
-
-
-def test_organiser_detail_edit_name(client, event):
-    user = make_orga_user(event, can_change_organiser_settings=True)
-    client.force_login(user)
 
     response = client.post(
         event.organiser.orga_urls.settings,
@@ -44,19 +96,10 @@ def test_organiser_detail_edit_name(client, event):
     assert str(event.organiser.name) == "New Organiser Name"
 
 
-def test_organiser_detail_denied_without_permission(client, event):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.get(event.organiser.orga_urls.settings)
-
-    assert response.status_code == 404
-
-
-def test_organiser_create_by_administrator(client):
+def test_organiser_create_and_delete_by_administrator(client, event):
     admin = UserFactory(is_administrator=True)
     client.force_login(admin)
-    assert Organiser.objects.count() == 0
+    organiser = event.organiser
 
     response = client.post(
         reverse("orga:organiser.create"),
@@ -69,14 +112,7 @@ def test_organiser_create_by_administrator(client):
     )
 
     assert response.status_code == 200
-    assert Organiser.objects.count() == 1
-    assert str(Organiser.objects.first().name) == "New Organiser"
-
-
-def test_organiser_delete_by_administrator(client, event):
-    admin = UserFactory(is_administrator=True)
-    client.force_login(admin)
-    organiser = event.organiser
+    assert str(Organiser.objects.get(slug="new-organiser").name) == "New Organiser"
 
     response = client.get(organiser.orga_urls.delete, follow=True)
     assert response.status_code == 200
@@ -84,353 +120,113 @@ def test_organiser_delete_by_administrator(client, event):
     response = client.post(organiser.orga_urls.delete, follow=True)
 
     assert response.status_code == 200
-    assert not Organiser.objects.filter(pk=organiser.pk).exists()
-
-
-def test_organiser_delete_cascades_events(client, event):
-    admin = UserFactory(is_administrator=True)
-    client.force_login(admin)
-    organiser = event.organiser
-    event_pk = event.pk
-
-    client.post(organiser.orga_urls.delete, follow=True)
-
+    assert list(Organiser.objects.values_list("slug", flat=True)) == ["new-organiser"]
     with scopes_disabled():
-        assert not Event.objects.filter(pk=event_pk).exists()
+        assert not Event.objects.filter(pk=event.pk).exists()
 
 
-def test_organiser_delete_denied_for_non_administrator(client, event):
-    user = make_orga_user(event, can_change_organiser_settings=True)
-    client.force_login(user)
-
-    response = client.post(event.organiser.orga_urls.delete, follow=True)
-
-    assert response.status_code == 404
-    assert Organiser.objects.filter(pk=event.organiser.pk).exists()
-
-
-@pytest.mark.parametrize(
-    "url_name", ("orga:organiser.teams.list", "orga:organiser.speakers")
-)
-def test_organiser_views_anonymous_redirect_to_login(client, event, url_name):
-    url = reverse(url_name, kwargs={"organiser": event.organiser.slug})
-
-    response = client.get(url)
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
-@pytest.mark.parametrize("can_change_teams", (True, False))
-def test_team_list_requires_team_permission(client, event, can_change_teams):
+def test_team_list_requires_team_permission(client, event):
     with scopes_disabled():
         team = TeamFactory(
             organiser=event.organiser, name="Visible Team", all_events=True
         )
-    user = make_orga_user(event, can_change_teams=can_change_teams)
-    client.force_login(user)
+    url = _team_url(event, "list")
 
-    url = reverse(
-        "orga:organiser.teams.list", kwargs={"organiser": event.organiser.slug}
-    )
+    client.force_login(make_orga_user(event, can_change_teams=False))
+
+    assert client.get(url).status_code == 404
+
+    client.force_login(make_orga_user(event, can_change_teams=True))
     response = client.get(url)
 
-    if can_change_teams:
-        assert response.status_code == 200
-        assert str(team.name) in response.content.decode()
-    else:
-        assert response.status_code == 404
+    assert response.status_code == 200
+    assert str(team.name) in response.content.decode()
 
 
-def test_team_create(client, event):
+def test_team_create_requires_an_event(client, event):
     user = make_orga_user(event, can_change_teams=True)
     client.force_login(user)
     initial_count = event.organiser.teams.count()
+    url = _team_url(event, "create")
+    data = {**TEAM_DATA, "name": "New Team", "organiser": event.organiser.pk}
+    del data["all_events"]
 
-    url = reverse(
-        "orga:organiser.teams.create", kwargs={"organiser": event.organiser.slug}
-    )
-    response = client.post(
-        url,
-        data={
-            "all_events": True,
-            "can_change_submissions": True,
-            "can_change_organiser_settings": True,
-            "can_change_event_settings": True,
-            "can_change_teams": True,
-            "can_create_events": True,
-            "form": "team",
-            "limit_events": event.pk,
-            "name": "New Team",
-            "organiser": event.organiser.pk,
-        },
-        follow=True,
-    )
+    response = client.post(url, data=data, follow=True)
+
+    assert response.status_code == 200
+    assert event.organiser.teams.count() == initial_count
+
+    response = client.post(url, data={**data, "limit_events": event.pk}, follow=True)
 
     assert response.status_code == 200
     assert event.organiser.teams.count() == initial_count + 1
-    assert event.organiser.teams.filter(name="New Team").exists()
+    with scopes_disabled():
+        assert list(event.organiser.teams.get(name="New Team").limit_events.all()) == [
+            event
+        ]
 
 
-def test_team_create_without_event_fails_validation(client, event):
-    user = make_orga_user(event, can_change_teams=True)
-    client.force_login(user)
-    initial_count = event.organiser.teams.count()
-
-    url = reverse(
-        "orga:organiser.teams.create", kwargs={"organiser": event.organiser.slug}
-    )
-    client.post(
-        url,
-        data={
-            "can_change_submissions": True,
-            "can_change_organiser_settings": True,
-            "can_change_event_settings": True,
-            "can_change_teams": True,
-            "can_create_events": True,
-            "form": "team",
-            "name": "Invalid Team",
-            "organiser": event.organiser.pk,
-        },
-        follow=True,
-    )
-
-    assert event.organiser.teams.count() == initial_count
-
-
-def test_team_update(client, event):
+def test_team_update_page_edits_team_and_invites_members(client, event):
     with scopes_disabled():
         team = TeamFactory(
             organiser=event.organiser,
             name="Original",
             can_change_teams=True,
+            can_create_events=True,
             all_events=True,
         )
-    user = make_orga_user(
-        event,
-        can_change_teams=True,
-        can_create_events=True,
-        can_change_organiser_settings=True,
-        can_change_event_settings=True,
-    )
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.update",
-        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
-    )
-    response = client.post(
-        url,
-        data={
-            "all_events": True,
-            "can_change_submissions": True,
-            "can_change_organiser_settings": True,
-            "can_change_event_settings": True,
-            "can_change_teams": True,
-            "can_create_events": True,
-            "form": "team",
-            "name": "Updated Team Name",
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    team.refresh_from_db()
-    assert team.name == "Updated Team Name"
-
-
-def test_team_update_cannot_remove_last_team_permissions(client, event):
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser,
-            name="Only Admin Team",
-            can_change_teams=True,
-            all_events=True,
-        )
-        user = UserFactory()
-        team.members.add(user)
-        # Remove can_change_teams from all other teams
-        event.organiser.teams.exclude(pk=team.pk).update(can_change_teams=False)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.update",
-        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
-    )
-    response = client.post(
-        url,
-        data={
-            "all_events": True,
-            "can_change_submissions": True,
-            "can_change_organiser_settings": False,
-            "can_change_event_settings": True,
-            "can_change_teams": False,
-            "can_create_events": True,
-            "form": "team",
-            "name": "Removed Permissions",
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    team.refresh_from_db()
-    assert team.can_change_teams
-    assert team.name != "Removed Permissions"
-
-
-def test_team_delete(client, event):
-    with scopes_disabled():
-        # Ensure another team keeps can_change_teams so deletion is allowed
-        TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        ).members.add(UserFactory())
-        team_to_delete = TeamFactory(
-            organiser=event.organiser, name="Deletable", all_events=True
-        )
-    user = make_orga_user(
-        event,
-        can_change_teams=True,
-        can_create_events=True,
-        can_change_organiser_settings=True,
-        can_change_event_settings=True,
-    )
-    client.force_login(user)
-    team_pk = team_to_delete.pk
-
-    url = reverse(
-        "orga:organiser.teams.delete",
-        kwargs={"organiser": event.organiser.slug, "pk": team_pk},
-    )
-    response = client.post(url, follow=True)
-
-    assert response.status_code == 200
-    assert not Team.objects.filter(pk=team_pk).exists()
-
-
-def test_team_delete_last_team_with_change_teams_permission_fails(client, event):
-    with scopes_disabled():
-        event.organiser.teams.update(can_change_teams=False)
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-        user = UserFactory()
-        team.members.add(user)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.delete",
-        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
-    )
-    response = client.post(url, follow=True)
-
-    assert response.status_code == 200
-    assert Team.objects.filter(pk=team.pk).exists()
-
-
-def test_team_update_page_delete_button_enabled_when_deletable(client, event):
-    with scopes_disabled():
-        event.organiser.teams.update(can_change_teams=False)
-        backup = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-        backup.members.add(UserFactory())
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-        team.members.add(UserFactory())
-    user = make_orga_user(teams=[backup])
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.update",
-        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
-    )
-    response = client.get(url)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    delete_url = reverse(
-        "orga:organiser.teams.delete",
-        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
-    )
-    assert f'href="{delete_url}"' in content
-    assert 'aria-disabled="true"' not in content
-
-
-def test_team_update_page_delete_button_disabled_for_last_change_teams_team(
-    client, event
-):
-    with scopes_disabled():
-        event.organiser.teams.update(can_change_teams=False)
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-        team.members.add(UserFactory())
-    user = make_orga_user(teams=[team])
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.update",
-        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
-    )
-    response = client.get(url)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    delete_url = reverse(
-        "orga:organiser.teams.delete",
-        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
-    )
-    assert f'href="{delete_url}"' not in content
-    assert 'aria-disabled="true"' in content
-    assert "at least one team with the permission to change teams" in content
-
-
-def test_team_delete_button_disabled_state_agrees_with_server_refusal(client, event):
-    with scopes_disabled():
-        event.organiser.teams.update(can_change_teams=False)
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-        user = UserFactory()
-        team.members.add(user)
-    client.force_login(user)
-
-    update_url = reverse(
-        "orga:organiser.teams.update",
-        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
-    )
-    delete_url = reverse(
-        "orga:organiser.teams.delete",
-        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
-    )
-
-    update_response = client.get(update_url)
-    delete_response = client.post(delete_url, follow=True)
-
-    assert update_response.status_code == 200
-    content = update_response.content.decode()
-    assert f'href="{delete_url}"' not in content
-    assert 'aria-disabled="true"' in content
-
-    assert delete_response.status_code == 200
-    with scopes_disabled():
-        assert Team.objects.filter(pk=team.pk).exists()
-
-
-def test_team_invite_single_member(client, event):
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
+        member = UserFactory()
+        team.members.add(member)
+        SpeakerFactory(event=event, user=member)
+        TeamInviteFactory(team=team, email="pending@example.com")
     user = make_orga_user(event, can_change_teams=True)
     client.force_login(user)
     djmail.outbox = []
+    url = _team_url(event, "update", pk=team.pk)
 
-    url = reverse(
-        "orga:organiser.teams.update",
-        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
+    response = client.get(url)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Original" in content
+    assert member.name in content
+    assert "status-dot" not in content
+
+    response = client.post(
+        url, data={**TEAM_DATA, "name": "Updated Team Name"}, follow=True
     )
+
+    assert response.status_code == 200
+    assert [str(message) for message in response.context["messages"]] == [
+        "Your changes have been saved."
+    ]
+    team.refresh_from_db()
+    assert team.name == "Updated Team Name"
+    assert team.can_create_events
+
+    response = client.post(
+        url,
+        data={**TEAM_DATA, "can_create_events": False, "name": "No Create Events"},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert [str(message) for message in response.context["messages"]] == [
+        "Your changes have been saved.",
+        "Nobody on your teams has the permission to create new events.",
+    ]
+    team.refresh_from_db()
+    assert team.name == "No Create Events"
+    assert not team.can_create_events
+
+    response = client.post(
+        url, data={"invite-emails": "", "form": "invite"}, follow=True
+    )
+
+    assert response.status_code == 200
+    assert list(team.invites.values_list("email", flat=True)) == ["pending@example.com"]
+    assert djmail.outbox == []
+
     response = client.post(
         url,
         data={"invite-emails": "newinvite@example.com", "form": "invite"},
@@ -438,25 +234,12 @@ def test_team_invite_single_member(client, event):
     )
 
     assert response.status_code == 200
-    assert team.invites.count() == 1
-    assert team.invites.first().email == "newinvite@example.com"
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == ["newinvite@example.com"]
+    assert list(team.invites.order_by("pk").values_list("email", flat=True)) == [
+        "pending@example.com",
+        "newinvite@example.com",
+    ]
+    assert [mail.to for mail in djmail.outbox] == [["newinvite@example.com"]]
 
-
-def test_team_invite_multiple_members(client, event):
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-    user = make_orga_user(event, can_change_teams=True)
-    client.force_login(user)
-    djmail.outbox = []
-
-    url = reverse(
-        "orga:organiser.teams.update",
-        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
-    )
     response = client.post(
         url,
         data={
@@ -467,68 +250,129 @@ def test_team_invite_multiple_members(client, event):
     )
 
     assert response.status_code == 200
-    assert team.invites.count() == 2
-    assert len(djmail.outbox) == 2
-    assert djmail.outbox[0].to == ["first@example.com"]
-    assert djmail.outbox[1].to == ["second@example.com"]
+    assert team.invites.count() == 4
+    assert [mail.to for mail in djmail.outbox] == [
+        ["newinvite@example.com"],
+        ["first@example.com"],
+        ["second@example.com"],
+    ]
 
 
-def test_team_uninvite_post_retracts_invitation(client, event):
+def test_last_team_with_change_teams_permission_is_protected(client, event):
     with scopes_disabled():
+        event.organiser.teams.update(can_change_teams=False)
         team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
+            organiser=event.organiser,
+            name="Only Admin Team",
+            can_change_teams=True,
+            all_events=True,
         )
-        invite = TeamInviteFactory(team=team, email="uninvite@example.com")
-    user = make_orga_user(event, can_change_teams=True)
+        user = make_orga_user(teams=[team])
+        other_member = UserFactory()
+        team.members.add(other_member)
     client.force_login(user)
-    invite_pk = invite.pk
+    update_url = _team_url(event, "update", pk=team.pk)
+    delete_url = _team_url(event, "delete", pk=team.pk)
 
-    url = reverse(
-        "orga:organiser.teams.invites.uninvite",
-        kwargs={
-            "organiser": event.organiser.slug,
-            "pk": team.pk,
-            "invite_pk": invite_pk,
-        },
-    )
-    response = client.post(url, follow=True)
+    response = client.get(update_url)
 
     assert response.status_code == 200
-    with scopes_disabled():
-        assert not TeamInvite.objects.filter(pk=invite_pk).exists()
+    content = response.content.decode()
+    assert f'href="{delete_url}"' not in content
+    assert 'aria-disabled="true"' in content
+    assert "at least one team with the permission to change teams" in content
 
-
-def test_team_resend_post_sends_email(client, event):
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-        invite = TeamInviteFactory(team=team, email="resend@example.com")
-    user = make_orga_user(event, can_change_teams=True)
-    client.force_login(user)
-    djmail.outbox = []
-
-    url = reverse(
-        "orga:organiser.teams.invites.resend",
-        kwargs={
-            "organiser": event.organiser.slug,
-            "pk": team.pk,
-            "invite_pk": invite.pk,
+    response = client.post(
+        update_url,
+        data={
+            **TEAM_DATA,
+            "can_change_organiser_settings": False,
+            "can_change_teams": False,
+            "name": "Removed Permissions",
         },
+        follow=True,
     )
-    response = client.post(url, follow=True)
 
     assert response.status_code == 200
-    assert team.invites.count() == 1
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == ["resend@example.com"]
+    team.refresh_from_db()
+    assert team.can_change_teams
+    assert team.name == "Only Admin Team"
+
+    response = client.post(delete_url, follow=True)
+
+    assert response.status_code == 200
+    assert Team.objects.filter(pk=team.pk).exists()
+
+    response = client.post(
+        _team_url(event, "members.delete", team_pk=team.pk, user_pk=other_member.pk),
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert list(team.members.all()) == [user]
+
+    response = client.post(
+        _team_url(event, "members.delete", team_pk=team.pk, user_pk=user.pk),
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert list(team.members.all()) == [user]
 
 
-@pytest.mark.parametrize(
-    "url_name",
-    ("orga:organiser.teams.invites.uninvite", "orga:organiser.teams.invites.resend"),
-)
-def test_team_invite_confirm_page_names_invite_and_links_back(client, event, url_name):
+def test_team_delete_when_another_team_keeps_change_teams(client, event):
+    with scopes_disabled():
+        backup = TeamFactory(
+            organiser=event.organiser,
+            can_change_teams=True,
+            can_create_events=True,
+            can_change_event_settings=True,
+            all_events=True,
+        )
+        settings_team = TeamFactory(
+            organiser=event.organiser,
+            name="Settings",
+            can_change_organiser_settings=True,
+            all_events=True,
+        )
+        settings_team.members.add(UserFactory())
+        deletable = TeamFactory(
+            organiser=event.organiser,
+            name="Deletable",
+            can_change_teams=True,
+            all_events=True,
+        )
+        deletable.members.add(UserFactory())
+    user = make_orga_user(teams=[backup])
+    client.force_login(user)
+    delete_url = _team_url(event, "delete", pk=deletable.pk)
+
+    response = client.get(_team_url(event, "update", pk=deletable.pk))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert f'href="{delete_url}"' in content
+    assert 'aria-disabled="true"' not in content
+
+    response = client.post(delete_url, follow=True)
+
+    assert response.status_code == 200
+    assert [str(message) for message in response.context["messages"]] == [
+        "The team was removed."
+    ]
+    assert not Team.objects.filter(pk=deletable.pk).exists()
+
+    response = client.post(_team_url(event, "delete", pk=settings_team.pk), follow=True)
+
+    assert response.status_code == 200
+    assert [str(message) for message in response.context["messages"]] == [
+        "The team was removed.",
+        "Nobody on your teams has the permission to change organiser-level settings.",
+    ]
+    assert set(Team.objects.filter(organiser=event.organiser)) == {backup}
+
+
+def test_team_invite_resend_and_uninvite(client, event):
     with scopes_disabled():
         team = TeamFactory(
             organiser=event.organiser, can_change_teams=True, all_events=True
@@ -536,53 +380,37 @@ def test_team_invite_confirm_page_names_invite_and_links_back(client, event, url
         invite = TeamInviteFactory(team=team, email="confirm@example.com")
     user = make_orga_user(event, can_change_teams=True)
     client.force_login(user)
+    djmail.outbox = []
+    invite_kwargs = {"pk": team.pk, "invite_pk": invite.pk}
+    resend_url = _team_url(event, "invites.resend", **invite_kwargs)
+    uninvite_url = _team_url(event, "invites.uninvite", **invite_kwargs)
 
-    url = reverse(
-        url_name,
-        kwargs={
-            "organiser": event.organiser.slug,
-            "pk": team.pk,
-            "invite_pk": invite.pk,
-        },
-    )
-    response = client.get(url)
+    for url in (resend_url, uninvite_url):
+        response = client.get(url)
+        assert response.status_code == 200, url
+        content = response.content.decode()
+        assert "confirm@example.com" in content, url
+        assert f'href="{team.orga_urls.base}"' in content, url
+
+    response = client.post(resend_url, follow=True)
 
     assert response.status_code == 200
-    content = response.content.decode()
-    assert "confirm@example.com" in content
-    assert f'href="{team.orga_urls.base}"' in content
+    assert list(team.invites.all()) == [invite]
+    assert [mail.to for mail in djmail.outbox] == [["confirm@example.com"]]
+
+    response = client.post(uninvite_url, follow=True)
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert not TeamInvite.objects.filter(pk=invite.pk).exists()
 
 
-def test_team_member_delete_confirm_page_names_member(client, event):
+def test_team_member_reset_password_and_delete(client, event):
     with scopes_disabled():
         team = TeamFactory(
             organiser=event.organiser, can_change_teams=True, all_events=True
         )
         member = UserFactory(name="Member Person", email="member@example.com")
-        team.members.add(member)
-    user = make_orga_user(event, can_change_teams=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.members.delete",
-        kwargs={
-            "organiser": event.organiser.slug,
-            "team_pk": team.pk,
-            "user_pk": member.pk,
-        },
-    )
-    response = client.get(url)
-
-    assert response.status_code == 200
-    assert "Member Person (member@example.com)" in response.content.decode()
-
-
-def test_team_member_delete_removes_member(client, event):
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-        member = UserFactory()
         team.members.add(member)
     user = make_orga_user(
         event,
@@ -592,168 +420,36 @@ def test_team_member_delete_removes_member(client, event):
         can_change_event_settings=True,
     )
     client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.members.delete",
-        kwargs={
-            "organiser": event.organiser.slug,
-            "team_pk": team.pk,
-            "user_pk": member.pk,
-        },
-    )
-    response = client.post(url, follow=True)
-
-    assert response.status_code == 200
-    assert member not in team.members.all()
-
-
-def test_team_member_delete_cannot_remove_last_member_with_change_teams(client, event):
-    with scopes_disabled():
-        event.organiser.teams.update(can_change_teams=False)
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-        other_member = UserFactory()
-        user = make_orga_user(teams=[team])
-        team.members.add(other_member)
-    client.force_login(user)
-    assert team.members.count() == 2
-
-    url = reverse(
-        "orga:organiser.teams.members.delete",
-        kwargs={
-            "organiser": event.organiser.slug,
-            "team_pk": team.pk,
-            "user_pk": other_member.pk,
-        },
-    )
-    response = client.post(url, follow=True)
-
-    assert response.status_code == 200
-    assert team.members.count() == 1
-    assert other_member not in team.members.all()
-
-    url = reverse(
-        "orga:organiser.teams.members.delete",
-        kwargs={
-            "organiser": event.organiser.slug,
-            "team_pk": team.pk,
-            "user_pk": user.pk,
-        },
-    )
-    response = client.post(url, follow=True)
-
-    assert response.status_code == 200
-    assert team.members.count() == 1
-    assert user in team.members.all()
-
-
-def test_team_member_delete_denied_without_permission(client, event):
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-        member = UserFactory()
-        team.members.add(member)
-    user = UserFactory()
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.members.delete",
-        kwargs={
-            "organiser": event.organiser.slug,
-            "team_pk": team.pk,
-            "user_pk": member.pk,
-        },
-    )
-    response = client.post(url)
-
-    assert response.status_code == 404
-    assert member in team.members.all()
-
-
-def test_team_reset_password_sends_reset_email(client, event):
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-        member = UserFactory()
-        team.members.add(member)
-    user = make_orga_user(event, can_change_teams=True)
-    client.force_login(user)
     djmail.outbox = []
-    assert not member.pw_reset_token
+    member_kwargs = {"team_pk": team.pk, "user_pk": member.pk}
+    delete_url = _team_url(event, "members.delete", **member_kwargs)
+    reset_url = _team_url(event, "members.reset", **member_kwargs)
 
-    url = reverse(
-        "orga:organiser.teams.members.reset",
-        kwargs={
-            "organiser": event.organiser.slug,
-            "team_pk": team.pk,
-            "user_pk": member.pk,
-        },
-    )
-    response = client.post(url, follow=True)
+    response = client.get(delete_url)
+
+    assert response.status_code == 200
+    assert "Member Person (member@example.com)" in response.content.decode()
+
+    response = client.post(reset_url, follow=True)
+
+    assert response.status_code == 200
+    member.refresh_from_db()
+    first_token = member.pw_reset_token
+    assert first_token
+    assert [mail.to for mail in djmail.outbox] == [["member@example.com"]]
+
+    response = client.post(reset_url, follow=True)
 
     assert response.status_code == 200
     member.refresh_from_db()
     assert member.pw_reset_token
-    assert len(djmail.outbox) == 1
-
-
-def test_team_reset_password_can_be_sent_twice(client, event):
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-        member = UserFactory()
-        team.members.add(member)
-    user = make_orga_user(event, can_change_teams=True)
-    client.force_login(user)
-    djmail.outbox = []
-
-    url = reverse(
-        "orga:organiser.teams.members.reset",
-        kwargs={
-            "organiser": event.organiser.slug,
-            "team_pk": team.pk,
-            "user_pk": member.pk,
-        },
-    )
-
-    client.post(url, follow=True)
-    member.refresh_from_db()
-    first_token = member.pw_reset_token
-
-    client.post(url, follow=True)
-    member.refresh_from_db()
-
     assert member.pw_reset_token != first_token
     assert len(djmail.outbox) == 2
 
+    response = client.post(delete_url, follow=True)
 
-def test_team_reset_password_denied_without_permission(client, event):
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-        member = UserFactory()
-        team.members.add(member)
-    user = UserFactory()
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.members.reset",
-        kwargs={
-            "organiser": event.organiser.slug,
-            "team_pk": team.pk,
-            "user_pk": member.pk,
-        },
-    )
-    response = client.post(url)
-
-    assert response.status_code == 404
-    member.refresh_from_db()
-    assert not member.pw_reset_token
+    assert response.status_code == 200
+    assert list(team.members.all()) == []
 
 
 @override_settings(
@@ -776,15 +472,10 @@ def test_team_reset_password_shows_error_on_mail_failure(client, event):
     user = make_orga_user(event, can_change_teams=True)
     client.force_login(user)
 
-    url = reverse(
-        "orga:organiser.teams.members.reset",
-        kwargs={
-            "organiser": event.organiser.slug,
-            "team_pk": team.pk,
-            "user_pk": member.pk,
-        },
+    response = client.post(
+        _team_url(event, "members.reset", team_pk=team.pk, user_pk=member.pk),
+        follow=True,
     )
-    response = client.post(url, follow=True)
 
     assert response.status_code == 200
     content = response.content.decode()
@@ -815,153 +506,30 @@ def test_organiser_speaker_list_shows_speakers(
         assert speaker.user.name in content
 
 
-def test_organiser_speaker_list_unrelated_user_gets_404(client, event):
-    client.force_login(UserFactory())
-
-    url = reverse("orga:organiser.speakers", kwargs={"organiser": event.organiser.slug})
-    response = client.get(url)
-
-    assert response.status_code == 404
-
-
-def test_organiser_speaker_list_hides_speakers_without_event_access(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event, user__name="Hidden Speaker")
-        sub = SubmissionFactory(event=event, state="accepted")
-        sub.speakers.add(speaker)
-    user = make_orga_user(event, can_change_submissions=False, can_change_teams=True)
-    client.force_login(user)
-
-    url = reverse("orga:organiser.speakers", kwargs={"organiser": event.organiser.slug})
-    response = client.get(url)
-
-    assert response.status_code == 200
-    assert "Hidden Speaker" not in response.content.decode()
-
-
-@pytest.mark.parametrize(
-    ("sort", "first", "second"),
-    (("name", "Adam Aardvark", "Zed Zebra"), ("-name", "Zed Zebra", "Adam Aardvark")),
-)
-def test_organiser_speaker_list_sorts_by_column(client, event, sort, first, second):
+def test_organiser_speaker_list_sorts_and_hides_without_event_access(client, event):
     with scopes_disabled():
         for name in ("Zed Zebra", "Adam Aardvark"):
             speaker = SpeakerFactory(event=event, user__name=name)
             sub = SubmissionFactory(event=event, state="accepted")
             sub.speakers.add(speaker)
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
     url = reverse("orga:organiser.speakers", kwargs={"organiser": event.organiser.slug})
-    response = client.get(url, {"sort": sort})
+    client.force_login(make_orga_user(event, can_change_submissions=True))
 
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert content.index(first) < content.index(second)
+    for sort, first, second in (
+        ("name", "Adam Aardvark", "Zed Zebra"),
+        ("-name", "Zed Zebra", "Adam Aardvark"),
+    ):
+        response = client.get(url, {"sort": sort})
+        assert response.status_code == 200, sort
+        content = response.content.decode()
+        assert content.index(first) < content.index(second), sort
 
-
-def test_team_invite_invalid_email_shows_error(client, event):
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-    user = make_orga_user(event, can_change_teams=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.update",
-        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
-    )
-    response = client.post(
-        url, data={"invite-emails": "", "form": "invite"}, follow=True
-    )
-
-    assert response.status_code == 200
-    assert team.invites.count() == 0
-
-
-def test_team_update_with_warnings(client, event):
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser,
-            can_change_teams=True,
-            can_create_events=True,
-            all_events=True,
-        )
-    user = make_orga_user(event, can_change_teams=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.update",
-        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
-    )
-    response = client.post(
-        url,
-        data={
-            "all_events": True,
-            "can_change_submissions": True,
-            "can_change_organiser_settings": True,
-            "can_change_event_settings": True,
-            "can_change_teams": True,
-            "can_create_events": False,
-            "form": "team",
-            "name": "No Create Events",
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    team.refresh_from_db()
-    assert team.name == "No Create Events"
-
-
-def test_team_delete_with_warnings(client, event):
-    with scopes_disabled():
-        # Team 1: the user's team, keeps can_change_teams
-        keep_team = TeamFactory(
-            organiser=event.organiser,
-            can_change_teams=True,
-            can_create_events=True,
-            all_events=True,
-        )
-        keep_team.members.add(UserFactory())
-        # Team 2: a team with can_create_events that will be deleted
-        deletable = TeamFactory(
-            organiser=event.organiser, can_create_events=True, all_events=True
-        )
-    user = make_orga_user(event, can_change_teams=True, can_create_events=False)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.delete",
-        kwargs={"organiser": event.organiser.slug, "pk": deletable.pk},
-    )
-    response = client.post(url, follow=True)
-
-    assert response.status_code == 200
-    assert not Team.objects.filter(pk=deletable.pk).exists()
-
-
-def test_team_update_view_get_shows_form(client, event):
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-        member = UserFactory()
-        team.members.add(member)
-        SpeakerFactory(event=event, user=member)
-        TeamInviteFactory(team=team)
-    user = make_orga_user(event, can_change_teams=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.update",
-        kwargs={"organiser": event.organiser.slug, "pk": team.pk},
+    client.force_login(
+        make_orga_user(event, can_change_submissions=False, can_change_teams=True)
     )
     response = client.get(url)
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert team.name in content
-    assert member.name in content
-    assert "status-dot" not in content
+    assert "Zed Zebra" not in content
+    assert "Adam Aardvark" not in content

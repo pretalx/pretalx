@@ -20,66 +20,56 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_validate_slot_count_allows_one():
+def _message_dict(validator, *args, **kwargs):
+    try:
+        validator(*args, **kwargs)
+    except ValidationError as exc:
+        return exc.message_dict
+    return {}
+
+
+def test_validate_slot_count_needs_feature_flag_above_one():
+    without_flag = EventFactory(feature_flags={"present_multiple_times": False})
+    with_flag = EventFactory(feature_flags={"present_multiple_times": True})
+
+    validate_slot_count(1, event=without_flag)
+    validate_slot_count(3, event=with_flag)
+    with pytest.raises(ValidationError, match="may only be 1"):
+        validate_slot_count(2, event=without_flag)
+
+
+def test_validate_signup_required_blocks_disabling_only_with_confirmed_signups():
     event = EventFactory()
-    validate_slot_count(1, event=event)  # does not raise
+    unsaved = Submission(
+        event=event, submission_type=SubmissionTypeFactory(event=event), title="t"
+    )
+    signed_up = SubmissionFactory(event=event)
+    canceled_only = SubmissionFactory(event=event)
+    without_signups = SubmissionFactory(event=event)
+    already_disabled = SubmissionFactory(event=event, attendee_signup_required=False)
+    error = {
+        "attendee_signup_required": [
+            "You cannot disable signup for this session while it still has attendee signups."
+        ]
+    }
 
-
-def test_validate_slot_count_blocks_above_one_without_feature_flag():
-    event = EventFactory(feature_flags={"present_multiple_times": False})
-    with pytest.raises(ValidationError):
-        validate_slot_count(2, event=event)
-
-
-def test_validate_slot_count_allows_above_one_with_feature_flag():
-    event = EventFactory(feature_flags={"present_multiple_times": True})
-    validate_slot_count(3, event=event)
-
-
-def test_validate_signup_required_unsaved_submission_short_circuits():
-    event = EventFactory()
-    sub_type = SubmissionTypeFactory(event=event)
-    submission = Submission(event=event, submission_type=sub_type, title="t")
-    validate_signup_required(submission, False)  # does not raise
-
-
-@pytest.mark.parametrize("value", (True, None), ids=("true", "none"))
-def test_validate_signup_required_non_false_passes_with_signups(value):
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
     with scope(event=event):
-        AttendeeSignupFactory(submission=submission)
-        validate_signup_required(submission, value)
-
-
-def test_validate_signup_required_false_raises_with_signups():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    with scope(event=event):
-        AttendeeSignupFactory(submission=submission)
-        with pytest.raises(ValidationError) as exc:
-            validate_signup_required(submission, False)
-    assert "attendee_signup_required" in exc.value.message_dict
-
-
-def test_validate_signup_required_false_passes_without_signups():
-    submission = SubmissionFactory()
-    validate_signup_required(submission, False)
-
-
-def test_validate_signup_required_ignores_canceled_signups():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    with scope(event=event):
+        AttendeeSignupFactory(submission=signed_up)
+        AttendeeSignupFactory(submission=already_disabled)
         AttendeeSignupFactory(
-            submission=submission, state=AttendeeSignupStates.CANCELED
+            submission=canceled_only, state=AttendeeSignupStates.CANCELED
         )
-        validate_signup_required(submission, False)  # does not raise
+        results = [
+            _message_dict(validate_signup_required, submission, value)
+            for submission, value in (
+                (unsaved, False),
+                (signed_up, True),
+                (signed_up, None),
+                (signed_up, False),
+                (canceled_only, False),
+                (without_signups, False),
+                (already_disabled, False),
+            )
+        ]
 
-
-def test_validate_signup_required_no_op_when_value_already_false():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, attendee_signup_required=False)
-    with scope(event=event):
-        AttendeeSignupFactory(submission=submission)
-        validate_signup_required(submission, False)
+    assert results == [{}, {}, {}, error, {}, {}, {}]

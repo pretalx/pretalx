@@ -15,48 +15,25 @@ def test_organisers_for_user_admin_sees_all():
 
     result = organisers_for_user(admin)
 
-    assert {o.pk for o in result} == {org1.pk, org2.pk}
+    assert set(result) == {org1, org2}
 
 
-def test_organisers_for_user_non_admin_sees_only_settings_teams():
-    granted = OrganiserFactory()
+def test_organisers_for_user_filters_by_team_permissions():
+    settings_org = OrganiserFactory()
+    creator_org = OrganiserFactory()
+    plain_org = OrganiserFactory()
     OrganiserFactory()  # no team membership
-    other = OrganiserFactory()
     user = UserFactory()
-    settings_team = TeamFactory(
-        organiser=granted, can_change_organiser_settings=True, all_events=True
-    )
-    settings_team.members.add(user)
-    plain_team = TeamFactory(
-        organiser=other, can_change_organiser_settings=False, all_events=True
-    )
-    plain_team.members.add(user)
+    TeamFactory(
+        organiser=settings_org, can_change_organiser_settings=True, all_events=True
+    ).members.add(user)
+    TeamFactory(
+        organiser=creator_org, can_create_events=True, all_events=True
+    ).members.add(user)
+    TeamFactory(
+        organiser=plain_org, can_change_organiser_settings=False, all_events=True
+    ).members.add(user)
 
-    result = organisers_for_user(user)
-
-    assert list(result) == [granted]
-
-
-def test_organisers_for_user_returns_empty_for_user_without_teams():
-    OrganiserFactory()
-    user = UserFactory()
-
-    assert list(organisers_for_user(user)) == []
-
-
-def test_organisers_for_user_narrows_to_given_permissions():
-    granted = OrganiserFactory()
-    other = OrganiserFactory()
-    user = UserFactory()
-    creator_team = TeamFactory(
-        organiser=granted, can_create_events=True, all_events=True
-    )
-    creator_team.members.add(user)
-    settings_team = TeamFactory(
-        organiser=other, can_change_organiser_settings=True, all_events=True
-    )
-    settings_team.members.add(user)
-
-    result = organisers_for_user(user, {"can_create_events": True})
-
-    assert list(result) == [granted]
+    assert list(organisers_for_user(user)) == [settings_org]
+    assert list(organisers_for_user(user, {"can_create_events": True})) == [creator_org]
+    assert list(organisers_for_user(UserFactory())) == []

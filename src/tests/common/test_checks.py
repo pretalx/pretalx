@@ -61,32 +61,37 @@ def test_check_skips_when_app_configs_given(check_fn):
     assert check_fn(app_configs=["something"]) == []
 
 
-@override_settings(CELERY_TASK_ALWAYS_EAGER=True)
-def test_check_celery_eager_no_runtime_message():
-    assert check_celery(app_configs=None) == []
+@pytest.mark.parametrize(
+    ("eager", "expected"),
+    ((True, [("pretalx.E004", ERROR)]), (False, [])),
+    ids=("eager_errors", "async_ok"),
+)
+def test_check_celery_required(settings, eager, expected):
+    settings.CELERY_TASK_ALWAYS_EAGER = eager
 
-
-@override_settings(CELERY_TASK_ALWAYS_EAGER=True)
-def test_check_celery_required_eager_errors():
     errors = check_celery_required(app_configs=None)
 
-    assert len(errors) == 1
-    assert errors[0].id == "pretalx.E004"
-    assert errors[0].level == ERROR
+    assert [(e.id, e.level) for e in errors] == expected
 
 
-@override_settings(CELERY_TASK_ALWAYS_EAGER=False)
-def test_check_celery_required_async_ok():
-    assert check_celery_required(app_configs=None) == []
+@pytest.mark.parametrize(
+    ("overrides", "expected"),
+    (
+        ({"CELERY_TASK_ALWAYS_EAGER": True}, []),
+        (
+            {"CELERY_TASK_ALWAYS_EAGER": False, "CELERY_RESULT_BACKEND": None},
+            [("pretalx.E001", ERROR)],
+        ),
+    ),
+    ids=("eager_no_runtime_message", "no_result_backend_errors"),
+)
+def test_check_celery(settings, overrides, expected):
+    for key, value in overrides.items():
+        setattr(settings, key, value)
 
-
-@override_settings(CELERY_TASK_ALWAYS_EAGER=False, CELERY_RESULT_BACKEND=None)
-def test_check_celery_no_result_backend_errors():
     errors = check_celery(app_configs=None)
 
-    assert len(errors) == 1
-    assert errors[0].id == "pretalx.E001"
-    assert errors[0].level == ERROR
+    assert [(e.id, e.level) for e in errors] == expected
 
 
 @pytest.mark.slow
@@ -102,33 +107,33 @@ def test_check_celery_broker_connection_failure():
 
 
 @pytest.mark.filterwarnings("ignore:Overriding setting DATABASES:UserWarning")
-@override_settings(DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3"}})
-def test_check_sqlite_in_production_warns():
+@pytest.mark.parametrize(
+    ("engine", "expected"),
+    (
+        ("django.db.backends.sqlite3", [("pretalx.I001", INFO)]),
+        ("django.db.backends.postgresql", []),
+    ),
+    ids=("sqlite_informs", "postgresql_ok"),
+)
+def test_check_sqlite_in_production(settings, engine, expected):
+    settings.DATABASES = {"default": {"ENGINE": engine}}
+
     errors = check_sqlite_in_production(app_configs=None)
 
-    assert len(errors) == 1
-    assert errors[0].id == "pretalx.I001"
-    assert errors[0].level == INFO
+    assert [(e.id, e.level) for e in errors] == expected
 
 
-@pytest.mark.filterwarnings("ignore:Overriding setting DATABASES:UserWarning")
-@override_settings(DATABASES={"default": {"ENGINE": "django.db.backends.postgresql"}})
-def test_check_sqlite_in_production_ok_for_postgresql():
-    assert check_sqlite_in_production(app_configs=None) == []
+@pytest.mark.parametrize(
+    ("admins", "expected"),
+    (([], [("pretalx.I002", INFO)]), (["admin@example.com"], [])),
+    ids=("no_admins_informs", "configured_ok"),
+)
+def test_check_admin_email(settings, admins, expected):
+    settings.ADMINS = admins
 
-
-@override_settings(ADMINS=[])
-def test_check_admin_email_no_admins_informs():
     errors = check_admin_email(app_configs=None)
 
-    assert len(errors) == 1
-    assert errors[0].id == "pretalx.I002"
-    assert errors[0].level == INFO
-
-
-@override_settings(ADMINS=["admin@example.com"])
-def test_check_admin_email_configured_ok():
-    assert check_admin_email(app_configs=None) == []
+    assert [(e.id, e.level) for e in errors] == expected
 
 
 @override_settings(
@@ -145,61 +150,54 @@ def test_check_system_email_missing_fields():
     assert "mail.from" in errors[0].msg
 
 
+SMTP = {"default": {"OPTIONS": {"host": "smtp.example.com", "port": 587}}}
+
+
 @pytest.mark.parametrize(
-    "mailers",
-    ({"default": {"BACKEND": "django.core.mail.backends.console.EmailBackend"}}, {}),
-    ids=("non_smtp_backend", "no_default_mailer"),
+    ("mailers", "mail_from", "expected"),
+    (
+        (
+            {"default": {"BACKEND": "django.core.mail.backends.console.EmailBackend"}},
+            "noreply@example.com",
+            [],
+        ),
+        ({}, "noreply@example.com", []),
+        (
+            {
+                "default": {
+                    "OPTIONS": {
+                        "host": "smtp.example.com",
+                        "port": 587,
+                        "use_tls": True,
+                        "use_ssl": True,
+                    }
+                }
+            },
+            "noreply@example.com",
+            [("pretalx.E002", ERROR)],
+        ),
+        (SMTP, "not-an-email", [("pretalx.E003", ERROR)]),
+        (SMTP, "Just A Name", [("pretalx.E003", ERROR)]),
+        (SMTP, "noreply@example.com", []),
+        (SMTP, "Custom Sender <orga@example.com>", []),
+    ),
+    ids=(
+        "non_smtp_backend_needs_no_host",
+        "no_default_mailer_needs_no_host",
+        "tls_and_ssl_both_set",
+        "invalid_mail_from",
+        "mail_from_without_address",
+        "valid",
+        "valid_with_name",
+    ),
 )
-def test_check_system_email_without_smtp_backend_needs_no_host(settings, mailers):
+def test_check_system_email(settings, mailers, mail_from, expected):
     settings.MAILERS = mailers
-    settings.MAIL_FROM = "noreply@example.com"
+    settings.MAIL_FROM = mail_from
 
-    assert check_system_email(app_configs=None) == []
-
-
-@override_settings(
-    MAILERS={
-        "default": {
-            "OPTIONS": {
-                "host": "smtp.example.com",
-                "port": 587,
-                "use_tls": True,
-                "use_ssl": True,
-            }
-        }
-    },
-    MAIL_FROM="noreply@example.com",
-)
-def test_check_system_email_tls_and_ssl_both_set():
     errors = check_system_email(app_configs=None)
 
-    assert len(errors) == 1
-    assert errors[0].id == "pretalx.E002"
-    assert errors[0].level == ERROR
-
-
-@pytest.mark.parametrize("mail_from", ("not-an-email", "Just A Name"))
-def test_check_system_email_invalid_mail_from(settings, mail_from):
-    settings.MAILERS = {
-        "default": {"OPTIONS": {"host": "smtp.example.com", "port": 587}}
-    }
-    settings.MAIL_FROM = mail_from
-    errors = check_system_email(app_configs=None)
-
-    assert len(errors) == 1
-    assert errors[0].id == "pretalx.E003"
-    assert errors[0].level == ERROR
-
-
-@pytest.mark.parametrize(
-    "mail_from", ("noreply@example.com", "Custom Sender <orga@example.com>")
-)
-def test_check_system_email_all_valid(settings, mail_from):
-    settings.MAILERS = {
-        "default": {"OPTIONS": {"host": "smtp.example.com", "port": 587}}
-    }
-    settings.MAIL_FROM = mail_from
-    assert check_system_email(app_configs=None) == []
+    assert [(e.id, e.level) for e in errors] == expected
 
 
 def test_check_caches_probe_succeeds():
@@ -222,35 +220,27 @@ def test_check_caches_unreachable_redis_errors():
     assert errors[0].level == ERROR
 
 
-@override_settings(SITE_URL="http://example.com", DEBUG=False)
-def test_check_debug_http_site_warns():
+@pytest.mark.parametrize(
+    ("site_url", "debug", "expected"),
+    (
+        ("http://example.com", False, [("pretalx.W004", WARNING)]),
+        ("https://example.com", True, [("pretalx.W004", ERROR)]),
+        (
+            "http://example.com",
+            True,
+            [("pretalx.W004", WARNING), ("pretalx.W004", ERROR)],
+        ),
+        ("https://example.com", False, []),
+    ),
+    ids=("http_warns", "debug_errors", "both_report", "all_ok"),
+)
+def test_check_debug(settings, site_url, debug, expected):
+    settings.SITE_URL = site_url
+    settings.DEBUG = debug
+
     errors = check_debug(app_configs=None)
 
-    assert len(errors) == 1
-    assert errors[0].id == "pretalx.W004"
-    assert errors[0].level == WARNING
-
-
-@override_settings(SITE_URL="https://example.com", DEBUG=True)
-def test_check_debug_debug_mode_errors():
-    errors = check_debug(app_configs=None)
-
-    assert len(errors) == 1
-    assert errors[0].level == ERROR
-
-
-@override_settings(SITE_URL="http://example.com", DEBUG=True)
-def test_check_debug_http_and_debug_both_report():
-    errors = check_debug(app_configs=None)
-
-    assert len(errors) == 2
-    levels = {e.level for e in errors}
-    assert levels == {WARNING, ERROR}
-
-
-@override_settings(SITE_URL="https://example.com", DEBUG=False)
-def test_check_debug_all_ok():
-    assert check_debug(app_configs=None) == []
+    assert [(e.id, e.level) for e in errors] == expected
 
 
 def test_check_pillow_webp_ok():
@@ -279,19 +269,17 @@ def test_requires_python_metadata_matches_pyproject():
     assert metadata("pretalx")["Requires-Python"] == data["project"]["requires-python"]
 
 
-def test_check_python_version_without_package_metadata_skips(monkeypatch):
-    def raise_not_found(name):
-        raise pretalx.common.checks.PackageNotFoundError(name)
-
-    monkeypatch.setattr(pretalx.common.checks, "metadata", raise_not_found)
-
-    assert check_python_version(app_configs=None) == []
+def _raise_not_found(name):
+    raise pretalx.common.checks.PackageNotFoundError(name)
 
 
-def test_check_python_version_without_requires_python_skips(monkeypatch):
-    monkeypatch.setattr(
-        pretalx.common.checks, "metadata", lambda name: {"Requires-Python": None}
-    )
+@pytest.mark.parametrize(
+    "metadata_lookup",
+    (_raise_not_found, lambda name: {"Requires-Python": None}),
+    ids=("without_package_metadata", "without_requires_python"),
+)
+def test_check_python_version_skips_without_requirement(monkeypatch, metadata_lookup):
+    monkeypatch.setattr(pretalx.common.checks, "metadata", metadata_lookup)
 
     assert check_python_version(app_configs=None) == []
 
@@ -318,40 +306,28 @@ def test_check_postgres_version_skips_without_default_database(databases):
     assert check_postgres_version(app_configs=None, databases=databases) == []
 
 
-def test_check_postgres_version_supported_ok(monkeypatch):
+def _raise_operational_error():
+    raise OperationalError("connection refused")
+
+
+@pytest.mark.parametrize(
+    ("get_database_version", "expected"),
+    (
+        (lambda: (pretalx.common.checks.POSTGRES_MIN_VERSION, 1), []),
+        (lambda: (15, 4), [("pretalx.W007", WARNING)]),
+        (_raise_operational_error, []),
+    ),
+    ids=("supported_ok", "too_old_warns", "unreachable_skips"),
+)
+def test_check_postgres_version(monkeypatch, get_database_version, expected):
     connection = connections["default"]
     monkeypatch.setattr(connection, "vendor", "postgresql")
-    monkeypatch.setattr(
-        connection,
-        "get_database_version",
-        lambda: (pretalx.common.checks.POSTGRES_MIN_VERSION, 1),
-    )
-
-    assert check_postgres_version(app_configs=None, databases=["default"]) == []
-
-
-def test_check_postgres_version_too_old_warns(monkeypatch):
-    connection = connections["default"]
-    monkeypatch.setattr(connection, "vendor", "postgresql")
-    monkeypatch.setattr(connection, "get_database_version", lambda: (15, 4))
+    monkeypatch.setattr(connection, "get_database_version", get_database_version)
 
     errors = check_postgres_version(app_configs=None, databases=["default"])
 
-    assert len(errors) == 1
-    assert errors[0].id == "pretalx.W007"
-    assert errors[0].level == WARNING
-    assert "15" in errors[0].msg
-
-
-def test_check_postgres_version_unreachable_database_skips(monkeypatch):
-    def raise_operational_error():
-        raise OperationalError("connection refused")
-
-    connection = connections["default"]
-    monkeypatch.setattr(connection, "vendor", "postgresql")
-    monkeypatch.setattr(connection, "get_database_version", raise_operational_error)
-
-    assert check_postgres_version(app_configs=None, databases=["default"]) == []
+    assert [(e.id, e.level) for e in errors] == expected
+    assert all("15" in e.msg for e in errors)
 
 
 def test_check_postgres_version_deploy_reports_same_messages(monkeypatch):

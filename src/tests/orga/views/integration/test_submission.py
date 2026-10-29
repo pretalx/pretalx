@@ -44,6 +44,12 @@ from tests.utils import DIALOG_HEADERS, make_orga_user
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
+def _states(submission):
+    with scopes_disabled():
+        submission = Submission.objects.get(pk=submission.pk)
+    return submission.state, submission.pending_state
+
+
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_submission_list_query_count(
     client, event, item_count, django_assert_num_queries
@@ -171,21 +177,7 @@ def test_submission_views_anonymous_redirect_to_login(client, event, url_attr):
     assert "/login/" in response.url
 
 
-def test_submission_list_search_by_title(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-    client.force_login(user)
-
-    response = client.get(
-        event.orga_urls.submissions + f"?q={submission.title[:5]}", follow=True
-    )
-
-    assert response.status_code == 200
-    assert submission.title in response.content.decode()
-
-
-def test_submission_list_search_by_speaker(client, event):
+def test_submission_list_search(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event)
@@ -195,31 +187,31 @@ def test_submission_list_search_by_speaker(client, event):
     client.force_login(user)
 
     response = client.get(
-        event.orga_urls.submissions + f"?q={speaker_name}", follow=True
+        event.orga_urls.submissions + f"?q={submission.title[:5]}", follow=True
     )
-
     assert response.status_code == 200
     assert submission.title in response.content.decode()
 
-
-def test_submission_list_search_miss(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-    client.force_login(user)
+    response = client.get(
+        event.orga_urls.submissions + f"?q={speaker_name}", follow=True
+    )
+    assert response.status_code == 200
+    assert submission.title in response.content.decode()
 
     response = client.get(
         event.orga_urls.submissions + f"?q={submission.title[:5]}xxy", follow=True
     )
-
     assert response.status_code == 200
     assert submission.title not in response.content.decode()
 
+    response = client.get(
+        event.orga_urls.submissions + "?state=INVALID_STATE", follow=True
+    )
+    assert response.status_code == 200
+    assert submission.title in response.content.decode()
 
-@pytest.mark.parametrize(
-    "field", ("description", "abstract", "notes", "internal_notes")
-)
-def test_submission_list_fulltext_search_finds_by_field(client, event, field):
+
+def test_submission_list_fulltext_search_finds_by_field(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(
@@ -229,38 +221,23 @@ def test_submission_list_fulltext_search_finds_by_field(client, event, field):
             notes="Unique notes text here",
             internal_notes="Unique internal notes here",
         )
-        value = getattr(submission, field)
     client.force_login(user)
 
-    response = client.get(event.orga_urls.submissions + f"?q={value[:8]}", follow=True)
-    assert response.status_code == 200
-    assert submission.title not in response.content.decode()
+    for field in ("description", "abstract", "notes", "internal_notes"):
+        value = getattr(submission, field)[:8]
 
-    response = client.get(
-        event.orga_urls.submissions + f"?q={value[:8]}&fulltext=on", follow=True
-    )
-    assert response.status_code == 200
-    assert submission.title in response.content.decode()
+        response = client.get(event.orga_urls.submissions + f"?q={value}", follow=True)
+        assert response.status_code == 200
+        assert submission.title not in response.content.decode()
 
-
-def test_submission_list_reviewer_can_search_by_speaker(client, event):
-    with scopes_disabled():
-        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        speaker_name = speaker.get_display_name()[:5]
-    client.force_login(reviewer)
-
-    response = client.get(
-        event.orga_urls.submissions + f"?q={speaker_name}", follow=True
-    )
-
-    assert response.status_code == 200
-    assert submission.title in response.content.decode()
+        response = client.get(
+            event.orga_urls.submissions + f"?q={value}&fulltext=on", follow=True
+        )
+        assert response.status_code == 200
+        assert submission.title in response.content.decode()
 
 
-def test_submission_list_reviewer_cannot_search_by_speaker_when_anonymised(
+def test_submission_list_reviewer_search_by_speaker_follows_phase_visibility(
     client, event
 ):
     with scopes_disabled():
@@ -268,16 +245,20 @@ def test_submission_list_reviewer_cannot_search_by_speaker_when_anonymised(
         submission = SubmissionFactory(event=event)
         speaker = SpeakerFactory(event=event)
         submission.speakers.add(speaker)
+        speaker_name = speaker.get_display_name()[:5]
+    client.force_login(reviewer)
+    url = event.orga_urls.submissions + f"?q={speaker_name}"
+
+    response = client.get(url, follow=True)
+    assert response.status_code == 200
+    assert submission.title in response.content.decode()
+
+    with scopes_disabled():
         phase = event.active_review_phase
         phase.can_see_speaker_names = False
         phase.save()
-        speaker_name = speaker.get_display_name()[:5]
-    client.force_login(reviewer)
 
-    response = client.get(
-        event.orga_urls.submissions + f"?q={speaker_name}", follow=True
-    )
-
+    response = client.get(url, follow=True)
     assert response.status_code == 200
     assert submission.title not in response.content.decode()
 
@@ -306,76 +287,28 @@ def test_submission_list_reviewer_cannot_search_by_speaker_when_team_hides_names
     assert submission.title not in response.content.decode()
 
 
-def test_submission_content_404_for_invalid_code(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-    client.force_login(user)
-
-    response = client.get(submission.orga_urls.base + "JJ", follow=True)
-
-    assert response.status_code == 404
-
-
-def test_submission_content_reviewer_can_see(client, event):
-    with scopes_disabled():
-        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
-        submission = SubmissionFactory(event=event)
-    client.force_login(reviewer)
-
-    response = client.get(submission.orga_urls.base, follow=True)
-
-    assert response.status_code == 200
-    assert submission.title in response.content.decode()
-
-
-def test_submission_content_reviewer_sees_question_answer(client):
-    event = EventFactory(feature_flags={"use_tracks": True})
+def test_submission_content_reviewer_sees_only_visible_questions(client, event):
     with scopes_disabled():
         reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
         submission = SubmissionFactory(event=event)
         question = QuestionFactory(event=event, target="submission")
-        AnswerFactory(question=question, submission=submission, answer="42")
-    client.force_login(reviewer)
-
-    response = client.get(submission.orga_urls.base, follow=True)
-
-    assert response.status_code == 200
-    assert question.question in response.content.decode()
-
-
-def test_submission_content_reviewer_hidden_question(client):
-    event = EventFactory(feature_flags={"use_tracks": True})
-    with scopes_disabled():
-        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
-        submission = SubmissionFactory(event=event)
-        question = QuestionFactory(
+        hidden_question = QuestionFactory(
             event=event, target="submission", is_visible_to_reviewers=False
         )
         AnswerFactory(question=question, submission=submission, answer="42")
+        AnswerFactory(question=hidden_question, submission=submission, answer="43")
     client.force_login(reviewer)
 
     response = client.get(submission.orga_urls.base, follow=True)
 
     assert response.status_code == 200
-    assert question.question not in response.content.decode()
+    content = response.content.decode()
+    assert submission.title in content
+    assert question.question in content
+    assert hidden_question.question not in content
 
 
-def test_submission_accept_get_does_not_change_state(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    client.force_login(user)
-
-    response = client.get(submission.orga_urls.accept, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-    assert submission.state == SubmissionStates.SUBMITTED
-
-
-def test_submission_accept_post_changes_state_and_queues_mail(client, event):
+def test_submission_accept_and_confirm(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -383,13 +316,28 @@ def test_submission_accept_post_changes_state_and_queues_mail(client, event):
         submission.speakers.add(speaker)
     client.force_login(user)
 
-    response = client.post(submission.orga_urls.accept, follow=True)
-
+    response = client.get(submission.orga_urls.accept, follow=True)
     assert response.status_code == 200
+    assert _states(submission) == (SubmissionStates.SUBMITTED, None)
+
+    response = client.post(
+        submission.orga_urls.accept + f"?next={event.orga_urls.submissions}"
+    )
+    assert response.status_code == 302
+    assert response.url == event.orga_urls.submissions
+    assert _states(submission) == (SubmissionStates.ACCEPTED, None)
     with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.ACCEPTED
         assert event.queued_mails.count() == 1
+
+    response = client.post(submission.orga_urls.accept, follow=True)
+    assert response.status_code == 200
+    assert _states(submission) == (SubmissionStates.ACCEPTED, None)
+    with scopes_disabled():
+        assert event.queued_mails.count() == 1
+
+    response = client.post(submission.orga_urls.confirm, follow=True)
+    assert response.status_code == 200
+    assert _states(submission) == (SubmissionStates.CONFIRMED, None)
 
 
 def test_submission_accept_no_mail_for_managed_speaker(client, event):
@@ -411,40 +359,7 @@ def test_submission_accept_no_mail_for_managed_speaker(client, event):
         assert event.queued_mails.count() == 0
 
 
-def test_submission_accept_redirects_to_next(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.post(
-        submission.orga_urls.accept + f"?next={event.orga_urls.submissions}"
-    )
-
-    assert response.status_code == 302
-    assert response.url == event.orga_urls.submissions
-
-
-def test_submission_accept_already_accepted_is_noop(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        submission.accept(person=user, orga=True)
-    client.force_login(user)
-
-    response = client.post(submission.orga_urls.accept, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-    assert submission.state == SubmissionStates.ACCEPTED
-
-
-def test_submission_reject_post_changes_state_and_queues_mail(client, event):
+def test_submission_reject_warns_about_pending_mails(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -452,44 +367,46 @@ def test_submission_reject_post_changes_state_and_queues_mail(client, event):
         submission.speakers.add(speaker)
         assert event.queued_mails.count() == 0
     client.force_login(user)
+    warning = "There may be pending emails for this proposal that are now incorrect or outdated."
 
     response = client.post(submission.orga_urls.reject, follow=True)
-
     assert response.status_code == 200
+    assert warning not in [str(m) for m in response.context["messages"]]
+    assert _states(submission) == (SubmissionStates.REJECTED, None)
     with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.REJECTED
         assert event.queued_mails.count() == 1
 
-
-def test_submission_confirm_post_changes_state(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        submission.accept(person=user, orga=True)
-    client.force_login(user)
-
-    response = client.post(submission.orga_urls.confirm, follow=True)
-
+    response = client.post(submission.orga_urls.accept, follow=True)
     assert response.status_code == 200
+    assert warning in [str(m) for m in response.context["messages"]]
+    assert _states(submission) == (SubmissionStates.ACCEPTED, None)
     with scopes_disabled():
-        submission.refresh_from_db()
-    assert submission.state == SubmissionStates.CONFIRMED
+        assert event.queued_mails.count() == 2
+        event.queued_mails.update(state=QueuedMailStates.SENT)
+
+    response = client.post(submission.orga_urls.reject, follow=True)
+    assert response.status_code == 200
+    assert warning not in [str(m) for m in response.context["messages"]]
+    assert _states(submission) == (SubmissionStates.REJECTED, None)
 
 
-def test_submission_delete_get_does_not_delete(client, event):
+def test_submission_delete(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event)
+        code = submission.code
     client.force_login(user)
 
     response = client.get(submission.orga_urls.delete, follow=True)
-
     assert response.status_code == 200
     with scopes_disabled():
         assert Submission.objects.filter(event=event).count() == 1
+
+    response = client.post(submission.orga_urls.delete, follow=True)
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert Submission.objects.filter(event=event).count() == 0
+        assert not Submission.all_objects.filter(code=code).exists()
 
 
 def test_submission_delete_htmx_renders_dialog_and_redirects_via_header(client, event):
@@ -532,21 +449,6 @@ def test_submission_accept_htmx_renders_dialog_and_redirects_via_header(client, 
     with scopes_disabled():
         submission.refresh_from_db()
     assert submission.state == SubmissionStates.ACCEPTED
-
-
-def test_submission_delete_post_deletes(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        code = submission.code
-    client.force_login(user)
-
-    response = client.post(submission.orga_urls.delete, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert Submission.objects.filter(event=event).count() == 0
-        assert not Submission.all_objects.filter(code=code).exists()
 
 
 def test_submission_delete_scheduled_shows_warning(client, event):
@@ -779,48 +681,16 @@ def test_submission_create_fires_before_state_change_signal(
         assert not event.submissions.filter(title="Vetoed Talk").exists()
 
 
-def test_submission_edit_updates_fields_and_logs(client, event):
+def test_submission_edit_logs_changes(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        old_title = submission.title
-        initial_log_count = submission.logged_actions().count()
-    client.force_login(user)
-
-    response = client.post(
-        submission.orga_urls.base,
-        data={
-            "abstract": "abstract",
-            "content_locale": "en",
-            "description": "description",
-            "duration": "",
-            "notes": "notes",
-            "title": "Updated Title",
-            "submission_type": submission.submission_type.pk,
-            "resource-TOTAL_FORMS": 0,
-            "resource-INITIAL_FORMS": 0,
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.title == "Updated Title"
-        logs = submission.logged_actions()
-        assert logs.count() > initial_log_count
-        update_log = logs.filter(action_type="pretalx.submission.update").first()
-        assert update_log is not None
-        assert update_log.data["changes"]["title"]["old"] == old_title
-        assert update_log.data["changes"]["title"]["new"] == "Updated Title"
-
-
-def test_submission_edit_with_question_consolidated_log(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+        submission = SubmissionFactory(
+            event=event,
+            state=SubmissionStates.ACCEPTED,
+            abstract="Existing abstract",
+            description="Existing description",
+            notes="Existing notes",
+        )
         speaker = SpeakerFactory(event=event)
         submission.speakers.add(speaker)
         question = QuestionFactory(
@@ -831,31 +701,37 @@ def test_submission_edit_with_question_consolidated_log(client, event):
         old_title = submission.title
         initial_log_count = submission.logged_actions().count()
     client.force_login(user)
+    data = {
+        "abstract": "Existing abstract",
+        "content_locale": submission.content_locale,
+        "description": "Existing description",
+        "duration": "",
+        "notes": "Existing notes",
+        "title": old_title,
+        "submission_type": submission.submission_type.pk,
+        "resource-TOTAL_FORMS": 0,
+        "resource-INITIAL_FORMS": 0,
+    }
+
+    response = client.post(submission.orga_urls.base, data=data, follow=True)
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert submission.logged_actions().count() == initial_log_count
 
     response = client.post(
         submission.orga_urls.base,
-        data={
-            "abstract": "abstract",
-            "content_locale": "en",
-            "description": "description",
-            "duration": "",
-            "notes": "notes",
-            "title": "New Updated Title",
-            "submission_type": submission.submission_type.pk,
-            "resource-TOTAL_FORMS": 0,
-            "resource-INITIAL_FORMS": 0,
-            f"question_{question.pk}": "50",
-        },
+        data={**data, "title": "New Updated Title", f"question_{question.pk}": "50"},
         follow=True,
     )
-
     assert response.status_code == 200
+    msgs = [str(m) for m in response.context["messages"]]
+    assert any("updated" in m.lower() for m in msgs)
     with scopes_disabled():
-        submission.refresh_from_db()
+        submission.refresh_from_db(fields=["title"])
+        assert submission.title == "New Updated Title"
         logs = submission.logged_actions()
         assert logs.count() == initial_log_count + 1
-        update_log = logs.filter(action_type="pretalx.submission.update").first()
-        assert update_log
+        update_log = logs.filter(action_type="pretalx.submission.update").get()
         assert update_log.changes["title"]["old"] == old_title
         assert update_log.changes["title"]["new"] == "New Updated Title"
         question_key = f"question-{question.pk}"
@@ -1039,61 +915,6 @@ def test_submission_edit_resources_add_and_remove(client, event):
         user = make_orga_user(event, can_change_submissions=True)
         event.cfp.fields["resources"] = {"visibility": "optional"}
         event.cfp.save()
-        submission = SubmissionFactory(event=event, abstract="Test abstract")
-        file_one = SimpleUploadedFile("res1.txt", b"content_one")
-        file_two = SimpleUploadedFile("res2.txt", b"content_two")
-        resource_one = ResourceFactory(
-            submission=submission, resource=file_one, link=""
-        )
-        resource_two = ResourceFactory(
-            submission=submission, resource=file_two, link=""
-        )
-        assert submission.resources.count() == 2
-    client.force_login(user)
-
-    f = SimpleUploadedFile("testfile.txt", b"file_content")
-    response = client.post(
-        submission.orga_urls.base,
-        data={
-            "abstract": submission.abstract,
-            "content_locale": submission.content_locale,
-            "title": "new title",
-            "submission_type": submission.submission_type.pk,
-            "resource-0-id": resource_one.id,
-            "resource-0-description": "new resource name",
-            "resource-0-resource": resource_one.resource,
-            "resource-1-id": resource_two.id,
-            "resource-1-DELETE": True,
-            "resource-1-description": resource_two.description or "",
-            "resource-1-resource": resource_two.resource,
-            "resource-2-id": "",
-            "resource-2-description": "new resource",
-            "resource-2-resource": f,
-            "resource-TOTAL_FORMS": 3,
-            "resource-INITIAL_FORMS": 2,
-            "resource-MIN_NUM_FORMS": 0,
-            "resource-MAX_NUM_FORMS": 1000,
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        resource_one.refresh_from_db()
-        new_resource = submission.resources.exclude(pk=resource_one.pk).first()
-        assert submission.title == "new title"
-        assert submission.resources.count() == 2
-        assert new_resource.description == "new resource"
-        assert new_resource.resource.read() == b"file_content"
-        assert not submission.resources.filter(pk=resource_two.pk).exists()
-
-
-def test_submission_edit_wrong_resources_not_added(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        event.cfp.fields["resources"] = {"visibility": "optional"}
-        event.cfp.save()
         submission = SubmissionFactory(
             event=event, title="Original title", abstract="Test abstract"
         )
@@ -1105,12 +926,16 @@ def test_submission_edit_wrong_resources_not_added(client, event):
         resource_two = ResourceFactory(
             submission=submission, resource=file_two, link=""
         )
+        assert submission.resources.count() == 2
     client.force_login(user)
 
-    f = SimpleUploadedFile("testfile.txt", b"file_content")
-    response = client.post(
-        submission.orga_urls.base,
-        data={
+    def data(new_description):
+        # The test client reads the FieldFiles to EOF, so every POST needs
+        # fresh instances.
+        with scopes_disabled():
+            resource_one.refresh_from_db(fields=["resource"])
+            resource_two.refresh_from_db(fields=["resource"])
+        return {
             "abstract": submission.abstract,
             "content_locale": submission.content_locale,
             "title": "new title",
@@ -1123,10 +948,63 @@ def test_submission_edit_wrong_resources_not_added(client, event):
             "resource-1-description": resource_two.description or "",
             "resource-1-resource": resource_two.resource,
             "resource-2-id": "",
-            "resource-2-description": "",
-            "resource-2-resource": f,
+            "resource-2-description": new_description,
+            "resource-2-resource": SimpleUploadedFile("testfile.txt", b"file_content"),
             "resource-TOTAL_FORMS": 3,
             "resource-INITIAL_FORMS": 2,
+            "resource-MIN_NUM_FORMS": 0,
+            "resource-MAX_NUM_FORMS": 1000,
+        }
+
+    response = client.post(submission.orga_urls.base, data=data(""), follow=True)
+    assert response.status_code == 200
+    with scopes_disabled():
+        submission.refresh_from_db(fields=["title"])
+        assert submission.resources.count() == 2
+        assert submission.resources.filter(pk=resource_two.pk).exists()
+        assert submission.title == "Original title"
+
+    response = client.post(
+        submission.orga_urls.base, data=data("new resource"), follow=True
+    )
+    assert response.status_code == 200
+    with scopes_disabled():
+        submission.refresh_from_db(fields=["title"])
+        resource_one.refresh_from_db(fields=["description"])
+        new_resource = submission.resources.exclude(pk=resource_one.pk).get()
+        assert submission.title == "new title"
+        assert resource_one.description == "new resource name"
+        assert new_resource.description == "new resource"
+        assert new_resource.resource.read() == b"file_content"
+        assert not submission.resources.filter(pk=resource_two.pk).exists()
+
+
+def test_submission_edit_unchanged_resource_not_resaved(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        event.cfp.fields["resources"] = {"visibility": "optional"}
+        event.cfp.save()
+        submission = SubmissionFactory(event=event, abstract="Test abstract")
+        resource = ResourceFactory(
+            submission=submission,
+            link="https://example.com/resource",
+            description="A resource",
+        )
+    client.force_login(user)
+
+    response = client.post(
+        submission.orga_urls.base,
+        data={
+            "abstract": submission.abstract,
+            "content_locale": submission.content_locale,
+            "title": submission.title,
+            "submission_type": submission.submission_type.pk,
+            "resource-0-id": resource.id,
+            "resource-0-description": resource.description,
+            "resource-0-link": resource.link,
+            "resource-0-is_public": "on",
+            "resource-TOTAL_FORMS": 1,
+            "resource-INITIAL_FORMS": 1,
             "resource-MIN_NUM_FORMS": 0,
             "resource-MAX_NUM_FORMS": 1000,
         },
@@ -1135,28 +1013,8 @@ def test_submission_edit_wrong_resources_not_added(client, event):
 
     assert response.status_code == 200
     with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.resources.count() == 2
-        assert submission.resources.filter(pk=resource_two.pk).exists()
-        assert submission.title == "Original title"
-
-
-def test_submission_speakers_lists_other_proposals(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        other = SubmissionFactory(event=event, title="Other proposal")
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        other.speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.get(submission.orga_urls.speakers, follow=True)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "Other proposal" in content
-    assert other.orga_urls.base in content
+        resource.refresh_from_db()
+        assert resource.description == "A resource"
 
 
 @pytest.mark.parametrize("known_speaker", (True, False))
@@ -1200,94 +1058,68 @@ def test_submission_speakers_add_denied_for_reviewer(client, event):
         assert submission.speakers.count() == 0
 
 
-def test_submission_speakers_add_invalid_email(client, event):
+def test_submission_speakers_page_and_add_edge_cases(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event)
+        other = SubmissionFactory(event=event, title="Other proposal")
         speaker = SpeakerFactory(event=event)
         submission.speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.post(
-        submission.orga_urls.speakers,
-        data={"speaker": "foooobaaaaar", "name": "Name"},
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert submission.speakers.count() == 1
-
-
-def test_submission_speakers_readd_existing(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
+        other.speakers.add(speaker)
         speaker_email = speaker.user.email
-    client.force_login(user)
-
-    response = client.post(
-        submission.orga_urls.speakers,
-        data={"speaker": speaker_email, "name": "Name"},
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert submission.speakers.count() == 1
-
-
-def test_submission_speakers_add_by_profile_code(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
         managed = SpeakerFactory(event=event, user=None, email="managed@example.com")
     djmail.outbox = []
     client.force_login(user)
 
+    response = client.get(submission.orga_urls.speakers, follow=True)
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Other proposal" in content
+    assert other.orga_urls.base in content
+
     response = client.post(
         submission.orga_urls.speakers, data={"speaker": f"profile:{managed.code}"}
     )
-
     assert response.status_code == 302
     assert response.url == submission.orga_urls.speakers
     with scopes_disabled():
-        assert list(submission.speakers.all()) == [managed]
-        managed.refresh_from_db()
+        assert set(submission.speakers.all()) == {speaker, managed}
+        managed.refresh_from_db(fields=["invitation_token"])
         assert managed.invitation_token is None
-        assert submission.event.queued_mails.count() == 0
+        assert event.queued_mails.count() == 0
     assert len(djmail.outbox) == 0
 
-
-def test_submission_speakers_add_email_less_requires_confirmation(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-    client.force_login(user)
+    for data in (
+        {"speaker": "foooobaaaaar", "name": "Name"},
+        {"email": ""},
+        {"speaker": speaker_email, "name": "Name"},
+    ):
+        response = client.post(submission.orga_urls.speakers, data=data, follow=True)
+        assert response.status_code == 200
+        with scopes_disabled():
+            assert set(submission.speakers.all()) == {speaker, managed}
 
     response = client.post(
         submission.orga_urls.speakers, data={"name": "No Mail Person"}, follow=True
     )
-
     assert response.status_code == 200
     assert "confirm_email_less" in response.text
     with scopes_disabled():
-        assert submission.speakers.count() == 0
+        assert set(submission.speakers.all()) == {speaker, managed}
 
     response = client.post(
         submission.orga_urls.speakers,
         data={"name": "No Mail Person", "confirm_email_less": "on"},
         follow=True,
     )
-
     assert response.status_code == 200
     with scopes_disabled():
-        speaker = submission.speakers.get()
-        assert speaker.name == "No Mail Person"
-        assert speaker.email is None
-        assert speaker.user is None
+        no_mail_speaker = submission.speakers.exclude(
+            pk__in=[speaker.pk, managed.pk]
+        ).get()
+        assert no_mail_speaker.name == "No Mail Person"
+        assert no_mail_speaker.email is None
+        assert no_mail_speaker.user is None
 
 
 def test_submission_speakers_remove(client, event):
@@ -1295,115 +1127,53 @@ def test_submission_speakers_remove(client, event):
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event)
         speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        speaker_pk = speaker.pk
-    client.force_login(user)
-    url = f"{submission.orga_urls.delete_speaker}?id={speaker_pk}"
-
-    response = client.get(url, follow=True)
-    assert response.status_code == 200
-    assert speaker.get_display_name() in response.content.decode()
-    with scopes_disabled():
-        assert submission.speakers.count() == 1
-
-    response = client.post(url, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert submission.speakers.count() == 0
-
-
-def test_submission_speakers_remove_with_checkbox_shreds_profile(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(
+        managed = SpeakerFactory(
             event=event, user=None, origin=SpeakerProfileOrigin.ORGA
         )
-        submission.speakers.add(speaker)
-        speaker_pk = speaker.pk
-    client.force_login(user)
-
-    response = client.post(
-        f"{submission.orga_urls.delete_speaker}?id={speaker_pk}",
-        {"delete_profile": "on"},
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert submission.speakers.count() == 0
-        assert not SpeakerProfile.objects.filter(pk=speaker_pk).exists()
-
-
-def test_submission_speakers_remove_with_checkbox_shreds_profile_with_history(
-    client, event
-):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(
-            event=event, user=None, origin=SpeakerProfileOrigin.ORGA
-        )
-        submission.speakers.add(speaker)
-        speaker_pk = speaker.pk
+        submission.speakers.add(speaker, managed)
         mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
-        mail.to_speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.post(
-        f"{submission.orga_urls.delete_speaker}?id={speaker_pk}",
-        {"delete_profile": "on"},
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert submission.speakers.count() == 0
-        assert not SpeakerProfile.objects.filter(pk=speaker_pk).exists()
-        assert not event.queued_mails.filter(pk=mail.pk).exists()
-
-
-def test_submission_speakers_remove_without_checkbox_keeps_profile(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(
-            event=event, user=None, origin=SpeakerProfileOrigin.ORGA
-        )
-        submission.speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.post(
-        f"{submission.orga_urls.delete_speaker}?id={speaker.pk}", follow=True
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        speaker.refresh_from_db()
-        assert submission.speakers.count() == 0
-        assert speaker.origin == SpeakerProfileOrigin.ORGA
-
-
-def test_submission_speakers_remove_wrong_speaker(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
+        mail.to_speakers.add(managed)
         other_speaker = SpeakerFactory(event=event)
         other_sub = SubmissionFactory(event=event)
         other_sub.speakers.add(other_speaker)
+        speaker_name = speaker.get_display_name()
     client.force_login(user)
 
     response = client.post(
         f"{submission.orga_urls.delete_speaker}?id={other_speaker.pk}", follow=True
     )
+    assert response.status_code == 200
+    assert "not part of this proposal" in response.content.decode()
+    with scopes_disabled():
+        assert set(submission.speakers.all()) == {speaker, managed}
 
+    url = f"{submission.orga_urls.delete_speaker}?id={speaker.pk}"
+    response = client.get(url, follow=True)
+    assert response.status_code == 200
+    assert speaker_name in response.content.decode()
+    with scopes_disabled():
+        assert set(submission.speakers.all()) == {speaker, managed}
+
+    response = client.post(url, follow=True)
     assert response.status_code == 200
     with scopes_disabled():
-        assert submission.speakers.count() == 1
-    assert "not part of this proposal" in response.content.decode()
+        assert list(submission.speakers.all()) == [managed]
+
+    url = f"{submission.orga_urls.delete_speaker}?id={managed.pk}"
+    response = client.post(url, follow=True)
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert submission.speakers.count() == 0
+        managed.refresh_from_db(fields=["origin"])
+        assert managed.origin == SpeakerProfileOrigin.ORGA
+        submission.speakers.add(managed)
+
+    response = client.post(url, {"delete_profile": "on"}, follow=True)
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert submission.speakers.count() == 0
+        assert not SpeakerProfile.objects.filter(pk=managed.pk).exists()
+        assert not event.queued_mails.filter(pk=mail.pk).exists()
 
 
 def test_submission_speakers_reorder(client, event):
@@ -1416,44 +1186,39 @@ def test_submission_speakers_reorder(client, event):
         submission.speakers.add(speaker2)
         role1 = SpeakerRole.objects.get(submission=submission, speaker=speaker1)
         role2 = SpeakerRole.objects.get(submission=submission, speaker=speaker2)
+        role1.position = 0
+        role2.position = 1
+        SpeakerRole.objects.bulk_update([role1, role2], ["position"])
+        initial_log_count = submission.logged_actions().count()
     client.force_login(user)
+
+    for order in ("", "9999999"):
+        response = client.post(
+            submission.orga_urls.reorder_speakers, data={"order": order}
+        )
+        assert response.status_code == 400
+
+    response = client.post(
+        submission.orga_urls.reorder_speakers, data={"order": f"{role1.pk},{role2.pk}"}
+    )
+    assert response.status_code == 204
+    with scopes_disabled():
+        assert list(Submission.objects.get(pk=submission.pk).sorted_speakers) == [
+            speaker1,
+            speaker2,
+        ]
+        assert submission.logged_actions().count() == initial_log_count
 
     response = client.post(
         submission.orga_urls.reorder_speakers, data={"order": f"{role2.pk},{role1.pk}"}
     )
-
     assert response.status_code == 204
     with scopes_disabled():
-        ordered = list(submission.sorted_speakers)
-        assert ordered == [speaker2, speaker1]
-
-
-def test_submission_speakers_reorder_empty_returns_400(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.post(submission.orga_urls.reorder_speakers, data={"order": ""})
-
-    assert response.status_code == 400
-
-
-def test_submission_speakers_reorder_unknown_pk_returns_400(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.post(
-        submission.orga_urls.reorder_speakers, data={"order": "9999999"}
-    )
-
-    assert response.status_code == 400
+        assert list(Submission.objects.get(pk=submission.pk).sorted_speakers) == [
+            speaker2,
+            speaker1,
+        ]
+        assert submission.logged_actions().count() == initial_log_count + 1
 
 
 def test_submission_toggle_featured(client, event):
@@ -1482,20 +1247,27 @@ def test_submission_anonymise_reviewer_gets_404(client, event):
     assert response.status_code == 404
 
 
-def test_submission_anonymise_saves_and_redirects(client, event):
+def test_submission_anonymise(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
+        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
         submission = SubmissionFactory(event=event)
-        SubmissionFactory(event=event)
+        other = SubmissionFactory(event=event)
+        speaker = SpeakerFactory(event=event)
+        submission.speakers.add(speaker)
+        phase = event.active_review_phase
+        phase.can_see_speaker_names = False
+        phase.save()
     client.force_login(user)
 
     response = client.post(
-        submission.orga_urls.anonymise, data={"description": "CENSORED!"}, follow=True
+        submission.orga_urls.anonymise,
+        data={"description": "CENSORED!", "action": "next"},
     )
-
-    assert response.status_code == 200
+    assert response.status_code == 302
+    assert response.url == other.orga_urls.anonymise
     with scopes_disabled():
-        submission.refresh_from_db()
+        submission.refresh_from_db(fields=["anonymised"])
     assert submission.is_anonymised
     assert submission.anonymised == {
         "_anonymised": True,
@@ -1505,54 +1277,31 @@ def test_submission_anonymise_saves_and_redirects(client, event):
         "title": "",
     }
 
-
-def test_submission_anonymise_next_redirects_to_next_unanonymised(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        other = SubmissionFactory(event=event)
-    client.force_login(user)
-
     response = client.post(
         submission.orga_urls.anonymise,
-        data={"description": "CENSORED!", "action": "next"},
+        data={"description": "NEW CENSORED!"},
+        follow=True,
     )
-
-    assert response.status_code == 302
-    assert response.url == other.orga_urls.anonymise
-
-
-def test_submission_anonymise_hides_data_for_reviewer(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        phase = event.active_review_phase
-        phase.can_see_speaker_names = False
-        phase.save()
-    client.force_login(user)
-
-    client.post(submission.orga_urls.anonymise, data={"description": "CENSORED!"})
-
-    client.force_login(reviewer)
-    response = client.get(submission.orga_urls.base)
     assert response.status_code == 200
-    assert "CENSORED" in response.content.decode()
-
-
-def test_submission_anonymise_orga_sees_original_data(client, event):
+    assert len(response.context["submit_buttons"]) == 2
     with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-    client.force_login(user)
+        submission.refresh_from_db(fields=["anonymised"])
+    assert submission.anonymised["description"] == "NEW CENSORED!"
 
-    client.post(submission.orga_urls.anonymise, data={"description": "CENSORED!"})
+    response = client.post(
+        other.orga_urls.anonymise, data={"description": "LAST ONE"}, follow=True
+    )
+    assert response.status_code == 200
+    assert len(response.context["submit_buttons"]) == 1
 
     response = client.get(submission.orga_urls.base)
     assert response.status_code == 200
     assert "CENSORED" not in response.content.decode()
+
+    client.force_login(reviewer)
+    response = client.get(submission.orga_urls.base)
+    assert response.status_code == 200
+    assert "NEW CENSORED!" in response.content.decode()
 
 
 @pytest.mark.parametrize("use_tracks", (True, False))
@@ -1563,35 +1312,34 @@ def test_submission_statistics(client, use_tracks):
         if use_tracks:
             TrackFactory(event=event)
             TrackFactory(event=event)
-        sub1 = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-        sub2 = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        for sub in [sub1, sub2]:
-            log = sub.log_action("pretalx.submission.create")
-        ActivityLog.objects.filter(pk=log.pk).update(
-            timestamp=log.timestamp - dt.timedelta(days=2)
-        )
     client.force_login(user)
 
     response = client.get(event.orga_urls.stats)
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Proposals by submission date" not in content
+    assert "Proposals by state" not in content
 
+    with scopes_disabled():
+        sub1 = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+        sub2 = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+        sub3 = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+        logs = [
+            sub.log_action("pretalx.submission.create") for sub in (sub1, sub2, sub3)
+        ]
+        # Move one accepted proposal to another date so the talk timeline has
+        # two data points.
+        ActivityLog.objects.filter(pk=logs[1].pk).update(
+            timestamp=logs[1].timestamp - dt.timedelta(days=2)
+        )
+
+    response = client.get(event.orga_urls.stats)
     assert response.status_code == 200
     content = response.content.decode()
     assert "Proposals by state" in content
     assert "Proposals by submission date" in content
+    assert response.context["talk_timeline_data"] != ""
     assert ("Proposals by track" in content) is use_tracks
-
-
-def test_submission_statistics_renders_no_cards_without_submissions(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.stats)
-    content = response.content.decode()
-
-    assert response.status_code == 200
-    assert "Proposals by submission date" not in content
-    assert "Proposals by state" not in content
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -1634,28 +1382,17 @@ def test_all_feedbacks_list_query_count(
     assert all(sub.title in content for sub in submissions)
 
 
-def test_submission_apply_pending_bulk_get(client, event):
+def test_submission_apply_pending_bulk(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(
-            event=event,
-            state=SubmissionStates.SUBMITTED,
-            pending_state=SubmissionStates.ACCEPTED,
-        )
     client.force_login(user)
 
     response = client.get(event.orga_urls.apply_pending)
     assert response.status_code == 200
+    # No submit button when there are no pending submissions
+    assert "Do it" not in response.content.decode()
 
     with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.SUBMITTED
-        assert submission.pending_state == SubmissionStates.ACCEPTED
-
-
-def test_submission_apply_pending_bulk_post(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(
             event=event,
             state=SubmissionStates.SUBMITTED,
@@ -1663,37 +1400,19 @@ def test_submission_apply_pending_bulk_post(client, event):
         )
         speaker = SpeakerFactory(event=event)
         submission.speakers.add(speaker)
-    client.force_login(user)
+
+    response = client.get(event.orga_urls.apply_pending)
+    assert response.status_code == 200
+    assert "Do it" in response.content.decode()
+    assert _states(submission) == (
+        SubmissionStates.SUBMITTED,
+        SubmissionStates.ACCEPTED,
+    )
 
     response = client.post(event.orga_urls.apply_pending)
-
     assert response.status_code == 302
+    assert _states(submission) == (SubmissionStates.ACCEPTED, None)
     with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.ACCEPTED
-        assert submission.pending_state is None
-        assert event.queued_mails.count() == 1
-
-
-def test_submission_apply_pending_single(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(
-            event=event,
-            state=SubmissionStates.SUBMITTED,
-            pending_state=SubmissionStates.ACCEPTED,
-        )
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.post(submission.orga_urls.apply_pending)
-
-    assert response.status_code == 302
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.ACCEPTED
-        assert submission.pending_state is None
         assert event.queued_mails.count() == 1
 
 
@@ -1736,74 +1455,42 @@ def test_tag_create_and_no_duplicates(client, event):
         assert event.tags.count() == 1
 
 
-def test_tag_view(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        tag = TagFactory(event=event)
-    client.force_login(user)
-
-    response = client.get(tag.urls.base)
-
-    assert response.status_code == 200
-    assert str(tag.tag) in response.content.decode()
-
-
-def test_tag_edit_logs_action(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        tag = TagFactory(event=event)
-        initial_log_count = tag.logged_actions().count()
-    client.force_login(user)
-
-    response = client.post(
-        tag.urls.base, {"tag": "Renamed", "color": "#ffff99"}, follow=True
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert tag.logged_actions().count() == initial_log_count + 1
-        tag.refresh_from_db()
-    assert str(tag.tag) == "Renamed"
-
-
-def test_tag_edit_unchanged_no_log(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        tag = TagFactory(event=event)
-        initial_log_count = tag.logged_actions().count()
-    client.force_login(user)
-
-    response = client.post(
-        tag.urls.base, {"tag": str(tag.tag), "color": tag.color}, follow=True
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert tag.logged_actions().count() == initial_log_count
-
-
-def test_tag_edit_invalid_color_rejected(client, event):
+def test_tag_edit_and_delete(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         tag = TagFactory(event=event)
         original_name = str(tag.tag)
+        initial_log_count = tag.logged_actions().count()
     client.force_login(user)
+
+    response = client.get(tag.urls.base)
+    assert response.status_code == 200
+    assert original_name in response.content.decode()
 
     response = client.post(
-        tag.urls.base, {"tag": "Name", "color": "#fgff99"}, follow=True
+        tag.urls.base, {"tag": original_name, "color": tag.color}, follow=True
     )
-
     assert response.status_code == 200
     with scopes_disabled():
-        tag.refresh_from_db()
+        assert tag.logged_actions().count() == initial_log_count
+
+    response = client.post(
+        tag.urls.base, {"tag": "Renamed", "color": "#fgff99"}, follow=True
+    )
+    assert response.status_code == 200
+    with scopes_disabled():
+        tag.refresh_from_db(fields=["tag"])
+        assert tag.logged_actions().count() == initial_log_count
     assert str(tag.tag) == original_name
 
-
-def test_tag_delete(client, event):
+    response = client.post(
+        tag.urls.base, {"tag": "Renamed", "color": "#ffff99"}, follow=True
+    )
+    assert response.status_code == 200
     with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        tag = TagFactory(event=event)
-    client.force_login(user)
+        assert tag.logged_actions().count() == initial_log_count + 1
+        tag.refresh_from_db(fields=["tag"])
+    assert str(tag.tag) == "Renamed"
 
     response = client.get(tag.urls.delete)
     assert response.status_code == 200
@@ -1816,24 +1503,7 @@ def test_tag_delete(client, event):
         assert event.tags.count() == 0
 
 
-def test_tag_delete_used_tag_cascades(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        tag = TagFactory(event=event)
-        submission = SubmissionFactory(event=event)
-        submission.tags.add(tag)
-    client.force_login(user)
-
-    response = client.post(tag.urls.delete, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert event.tags.count() == 0
-        submission.refresh_from_db()
-        assert submission.tags.count() == 0
-
-
-def test_tag_offered_in_submission_filter(client, event):
+def test_tag_offered_in_submission_filter_and_delete_cascades(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         tag = TagFactory(event=event)
@@ -1844,11 +1514,17 @@ def test_tag_offered_in_submission_filter(client, event):
     client.force_login(user)
 
     response = client.get(event.orga_urls.submissions, follow=True)
-
     assert response.status_code == 200
     content = response.content.decode()
     assert f'value="{tag.pk}"' in content
     assert tag.tag in content
+
+    response = client.post(tag.urls.delete, follow=True)
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert event.tags.count() == 0
+        assert sub1.tags.count() == 0
+        assert sub2.tags.count() == 0
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -1873,31 +1549,7 @@ def test_submission_comments_query_count(
     assert all(comment.text in content for comment in comments)
 
 
-def test_submission_comment_post(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.post(
-        submission.orga_urls.comments,
-        data={"text": "Here is a new comment!"},
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert submission.comments.count() == 1
-        comment = submission.comments.first()
-        assert comment.text == "Here is a new comment!"
-        log_entries = list(comment.logged_actions())
-        assert len(log_entries) == 1
-        assert log_entries[0].action_type == "pretalx.submission.comment.create"
-
-
-def test_submission_comment_empty_not_created(client, event):
+def test_submission_comment_create_and_delete(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event)
@@ -1908,29 +1560,31 @@ def test_submission_comment_empty_not_created(client, event):
     response = client.post(
         submission.orga_urls.comments, data={"text": ""}, follow=True
     )
-
     assert response.status_code == 200
     with scopes_disabled():
         assert submission.comments.count() == 0
 
-
-def test_submission_comment_delete(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        comment = SubmissionCommentFactory(submission=submission, user=user)
-        comment_pk = comment.pk
-    client.force_login(user)
-
-    response = client.get(comment.urls.delete, follow=True)
-    assert response.status_code == 200
-
-    response = client.post(comment.urls.delete, follow=True)
+    response = client.post(
+        submission.orga_urls.comments,
+        data={"text": "Here is a new comment!"},
+        follow=True,
+    )
     assert response.status_code == 200
     with scopes_disabled():
-        assert not SubmissionComment.objects.filter(pk=comment_pk).exists()
+        comment = submission.comments.get()
+        assert comment.text == "Here is a new comment!"
+        assert [log.action_type for log in comment.logged_actions()] == [
+            "pretalx.submission.comment.create"
+        ]
+        delete_url = comment.urls.delete
+
+    response = client.get(delete_url, follow=True)
+    assert response.status_code == 200
+
+    response = client.post(delete_url, follow=True)
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert not SubmissionComment.objects.filter(pk=comment.pk).exists()
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -1988,7 +1642,7 @@ def test_submission_invitation_retract(client, event):
         )
 
 
-def test_submission_state_change_pending_sets_pending_state(client, event):
+def test_submission_pending_state_changes(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -1999,51 +1653,50 @@ def test_submission_state_change_pending_sets_pending_state(client, event):
     response = client.post(
         submission.orga_urls.accept, data={"pending": "on"}, follow=True
     )
-
     assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.SUBMITTED
-        assert submission.pending_state == SubmissionStates.ACCEPTED
-
-
-def test_submission_anonymise_already_anonymised_updates(client):
-    event = EventFactory()
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(
-            event=event, anonymised={"_anonymised": True, "title": ""}
-        )
-    client.force_login(user)
-
-    response = client.post(
-        submission.orga_urls.anonymise,
-        data={"description": "NEW CENSORED!"},
-        follow=True,
+    assert _states(submission) == (
+        SubmissionStates.SUBMITTED,
+        SubmissionStates.ACCEPTED,
     )
 
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-    assert submission.is_anonymised
-    assert submission.anonymised["description"] == "NEW CENSORED!"
-
-
-def test_submission_speakers_add_without_email_stays_on_page(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-    client.force_login(user)
-
     response = client.post(
-        submission.orga_urls.speakers, data={"email": ""}, follow=True
+        submission.orga_urls.make_submitted, data={"pending": "on"}, follow=True
+    )
+    assert response.status_code == 200
+    assert _states(submission) == (
+        SubmissionStates.SUBMITTED,
+        SubmissionStates.ACCEPTED,
     )
 
+    response = client.post(
+        submission.orga_urls.reject, data={"pending": "on"}, follow=True
+    )
     assert response.status_code == 200
+    assert _states(submission) == (
+        SubmissionStates.SUBMITTED,
+        SubmissionStates.REJECTED,
+    )
     with scopes_disabled():
-        assert submission.speakers.count() == 1
+        assert submission.slots.count() == 0
+
+    response = client.post(submission.orga_urls.make_submitted, follow=True)
+    assert response.status_code == 200
+    assert _states(submission) == (SubmissionStates.SUBMITTED, None)
+
+    response = client.post(
+        submission.orga_urls.accept, data={"pending": "on"}, follow=True
+    )
+    assert response.status_code == 200
+    assert _states(submission) == (
+        SubmissionStates.SUBMITTED,
+        SubmissionStates.ACCEPTED,
+    )
+
+    response = client.post(submission.orga_urls.apply_pending)
+    assert response.status_code == 302
+    assert _states(submission) == (SubmissionStates.ACCEPTED, None)
+    with scopes_disabled():
+        assert event.queued_mails.count() == 1
 
 
 def test_submission_speakers_add_invite_send_error_rolls_back(
@@ -2122,40 +1775,7 @@ def test_submission_create_speaker_invite_send_error_shows_message(
         assert event.submissions.count() == 1
 
 
-def test_submission_create_with_invalid_speaker_form(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        type_pk = event.submission_types.first().pk
-    client.force_login(user)
-
-    response = client.post(
-        event.orga_urls.new_submission,
-        data={
-            "abstract": "abstract",
-            "content_locale": "en",
-            "description": "description",
-            "duration": "",
-            "slot_count": 1,
-            "notes": "notes",
-            "speaker-speaker": "not-an-email",
-            "speaker-name": "Speaker Name",
-            "speaker-locale": "en",
-            "title": "My Talk",
-            "submission_type": type_pk,
-            "state": "submitted",
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert event.submissions.count() == 0
-    assert (
-        '<option value="not-an-email" selected>not-an-email</option>' in response.text
-    )
-
-
-def test_submission_create_with_question_answer(client, event):
+def test_submission_create_without_speaker_and_with_answers(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         type_pk = event.submission_types.first().pk
@@ -2166,70 +1786,56 @@ def test_submission_create_with_question_answer(client, event):
             question_required=QuestionRequired.OPTIONAL,
         )
     client.force_login(user)
+    data = {
+        "abstract": "abstract",
+        "content_locale": "en",
+        "description": "description",
+        "duration": "",
+        "slot_count": 1,
+        "notes": "notes",
+        "speaker-email": "",
+        "speaker-name": "",
+        "speaker-locale": "en",
+        "title": "Talk Without Speaker",
+        "submission_type": type_pk,
+        "state": "submitted",
+    }
 
     response = client.post(
         event.orga_urls.new_submission,
-        data={
-            "abstract": "abstract",
-            "content_locale": "en",
-            "description": "description",
-            "duration": "",
-            "slot_count": 1,
-            "notes": "notes",
-            "speaker-email": "newbie@example.org",
-            "speaker-name": "Foo Speaker",
-            "speaker-locale": "en",
-            "title": "Talk With Answer",
-            "submission_type": type_pk,
-            "state": "submitted",
-            f"question_{question.pk}": "Hello",
-        },
+        data={**data, "speaker-speaker": "not-an-email", "speaker-name": "Name"},
         follow=True,
     )
-
     assert response.status_code == 200
     with scopes_disabled():
-        assert event.submissions.count() == 1
-        sub = event.submissions.first()
+        assert event.submissions.count() == 0
+    assert (
+        '<option value="not-an-email" selected>not-an-email</option>' in response.text
+    )
+
+    response = client.post(
+        event.orga_urls.new_submission,
+        data={**data, f"question_{question.pk}": "Hello"},
+        follow=True,
+    )
+    assert response.status_code == 200
+    with scopes_disabled():
+        sub = event.submissions.get()
+        assert sub.title == "Talk Without Speaker"
+        assert sub.speakers.count() == 0
         answer = sub.answers.get(question=question)
         assert answer.answer == "Hello"
-        assert answer.submission == sub
-
-
-def test_submission_create_with_invalid_question_answer(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        type_pk = event.submission_types.first().pk
         QuestionFactory(
             event=event,
             target="submission",
             variant=QuestionVariant.STRING,
             question_required=QuestionRequired.REQUIRED,
         )
-    client.force_login(user)
 
-    response = client.post(
-        event.orga_urls.new_submission,
-        data={
-            "abstract": "abstract",
-            "content_locale": "en",
-            "description": "description",
-            "duration": "",
-            "slot_count": 1,
-            "notes": "notes",
-            "speaker-email": "",
-            "speaker-name": "",
-            "speaker-locale": "en",
-            "title": "My Talk",
-            "submission_type": type_pk,
-            "state": "submitted",
-        },
-        follow=True,
-    )
-
+    response = client.post(event.orga_urls.new_submission, data=data, follow=True)
     assert response.status_code == 200
     with scopes_disabled():
-        assert event.submissions.count() == 0
+        assert event.submissions.count() == 1
 
 
 def test_submission_content_query_count(client, event, django_assert_num_queries):
@@ -2243,6 +1849,9 @@ def test_submission_content_query_count(client, event, django_assert_num_queries
 
     assert response.status_code == 200
     assert submission.title in response.content.decode()
+
+    response = client.get(submission.orga_urls.base + "JJ", follow=True)
+    assert response.status_code == 404
 
 
 def test_submission_speakers_query_count(client, event, django_assert_num_queries):
@@ -2258,323 +1867,6 @@ def test_submission_speakers_query_count(client, event, django_assert_num_querie
 
     assert response.status_code == 200
     assert submission.title in response.content.decode()
-
-
-def test_submission_state_change_pending_rejected(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.post(
-        submission.orga_urls.reject, data={"pending": "on"}, follow=True
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.SUBMITTED
-        assert submission.pending_state == SubmissionStates.REJECTED
-        assert submission.slots.count() == 0
-
-
-def test_submission_state_change_pending_equal_to_current_state_is_refused(
-    client, event
-):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(
-            event=event,
-            state=SubmissionStates.SUBMITTED,
-            pending_state=SubmissionStates.ACCEPTED,
-        )
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.post(
-        submission.orga_urls.make_submitted, data={"pending": "on"}, follow=True
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.SUBMITTED
-        assert submission.pending_state == SubmissionStates.ACCEPTED
-
-
-def test_submission_state_change_current_state_without_pending_clears_pending_state(
-    client, event
-):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(
-            event=event,
-            state=SubmissionStates.SUBMITTED,
-            pending_state=SubmissionStates.REJECTED,
-        )
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.post(submission.orga_urls.make_submitted, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.SUBMITTED
-        assert submission.pending_state is None
-
-
-def test_submission_state_change_warns_about_outdated_emails(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        # Accept first (queues an acceptance email as draft)
-        submission.accept(person=user, orga=True)
-        assert event.queued_mails.count() == 1
-    client.force_login(user)
-
-    response = client.post(submission.orga_urls.reject)
-
-    assert response.status_code == 302
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.REJECTED
-
-
-def test_submission_state_change_no_pending_email_warning(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        # Accept (queues an acceptance email), then send the email so it's not a draft
-        submission.accept(person=user, orga=True)
-        event.queued_mails.update(state=QueuedMailStates.SENT)
-    client.force_login(user)
-
-    response = client.post(submission.orga_urls.reject, follow=True)
-
-    assert response.status_code == 200
-    msgs = [str(m) for m in response.context["messages"]]
-    assert not any("outdated" in m for m in msgs)
-
-
-def test_submission_speakers_reorder_noop(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker1 = SpeakerFactory(event=event)
-        speaker2 = SpeakerFactory(event=event)
-        submission.speakers.add(speaker1)
-        submission.speakers.add(speaker2)
-        role1 = SpeakerRole.objects.get(submission=submission, speaker=speaker1)
-        role2 = SpeakerRole.objects.get(submission=submission, speaker=speaker2)
-        role1.position = 0
-        role2.position = 1
-        SpeakerRole.objects.bulk_update([role1, role2], ["position"])
-        initial_log_count = submission.logged_actions().count()
-    client.force_login(user)
-
-    response = client.post(
-        submission.orga_urls.reorder_speakers, data={"order": f"{role1.pk},{role2.pk}"}
-    )
-
-    assert response.status_code == 204
-    with scopes_disabled():
-        assert submission.logged_actions().count() == initial_log_count
-
-
-def test_submission_apply_pending_bulk_empty(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.apply_pending)
-
-    assert response.status_code == 200
-    # No submit button when there are no pending submissions
-    content = response.content.decode()
-    assert "Do it" not in content
-
-
-def test_submission_create_without_speaker_email(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        type_pk = event.submission_types.first().pk
-    client.force_login(user)
-
-    response = client.post(
-        event.orga_urls.new_submission,
-        data={
-            "abstract": "abstract",
-            "content_locale": "en",
-            "description": "description",
-            "duration": "",
-            "slot_count": 1,
-            "notes": "notes",
-            "speaker-email": "",
-            "speaker-name": "",
-            "speaker-locale": "en",
-            "title": "Talk Without Speaker",
-            "submission_type": type_pk,
-            "state": "submitted",
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert event.submissions.count() == 1
-        sub = event.submissions.first()
-        assert sub.title == "Talk Without Speaker"
-        assert sub.speakers.count() == 0
-
-
-def test_submission_edit_no_changes_no_log(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(
-            event=event,
-            abstract="Existing abstract",
-            description="Existing description",
-            notes="Existing notes",
-        )
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        initial_log_count = submission.logged_actions().count()
-    client.force_login(user)
-
-    response = client.post(
-        submission.orga_urls.base,
-        data={
-            "abstract": submission.abstract,
-            "content_locale": submission.content_locale,
-            "description": submission.description,
-            "duration": "",
-            "notes": submission.notes,
-            "title": submission.title,
-            "submission_type": submission.submission_type.pk,
-            "resource-TOTAL_FORMS": 0,
-            "resource-INITIAL_FORMS": 0,
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert (
-            submission.logged_actions()
-            .filter(action_type="pretalx.submission.update")
-            .count()
-            == initial_log_count
-        )
-
-
-def test_submission_edit_shows_success_message(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.post(
-        submission.orga_urls.base,
-        data={
-            "abstract": "abstract",
-            "content_locale": "en",
-            "description": "description",
-            "duration": "",
-            "notes": "notes",
-            "title": "Updated For Message",
-            "submission_type": submission.submission_type.pk,
-            "resource-TOTAL_FORMS": 0,
-            "resource-INITIAL_FORMS": 0,
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    msgs = [str(m) for m in response.context["messages"]]
-    assert any("updated" in m.lower() for m in msgs)
-
-
-def test_submission_edit_unchanged_resource_not_resaved(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        event.cfp.fields["resources"] = {"visibility": "optional"}
-        event.cfp.save()
-        submission = SubmissionFactory(event=event, abstract="Test abstract")
-        resource = ResourceFactory(
-            submission=submission,
-            link="https://example.com/resource",
-            description="A resource",
-        )
-    client.force_login(user)
-
-    response = client.post(
-        submission.orga_urls.base,
-        data={
-            "abstract": submission.abstract,
-            "content_locale": submission.content_locale,
-            "title": submission.title,
-            "submission_type": submission.submission_type.pk,
-            "resource-0-id": resource.id,
-            "resource-0-description": resource.description,
-            "resource-0-link": resource.link,
-            "resource-0-is_public": "on",
-            "resource-TOTAL_FORMS": 1,
-            "resource-INITIAL_FORMS": 1,
-            "resource-MIN_NUM_FORMS": 0,
-            "resource-MAX_NUM_FORMS": 1000,
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        resource.refresh_from_db()
-        assert resource.description == "A resource"
-
-
-def test_submission_list_invalid_filter_still_shows_submissions(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-    client.force_login(user)
-
-    response = client.get(
-        event.orga_urls.submissions + "?state=INVALID_STATE", follow=True
-    )
-
-    assert response.status_code == 200
-    assert submission.title in response.content.decode()
-
-
-def test_submission_statistics_talk_timeline_with_multiple_dates(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        sub1 = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-        sub2 = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-        log1 = sub1.log_action("pretalx.submission.create")
-        log2 = sub2.log_action("pretalx.submission.create")
-        # Move one log to a different date
-        ActivityLog.objects.filter(pk=log2.pk).update(
-            timestamp=log1.timestamp - dt.timedelta(days=3)
-        )
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.stats)
-
-    assert response.status_code == 200
-    assert "Proposals by submission date" in response.content.decode()
-    assert response.context["talk_timeline_data"] != ""
 
 
 def test_submission_state_change_handles_submission_error(
@@ -2599,32 +1891,7 @@ def test_submission_state_change_handles_submission_error(
         assert submission.state == SubmissionStates.SUBMITTED
 
 
-def test_submission_apply_pending_single_handles_submission_error(
-    client, event, register_signal_handler
-):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(
-            event=event,
-            state=SubmissionStates.SUBMITTED,
-            pending_state=SubmissionStates.ACCEPTED,
-        )
-    client.force_login(user)
-
-    def block_state_change(signal, sender, **kwargs):
-        raise SubmissionError("Blocked by plugin")
-
-    register_signal_handler(before_submission_state_change, block_state_change)
-    response = client.post(submission.orga_urls.apply_pending)
-
-    assert response.status_code == 302
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.SUBMITTED
-        assert submission.pending_state == SubmissionStates.ACCEPTED
-
-
-def test_submission_apply_pending_bulk_handles_submission_error(
+def test_submission_apply_pending_handles_submission_error(
     client, event, register_signal_handler
 ):
     with scopes_disabled():
@@ -2646,21 +1913,27 @@ def test_submission_apply_pending_bulk_handles_submission_error(
             raise SubmissionError("Blocked by plugin")
 
     register_signal_handler(before_submission_state_change, block_accept_only)
-    response = client.post(event.orga_urls.apply_pending, follow=True)
 
+    response = client.post(sub_blocked.orga_urls.apply_pending)
+    assert response.status_code == 302
+    assert _states(sub_blocked) == (
+        SubmissionStates.SUBMITTED,
+        SubmissionStates.ACCEPTED,
+    )
+
+    response = client.post(event.orga_urls.apply_pending, follow=True)
     assert response.status_code == 200
-    with scopes_disabled():
-        sub_ok.refresh_from_db()
-        sub_blocked.refresh_from_db()
-        assert sub_ok.state == SubmissionStates.REJECTED
-        assert sub_blocked.state == SubmissionStates.SUBMITTED
-        assert sub_blocked.pending_state == SubmissionStates.ACCEPTED
+    assert _states(sub_ok) == (SubmissionStates.REJECTED, None)
+    assert _states(sub_blocked) == (
+        SubmissionStates.SUBMITTED,
+        SubmissionStates.ACCEPTED,
+    )
 
 
 @pytest.mark.parametrize(
     "signup_required", (True, False), ids=("required", "not_required")
 )
-def test_submission_signup_tab_link_visibility(client, signup_required):
+def test_submission_content_signup_tab_and_dropdown_visibility(client, signup_required):
     event = EventFactory(
         feature_flags={"attendee_signup": True} if signup_required else {}
     )
@@ -2675,10 +1948,12 @@ def test_submission_signup_tab_link_visibility(client, signup_required):
 
     response = client.get(submission.orga_urls.base, follow=True)
 
-    assert (submission.orga_urls.signup in response.content.decode()) is signup_required
+    content = response.content.decode()
+    assert (submission.orga_urls.signup in content) is signup_required
+    assert ("id_attendee_signup_required" in content) is signup_required
 
 
-def test_submission_signup_get_renders_capacity_form_table_and_progress(client):
+def test_submission_signup_page(client):
     event = EventFactory(feature_flags={"attendee_signup": True})
     sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
     submission = SubmissionFactory(
@@ -2686,16 +1961,44 @@ def test_submission_signup_get_renders_capacity_form_table_and_progress(client):
     )
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
+        confirmed = AttendeeSignupFactory(submission=submission)
         AttendeeSignupFactory(submission=submission)
-        AttendeeSignupFactory(submission=submission)
+        confirmed_email = confirmed.attendee.user.email
     client.force_login(user)
 
     response = client.get(submission.orga_urls.signup, follow=True)
-
     content = response.content.decode()
     assert "Attendees" in content
     assert "Attendee capacity" in content
     assert "--progress-width: 50%" in content
+
+    with scopes_disabled():
+        canceled = AttendeeSignupFactory(submission=submission, state="canceled")
+        canceled_email = canceled.attendee.user.email
+
+    response = client.get(submission.orga_urls.signup + "?state=confirmed", follow=True)
+    content = response.content.decode()
+    assert confirmed_email in content
+    assert canceled_email not in content
+
+    response = client.post(
+        submission.orga_urls.signup, data={"attendee_signup_capacity": "0"}
+    )
+    assert b"id_attendee_signup_capacity" in response.content
+    with scopes_disabled():
+        submission.refresh_from_db(fields=["attendee_signup_capacity"])
+    assert submission.attendee_signup_capacity == 4
+
+    for new_capacity, expected in ((1, 1), (42, 42)):
+        response = client.post(
+            submission.orga_urls.signup,
+            data={"attendee_signup_capacity": str(new_capacity)},
+            follow=True,
+        )
+        assert response.status_code == 200
+        with scopes_disabled():
+            submission.refresh_from_db(fields=["attendee_signup_capacity"])
+        assert submission.attendee_signup_capacity == expected
 
 
 def test_submission_signup_get_404_when_signup_not_required(client, event):
@@ -2709,71 +2012,6 @@ def test_submission_signup_get_404_when_signup_not_required(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.parametrize(
-    ("new_capacity", "signup_count", "expected"),
-    ((42, 0, 42), (1, 2, 1)),
-    ids=("basic", "below_signup_count"),
-)
-def test_submission_signup_post_updates_capacity(
-    client, new_capacity, signup_count, expected
-):
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        for _ in range(signup_count):
-            AttendeeSignupFactory(submission=submission)
-    client.force_login(user)
-
-    client.post(
-        submission.orga_urls.signup,
-        data={"attendee_signup_capacity": str(new_capacity)},
-        follow=True,
-    )
-
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.attendee_signup_capacity == expected
-
-
-def test_submission_signup_post_invalid_capacity_rerenders_form(client):
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(
-        event=event, submission_type=sub_type, attendee_signup_capacity=20
-    )
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.post(
-        submission.orga_urls.signup, data={"attendee_signup_capacity": "0"}
-    )
-
-    with scopes_disabled():
-        submission.refresh_from_db()
-    assert submission.attendee_signup_capacity == 20
-    assert b"id_attendee_signup_capacity" in response.content
-
-
-def test_submission_signup_filter_by_state(client):
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        confirmed = AttendeeSignupFactory(submission=submission)
-        canceled = AttendeeSignupFactory(submission=submission, state="canceled")
-    client.force_login(user)
-
-    response = client.get(submission.orga_urls.signup + "?state=confirmed", follow=True)
-
-    content = response.content.decode()
-    assert confirmed.attendee.user.email in content
-    assert canceled.attendee.user.email not in content
-
-
 def test_submission_signup_reviewer_returns_404(client):
     event = EventFactory(feature_flags={"attendee_signup": True})
     sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
@@ -2785,26 +2023,6 @@ def test_submission_signup_reviewer_returns_404(client):
     response = client.get(submission.orga_urls.signup, follow=True)
 
     assert response.status_code == 404
-
-
-@pytest.mark.parametrize("flag_enabled", (True, False), ids=("enabled", "disabled"))
-def test_submission_content_attendee_signup_dropdown_visibility(client, flag_enabled):
-    event = EventFactory(
-        feature_flags={"attendee_signup": True} if flag_enabled else {}
-    )
-    if flag_enabled:
-        sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-        submission = SubmissionFactory(event=event, submission_type=sub_type)
-    else:
-        submission = SubmissionFactory(event=event)
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.get(submission.orga_urls.base, follow=True)
-
-    content = response.content.decode()
-    assert ("id_attendee_signup_required" in content) is flag_enabled
 
 
 @pytest.mark.parametrize(

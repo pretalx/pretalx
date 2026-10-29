@@ -20,7 +20,7 @@ from pretalx.person.domain.profile import (
 )
 from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.person.models import SpeakerProfile
-from pretalx.submission.models import Answer, SpeakerRole
+from pretalx.submission.models import Answer, Feedback, SpeakerRole
 from tests.factories import (
     AnswerFactory,
     AvailabilityFactory,
@@ -38,20 +38,34 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 INVITE_KWARGS = {
-    "subject": "Claim your speaker profile",
+    "subject": "Custom invite subject",
     "text": "Please claim your profile: {invitation_link}",
 }
+MANAGED = {"user": None, "email": "managed@example.com"}
 
 
-def test_apply_speaker_profile_changes_never_touches_account_email():
+@pytest.mark.parametrize(
+    ("user_name", "changed_fields", "expected_name"),
+    (
+        ("", ["name", "email"], "Profile Name"),
+        ("Existing Name", ["name"], "Existing Name"),
+        ("", ["email"], ""),
+    ),
+    ids=("fills_empty_user_name", "keeps_existing_user_name", "name_unchanged"),
+)
+def test_apply_speaker_profile_changes_syncs_name_but_never_account_email(
+    user_name, changed_fields, expected_name
+):
+    user = UserFactory(name=user_name, email="old@example.com")
     profile = SpeakerFactory(
-        user=UserFactory(email="old@example.com"), email="contact@example.com"
+        user=user, name="Profile Name", email="contact@example.com"
     )
 
-    apply_speaker_profile_changes(profile, ["email"])
-    profile.user.refresh_from_db()
+    apply_speaker_profile_changes(profile, changed_fields)
+    user.refresh_from_db()
 
-    assert profile.user.email == "old@example.com"
+    assert user.name == expected_name
+    assert user.email == "old@example.com"
 
 
 def test_apply_speaker_profile_changes_managed_profile_is_noop():
@@ -65,81 +79,65 @@ def test_apply_speaker_profile_changes_managed_profile_is_noop():
     assert profile.logged_actions().count() == 0
 
 
-def test_apply_speaker_profile_changes_syncs_name_to_empty_user():
-    user = UserFactory(name="")
-    profile = SpeakerFactory(user=user, name="Fresh Name")
-
-    apply_speaker_profile_changes(profile, ["name"])
-    user.refresh_from_db()
-
-    assert user.name == "Fresh Name"
-
-
-def test_apply_speaker_profile_changes_does_not_overwrite_existing_user_name():
-    user = UserFactory(name="Existing Name")
-    profile = SpeakerFactory(user=user, name="Profile Name")
-
-    apply_speaker_profile_changes(profile, ["name"])
-    user.refresh_from_db()
-
-    assert user.name == "Existing Name"
-
-
-def test_apply_speaker_profile_changes_skips_name_not_in_changed_fields():
-    user = UserFactory(name="")
-    profile = SpeakerFactory(user=user, name="Profile Name")
-
-    apply_speaker_profile_changes(profile, [])
-    user.refresh_from_db()
-
-    assert user.name == ""
-
-
 @pytest.mark.parametrize(
-    "new_email", ("changed@example.com", None), ids=["new_address", "cleared"]
+    ("new_email", "changed_fields", "expected_token", "expected_logs"),
+    (
+        (
+            "changed@example.com",
+            ["email"],
+            None,
+            [
+                (
+                    "pretalx.speaker.invite.invalidate",
+                    {
+                        "email": "invited@example.com",
+                        "new_email": "changed@example.com",
+                    },
+                )
+            ],
+        ),
+        (
+            None,
+            ["email"],
+            None,
+            [
+                (
+                    "pretalx.speaker.invite.invalidate",
+                    {"email": "invited@example.com", "new_email": None},
+                )
+            ],
+        ),
+        ("invited@example.com", ["name"], "invite-token", []),
+    ),
+    ids=["new_address", "cleared", "other_change_keeps_invite"],
 )
-def test_apply_speaker_profile_changes_email_change_invalidates_invite(new_email):
+def test_apply_speaker_profile_changes_email_change_invalidates_invite(
+    new_email, changed_fields, expected_token, expected_logs
+):
+    sent = now()
     profile = SpeakerFactory(
         user=None,
         email="invited@example.com",
         invitation_token="invite-token",
-        invitation_sent=now(),
+        invitation_sent=sent,
     )
     profile.email = new_email
     profile.save(update_fields=["email"])
 
     with scope(event=profile.event):
         apply_speaker_profile_changes(
-            profile, ["email"], old_email="invited@example.com"
+            profile, changed_fields, old_email="invited@example.com"
         )
 
     profile.refresh_from_db()
-    assert profile.invitation_token is None
-    assert profile.invitation_sent is None
-    log = profile.logged_actions().get()
-    assert log.action_type == "pretalx.speaker.invite.invalidate"
-    assert log.data["email"] == "invited@example.com"
-    assert log.data["new_email"] == new_email
+    assert profile.invitation_token == expected_token
+    assert profile.invitation_sent == (sent if expected_token else None)
+    assert [
+        (log.action_type, log.data) for log in profile.logged_actions()
+    ] == expected_logs
 
 
-def test_apply_speaker_profile_changes_other_change_keeps_invite():
-    sent = now()
-    profile = SpeakerFactory(
-        user=None,
-        email="managed@example.com",
-        invitation_token="invite-token",
-        invitation_sent=sent,
-    )
-
-    apply_speaker_profile_changes(profile, ["name"])
-
-    profile.refresh_from_db()
-    assert profile.invitation_token == "invite-token"
-    assert profile.invitation_sent == sent
-    assert profile.logged_actions().count() == 0
-
-
-def test_send_speaker_invite_mints_token_and_sends_directly():
+def test_send_speaker_invite_mints_rotates_and_retracts_token():
     profile = SpeakerFactory(user=None, email="managed@example.com")
     event = profile.event
     with scopes_disabled():
@@ -148,178 +146,122 @@ def test_send_speaker_invite_mints_token_and_sends_directly():
 
     with scope(event=event):
         send_speaker_invite(profile, **INVITE_KWARGS)
-
-    profile.refresh_from_db()
-    assert profile.invitation_token
-    assert profile.invitation_sent is not None
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == ["managed@example.com"]
-    assert profile.invitation_token in djmail.outbox[0].body
-    with scope(event=event):
-        mail = profile.mails.get()
-        assert mail.state == QueuedMailStates.SENT
-
-
-def test_send_speaker_invite_resend_rotates_token():
-    profile = SpeakerFactory(user=None, email="managed@example.com")
-    with scopes_disabled():
-        SpeakerRoleFactory(submission__event=profile.event, speaker=profile)
-    djmail.outbox = []
-
-    with scope(event=profile.event):
-        send_speaker_invite(profile, **INVITE_KWARGS)
         profile = SpeakerProfile.objects.select_related("event__cfp").get(pk=profile.pk)
-        old_token = profile.invitation_token
-        send_speaker_invite(profile, **INVITE_KWARGS)
-
-    profile.refresh_from_db()
-    assert profile.invitation_token != old_token
-    assert len(djmail.outbox) == 2
-    assert profile.invitation_token in djmail.outbox[1].body
-
-
-def test_send_speaker_invite_uses_edited_subject_and_text():
-    profile = SpeakerFactory(user=None, email="managed@example.com")
-    event = profile.event
-    djmail.outbox = []
-
-    with scope(event=event):
-        send_speaker_invite(
-            profile,
-            subject="Custom invite subject",
-            text="Please claim your profile: {invitation_link}",
-        )
-
-    profile.refresh_from_db()
-    assert len(djmail.outbox) == 1
-    assert "Custom invite subject" in djmail.outbox[0].subject
-    assert profile.invitation_token in djmail.outbox[0].body
-    with scope(event=event):
+        first_token = profile.invitation_token
+        first_sent = profile.invitation_sent
+        assert first_token
+        assert first_sent is not None
+        assert [m.to for m in djmail.outbox] == [["managed@example.com"]]
+        assert "Custom invite subject" in djmail.outbox[0].subject
+        assert first_token in djmail.outbox[0].body
+        assert profile.mails.get().state == QueuedMailStates.SENT
         template = event.mail_templates.get(role=MailTemplateRoles.NEW_SPEAKER_INVITE)
         assert "Custom invite subject" not in str(template.subject)
 
-
-@pytest.mark.parametrize(
-    "profile_kwargs",
-    ({"user": None, "email": None}, {}),
-    ids=["without_email", "with_account"],
-)
-def test_send_speaker_invite_rejects_uninvitable_profiles(profile_kwargs):
-    profile = SpeakerFactory(**profile_kwargs)
-
-    with scope(event=profile.event), pytest.raises(SendMailException):
         send_speaker_invite(profile, **INVITE_KWARGS)
+        profile = SpeakerProfile.objects.select_related("event__cfp").get(pk=profile.pk)
+        assert profile.invitation_token != first_token
+        assert len(djmail.outbox) == 2
+        assert profile.invitation_token in djmail.outbox[1].body
+        sent = profile.invitation_sent
 
-    profile.refresh_from_db()
-    assert profile.invitation_token is None
+        retract_speaker_invite(profile)
+        profile.refresh_from_db(fields=["invitation_token", "invitation_sent"])
+        assert profile.invitation_token is None
+        assert profile.invitation_sent == sent
+        log_count = profile.logged_actions().count()
+
+        retract_speaker_invite(profile)
+        profile.refresh_from_db(fields=["invitation_token"])
+        assert profile.invitation_token is None
+        assert profile.logged_actions().count() == log_count
 
 
 @pytest.mark.parametrize(
-    ("subject", "text"),
-    (("", "Some text"), ("Some subject", "")),
-    ids=["empty_subject", "empty_text"],
+    ("profile_kwargs", "subject", "text", "exception", "match"),
+    (
+        (
+            {"user": None, "email": None},
+            "Hello",
+            "{invitation_link}",
+            SendMailException,
+            "contact email",
+        ),
+        (
+            {"email": "managed@example.com"},
+            "Hello",
+            "{invitation_link}",
+            SendMailException,
+            "account",
+        ),
+        (MANAGED, "", "{invitation_link}", ValueError, "subject and text"),
+        (MANAGED, "Hello", "", ValueError, "subject and text"),
+        (
+            MANAGED,
+            "Hello",
+            "About {proposal_title}: {invitation_link}",
+            SendMailException,
+            None,
+        ),
+        (
+            MANAGED,
+            "Hello",
+            "Broken { {invitation_link}",
+            SendMailException,
+            "Invalid invitation text",
+        ),
+    ),
+    ids=(
+        "without_email",
+        "with_account",
+        "empty_subject",
+        "empty_text",
+        "unknown_placeholder",
+        "malformed_text",
+    ),
 )
-def test_send_speaker_invite_requires_subject_and_text(subject, text):
-    profile = SpeakerFactory(user=None, email="managed@example.com")
+def test_send_speaker_invite_rejects_without_touching_token(
+    profile_kwargs, subject, text, exception, match
+):
+    profile = SpeakerFactory(**profile_kwargs)
+    djmail.outbox = []
 
-    with (
-        scope(event=profile.event),
-        pytest.raises(ValueError, match="subject and text"),
-    ):
+    with scope(event=profile.event), pytest.raises(exception, match=match):
         send_speaker_invite(profile, subject=subject, text=text)
 
     profile.refresh_from_db()
     assert profile.invitation_token is None
-
-
-def test_send_speaker_invite_render_failure_does_not_rotate_token():
-    profile = SpeakerFactory(user=None, email="managed@example.com")
-    djmail.outbox = []
-
-    with scope(event=profile.event), pytest.raises(SendMailException):
-        send_speaker_invite(
-            profile, subject="Hello", text="About {proposal_title}: {invitation_link}"
-        )
-
-    profile.refresh_from_db()
-    assert profile.invitation_token is None
     assert profile.invitation_sent is None
-    assert len(djmail.outbox) == 0
+    assert djmail.outbox == []
 
 
-def test_send_speaker_invite_malformed_text_raises_send_mail_exception():
-    profile = SpeakerFactory(user=None, email="managed@example.com")
-    djmail.outbox = []
-
-    with (
-        scope(event=profile.event),
-        pytest.raises(SendMailException, match="Invalid invitation text"),
-    ):
-        send_speaker_invite(profile, subject="Hello", text="Broken { {invitation_link}")
-
-    profile.refresh_from_db()
-    assert profile.invitation_token is None
-    assert len(djmail.outbox) == 0
-
-
-def test_retract_speaker_invite_clears_token_keeps_sent_time():
-    profile = SpeakerFactory(user=None, email="managed@example.com")
+def test_claim_speaker_profile_links_user_adopts_picture_and_keeps_identity():
+    picture = ProfilePictureFactory(user=None)
+    profile = SpeakerFactory(
+        user=None, email="managed@example.com", profile_picture=picture
+    )
     with scopes_disabled():
         SpeakerRoleFactory(submission__event=profile.event, speaker=profile)
     with scope(event=profile.event):
         send_speaker_invite(profile, **INVITE_KWARGS)
-        profile = SpeakerProfile.objects.select_related("event").get(pk=profile.pk)
-        sent = profile.invitation_sent
-
-        retract_speaker_invite(profile)
-
-    profile.refresh_from_db()
-    assert profile.invitation_token is None
-    assert profile.invitation_sent == sent
-
-
-def test_retract_speaker_invite_without_token_is_noop():
-    profile = SpeakerFactory(user=None, email="managed@example.com")
-
-    retract_speaker_invite(profile)
-
-    profile.refresh_from_db()
-    assert profile.invitation_token is None
-    assert profile.logged_actions().count() == 0
-
-
-def test_claim_speaker_profile_links_user_and_keeps_identity():
-    profile = SpeakerFactory(user=None, email="managed@example.com")
-    with scopes_disabled():
-        SpeakerRoleFactory(submission__event=profile.event, speaker=profile)
-    with scope(event=profile.event):
-        send_speaker_invite(profile, **INVITE_KWARGS)
-    profile = SpeakerProfile.objects.select_related("event").get(pk=profile.pk)
+    profile = SpeakerProfile.objects.select_related("event", "profile_picture").get(
+        pk=profile.pk
+    )
     old_code = profile.code
     old_guid = profile.guid
-    user = UserFactory()
-
-    with scope(event=profile.event):
-        claim_speaker_profile(profile, user)
-
-    profile.refresh_from_db()
-    assert profile.user_id == user.pk
-    assert profile.invitation_token is None
-    assert profile.code == old_code
-    assert profile.guid == old_guid
-
-
-def test_claim_speaker_profile_adopts_picture_and_seeds_account():
-    picture = ProfilePictureFactory(user=None)
-    profile = SpeakerFactory(user=None, profile_picture=picture)
     user = UserFactory()
     assert user.profile_picture is None
 
     with scope(event=profile.event):
         claim_speaker_profile(profile, user)
 
+    profile.refresh_from_db()
     picture.refresh_from_db()
     user.refresh_from_db()
+    assert profile.user_id == user.pk
+    assert profile.invitation_token is None
+    assert profile.code == old_code
+    assert profile.guid == old_guid
     assert picture.user_id == user.pk
     assert user.profile_picture == picture
 
@@ -347,18 +289,25 @@ def test_claim_speaker_profile_keeps_existing_account_picture():
     user.save()
     adopted_picture = ProfilePictureFactory(user=None)
     profile = SpeakerFactory(user=None, profile_picture=adopted_picture)
+    pictureless = SpeakerFactory(user=None)
 
     with scope(event=profile.event):
         claim_speaker_profile(profile, user)
+    with scope(event=pictureless.event):
+        claim_speaker_profile(pictureless, user)
 
     adopted_picture.refresh_from_db()
     user.refresh_from_db()
+    pictureless.refresh_from_db()
     assert adopted_picture.user_id == user.pk
     assert user.profile_picture == account_picture
+    assert pictureless.user_id == user.pk
+    assert pictureless.profile_picture_id is None
 
 
-def test_create_speaker_profile_creates_managed_profile_and_logs():
+def test_create_speaker_profile_creates_managed_profile_without_linking_account():
     event = EventFactory()
+    UserFactory(email="newperson@example.com")
     djmail.outbox = []
 
     with scope(event=event):
@@ -377,25 +326,10 @@ def test_create_speaker_profile_creates_managed_profile_and_logs():
         assert profile.origin == SpeakerProfileOrigin.ORGA
         assert list(profile.submissions.all()) == []
         assert profile.invitation_token is None
-        assert len(djmail.outbox) == 0
-        assert (
-            profile.logged_actions()
-            .filter(action_type="pretalx.speaker.create")
-            .count()
-            == 1
-        )
-
-
-def test_create_speaker_profile_never_links_matching_account():
-    event = EventFactory()
-    account = UserFactory(email="account@example.com")
-
-    with scope(event=event):
-        profile = create_speaker_profile(event, email="account@example.com")
-
-        assert profile.user is None
-        assert profile.user != account
-        assert profile.email == "account@example.com"
+        assert djmail.outbox == []
+        assert [log.action_type for log in profile.logged_actions()] == [
+            "pretalx.speaker.create"
+        ]
 
 
 def test_create_speaker_profile_requires_email_or_name():
@@ -411,41 +345,46 @@ def _merge_pair(**managed_kwargs):
     return managed, survivor
 
 
-def test_merge_applies_field_choices():
+def test_merge_applies_field_choices_and_repoints_relations():
     managed, survivor = _merge_pair(name="Orga Name", biography="Orga bio")
     survivor.name = "Own Name"
     survivor.biography = "Own bio"
     survivor.save()
+    event = managed.event
+    with scopes_disabled():
+        role = SpeakerRoleFactory(submission__event=event, speaker=managed, position=2)
+        submission = role.submission
+        feedback = FeedbackFactory(talk=submission, speaker=managed)
+        merged_availability = AvailabilityFactory(event=event, person=managed)
+        AvailabilityFactory(event=event, person=survivor)
+        mail = QueuedMailFactory(event=event)
+        mail.to_speakers.add(managed)
 
-    with scope(event=managed.event):
+    with scope(event=event):
         merge_speaker_profiles(
             managed,
             survivor,
-            choices={"name": "merged", "biography": "survivor"},
+            choices={
+                "name": "merged",
+                "biography": "survivor",
+                "availability": "merged",
+            },
             user=survivor.user,
         )
 
-    survivor.refresh_from_db()
-    assert survivor.name == "Orga Name"
-    assert survivor.biography == "Own bio"
-    assert not SpeakerProfile.objects.filter(pk=managed.pk).exists()
-
-
-def test_merge_repoints_submissions_preserving_position():
-    managed, survivor = _merge_pair()
-    with scopes_disabled():
-        role = SpeakerRoleFactory(
-            submission__event=managed.event, speaker=managed, position=2
-        )
-
-    submission = role.submission
-    with scope(event=managed.event):
-        merge_speaker_profiles(managed, survivor, choices={}, user=survivor.user)
-
+        survivor.refresh_from_db()
         role.refresh_from_db()
-        assert role.speaker_id == survivor.pk
-        assert role.position == 2
+        feedback.refresh_from_db()
+        assert survivor.name == "Orga Name"
+        assert survivor.biography == "Own bio"
+        assert not SpeakerProfile.objects.filter(pk=managed.pk).exists()
+        assert (role.speaker_id, role.position) == (survivor.pk, 2)
         assert list(submission.speakers.all()) == [survivor]
+        assert feedback.speaker_id == survivor.pk
+        assert list(survivor.availabilities.values_list("pk", flat=True)) == [
+            merged_availability.pk
+        ]
+        assert list(mail.to_speakers.all()) == [survivor]
 
 
 def test_merge_same_submission_keeps_survivor_role():
@@ -458,24 +397,10 @@ def test_merge_same_submission_keeps_survivor_role():
     with scope(event=managed.event):
         merge_speaker_profiles(managed, survivor, choices={}, user=survivor.user)
 
-        roles = list(SpeakerRole.objects.filter(submission=submission))
-        assert len(roles) == 1
-        assert roles[0].speaker_id == survivor.pk
-        assert roles[0].position == 0
-
-
-def test_merge_repoints_protected_feedback():
-    managed, survivor = _merge_pair()
-    with scopes_disabled():
-        role = SpeakerRoleFactory(submission__event=managed.event, speaker=managed)
-        feedback = FeedbackFactory(talk=role.submission, speaker=managed)
-
-    with scope(event=managed.event):
-        merge_speaker_profiles(managed, survivor, choices={}, user=survivor.user)
-
-    feedback.refresh_from_db()
-    assert feedback.speaker_id == survivor.pk
-    assert not SpeakerProfile.objects.filter(pk=managed.pk).exists()
+        assert [
+            (role.speaker_id, role.position)
+            for role in SpeakerRole.objects.filter(submission=submission)
+        ] == [(survivor.pk, 0)]
 
 
 def test_merge_answers_chosen_and_unchosen():
@@ -520,36 +445,6 @@ def test_merge_answers_chosen_and_unchosen():
         }
         assert not Answer.objects.filter(pk=survivor_answer_1.pk).exists()
         assert not Answer.objects.filter(pk=merged_answer_2.pk).exists()
-
-
-def test_merge_availability_chooser():
-    managed, survivor = _merge_pair()
-    event = managed.event
-    with scopes_disabled():
-        merged_availability = AvailabilityFactory(event=event, person=managed)
-        AvailabilityFactory(event=event, person=survivor)
-
-    with scope(event=event):
-        merge_speaker_profiles(
-            managed, survivor, choices={"availability": "merged"}, user=survivor.user
-        )
-
-        assert [availability.pk for availability in survivor.availabilities.all()] == [
-            merged_availability.pk
-        ]
-
-
-def test_merge_repoints_mail_history():
-    managed, survivor = _merge_pair()
-    event = managed.event
-    with scopes_disabled():
-        mail = QueuedMailFactory(event=event)
-        mail.to_speakers.add(managed)
-
-    with scope(event=event):
-        merge_speaker_profiles(managed, survivor, choices={}, user=survivor.user)
-
-        assert list(mail.to_speakers.all()) == [survivor]
 
 
 @pytest.mark.parametrize(
@@ -610,62 +505,53 @@ def test_merge_discards_managed_picture_when_survivor_keeps_own():
     assert managed_picture.updated > old_updated
 
 
-def test_shred_speaker_profile_removes_profile_and_logs_event_audit():
+def test_shred_speaker_profile_removes_profile_history_and_logs_event_audit():
     event = EventFactory()
-    profile = SpeakerFactory(event=event, user=None, email="gone@example.com")
-    AvailabilityFactory(event=event, person=profile)
-    orga_user = UserFactory()
-
-    with scope(event=event):
-        shred_speaker_profile(profile, user=orga_user)
-
-    with scopes_disabled():
-        assert not SpeakerProfile.objects.filter(pk=profile.pk).exists()
-        log = event.logged_actions().filter(action_type="pretalx.speaker.delete")
-        assert log.count() == 1
-        assert log.first().data["email"] == "gone@example.com"
-
-
-def test_shred_speaker_profile_deletes_mails_even_with_other_recipients():
-    event = EventFactory()
-    profile = SpeakerFactory(event=event, user=None)
+    picture = ProfilePictureFactory(user=None)
+    profile = SpeakerFactory(
+        event=event, user=None, email="gone@example.com", profile_picture=picture
+    )
     other = SpeakerFactory(event=event)
+    AvailabilityFactory(event=event, person=profile)
     own_mail = QueuedMailFactory(event=event)
     own_mail.to_speakers.add(profile)
     shared_mail = QueuedMailFactory(event=event)
     shared_mail.to_speakers.add(profile, other)
     unrelated_mail = QueuedMailFactory(event=event)
     unrelated_mail.to_speakers.add(other)
+    with scopes_disabled():
+        feedback = FeedbackFactory(talk=SubmissionFactory(event=event), speaker=profile)
+        answer = AnswerFactory(
+            question=QuestionFactory(event=event), submission=None, speaker=profile
+        )
+    orga_user = UserFactory()
+    old_updated = picture.updated
 
     with scope(event=event):
-        shred_speaker_profile(profile)
+        send_speaker_invite(profile, **INVITE_KWARGS)
+        profile = SpeakerProfile.objects.select_related("event", "profile_picture").get(
+            pk=profile.pk
+        )
+        assert profile.invitation_token
+        actions = profile.logged_actions()
+        assert actions.exists()
 
-    with scopes_disabled():
-        assert not event.queued_mails.filter(pk=own_mail.pk).exists()
-        assert not event.queued_mails.filter(pk=shared_mail.pk).exists()
-        assert event.queued_mails.filter(pk=unrelated_mail.pk).exists()
+        shred_speaker_profile(profile, user=orga_user)
 
-
-@pytest.mark.parametrize("history", ("feedback", "answer"))
-def test_shred_speaker_profile_deletes_protected_relations(history):
-    event = EventFactory()
-    profile = SpeakerFactory(event=event, user=None)
-    with scopes_disabled():
-        if history == "feedback":
-            related = FeedbackFactory(
-                talk=SubmissionFactory(event=event), speaker=profile
-            )
-        else:
-            related = AnswerFactory(
-                question=QuestionFactory(event=event), submission=None, speaker=profile
-            )
-
-    with scope(event=event):
-        shred_speaker_profile(profile)
-
+        assert not actions.exists()
+    picture.refresh_from_db()
     with scopes_disabled():
         assert not SpeakerProfile.objects.filter(pk=profile.pk).exists()
-        assert not type(related).objects.filter(pk=related.pk).exists()
+        assert not SpeakerProfile.objects.filter(
+            invitation_token__isnull=False
+        ).exists()
+        assert list(event.queued_mails.all()) == [unrelated_mail]
+        assert not Feedback.objects.filter(pk=feedback.pk).exists()
+        assert not Answer.objects.filter(pk=answer.pk).exists()
+        assert picture.updated > old_updated
+        log = event.logged_actions().filter(action_type="pretalx.speaker.delete").get()
+        assert log.data["email"] == "gone@example.com"
+        assert log.person == orga_user
 
 
 def test_profile_deletable_after_removal():
@@ -691,59 +577,28 @@ def test_profile_deletable_after_removal():
         )
 
 
-def test_shred_speaker_profile_deletes_logged_actions_and_invite_token():
-    event = EventFactory()
-    profile = SpeakerFactory(event=event, user=None, email="invited@example.com")
-
-    with scope(event=event):
-        send_speaker_invite(profile, **INVITE_KWARGS)
-        profile = SpeakerProfile.objects.select_related("event").get(pk=profile.pk)
-        assert profile.invitation_token
-        assert profile.logged_actions().exists()
-        actions = profile.logged_actions()
-
-        shred_speaker_profile(profile)
-
-        assert not actions.exists()
+def test_shred_speaker_profile_refuses_until_profile_is_managed_and_unused():
+    account_backed = SpeakerFactory()
+    speaking = SpeakerFactory(user=None, event=account_backed.event)
     with scopes_disabled():
-        assert not SpeakerProfile.objects.filter(
-            invitation_token__isnull=False
-        ).exists()
+        SpeakerRoleFactory(submission__event=speaking.event, speaker=speaking)
 
+    with scope(event=account_backed.event):
+        with pytest.raises(ValueError, match="managed"):
+            shred_speaker_profile(account_backed)
+        with pytest.raises(ValueError, match="submissions"):
+            shred_speaker_profile(speaking)
+        assert (
+            SpeakerProfile.objects.filter(
+                pk__in=[account_backed.pk, speaking.pk]
+            ).count()
+            == 2
+        )
 
-def test_shred_speaker_profile_bumps_picture_for_cleanup():
-    event = EventFactory()
-    picture = ProfilePictureFactory(user=None)
-    profile = SpeakerFactory(event=event, user=None, profile_picture=picture)
-    old_updated = picture.updated
+        speaking.submissions.clear()
+        shred_speaker_profile(speaking)
 
-    with scope(event=event):
-        shred_speaker_profile(profile)
-
-    picture.refresh_from_db()
-    assert picture.updated > old_updated
-
-
-def test_shred_speaker_profile_refuses_account_backed_profile():
-    profile = SpeakerFactory()
-
-    with scope(event=profile.event), pytest.raises(ValueError, match="managed"):
-        shred_speaker_profile(profile)
-
-    with scopes_disabled():
-        assert SpeakerProfile.objects.filter(pk=profile.pk).exists()
-
-
-def test_shred_speaker_profile_refuses_profile_with_submissions():
-    profile = SpeakerFactory(user=None)
-    with scopes_disabled():
-        SpeakerRoleFactory(submission__event=profile.event, speaker=profile)
-
-    with scope(event=profile.event), pytest.raises(ValueError, match="submissions"):
-        shred_speaker_profile(profile)
-
-    with scopes_disabled():
-        assert SpeakerProfile.objects.filter(pk=profile.pk).exists()
+        assert list(SpeakerProfile.objects.all()) == [account_backed]
 
 
 def test_merge_handles_every_core_relation_to_speaker_profile():

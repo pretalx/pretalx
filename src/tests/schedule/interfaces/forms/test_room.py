@@ -12,129 +12,78 @@ from tests.factories import AvailabilityFactory, RoomFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
+def _data(name, availabilities=(), capacity=""):
+    return {
+        "name_0": name,
+        "guid": "",
+        "description_0": "",
+        "speaker_info_0": "",
+        "capacity": capacity,
+        "availabilities": json.dumps(
+            {
+                "availabilities": [
+                    {"start": start.isoformat(), "end": end.isoformat()}
+                    for start, end in availabilities
+                ]
+            }
+        ),
+    }
+
+
 def test_room_form_init(event):
     form = RoomForm(event=event)
+    generated_guid = RoomForm(instance=RoomFactory(event=event, guid=None), event=event)
+    custom_guid = RoomForm(
+        instance=RoomFactory(event=event, guid=uuid.uuid4()), event=event
+    )
 
     assert form.instance.event == event
     assert form.fields["availabilities"].event == event
     assert form.fields["availabilities"].instance == form.instance
     for field in ("name", "description", "speaker_info"):
         assert form.fields[field].widget.attrs.get("placeholder")
-
-
-def test_room_form_init_preserves_existing_event(event):
-    room = RoomFactory(event=event)
-
-    form = RoomForm(instance=room, event=event)
-
-    assert form.instance.event == event
-
-
-def test_room_form_init_guid_help_text_when_no_guid(event):
-    room = RoomFactory(event=event, guid=None)
-
-    form = RoomForm(instance=room, event=event)
-
-    assert str(room.uuid) in str(form.fields["guid"].help_text)
-
-
-def test_room_form_init_guid_no_help_text_when_guid_set(event):
-    room = RoomFactory(event=event, guid=uuid.uuid4())
-
-    form = RoomForm(instance=room, event=event)
-
-    assert str(room.uuid) not in str(form.fields["guid"].help_text or "")
-
-
-def test_room_form_save_creates_room(event):
-    data = {
-        "name_0": "Big Hall",
-        "guid": "",
-        "description_0": "",
-        "speaker_info_0": "",
-        "capacity": "200",
-        "availabilities": '{"availabilities": []}',
-    }
-    form = RoomForm(data=data, event=event)
-    assert form.is_valid(), form.errors
-
-    room = form.save()
-
-    assert str(room.name) == "Big Hall"
-    assert room.capacity == 200
-    assert room.event == event
-
-
-def test_room_form_save_replaces_availabilities(event):
-    room = RoomFactory(event=event)
-    old_avail = AvailabilityFactory(event=event, room=room)
-    new_start = event.datetime_from + dt.timedelta(hours=2)
-    new_end = event.datetime_to - dt.timedelta(hours=2)
-    avail_json = json.dumps(
-        {
-            "availabilities": [
-                {"start": new_start.isoformat(), "end": new_end.isoformat()}
-            ]
-        }
+    assert generated_guid.instance.event == event
+    assert str(generated_guid.instance.uuid) in str(
+        generated_guid.fields["guid"].help_text
     )
-    data = {
-        "name_0": str(room.name),
-        "guid": "",
-        "description_0": "",
-        "speaker_info_0": "",
-        "capacity": "",
-        "availabilities": avail_json,
-    }
+    assert str(custom_guid.instance.uuid) not in str(
+        custom_guid.fields["guid"].help_text or ""
+    )
 
-    form = RoomForm(data=data, instance=room, event=event)
+
+def test_room_form_save_creates_room_and_replaces_availabilities(event):
+    start = event.datetime_from + dt.timedelta(hours=2)
+    end = event.datetime_to - dt.timedelta(hours=2)
+
+    form = RoomForm(data=_data("Big Hall", capacity="200"), event=event)
+    assert form.is_valid(), form.errors
+    room = form.save()
+    old_avail = AvailabilityFactory(event=event, room=room)
+
+    assert (str(room.name), room.capacity, room.event) == ("Big Hall", 200, event)
+
+    form = RoomForm(
+        data=_data("Big Hall", availabilities=[(start, end)]),
+        instance=room,
+        event=event,
+    )
     assert form.is_valid(), form.errors
     form.save()
     avails = list(room.availabilities.all())
 
-    assert len(avails) == 1
+    assert [(avail.start, avail.end) for avail in avails] == [(start, end)]
     assert avails[0].pk != old_avail.pk
-    assert avails[0].start == new_start
-    assert avails[0].end == new_end
 
-
-def test_room_form_save_with_no_availabilities_clears_existing(event):
-    room = RoomFactory(event=event)
-    AvailabilityFactory(event=event, room=room)
-    data = {
-        "name_0": str(room.name),
-        "guid": "",
-        "description_0": "",
-        "speaker_info_0": "",
-        "capacity": "",
-        "availabilities": '{"availabilities": []}',
-    }
-
-    form = RoomForm(data=data, instance=room, event=event)
+    form = RoomForm(data=_data("Big Hall"), instance=room, event=event)
     assert form.is_valid(), form.errors
     form.save()
-    avails = list(room.availabilities.all())
 
-    assert avails == []
-
-
-def test_room_form_read_only_disables_all_fields(event):
-    form = RoomForm(event=event, read_only=True)
-
-    for field in form.fields.values():
-        assert field.disabled is True
+    assert list(room.availabilities.all()) == []
 
 
-def test_room_form_read_only_rejects_changes(event):
-    data = {
-        "name_0": "Sneaky Room",
-        "guid": "",
-        "description_0": "",
-        "speaker_info_0": "",
-        "capacity": "",
-        "availabilities": '{"availabilities": []}',
-    }
+def test_room_form_read_only_disables_fields_and_rejects_changes(event):
+    form = RoomForm(data=_data("Sneaky Room"), event=event, read_only=True)
 
-    form = RoomForm(data=data, event=event, read_only=True)
-
+    assert all(field.disabled for field in form.fields.values())
     assert not form.is_valid()
     assert "name" in form.errors

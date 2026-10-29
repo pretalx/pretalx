@@ -90,27 +90,31 @@ def test_is_submission_visible_via_schedule_no_pk():
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    ("show_featured", "is_featured", "expected"),
-    (("always", True, True), ("always", False, False), ("never", True, False)),
-    ids=["featured_and_visible", "not_featured", "feature_disabled"],
+    ("show_featured", "is_featured", "state", "expected"),
+    (
+        ("always", True, SubmissionStates.SUBMITTED, True),
+        ("always", False, SubmissionStates.SUBMITTED, False),
+        ("never", True, SubmissionStates.SUBMITTED, False),
+        ("always", True, SubmissionStates.REJECTED, False),
+        ("always", True, SubmissionStates.CANCELED, False),
+        ("always", True, SubmissionStates.WITHDRAWN, False),
+    ),
+    ids=[
+        "featured_and_visible",
+        "not_featured",
+        "feature_disabled",
+        "rejected",
+        "canceled",
+        "withdrawn",
+    ],
 )
-def test_is_submission_visible_via_featured(show_featured, is_featured, expected):
+def test_is_submission_visible_via_featured(
+    show_featured, is_featured, state, expected
+):
     event = EventFactory(feature_flags={"show_featured": show_featured})
-    submission = SubmissionFactory(event=event, is_featured=is_featured)
+    submission = SubmissionFactory(event=event, is_featured=is_featured, state=state)
 
     assert is_submission_visible_via_featured(None, submission) is expected
-
-
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    "state",
-    (SubmissionStates.REJECTED, SubmissionStates.CANCELED, SubmissionStates.WITHDRAWN),
-)
-def test_is_submission_visible_via_featured_excludes_hidden_states(state):
-    event = EventFactory(feature_flags={"show_featured": "always"})
-    submission = SubmissionFactory(event=event, is_featured=True, state=state)
-
-    assert is_submission_visible_via_featured(None, submission) is False
 
 
 @pytest.mark.django_db
@@ -143,6 +147,10 @@ def test_is_agenda_submission_visible_false():
     submission = SubmissionFactory(event=event, is_featured=False)
 
     assert is_agenda_submission_visible(None, submission) is False
+
+
+def test_is_agenda_submission_visible_without_submission():
+    assert is_agenda_submission_visible(None, None) is False
 
 
 @pytest.mark.django_db
@@ -194,20 +202,18 @@ def test_is_widget_visible_via_agenda(published_talk_slot):
 
 
 @pytest.mark.django_db
-def test_is_widget_visible_via_flag():
+@pytest.mark.parametrize(
+    ("flag_value", "expected"),
+    ((True, True), (False, False)),
+    ids=["via_flag", "no_flag"],
+)
+def test_is_widget_visible_on_private_event(flag_value, expected):
     event = EventFactory(
-        is_public=False, feature_flags={"show_widget_if_not_public": True}
+        is_public=False, feature_flags={"show_widget_if_not_public": flag_value}
     )
 
-    assert is_widget_visible(None, event) is True
-
-
-@pytest.mark.django_db
-def test_is_widget_visible_false():
-    event = EventFactory(is_public=False)
-
     with scope(event=event):
-        assert is_widget_visible(None, event) is False
+        assert is_widget_visible(None, event) is expected
 
 
 @pytest.mark.django_db
@@ -223,41 +229,28 @@ def test_event_uses_feedback(flag_value, expected):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize(
-    ("flag_value", "expected"),
-    ((True, True), (False, False)),
-    ids=["feedback_enabled", "feedback_disabled"],
-)
-def test_event_uses_feedback_unwraps_event_attribute(flag_value, expected):
-    event = EventFactory(feature_flags={"use_feedback": flag_value})
+def test_event_uses_feedback_unwraps_event_attribute():
+    event = EventFactory(feature_flags={"use_feedback": True})
     submission = SubmissionFactory(event=event)
 
-    assert event_uses_feedback(None, submission) is expected
+    assert event_uses_feedback(None, submission) is True
 
 
 @pytest.mark.django_db
-def test_are_featured_submissions_visible_never():
-    event = EventFactory(is_public=True, feature_flags={"show_featured": "never"})
-    assert are_featured_submissions_visible(None, event) is False
-
-
-@pytest.mark.django_db
-def test_are_featured_submissions_visible_not_public():
-    event = EventFactory(is_public=False)
-    assert are_featured_submissions_visible(None, event) is False
-
-
-@pytest.mark.django_db
-def test_are_featured_submissions_visible_always():
-    event = EventFactory(is_public=True, feature_flags={"show_featured": "always"})
-    assert are_featured_submissions_visible(None, event) is True
-
-
-@pytest.mark.django_db
-def test_are_featured_submissions_visible_pre_schedule():
+@pytest.mark.parametrize(
+    ("is_public", "show_featured", "expected"),
+    (
+        (True, "never", False),
+        (False, "always", False),
+        (True, "always", True),
+        (True, "pre_schedule", True),
+    ),
+    ids=["never", "not_public", "always", "pre_schedule_without_schedule"],
+)
+def test_are_featured_submissions_visible(is_public, show_featured, expected):
     event = EventFactory(
-        is_public=True, feature_flags={"show_featured": "pre_schedule"}
+        is_public=is_public, feature_flags={"show_featured": show_featured}
     )
 
     with scope(event=event):
-        assert are_featured_submissions_visible(None, event) is True
+        assert are_featured_submissions_visible(None, event) is expected

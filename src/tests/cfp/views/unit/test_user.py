@@ -43,124 +43,57 @@ def test_profile_view_can_edit_speaker_matches_feature_flag(enabled):
     assert view.can_edit_speaker is enabled
 
 
-def test_profile_view_questions_exist_true_when_speaker_questions_present(event):
+def test_profile_view_questions_exist_with_speaker_questions(event):
+    request = make_request(event, user=UserFactory())
+
+    assert make_view(ProfileView, request).questions_exist() is False
+
     QuestionFactory(event=event, target="speaker")
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(ProfileView, request)
 
-    assert view.questions_exist() is True
+    assert make_view(ProfileView, request).questions_exist() is True
 
 
-def test_profile_view_questions_exist_false_when_no_speaker_questions(event):
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(ProfileView, request)
-
-    assert view.questions_exist() is False
-
-
-def test_submission_view_mixin_get_object_returns_submission(event):
-    speaker = SpeakerFactory(event=event)
+def test_submission_view_mixin_get_object_matches_code_case_insensitively(event):
     submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
+    request = make_request(event, user=UserFactory())
 
-    request = make_request(event, user=speaker.user)
-    view = make_view(SubmissionViewMixin, request, code=submission.code)
+    view = make_view(SubmissionViewMixin, request, code=submission.code.lower())
+    assert view.get_object() == submission
 
-    result = view.get_object()
-
-    assert result == submission
-
-
-def test_submission_view_mixin_get_object_404_for_wrong_code(event):
-    user = UserFactory()
-    request = make_request(event, user=user)
     view = make_view(SubmissionViewMixin, request, code="NONEXISTENT")
-
     with pytest.raises(Http404):
         view.get_object()
 
 
-def test_submission_view_mixin_get_object_case_insensitive(event):
-    submission = SubmissionFactory(event=event)
-
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(SubmissionViewMixin, request, code=submission.code.lower())
-
-    result = view.get_object()
-
-    assert result == submission
-
-
-def test_submissions_list_view_get_queryset_filters_by_speaker(event):
+def test_submissions_list_view_shows_own_submissions_drafts_and_information(event):
     speaker = SpeakerFactory(event=event)
-    my_submission = SubmissionFactory(event=event)
-    my_submission.speakers.add(speaker)
-    SubmissionFactory(event=event)  # other submission
-
-    request = make_request(event, user=speaker.user)
-    view = make_view(SubmissionsListView, request)
-
-    result = list(view.get_queryset())
-
-    assert result == [my_submission]
-
-
-def test_submissions_list_view_drafts_returns_draft_submissions(event):
-    speaker = SpeakerFactory(event=event)
+    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    confirmed.speakers.add(speaker)
     draft = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
     draft.speakers.add(speaker)
-    submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    submitted.speakers.add(speaker)
-
-    request = make_request(event, user=speaker.user)
-    view = make_view(SubmissionsListView, request)
-
-    result = list(view.drafts)
-
-    assert result == [draft]
-
-
-def test_submissions_list_view_information_filters_by_visibility(event):
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker)
+    SubmissionFactory(event=event)
     visible_info = SpeakerInformationFactory(event=event, target_group="accepted")
-    SpeakerInformationFactory(event=event, target_group="submitters")
+    hidden_info = SpeakerInformationFactory(event=event, target_group="accepted")
+    hidden_info.limit_types.add(SubmissionTypeFactory(event=event))
 
     request = make_request(event, user=speaker.user)
     view = make_view(SubmissionsListView, request)
 
-    result = view.information()
+    assert list(view.get_queryset()) == [confirmed]
+    assert view.drafts == [draft]
+    assert list(view.information()) == [visible_info]
 
-    assert visible_info in result
 
-
-def test_submissions_edit_view_can_edit_true_for_submitted(event):
+def test_submissions_edit_view_can_edit_submitted_with_invitations(event):
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(SubmissionsEditView, request, code=submission.code)
-
-    assert view.can_edit is True
-
-
-def test_submissions_edit_view_invitations_returns_submission_invitations(event):
-    submission = SubmissionFactory(event=event)
     invitation = SubmissionInvitationFactory(
         submission=submission, email="invited@example.com"
     )
-
-    user = UserFactory()
-    request = make_request(event, user=user)
+    request = make_request(event, user=UserFactory())
     view = make_view(SubmissionsEditView, request, code=submission.code)
 
-    result = list(view.invitations)
-
-    assert result == [invitation]
+    assert view.can_edit is True
+    assert list(view.invitations) == [invitation]
 
 
 @pytest.mark.parametrize(
@@ -200,8 +133,14 @@ def test_submissions_edit_view_can_add_more_speakers(
     assert view.can_add_more_speakers == expected
 
 
-def test_submission_confirm_view_get_form_removes_availabilities_when_not_requested():
-    event = EventFactory(cfp__fields={"availabilities": {"visibility": "do_not_ask"}})
+@pytest.mark.parametrize(
+    ("visibility", "expected_required"),
+    (("do_not_ask", None), ("optional", False), ("required", True)),
+)
+def test_submission_confirm_view_get_form_availabilities_follow_cfp_config(
+    visibility, expected_required
+):
+    event = EventFactory(cfp__fields={"availabilities": {"visibility": visibility}})
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
     submission.speakers.add(speaker)
@@ -213,80 +152,35 @@ def test_submission_confirm_view_get_form_removes_availabilities_when_not_reques
 
     form = view.get_form()
 
-    assert "availabilities" not in form.fields
+    field = form.fields.get("availabilities")
+    assert getattr(field, "required", None) is expected_required
 
 
-def test_submission_confirm_view_get_form_keeps_availabilities_when_requested():
-    event = EventFactory(cfp__fields={"availabilities": {"visibility": "optional"}})
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    submission.speakers.add(speaker)
+def test_submission_draft_discard_view_get_object_only_returns_drafts(event):
+    draft = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
+    submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    request = make_request(event, user=UserFactory())
 
-    request = make_request(event, user=speaker.user)
-    request.method = "GET"
-    request.POST = QueryDict()
-    view = make_view(SubmissionConfirmView, request, code=submission.code)
+    view = make_view(SubmissionDraftDiscardView, request, code=draft.code)
+    assert view.get_object() == draft
 
-    form = view.get_form()
-
-    assert "availabilities" in form.fields
-    assert form.fields["availabilities"].required is False
-
-
-def test_submission_confirm_view_get_form_requires_availabilities_when_required():
-    event = EventFactory(cfp__fields={"availabilities": {"visibility": "required"}})
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    submission.speakers.add(speaker)
-
-    request = make_request(event, user=speaker.user)
-    request.method = "GET"
-    request.POST = QueryDict()
-    view = make_view(SubmissionConfirmView, request, code=submission.code)
-
-    form = view.get_form()
-
-    assert "availabilities" in form.fields
-    assert form.fields["availabilities"].required is True
-
-
-def test_submission_draft_discard_view_get_object_raises_404_for_non_draft(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(SubmissionDraftDiscardView, request, code=submission.code)
-
+    view = make_view(SubmissionDraftDiscardView, request, code=submitted.code)
     with pytest.raises(Http404):
         view.get_object()
 
 
-def test_submission_draft_discard_view_get_object_returns_draft(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
-
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(SubmissionDraftDiscardView, request, code=submission.code)
-
-    result = view.get_object()
-
-    assert result == submission
-
-
-def test_mail_list_view_mails_returns_only_sent_mails(event):
+def test_mail_list_view_mails_returns_only_sent_mails_to_speaker(event):
     speaker = SpeakerFactory(event=event)
-    user = speaker.user
     sent_mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
     sent_mail.to_speakers.add(speaker)
     draft_mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
     draft_mail.to_speakers.add(speaker)
 
-    request = make_request(event, user=user)
-    view = make_view(MailListView, request)
+    speaker_view = make_view(MailListView, make_request(event, user=speaker.user))
+    no_profile_view = make_view(MailListView, make_request(event, user=UserFactory()))
 
-    result = list(view.mails())
-
-    assert result == [sent_mail]
+    assert list(speaker_view.mails()) == [sent_mail]
+    assert list(no_profile_view.mails()) == []
 
 
 def test_submission_invite_accept_view_can_accept_invite_true_for_valid_user(event):
@@ -349,45 +243,34 @@ def test_submissions_edit_view_signup_enabled(
     assert view.signup_enabled is expected
 
 
-@pytest.mark.parametrize(
-    "prop", ("signup_attendee_count", "signup_capacity", "signup_table")
-)
-def test_submissions_edit_view_signup_props_none_when_disabled(prop):
+def test_submissions_edit_view_signup_props_none_when_disabled():
     event = EventFactory(feature_flags={"attendee_signup": False})
     submission = SubmissionFactory(event=event, attendee_signup_capacity=20)
     AttendeeSignupFactory(submission=submission)
 
     view = _signup_edit_view(submission)
 
-    assert getattr(view, prop) is None
+    assert view.signup_attendee_count is None
+    assert view.signup_capacity is None
+    assert view.signup_table is None
 
 
-def test_submissions_edit_view_signup_table_empty_without_signups():
-    submission = _make_signup_submission()
+def test_submissions_edit_view_signup_props_count_confirmed_signups():
+    submission = _make_signup_submission(capacity=42)
 
-    view = _signup_edit_view(submission)
+    assert list(_signup_edit_view(submission).signup_table.rows) == []
 
-    assert view.signup_table is not None
-    assert len(view.signup_table.rows) == 0
-
-
-def test_submissions_edit_view_signup_attendee_count_only_confirmed():
-    submission = _make_signup_submission()
-    AttendeeSignupFactory(submission=submission)
-    AttendeeSignupFactory(submission=submission)
-    AttendeeSignupFactory(submission=submission, state=AttendeeSignupStates.CANCELED)
-
+    cancelled = AttendeeSignupFactory(
+        submission=submission, state=AttendeeSignupStates.CANCELED
+    )
+    confirmed1 = AttendeeSignupFactory(submission=submission)
+    confirmed2 = AttendeeSignupFactory(submission=submission)
     view = _signup_edit_view(submission)
 
     assert view.signup_attendee_count == 2
-
-
-def test_submissions_edit_view_signup_capacity_uses_override():
-    submission = _make_signup_submission(capacity=42)
-
-    view = _signup_edit_view(submission)
-
     assert view.signup_capacity == 42
+    records = [row.record for row in view.signup_table.rows]
+    assert records == [confirmed1, confirmed2, cancelled]
 
 
 @pytest.mark.parametrize(
@@ -401,24 +284,3 @@ def test_submissions_edit_view_signup_capacity_percent(capacity, signups, expect
     view = _signup_edit_view(submission)
 
     assert view.signup_capacity_percent == expected
-
-
-def test_submissions_edit_view_signup_table_orders_confirmed_before_cancelled():
-    submission = _make_signup_submission()
-    cancelled = AttendeeSignupFactory(
-        submission=submission, state=AttendeeSignupStates.CANCELED
-    )
-    confirmed = AttendeeSignupFactory(submission=submission)
-
-    view = _signup_edit_view(submission)
-
-    records = [row.record for row in view.signup_table.rows]
-    assert records == [confirmed, cancelled]
-
-
-def test_mail_list_view_mails_empty_without_profile(event):
-    user = UserFactory()
-    request = make_request(event, user=user)
-    view = make_view(MailListView, request)
-
-    assert list(view.mails()) == []

@@ -29,25 +29,20 @@ from tests.factories import (
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-def test_submit_start_redirects_to_info_step(client, cfp_event):
-    response, url = start_wizard(client, cfp_event)
-
-    assert response.status_code == 200
-    assert "/info/" in url
-
-
-def test_submit_start_preserves_query_params(client, cfp_event, cfp_track):
+def test_submit_start_redirects_to_info_step_with_query_params(
+    client, cfp_event, cfp_track
+):
     sub_type = cfp_event.cfp.default_type
     params = QueryDict(f"track={cfp_track.pk}&submission_type={sub_type.pk}-slug")
     url = f"/{cfp_event.slug}/submit/?{params.urlencode()}"
 
     response, current_url = get_response_and_url(client, url, method="GET")
 
+    assert response.status_code == 200
     parsed = urlparse(current_url)
-    q = QueryDict(parsed.query)
     assert parsed.path.endswith("/info/")
-    assert q["track"] == str(cfp_track.pk)
-    assert q["submission_type"] == f"{sub_type.pk}-slug"
+    assert QueryDict(parsed.query) == params
+    assert client.get(current_url.replace("info", "wrooooong")).status_code == 404
 
 
 @pytest.mark.parametrize(
@@ -68,69 +63,47 @@ def test_wizard_cfp_closed_redirects(client, cfp_kwargs):
     assert "/info/" not in url
 
 
-def test_wizard_access_code_bypasses_closed_cfp(client):
+def test_wizard_valid_access_code_bypasses_closed_cfp(client):
     event = EventFactory(cfp__deadline=now() - dt.timedelta(days=1))
-    access_code = SubmitterAccessCodeFactory(event=event)
+    valid_code = SubmitterAccessCodeFactory(event=event)
+    expired_code = SubmitterAccessCodeFactory(
+        event=event, valid_until=now() - dt.timedelta(hours=1)
+    )
 
-    response, url = start_wizard(client, event, access_code=access_code)
+    _, url = start_wizard(client, event, access_code=expired_code)
+    assert "/info/" not in url
 
+    _, url = start_wizard(client, event, access_code=valid_code)
     assert "/info/" in url
 
 
-def test_wizard_redirects_when_all_types_require_access_code(client):
-    event = EventFactory()
-    with scopes_disabled():
-        event.submission_types.update(requires_access_code=True)
-
-    response, url = start_wizard(client, event)
-
-    assert "/info/" not in url
-    assert "Proposals are closed" in response.content.decode()
-
-
-def test_wizard_access_code_bypasses_restricted_types(client):
+def test_wizard_restricted_types_need_matching_access_code(client):
     event = EventFactory()
     with scopes_disabled():
         event.submission_types.update(requires_access_code=True)
         access_code = SubmitterAccessCodeFactory(event=event)
         access_code.submission_types.add(event.cfp.default_type)
 
-    response, url = start_wizard(client, event, access_code=access_code)
-
-    assert "/info/" in url
-
-
-def test_wizard_expired_access_code_rejected(client):
-    event = EventFactory(cfp__deadline=now() - dt.timedelta(days=1))
-    access_code = SubmitterAccessCodeFactory(
-        event=event, valid_until=now() - dt.timedelta(hours=1)
-    )
-
-    response, url = start_wizard(client, event, access_code=access_code)
-
+    response, url = start_wizard(client, event)
     assert "/info/" not in url
+    assert "Proposals are closed" in response.content.decode()
 
-
-def test_wizard_missing_step_returns_404(client, cfp_event):
-    _, info_url = start_wizard(client, cfp_event)
-
-    response = client.get(info_url.replace("info", "wrooooong"))
-
-    assert response.status_code == 404
-
-
-def test_wizard_info_step_post_invalid_stays(client, cfp_event, cfp_user):
-    client.force_login(cfp_user)
-    _, info_url = start_wizard(client, cfp_event)
-
-    data = info_data(cfp_event, title="")
-    response, url = get_response_and_url(client, info_url, data=data)
-
+    _, url = start_wizard(client, event, access_code=access_code)
     assert "/info/" in url
 
 
-def test_wizard_review_questions_not_shown(client, cfp_event, cfp_user):
+def test_wizard_invalid_steps_stay_and_reviewer_questions_are_hidden(
+    client, cfp_event, cfp_user
+):
     with scopes_disabled():
+        QuestionFactory(
+            event=cfp_event,
+            question="What is your favourite colour?",
+            variant=QuestionVariant.STRING,
+            target="submission",
+            question_required=QuestionRequired.REQUIRED,
+            position=1,
+        )
         QuestionFactory(
             event=cfp_event,
             question="Reviewer only question",
@@ -142,30 +115,18 @@ def test_wizard_review_questions_not_shown(client, cfp_event, cfp_user):
     client.force_login(cfp_user)
     _, info_url = start_wizard(client, cfp_event)
 
-    data = info_data(cfp_event)
-    _, url = get_response_and_url(client, info_url, data=data)
+    _, url = get_response_and_url(client, info_url, data=info_data(cfp_event, title=""))
+    assert "/info/" in url
 
-    assert "/questions/" not in url
-    assert "/profile/" in url
-
-
-def test_wizard_questions_step_invalid_shows_error_summary(client, cfp_event, cfp_user):
-    with scopes_disabled():
-        QuestionFactory(
-            event=cfp_event,
-            question="What is your favourite colour?",
-            variant=QuestionVariant.STRING,
-            target="submission",
-            question_required=QuestionRequired.REQUIRED,
-            position=1,
-        )
-    client.force_login(cfp_user)
-    _, info_url = start_wizard(client, cfp_event)
-    _, questions_url = get_response_and_url(client, info_url, data=info_data(cfp_event))
+    response, questions_url = get_response_and_url(
+        client, info_url, data=info_data(cfp_event)
+    )
     assert "/questions/" in questions_url
+    content = response.content.decode()
+    assert "What is your favourite colour?" in content
+    assert "Reviewer only question" not in content
 
     response, url = get_response_and_url(client, questions_url, data={})
-
     assert "/questions/" in url
     assert "We had trouble saving your input" in response.content.decode()
 
@@ -191,7 +152,9 @@ def test_wizard_additional_speaker_mail_fail_no_crash(client):
     assert len(djmail.outbox) == 0
 
 
-def test_wizard_draft_parks_additional_speakers(client, cfp_event, cfp_user):
+def test_wizard_draft_parks_additional_speakers_until_submitted(
+    client, cfp_event, cfp_user, django_capture_on_commit_callbacks
+):
     djmail.outbox = []
     client.force_login(cfp_user)
     _, info_url = start_wizard(client, cfp_event)
@@ -205,39 +168,25 @@ def test_wizard_draft_parks_additional_speakers(client, cfp_event, cfp_user):
 
     assert response.status_code == 200
     with scope(event=cfp_event):
-        submission = Submission.all_objects.get(event=cfp_event)
-    assert submission.state == SubmissionStates.DRAFT
-    assert submission.draft_additional_speakers == [
-        "park-me@example.com",
-        "also-me@example.com",
-    ]
-    with scope(event=cfp_event):
-        assert submission.invitations.count() == 0
+        draft = Submission.all_objects.get(event=cfp_event)
+        assert draft.state == SubmissionStates.DRAFT
+        assert draft.draft_additional_speakers == [
+            "park-me@example.com",
+            "also-me@example.com",
+        ]
+        assert draft.invitations.count() == 0
     assert djmail.outbox == []
-
-
-def test_wizard_dedraft_promotes_draft_additional_speakers(
-    client, cfp_event, cfp_user, django_capture_on_commit_callbacks
-):
-    djmail.outbox = []
-    with scopes_disabled():
-        draft = SubmissionFactory(
-            event=cfp_event,
-            state=SubmissionStates.DRAFT,
-            draft_additional_speakers=["parked@example.com"],
-        )
-        speaker = SpeakerFactory(event=cfp_event, user=cfp_user)
-        draft.speakers.add(speaker)
-    client.force_login(cfp_user)
 
     restart_url = f"/{cfp_event.slug}/submit/restart-{draft.code}/"
     response, info_url = get_response_and_url(client, restart_url, method="GET")
-    # The parked address must show up in the rendered form so the speaker
-    # can see/edit it before re-submitting.
-    assert b"parked@example.com" in response.content
+    # The parked addresses must show up in the rendered form so the speaker
+    # can see/edit them before re-submitting.
+    assert b"park-me@example.com, also-me@example.com" in response.content
 
     data = info_data(
-        cfp_event, title=draft.title, additional_speaker="parked@example.com"
+        cfp_event,
+        title=draft.title,
+        additional_speaker="park-me@example.com, also-me@example.com",
     )
     _, profile_url = get_response_and_url(client, info_url, data=data)
     profile_data = {"name": "Jane Doe", "biography": "bio"}
@@ -250,9 +199,13 @@ def test_wizard_dedraft_promotes_draft_additional_speakers(
         assert draft.state == SubmissionStates.SUBMITTED
         assert draft.draft_additional_speakers == []
         invited = set(draft.invitations.values_list("email", flat=True))
-    assert invited == {"parked@example.com"}
-    recipients = [r for m in djmail.outbox for r in m.to]
-    assert recipients.count("parked@example.com") == 1
+    assert invited == {"park-me@example.com", "also-me@example.com"}
+    recipients = sorted(r for m in djmail.outbox for r in m.to)
+    assert recipients == [
+        "also-me@example.com",
+        "park-me@example.com",
+        "testuser@example.com",
+    ]
 
 
 def test_wizard_dedraft_skips_already_invited(
@@ -567,12 +520,11 @@ def test_wizard_with_resources_required_blocks_without(client):
     assert "/profile/" in url
 
 
-def test_wizard_does_not_leak_other_submissions_resources(client):
+def test_wizard_resource_link_preserved_on_back_navigation_without_leaks(client):
     event = EventFactory(
         cfp__deadline=now() + dt.timedelta(days=30),
         cfp__fields={"resources": {"visibility": "optional"}},
     )
-    access_code = SubmitterAccessCodeFactory(event=event)
     with scopes_disabled():
         other_submission = SubmissionFactory(event=event, title="Other talk")
         ResourceFactory(
@@ -580,22 +532,14 @@ def test_wizard_does_not_leak_other_submissions_resources(client):
             link="https://leak.example.com/secret.pdf",
             description="Slides from other submission",
         )
-
-    response, info_url = start_wizard(client, event, access_code=access_code)
+    user = UserFactory()
+    client.force_login(user)
+    response, info_url = start_wizard(client, event)
     assert "/info/" in info_url
     content = response.content.decode()
     assert "Slides from other submission" not in content
     assert "https://leak.example.com/secret.pdf" not in content
 
-
-def test_wizard_resource_link_preserved_on_back_navigation(client):
-    event = EventFactory(
-        cfp__deadline=now() + dt.timedelta(days=30),
-        cfp__fields={"resources": {"visibility": "optional"}},
-    )
-    user = UserFactory()
-    client.force_login(user)
-    _, info_url = start_wizard(client, event)
     data = info_data(event, title="Talk with resource")
     data.update(
         {
@@ -614,3 +558,4 @@ def test_wizard_resource_link_preserved_on_back_navigation(client):
     content = response.content.decode()
     assert "My slides" in content
     assert "https://example.com/slides.pdf" in content
+    assert "https://leak.example.com/secret.pdf" not in content

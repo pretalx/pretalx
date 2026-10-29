@@ -28,172 +28,82 @@ from tests.utils import make_orga_user
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_annotate_review_count():
-    event = EventFactory()
-    s1 = SubmissionFactory(event=event)
-    s2 = SubmissionFactory(event=event)
-    ReviewFactory(submission=s1)
-    ReviewFactory(submission=s1)
-    ReviewFactory(submission=s2)
-
-    with scope(event=event):
-        result = {
-            row.pk: row.review_count
-            for row in annotate_review_count(event.submissions.all())
-        }
-
-    assert result[s1.pk] == 2
-    assert result[s2.pk] == 1
+def _by_pk(queryset, attribute):
+    return {row.pk: getattr(row, attribute) for row in queryset}
 
 
-def test_annotate_review_count_zero_for_unreviewed():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-
-    with scope(event=event):
-        row = annotate_review_count(event.submissions.all()).get(pk=submission.pk)
-
-    assert row.review_count == 0
-
-
-def test_annotate_scored_review_count_only_counts_scored():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    ReviewFactory(submission=submission, score=Decimal(5))
-    ReviewFactory(submission=submission, score=None)
-
-    with scope(event=event):
-        row = annotate_scored_review_count(event.submissions.all()).get(
-            pk=submission.pk
-        )
-
-    assert row.review_nonnull_count == 1
-
-
-def test_annotate_user_review_score():
+def test_annotate_review_counts_and_scores():
     event = EventFactory()
     user = UserFactory()
-    other = UserFactory()
-    submission = SubmissionFactory(event=event)
-    ReviewFactory(submission=submission, user=user, score=Decimal(7))
-    ReviewFactory(submission=submission, user=other, score=Decimal(1))
+    reviewed = SubmissionFactory(event=event)
+    unreviewed = SubmissionFactory(event=event)
+    ReviewFactory(submission=reviewed, user=user, score=Decimal(7))
+    ReviewFactory(submission=reviewed, score=Decimal(1))
+    ReviewFactory(submission=reviewed, score=None)
 
     with scope(event=event):
-        row = annotate_user_review_score(event.submissions.all(), user).get(
-            pk=submission.pk
-        )
-
-    assert row.user_score == Decimal(7)
-
-
-def test_annotate_user_review_score_no_review():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
-
-    with scope(event=event):
-        row = annotate_user_review_score(event.submissions.all(), user).get(
-            pk=submission.pk
-        )
-
-    assert row.user_score is None
-
-
-def test_annotate_aggregate_scores_returns_mean_and_median():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    ReviewFactory(submission=submission, score=Decimal(4))
-    ReviewFactory(submission=submission, score=Decimal(6))
-    ReviewFactory(submission=submission, score=None)
-
-    with scope(event=event):
-        row = annotate_aggregate_scores(event.submissions.all()).get(pk=submission.pk)
-
-    assert row.mean_score == Decimal(5)
-    assert row.median_score == Decimal(5)
-
-
-def test_annotate_state_rank_orders_states():
-    event = EventFactory()
-    submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    rejected = SubmissionFactory(event=event, state=SubmissionStates.REJECTED)
-
-    with scope(event=event):
-        ranks = {
-            row.pk: row.state_rank
-            for row in annotate_state_rank(event.submissions.all())
+        submissions = event.submissions.all()
+        assert _by_pk(annotate_review_count(submissions), "review_count") == {
+            reviewed.pk: 3,
+            unreviewed.pk: 0,
+        }
+        assert _by_pk(
+            annotate_scored_review_count(submissions), "review_nonnull_count"
+        ) == {reviewed.pk: 2, unreviewed.pk: 0}
+        assert _by_pk(annotate_user_review_score(submissions, user), "user_score") == {
+            reviewed.pk: Decimal(7),
+            unreviewed.pk: None,
+        }
+        assert _by_pk(
+            annotate_user_review_score(submissions, UserFactory()), "user_score"
+        ) == {reviewed.pk: None, unreviewed.pk: None}
+        aggregated = {
+            row.pk: (row.mean_score, row.median_score)
+            for row in annotate_aggregate_scores(submissions)
+        }
+        assert aggregated == {
+            reviewed.pk: (Decimal(4), Decimal(4)),
+            unreviewed.pk: (None, None),
         }
 
-    assert ranks[submitted.pk] == 1
-    assert ranks[accepted.pk] == 2
-    assert ranks[confirmed.pk] == 3
-    assert ranks[rejected.pk] == 4
 
-
-def test_annotate_state_rank_uses_pending_state():
+def test_annotate_state_rank_follows_pending_then_state():
     event = EventFactory()
-    pending_accept = SubmissionFactory(
-        event=event,
-        state=SubmissionStates.SUBMITTED,
-        pending_state=SubmissionStates.ACCEPTED,
-    )
-    pending_reject = SubmissionFactory(
-        event=event,
-        state=SubmissionStates.SUBMITTED,
-        pending_state=SubmissionStates.REJECTED,
-    )
-    accepted_pending_reject = SubmissionFactory(
-        event=event,
-        state=SubmissionStates.ACCEPTED,
-        pending_state=SubmissionStates.REJECTED,
-    )
+    expected = {
+        SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED).pk: 1,
+        SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED).pk: 2,
+        SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED).pk: 3,
+        SubmissionFactory(event=event, state=SubmissionStates.REJECTED).pk: 4,
+        SubmissionFactory(event=event, state=SubmissionStates.WITHDRAWN).pk: 5,
+        SubmissionFactory(
+            event=event,
+            state=SubmissionStates.SUBMITTED,
+            pending_state=SubmissionStates.ACCEPTED,
+        ).pk: 2,
+        SubmissionFactory(
+            event=event,
+            state=SubmissionStates.SUBMITTED,
+            pending_state=SubmissionStates.REJECTED,
+        ).pk: 4,
+        SubmissionFactory(
+            event=event,
+            state=SubmissionStates.ACCEPTED,
+            pending_state=SubmissionStates.REJECTED,
+        ).pk: 4,
+    }
 
     with scope(event=event):
-        ranks = {
-            row.pk: row.state_rank
-            for row in annotate_state_rank(event.submissions.all())
-        }
-
-    assert ranks[pending_accept.pk] == 2
-    assert ranks[pending_reject.pk] == 4
-    assert ranks[accepted_pending_reject.pk] == 4
+        assert (
+            _by_pk(annotate_state_rank(event.submissions.all()), "state_rank")
+            == expected
+        )
 
 
-def test_annotate_state_rank_default_for_other_states():
-    event = EventFactory()
-    withdrawn = SubmissionFactory(event=event, state=SubmissionStates.WITHDRAWN)
-
-    with scope(event=event):
-        row = annotate_state_rank(event.submissions.all()).get(pk=withdrawn.pk)
-
-    assert row.state_rank == 5
-
-
-def test_review_view_submissions_prefetches_related_data():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, title="Zebra")
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    ResourceFactory(submission=submission)
-    # An additional submission for the same speaker, exercised by the
-    # speakers__submissions Prefetch.
-    other = SubmissionFactory(event=event, title="Aardvark")
-    other.speakers.add(speaker)
-    user = make_orga_user(event, can_change_submissions=True)
-
-    with scope(event=event):
-        result = review_view_submissions(event, user).get(pk=submission.pk)
-        speaker_subs = list(result.speakers.first().submissions.all())
-
-    assert [sub.pk for sub in speaker_subs] == [other.pk, submission.pk]
-
-
-def test_review_view_submissions_hides_other_tracks_from_limited_reviewer():
+def test_review_view_submissions_prefetches_speaker_submissions_visible_to_user():
     event = EventFactory()
     with scope(event=event):
         track, other_track = TrackFactory(event=event), TrackFactory(event=event)
+    orga = make_orga_user(event, can_change_submissions=True)
     reviewer = make_orga_user(
         event,
         is_reviewer=True,
@@ -202,16 +112,22 @@ def test_review_view_submissions_hides_other_tracks_from_limited_reviewer():
     )
     with scope(event=event):
         reviewer.teams.first().limit_tracks.add(track)
-    submission = SubmissionFactory(event=event, track=track)
+    submission = SubmissionFactory(event=event, title="Zebra", track=track)
     speaker = SpeakerFactory(event=event)
     submission.speakers.add(speaker)
-    visible = SubmissionFactory(event=event, track=track)
+    ResourceFactory(submission=submission)
+    visible = SubmissionFactory(event=event, title="Aardvark", track=track)
     visible.speakers.add(speaker)
-    hidden = SubmissionFactory(event=event, track=other_track)
+    hidden = SubmissionFactory(event=event, title="Mole", track=other_track)
     hidden.speakers.add(speaker)
 
     with scope(event=event):
-        result = review_view_submissions(event, reviewer).get(pk=submission.pk)
-        speaker_subs = list(result.speakers.first().submissions.all())
+        result = review_view_submissions(event, orga).get(pk=submission.pk)
+        assert list(result.speakers.first().submissions.all()) == [
+            visible,
+            hidden,
+            submission,
+        ]
 
-    assert {sub.pk for sub in speaker_subs} == {submission.pk, visible.pk}
+        result = review_view_submissions(event, reviewer).get(pk=submission.pk)
+        assert list(result.speakers.first().submissions.all()) == [visible, submission]

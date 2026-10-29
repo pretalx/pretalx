@@ -15,26 +15,20 @@ from pretalx.common.settings.config import (
 pytestmark = pytest.mark.unit
 
 
-def test_reduce_dict_removes_none_values():
-    data = {"section": {"keep": "value", "drop": None, "also_keep": ""}}
-
-    result = reduce_dict(data)
-
-    assert result == {"section": {"keep": "value", "also_keep": ""}}
-
-
-def test_reduce_dict_preserves_all_sections():
-    data = {"a": {"x": None}, "b": {"y": "keep"}}
-
-    result = reduce_dict(data)
-
-    assert set(result.keys()) == {"a", "b"}
-    assert result["a"] == {}
-    assert result["b"] == {"y": "keep"}
-
-
-def test_reduce_dict_empty_input():
-    assert reduce_dict({}) == {}
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    (
+        (
+            {"section": {"keep": "value", "drop": None, "also_keep": ""}},
+            {"section": {"keep": "value", "also_keep": ""}},
+        ),
+        ({"a": {"x": None}, "b": {"y": "keep"}}, {"a": {}, "b": {"y": "keep"}}),
+        ({}, {}),
+    ),
+    ids=("drops_none_values", "keeps_emptied_sections", "empty"),
+)
+def test_reduce_dict(data, expected):
+    assert reduce_dict(data) == expected
 
 
 @pytest.mark.parametrize(
@@ -65,7 +59,7 @@ def test_read_layer_env_overrides_defaults(monkeypatch):
     assert config.get("site", "url") == "https://example.com"
 
 
-def test_read_config_files_without_env_var(monkeypatch, tmp_path):
+def test_read_config_files_without_env_var(monkeypatch):
     monkeypatch.delenv("PRETALX_CONFIG_FILE", raising=False)
     config = configparser.RawConfigParser()
 
@@ -86,18 +80,13 @@ def test_read_config_files_with_env_var(monkeypatch, tmp_path):
     assert config_files == [cfg_file]
 
 
-def test_build_config_has_expected_sections():
-    config, _ = build_config()
-
-    for section in CONFIG:
-        assert config.has_section(section), f"Missing section: {section}"
-
-
-def test_build_config_env_layer_applied_last(monkeypatch):
+def test_build_config_has_all_sections_with_env_layer_applied_last(monkeypatch):
     monkeypatch.setitem(CONFIG["mail"]["host"], "env", "smtp.override.example.com")
 
     config, _ = build_config()
 
+    for section in CONFIG:
+        assert config.has_section(section), f"Missing section: {section}"
     assert config.get("mail", "host") == "smtp.override.example.com"
 
 

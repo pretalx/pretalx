@@ -19,21 +19,18 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 @pytest.mark.parametrize(
-    ("name", "expected"),
-    (("Bob", "Bob"), ("", "Unnamed user")),
-    ids=["with_name", "empty_name"],
+    ("name", "allow_empty", "expected"),
+    (
+        ("Bob", False, "Bob"),
+        ("", False, "Unnamed user"),
+        ("Bob", True, "Bob"),
+        ("", True, ""),
+    ),
+    ids=["with_name", "empty_name", "with_name_allow_empty", "empty_name_allow_empty"],
 )
-def test_user_get_display_name(name, expected):
+def test_user_get_display_name(name, allow_empty, expected):
     user = User(name=name)
-    assert user.get_display_name() == expected
-
-
-@pytest.mark.parametrize(
-    ("name", "expected"), (("Bob", "Bob"), ("", "")), ids=["with_name", "empty_name"]
-)
-def test_user_get_display_name_allow_empty(name, expected):
-    user = User(name=name)
-    assert user.get_display_name(allow_empty=True) == expected
+    assert user.get_display_name(allow_empty=allow_empty) == expected
 
 
 @pytest.mark.parametrize(
@@ -62,17 +59,14 @@ def test_user_email_unique_constraint_is_case_insensitive():
         user.validate_constraints()
 
 
-def test_user_clean_rejects_taken_email_for_new_user():
+def test_user_clean_rejects_taken_email_only_for_other_users():
     UserFactory(email="taken@example.com")
     user = User(email="taken@example.com", name="New")
     with pytest.raises(ValidationError) as info:
         user.clean()
-    assert "email" in info.value.message_dict
+    assert list(info.value.message_dict) == ["email"]
 
-
-def test_user_clean_allows_own_email_when_editing():
-    user = UserFactory(email="me@example.com")
-    user.clean()
+    UserFactory(email="me@example.com").clean()
 
 
 @pytest.mark.parametrize(
@@ -80,19 +74,14 @@ def test_user_clean_allows_own_email_when_editing():
     (
         ("TEST@Example.COM", "test@example.com"),
         ("  test@example.com  ", "test@example.com"),
+        ("", ""),
     ),
-    ids=["lowercases", "strips_whitespace"],
+    ids=["lowercases", "strips_whitespace", "empty"],
 )
 def test_user_clean_normalizes_email(input_email, expected):
     user = User(email=input_email, name="New")
     user.clean()
     assert user.email == expected
-
-
-def test_user_clean_accepts_empty_email():
-    user = User(email="", name="New")
-    user.clean()
-    assert user.email == ""
 
 
 @pytest.mark.parametrize(
@@ -121,30 +110,20 @@ def test_user_manager_create_superuser():
     assert user.is_staff is True
     assert user.is_administrator is True
     assert user.is_superuser is False
+    assert user.created is not None
     user.refresh_from_db()
     assert user.email_verification_state == EmailVerificationState.VERIFIED
-
-
-def test_user_created_is_set_on_save():
-    user = User.objects.create_user(email="created-test@example.com", password="x")
-    assert user.created is not None
 
 
 def test_user_has_perm_caches_result(event):
     user = UserFactory()
     user.is_administrator = True
 
-    user.has_perm("person.administrator", event)
+    result = user.has_perm("person.administrator", event)
 
-    assert ("person.administrator", event) in user.permission_cache
-
-
-def test_user_has_perm_returns_cached():
-    user = UserFactory()
-    event = EventFactory()
-    user.permission_cache[("fake.perm", event)] = True
-
-    assert user.has_perm("fake.perm", event) is True
+    assert user.permission_cache == {("person.administrator", event): result}
+    user.permission_cache[("person.administrator", event)] = not result
+    assert user.has_perm("person.administrator", event) is (not result)
 
 
 def test_user_has_perm_no_pk():
@@ -157,107 +136,55 @@ def test_user_has_perm_no_pk():
     assert result is False
 
 
-def test_user_get_speaker_creates_profile(event):
-    user = UserFactory()
-
-    speaker = user.get_speaker(event)
-
-    assert speaker.event == event
-    assert speaker.user == user
-    assert speaker.pk is not None
-
-
-def test_user_get_speaker_creates_profile_with_passed_origin(event):
-    user = UserFactory()
-
-    speaker = user.get_speaker(event, origin=SpeakerProfileOrigin.ORGA)
-
-    assert speaker.origin == SpeakerProfileOrigin.ORGA
-
-
-def test_user_get_speaker_origin_does_not_change_existing(event):
-    speaker = SpeakerFactory(event=event)
-    assert speaker.origin == SpeakerProfileOrigin.CFP
-
-    result = speaker.user.get_speaker(event, origin=SpeakerProfileOrigin.ORGA)
-
-    assert result.pk == speaker.pk
-    assert result.origin == SpeakerProfileOrigin.CFP
-
-
-def test_user_get_speaker_returns_existing(event):
-    speaker = SpeakerFactory(event=event)
-
-    result = speaker.user.get_speaker(event)
-
-    assert result.pk == speaker.pk
-
-
-def test_user_get_speaker_uses_cache(event):
-    user = UserFactory()
-
-    speaker = user.get_speaker(event)
-    cached = user.get_speaker(event)
-
-    assert speaker is cached
-
-
-def test_user_get_speaker_prefetched(event, django_assert_num_queries):
-    speaker = SpeakerFactory(event=event)
-
-    users = list(User.objects.with_profiles(event).filter(pk=speaker.user.pk))
-    user = users[0]
-
-    with django_assert_num_queries(0):
-        result = user.get_speaker(event)
-
-    assert result.pk == speaker.pk
-
-
-def test_user_get_speaker_create_false_returns_none_without_creating(event):
+def test_user_get_speaker_creates_caches_and_reuses_profile(event):
     user = UserFactory()
 
     assert user.get_speaker(event, create=False) is None
     assert not user.profiles.filter(event=event).exists()
 
+    speaker = user.get_speaker(event, origin=SpeakerProfileOrigin.ORGA)
+    assert speaker.event == event
+    assert speaker.user == user
+    assert speaker.pk is not None
+    assert speaker.origin == SpeakerProfileOrigin.ORGA
+    assert user.get_speaker(event) is speaker
 
-def test_user_get_speaker_create_false_returns_existing(event):
-    speaker = SpeakerFactory(event=event)
+    fresh_user = User.objects.get(pk=user.pk)
+    existing = fresh_user.get_speaker(event, origin=SpeakerProfileOrigin.CFP)
+    assert existing.pk == speaker.pk
+    assert existing.origin == SpeakerProfileOrigin.ORGA
+    assert (
+        User.objects.get(pk=user.pk).get_speaker(event, create=False).pk == speaker.pk
+    )
 
-    result = speaker.user.get_speaker(event, create=False)
 
-    assert result.pk == speaker.pk
+def test_user_get_speaker_prefetched_only_for_its_event(django_assert_num_queries):
+    event1 = EventFactory()
+    event2 = EventFactory()
+    speaker1 = SpeakerFactory(event=event1)
+    speaker2 = SpeakerFactory(event=event2, user=speaker1.user)
+
+    user = User.objects.with_profiles(event1).get(pk=speaker1.user.pk)
+
+    with django_assert_num_queries(0):
+        assert user.get_speaker(event1).pk == speaker1.pk
+    assert user.get_speaker(event2).pk == speaker2.pk
 
 
-def test_user_get_event_preferences_creates(event):
+def test_user_get_event_preferences_creates_and_caches_per_event(event):
     user = UserFactory()
 
     prefs = user.get_event_preferences(event)
+    global_prefs = user.get_event_preferences(None)
 
     assert prefs.event == event
     assert prefs.user == user
     assert prefs.pk is not None
-
-
-def test_user_get_event_preferences_caches(event):
-    user = UserFactory()
-
-    prefs1 = user.get_event_preferences(event)
-    prefs2 = user.get_event_preferences(event)
-
-    assert prefs1 is prefs2
-
-
-def test_user_get_event_preferences_global_row(event):
-    user = UserFactory()
-
-    global_prefs = user.get_event_preferences(None)
-    event_prefs = user.get_event_preferences(event)
-
     assert global_prefs.event is None
     assert global_prefs.user == user
     assert global_prefs.pk is not None
-    assert global_prefs.pk != event_prefs.pk
+    assert global_prefs.pk != prefs.pk
+    assert user.get_event_preferences(event) is prefs
     assert user.get_event_preferences(None) is global_prefs
 
 
@@ -280,20 +207,27 @@ def test_user_log_action_defaults_to_self():
     assert log.person == user
 
 
-def test_user_get_permissions_for_event_administrator(event):
+def test_user_get_permissions_for_event_administrator_and_cache(event):
     user = UserFactory()
     user.is_administrator = True
 
     permissions = user.get_permissions_for_event(event)
 
-    expected = {
+    assert permissions == {
         "can_create_events",
         "can_change_teams",
         "can_change_organiser_settings",
         "can_change_event_settings",
         "can_change_submissions",
     }
-    assert permissions == expected
+    assert user.event_permission_cache[event.pk]["permissions"] is permissions
+
+    replaced = {"can_change_submissions"}
+    user.event_permission_cache[event.pk] = {
+        "permissions": replaced,
+        "reviewer_tracks": frozenset(),
+    }
+    assert user.get_permissions_for_event(event) is replaced
 
 
 def test_user_get_permissions_for_event_team_member(event):
@@ -324,16 +258,6 @@ def test_user_get_permissions_for_event_no_team(event):
     assert permissions == set()
 
 
-def test_user_get_permissions_for_event_caches(event):
-    user = UserFactory()
-    user.is_administrator = True
-
-    user.get_permissions_for_event(event)
-    cached = user.event_permission_cache.get(event.pk)
-
-    assert "permissions" in cached
-
-
 def test_user_get_events_with_any_permission_administrator():
     user = UserFactory()
     user.is_administrator = True
@@ -344,28 +268,39 @@ def test_user_get_events_with_any_permission_administrator():
     assert events == [event]
 
 
-def test_user_get_events_with_any_permission_team_all_events():
+def test_user_get_events_with_any_permission_team_all_events(django_assert_num_queries):
     user = UserFactory()
     event = EventFactory()
     team = TeamFactory(organiser=event.organiser, all_events=True)
     team.members.add(user)
 
-    events = list(user.get_events_with_any_permission())
+    assert list(user.get_events_with_any_permission()) == [event]
 
-    assert events == [event]
+    user = User.objects.prefetch_related(
+        "teams__organiser__events", "teams__limit_events"
+    ).get(pk=user.pk)
+    with django_assert_num_queries(0):
+        assert list(user.get_events_with_any_permission()) == [event]
 
 
-def test_user_get_events_with_any_permission_team_limited():
+def test_user_get_events_with_any_permission_team_limited(django_assert_num_queries):
     user = UserFactory()
     event = EventFactory()
     EventFactory(organiser=event.organiser)
-    team = TeamFactory(organiser=event.organiser, all_events=False)
+    team = TeamFactory(
+        organiser=event.organiser, all_events=False, can_change_submissions=True
+    )
     team.limit_events.add(event)
     team.members.add(user)
 
-    events = list(user.get_events_with_any_permission())
+    assert list(user.get_events_with_any_permission()) == [event]
+    assert list(user.get_events_for_permission(can_change_submissions=True)) == [event]
 
-    assert events == [event]
+    user = User.objects.prefetch_related(
+        "teams__organiser__events", "teams__limit_events"
+    ).get(pk=user.pk)
+    with django_assert_num_queries(0):
+        assert list(user.get_events_with_any_permission()) == [event]
 
 
 def test_user_get_events_with_any_permission_no_teams():
@@ -375,44 +310,6 @@ def test_user_get_events_with_any_permission_no_teams():
     events = list(user.get_events_with_any_permission())
 
     assert events == []
-
-
-def test_user_get_events_with_any_permission_prefetched_teams(
-    django_assert_num_queries,
-):
-    user = UserFactory()
-    event = EventFactory()
-    team = TeamFactory(organiser=event.organiser, all_events=True)
-    team.members.add(user)
-
-    user = User.objects.prefetch_related(
-        "teams__organiser__events", "teams__limit_events"
-    ).get(pk=user.pk)
-
-    with django_assert_num_queries(0):
-        events = list(user.get_events_with_any_permission())
-
-    assert events == [event]
-
-
-def test_user_get_events_with_any_permission_prefetched_limited(
-    django_assert_num_queries,
-):
-    user = UserFactory()
-    event = EventFactory()
-    EventFactory(organiser=event.organiser)
-    team = TeamFactory(organiser=event.organiser, all_events=False)
-    team.limit_events.add(event)
-    team.members.add(user)
-
-    user = User.objects.prefetch_related(
-        "teams__organiser__events", "teams__limit_events"
-    ).get(pk=user.pk)
-
-    with django_assert_num_queries(0):
-        events = list(user.get_events_with_any_permission())
-
-    assert events == [event]
 
 
 def test_user_get_events_for_permission_filters_by_permission():
@@ -443,20 +340,6 @@ def test_user_get_events_for_permission_administrator():
     assert events == [event]
 
 
-def test_user_get_events_for_permission_limited_events():
-    user = UserFactory()
-    event = EventFactory()
-    team = TeamFactory(
-        organiser=event.organiser, all_events=False, can_change_submissions=True
-    )
-    team.limit_events.add(event)
-    team.members.add(user)
-
-    events = list(user.get_events_for_permission(can_change_submissions=True))
-
-    assert events == [event]
-
-
 def test_user_get_reviewer_tracks_no_reviewer():
     user = UserFactory()
     event = EventFactory()
@@ -465,15 +348,19 @@ def test_user_get_reviewer_tracks_no_reviewer():
         user.get_reviewer_tracks(event)
 
 
-def test_user_get_reviewer_tracks_unrestricted():
+def test_user_get_reviewer_tracks_unrestricted_and_cached(event):
     user = UserFactory()
-    event = EventFactory()
     team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
     team.members.add(user)
 
     tracks = user.get_reviewer_tracks(event)
 
     assert tracks is None
+    assert user.event_permission_cache[event.pk]["reviewer_tracks"] is None
+
+    cached_tracks = frozenset()
+    user.event_permission_cache[event.pk]["reviewer_tracks"] = cached_tracks
+    assert user.get_reviewer_tracks(event) is cached_tracks
 
 
 def test_user_get_reviewer_tracks_restricted():
@@ -555,62 +442,11 @@ def test_user_get_reviewer_tracks_unions_restricted_teams():
     }
 
 
-def test_user_get_reviewer_tracks_caches(event):
-    user = UserFactory()
-    team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
-    team.members.add(user)
-
-    user.get_reviewer_tracks(event)
-    cached = user.event_permission_cache[event.pk]
-
-    assert "reviewer_tracks" in cached
-
-
 def test_user_code_auto_generated():
     user1 = UserFactory()
     user2 = UserFactory()
     assert 1 <= len(user1.code) <= 16
     assert user1.code != user2.code
-
-
-def test_user_get_speaker_prefetched_wrong_event():
-    event1 = EventFactory()
-    event2 = EventFactory()
-    speaker1 = SpeakerFactory(event=event1)
-    SpeakerFactory(event=event2, user=speaker1.user)
-
-    users = list(User.objects.with_profiles(event1).filter(pk=speaker1.user.pk))
-    user = users[0]
-
-    result = user.get_speaker(event2)
-
-    assert result.event == event2
-
-
-def test_user_get_permissions_for_event_returns_from_cache(event):
-    user = UserFactory()
-    expected = {"can_change_submissions"}
-    user.event_permission_cache[event.pk] = {
-        "permissions": expected,
-        "reviewer_tracks": frozenset(),
-    }
-
-    result = user.get_permissions_for_event(event)
-
-    assert result is expected
-
-
-def test_user_get_reviewer_tracks_returns_from_cache(event):
-    user = UserFactory()
-    cached_tracks = frozenset()
-    user.event_permission_cache[event.pk] = {
-        "permissions": {"is_reviewer"},
-        "reviewer_tracks": cached_tracks,
-    }
-
-    result = user.get_reviewer_tracks(event)
-
-    assert result is cached_tracks
 
 
 def test_user_delete_files_deletes_pictures():

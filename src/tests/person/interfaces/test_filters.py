@@ -43,51 +43,42 @@ def speakers_with_and_without_sessions(event):
     return with_session, SpeakerFactory(event=event)
 
 
-def test_sessionless_speakers_are_hidden_by_default():
+@pytest.mark.parametrize(
+    ("query", "is_active", "pills"),
+    (("", False, []), ("managed=false", True, ["Account: Self-managed"])),
+    ids=("pristine", "other_filter"),
+)
+def test_sessionless_speakers_are_hidden_by_default_without_claiming_a_filter(
+    query, is_active, pills
+):
     event = EventFactory()
     with_session, _without = speakers_with_and_without_sessions(event)
 
-    filterset = build(speaker_filters, event=event)
+    filterset = build(speaker_filters, query, event=event)
 
     assert list(filterset.filter(profiles(event))) == [with_session]
+    assert filterset.is_active is is_active
+    assert [pill.label for pill in filterset.pills] == pills
 
 
-def test_the_default_survives_another_filter_being_set():
-    event = EventFactory()
-    with_session, _without = speakers_with_and_without_sessions(event)
-
-    filterset = build(speaker_filters, "managed=false", event=event)
-
-    assert list(filterset.filter(profiles(event))) == [with_session]
-
-
-def test_sessionless_speakers_can_be_shown_on_their_own():
-    event = EventFactory()
-    _with_session, without = speakers_with_and_without_sessions(event)
-
-    filterset = build(speaker_filters, "sessionless=without", event=event)
-
-    assert list(filterset.filter(profiles(event))) == [without]
-    assert [pill.label for pill in filterset.pills] == ["Sessions: Without"]
-
-
-def test_sessionless_speakers_can_be_shown_alongside_the_rest():
+@pytest.mark.parametrize(
+    ("query", "expected", "pills"),
+    (
+        ("sessionless=without", {"without"}, ["Sessions: Without"]),
+        ("sessionless=all", {"with", "without"}, ["Sessions: All"]),
+        ("sessionless=on", {"with", "without"}, ["Sessions: All"]),
+    ),
+    ids=("without", "all", "legacy_on"),
+)
+def test_sessionless_filter_values(query, expected, pills):
     event = EventFactory()
     with_session, without = speakers_with_and_without_sessions(event)
+    speakers = {"with": with_session, "without": without}
 
-    filterset = build(speaker_filters, "sessionless=all", event=event)
+    filterset = build(speaker_filters, query, event=event)
 
-    assert set(filterset.filter(profiles(event))) == {with_session, without}
-    assert [pill.label for pill in filterset.pills] == ["Sessions: All"]
-
-
-def test_a_legacy_link_still_means_show_them_all():
-    event = EventFactory()
-    with_session, without = speakers_with_and_without_sessions(event)
-
-    filterset = build(speaker_filters, "sessionless=on", event=event)
-
-    assert set(filterset.filter(profiles(event))) == {with_session, without}
+    assert set(filterset.filter(profiles(event))) == {speakers[n] for n in expected}
+    assert [pill.label for pill in filterset.pills] == pills
 
 
 def test_arrival_filter_only_appears_where_arrivals_are_tracked():
@@ -100,18 +91,6 @@ def test_arrival_filter_only_appears_where_arrivals_are_tracked():
     assert "arrived" in facet_names(
         build(speaker_filters, event=event, filter_arrival=True)
     )
-
-
-def test_the_default_does_not_claim_active_filtering():
-    event = EventFactory()
-    speakers_with_and_without_sessions(event)
-
-    pristine = build(speaker_filters, event=event)
-    pristine.filter(profiles(event))
-
-    assert pristine.is_active is False
-    assert pristine.total_count is None
-    assert pristine.pills == []
 
 
 def test_managed_filter_splits_by_account():
@@ -130,25 +109,13 @@ def test_managed_filter_splits_by_account():
     assert list(filterset.filter(profiles(event))) == [self_managed]
 
 
-def test_cross_event_search_matches_name_and_email():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event, user__name="Needle Person")
-    SpeakerFactory(event=event, user__name="Someone Else")
-
-    filterset = build(user_speaker_filters, "q=needle", events=[event])
-    users = annotate_user_submission_counts(
-        User.objects.filter(profiles__event=event), events=[event]
-    )
-
-    assert list(filterset.filter(users)) == [speaker.user]
-
-
-def test_cross_event_role_filters_like_the_event_level_list():
+def test_cross_event_search_and_role_filters():
     event = EventFactory()
     accepted = SpeakerFactory(event=event, user__name="Needle Speaker")
     submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
     submission.speakers.add(accepted)
     submitter = SpeakerFactory(event=event, user__name="Needle Submitter")
+    SpeakerFactory(event=event, user__name="Someone Else")
 
     def filtered(query):
         users = annotate_user_submission_counts(

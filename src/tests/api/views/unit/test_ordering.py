@@ -28,30 +28,15 @@ def _first_ordering_field(viewset):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("viewset", list(_paginated_viewsets()))
-def test_paginated_api_endpoints_are_totally_ordered_when_sorted(viewset, event):
-    user = make_orga_user(event, is_reviewer=True)
-    request = make_api_request(
-        event=event,
-        user=user,
-        organiser=event.organiser,
-        data={"o": _first_ordering_field(viewset)},
-    )
-    view = make_view(viewset, request)
-    view.action = "list"
-
-    queryset = view.filter_queryset(view.get_queryset())
-
-    assert queryset.totally_ordered
-
-
-@pytest.mark.django_db
-@pytest.mark.parametrize("viewset", list(_paginated_viewsets()))
 def test_paginated_api_endpoints_are_totally_ordered(viewset, event):
     user = make_orga_user(event, is_reviewer=True)
-    request = make_api_request(event=event, user=user, organiser=event.organiser)
-    view = make_view(viewset, request)
-    view.action = "list"
+    for data in (None, {"o": _first_ordering_field(viewset)}):
+        request = make_api_request(
+            event=event, user=user, organiser=event.organiser, data=data
+        )
+        view = make_view(viewset, request)
+        view.action = "list"
 
-    queryset = view.filter_queryset(view.get_queryset())
+        queryset = view.filter_queryset(view.get_queryset())
 
-    assert queryset.totally_ordered
+        assert queryset.totally_ordered, data

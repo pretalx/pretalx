@@ -66,9 +66,8 @@ def test_reviewsettingsform_all_score_formats():
         assert form.is_valid(), f"Format {fmt} failed: {form.errors}"
 
 
-def test_reviewphaseform_valid_data():
-    event = EventFactory()
-    data = {
+def _phase_data(**overrides):
+    return {
         "name": "Phase 1",
         "start": "",
         "end": "",
@@ -80,206 +79,130 @@ def test_reviewphaseform_valid_data():
         "can_see_other_reviews": "always",
         "can_tag_submissions": "never",
         "speakers_can_change_submissions": False,
+        **overrides,
     }
-    form = ReviewPhaseForm(data=data, event=event, locales=event.locales)
 
+
+def test_reviewphaseform_validates_dates_and_follows_speaker_edit_flag():
+    event = EventFactory(feature_flags={"speakers_can_edit_submissions": False})
+
+    form = ReviewPhaseForm(data=_phase_data(), event=event, locales=event.locales)
     assert form.is_valid(), form.errors
 
-
-def test_reviewphaseform_start_after_end_invalid():
-    event = EventFactory()
-    data = {
-        "name": "Phase 1",
-        "start": "2024-06-20 10:00",
-        "end": "2024-06-15 10:00",
-        "can_review": True,
-        "proposal_visibility": "all",
-        "can_see_speaker_names": True,
-        "can_see_reviewer_names": True,
-        "can_change_submission_state": False,
-        "can_see_other_reviews": "always",
-        "can_tag_submissions": "never",
-        "speakers_can_change_submissions": False,
-    }
-    form = ReviewPhaseForm(data=data, event=event, locales=event.locales)
-
+    form = ReviewPhaseForm(
+        data=_phase_data(start="2024-06-20 10:00", end="2024-06-15 10:00"),
+        event=event,
+        locales=event.locales,
+    )
     assert not form.is_valid()
-    assert "end" in form.errors
+    assert list(form.errors) == ["end"]
 
-
-def test_reviewphaseform_speakers_edit_disabled_when_event_flag_off():
-    event = EventFactory(feature_flags={"speakers_can_edit_submissions": False})
     form = ReviewPhaseForm(event=event, locales=event.locales)
-
     assert form.fields["speakers_can_change_submissions"].disabled is True
     assert form.fields["speakers_can_change_submissions"].initial is False
 
-
-def test_reviewphaseform_speakers_edit_enabled_when_event_flag_on():
     event = EventFactory(feature_flags={"speakers_can_edit_submissions": True})
     form = ReviewPhaseForm(event=event, locales=event.locales)
-
     assert form.fields["speakers_can_change_submissions"].disabled is False
 
 
-def test_reviewscorecategoryform_init_no_tracks():
+def _category_form(category, data=None, **kwargs):
+    event = category.event
+    return ReviewScoreCategoryForm(
+        data=data if data is not None else {},
+        instance=category,
+        event=event,
+        locales=event.locales,
+        prefix="cat",
+        **kwargs,
+    )
+
+
+def _build_category_form_data(category, prefix="cat", overrides=None):
+    data = {
+        f"{prefix}-name_0": str(category.name),
+        f"{prefix}-is_independent": category.is_independent,
+        f"{prefix}-weight": str(category.weight),
+        f"{prefix}-required": category.required,
+        f"{prefix}-active": category.active,
+        f"{prefix}-new_scores": "",
+    }
+    for score in category.scores.all():
+        data[f"{prefix}-value_{score.id}"] = str(score.value)
+        data[f"{prefix}-label_{score.id}"] = score.label or ""
+    if overrides:
+        data.update({f"{prefix}-{key}": value for key, value in overrides.items()})
+    return data
+
+
+def test_reviewscorecategoryform_init_tracks_and_score_fields():
     event = EventFactory(feature_flags={"use_tracks": False})
-    category = ReviewScoreCategoryFactory(event=event)
-    form = ReviewScoreCategoryForm(
-        data={}, instance=category, event=event, locales=event.locales, prefix="cat"
-    )
-
-    assert "limit_tracks" not in form.fields
-
-
-def test_reviewscorecategoryform_init_with_tracks():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    track = TrackFactory(event=event)
-    other_event_track = TrackFactory()
-    category = ReviewScoreCategoryFactory(event=event)
-    form = ReviewScoreCategoryForm(
-        data={}, instance=category, event=event, locales=event.locales, prefix="cat"
-    )
-
-    assert "limit_tracks" in form.fields
-    assert track in form.fields["limit_tracks"].queryset
-    assert other_event_track not in form.fields["limit_tracks"].queryset
-
-
-def test_reviewscorecategoryform_init_loads_existing_scores():
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(event=event)
-    score = ReviewScoreFactory(category=category, value=3, label="Good")
-    form = ReviewScoreCategoryForm(
-        data={}, instance=category, event=event, locales=event.locales, prefix="cat"
-    )
-
-    assert f"value_{score.id}" in form.fields
-    assert f"label_{score.id}" in form.fields
-
-
-def test_reviewscorecategoryform_init_new_instance():
-    event = EventFactory()
     form = ReviewScoreCategoryForm(
         data={}, event=event, locales=event.locales, prefix="cat"
     )
 
+    assert "limit_tracks" not in form.fields
     assert form.label_fields == []
 
-
-def test_reviewscorecategoryform_get_label_fields():
-    event = EventFactory()
+    event = EventFactory(feature_flags={"use_tracks": True})
+    track = TrackFactory(event=event)
+    TrackFactory()
     category = ReviewScoreCategoryFactory(event=event)
-    ReviewScoreFactory(category=category, value=1, label="Bad")
-    ReviewScoreFactory(category=category, value=3, label="Good")
-    form = ReviewScoreCategoryForm(
-        data={}, instance=category, event=event, locales=event.locales, prefix="cat"
+    bad = ReviewScoreFactory(category=category, value=1, label="Bad")
+    good = ReviewScoreFactory(category=category, value=3, label="Good")
+
+    form = _category_form(category)
+
+    assert list(form.fields["limit_tracks"].queryset) == [track]
+    assert [(value.name, label.name) for value, label in form.get_label_fields()] == [
+        (f"value_{bad.id}", f"label_{bad.id}"),
+        (f"value_{good.id}", f"label_{good.id}"),
+    ]
+
+
+def test_reviewscorecategoryform_save_creates_updates_and_deletes_scores():
+    category = ReviewScoreCategoryFactory()
+    data = _build_category_form_data(
+        category,
+        overrides={
+            "name_0": "Updated",
+            "new_scores": "new1,new2",
+            "value_new1": "5",
+            "label_new1": "Excellent",
+            "value_new2": "4",
+            "label_new2": "",
+        },
     )
-
-    label_pairs = list(form.get_label_fields())
-    assert len(label_pairs) == 2
-
-
-def test_reviewscorecategoryform_save_creates_new_scores():
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(event=event)
-    prefix = "cat"
-    data = {
-        f"{prefix}-name_0": "Updated",
-        f"{prefix}-is_independent": False,
-        f"{prefix}-weight": "1.0",
-        f"{prefix}-required": True,
-        f"{prefix}-active": True,
-        f"{prefix}-new_scores": "new1",
-        f"{prefix}-value_new1": "5",
-        f"{prefix}-label_new1": "Excellent",
-    }
-    form = ReviewScoreCategoryForm(
-        data=data, instance=category, event=event, locales=event.locales, prefix=prefix
-    )
+    form = _category_form(category, data=data)
     assert form.is_valid(), form.errors
     form.save()
 
-    scores = list(category.scores.all())
-    assert len(scores) == 1
-    assert scores[0].value == Decimal(5)
-    assert scores[0].label == "Excellent"
+    score = category.scores.get()
+    assert (score.value, score.label) == (Decimal(5), "Excellent")
 
-
-def test_reviewscorecategoryform_save_deletes_score_when_value_cleared():
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(event=event)
-    score = ReviewScoreFactory(category=category, value=3, label="Good")
-    prefix = "cat"
-    data = {
-        f"{prefix}-name_0": "Updated",
-        f"{prefix}-is_independent": False,
-        f"{prefix}-weight": "1.0",
-        f"{prefix}-required": True,
-        f"{prefix}-active": True,
-        f"{prefix}-new_scores": "",
-        f"{prefix}-value_{score.id}": "",
-        f"{prefix}-label_{score.id}": "Good",
-    }
-    form = ReviewScoreCategoryForm(
-        data=data, instance=category, event=event, locales=event.locales, prefix=prefix
+    data = _build_category_form_data(
+        category, overrides={f"value_{score.id}": "4", f"label_{score.id}": "Great"}
     )
+    form = _category_form(category, data=data)
+    assert form.is_valid(), form.errors
+    form.save()
+
+    score.refresh_from_db()
+    assert (score.value, score.label) == (Decimal(4), "Great")
+
+    form = _category_form(category, data=_build_category_form_data(category))
+    assert form.is_valid(), form.errors
+    form.save()
+
+    score.refresh_from_db()
+    assert (score.value, score.label) == (Decimal(4), "Great")
+
+    data = _build_category_form_data(category, overrides={f"value_{score.id}": ""})
+    form = _category_form(category, data=data)
     assert form.is_valid(), form.errors
     form.save()
 
     assert not ReviewScore.objects.filter(id=score.id).exists()
-
-
-def test_reviewscorecategoryform_save_updates_existing_score():
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(event=event)
-    score = ReviewScoreFactory(category=category, value=3, label="Good")
-    prefix = "cat"
-    data = {
-        f"{prefix}-name_0": "Updated",
-        f"{prefix}-is_independent": False,
-        f"{prefix}-weight": "1.0",
-        f"{prefix}-required": True,
-        f"{prefix}-active": True,
-        f"{prefix}-new_scores": "",
-        f"{prefix}-value_{score.id}": "4",
-        f"{prefix}-label_{score.id}": "Great",
-    }
-    form = ReviewScoreCategoryForm(
-        data=data, instance=category, event=event, locales=event.locales, prefix=prefix
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    score.refresh_from_db()
-    assert score.value == Decimal(4)
-    assert score.label == "Great"
-
-
-def test_reviewscorecategoryform_save_unchanged_scores_preserved():
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(event=event)
-    score = ReviewScoreFactory(category=category, value=3, label="Good")
-    prefix = "cat"
-    data = {
-        f"{prefix}-name_0": str(category.name),
-        f"{prefix}-is_independent": False,
-        f"{prefix}-weight": "1.0",
-        f"{prefix}-required": True,
-        f"{prefix}-active": True,
-        f"{prefix}-new_scores": "",
-        f"{prefix}-value_{score.id}": "3",
-        f"{prefix}-label_{score.id}": "Good",
-    }
-    form = ReviewScoreCategoryForm(
-        data=data, instance=category, event=event, locales=event.locales, prefix=prefix
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    score.refresh_from_db()
-    assert score.value == Decimal(3)
-    assert score.label == "Good"
 
 
 @pytest.mark.parametrize(
@@ -336,15 +259,12 @@ def test_reviewscorecategoryform_save_unchanged_scores_preserved():
 def test_reviewscorecategoryform_duplicate_score_values(
     build_overrides, build_error_fields
 ):
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(event=event)
+    category = ReviewScoreCategoryFactory()
     bad = ReviewScoreFactory(category=category, value=1, label="Bad")
     good = ReviewScoreFactory(category=category, value=3, label="Good")
     data = _build_category_form_data(category, overrides=build_overrides(bad, good))
 
-    form = ReviewScoreCategoryForm(
-        data=data, instance=category, event=event, locales=event.locales, prefix="cat"
-    )
+    form = _category_form(category, data=data)
 
     error_fields = build_error_fields(bad, good)
     message = "A score cannot be used twice in the same review category."
@@ -357,113 +277,32 @@ def test_reviewscorecategoryform_duplicate_score_values(
     assert form.non_field_errors() == ([message] if error_fields else [])
 
 
-def _build_category_form_data(category, prefix="cat", overrides=None):
-    data = {
-        f"{prefix}-name_0": str(category.name),
-        f"{prefix}-is_independent": category.is_independent,
-        f"{prefix}-weight": str(category.weight),
-        f"{prefix}-required": category.required,
-        f"{prefix}-active": category.active,
-        f"{prefix}-new_scores": "",
-    }
-    for score in category.scores.all():
-        data[f"{prefix}-value_{score.id}"] = str(score.value)
-        data[f"{prefix}-label_{score.id}"] = score.label or ""
-    if overrides:
-        data.update({f"{prefix}-{key}": value for key, value in overrides.items()})
-    return data
-
-
-def test_reviewscorecategoryform_affects_review_scores_existing_score_value_change():
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(event=event)
+def test_reviewscorecategoryform_affects_review_scores():
+    category = ReviewScoreCategoryFactory(is_independent=False)
     score = ReviewScoreFactory(category=category, value=3, label="Good")
-    data = _build_category_form_data(category, overrides={f"value_{score.id}": "4"})
-    form = ReviewScoreCategoryForm(
-        data=data, instance=category, event=event, locales=event.locales, prefix="cat"
+
+    def affects(overrides=None, delete=False):
+        form = _category_form(
+            category, data=_build_category_form_data(category, overrides=overrides)
+        )
+        assert form.is_valid(), form.errors
+        if delete:
+            form.cleaned_data["DELETE"] = True  # set by the formset when can_delete
+        return form.affects_review_scores
+
+    assert affects({f"value_{score.id}": "4"}) is True
+    assert affects({f"label_{score.id}": "Excellent"}) is False
+    assert affects() is False
+    assert affects(delete=True) is True
+
+    independent = ReviewScoreCategoryFactory(
+        event=category.event, is_independent=True, weight=Decimal(0)
     )
-    assert form.is_valid(), form.errors
-
-    assert form.affects_review_scores is True
-
-
-def test_reviewscorecategoryform_affects_review_scores_label_only_change():
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(event=event)
-    score = ReviewScoreFactory(category=category, value=3, label="Good")
-    data = _build_category_form_data(
-        category, overrides={f"label_{score.id}": "Excellent"}
-    )
-    form = ReviewScoreCategoryForm(
-        data=data, instance=category, event=event, locales=event.locales, prefix="cat"
-    )
-    assert form.is_valid(), form.errors
-
-    assert form.affects_review_scores is False
-
-
-def test_reviewscorecategoryform_affects_review_scores_no_changes():
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(event=event)
-    ReviewScoreFactory(category=category, value=3, label="Good")
-    data = _build_category_form_data(category)
-    form = ReviewScoreCategoryForm(
-        data=data, instance=category, event=event, locales=event.locales, prefix="cat"
-    )
-    assert form.is_valid(), form.errors
-
-    assert form.affects_review_scores is False
-
-
-def test_reviewscorecategoryform_affects_review_scores_delete_non_independent():
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(event=event, is_independent=False)
-    data = _build_category_form_data(category)
-    form = ReviewScoreCategoryForm(
-        data=data, instance=category, event=event, locales=event.locales, prefix="cat"
-    )
-    assert form.is_valid(), form.errors
-    form.cleaned_data["DELETE"] = True  # set by the formset when can_delete=True
-
-    assert form.affects_review_scores is True
-
-
-def test_reviewscorecategoryform_affects_review_scores_delete_independent():
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(
-        event=event, is_independent=True, weight=Decimal(0)
-    )
-    data = _build_category_form_data(category)
-    form = ReviewScoreCategoryForm(
-        data=data, instance=category, event=event, locales=event.locales, prefix="cat"
-    )
+    form = _category_form(independent, data=_build_category_form_data(independent))
     assert form.is_valid(), form.errors
     form.cleaned_data["DELETE"] = True
 
     assert form.affects_review_scores is False
-
-
-def test_reviewscorecategoryform_save_new_score_without_label_skipped():
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(event=event)
-    prefix = "cat"
-    data = {
-        f"{prefix}-name_0": "Updated",
-        f"{prefix}-is_independent": False,
-        f"{prefix}-weight": "1.0",
-        f"{prefix}-required": True,
-        f"{prefix}-active": True,
-        f"{prefix}-new_scores": "new1",
-        f"{prefix}-value_new1": "5",
-        f"{prefix}-label_new1": "",
-    }
-    form = ReviewScoreCategoryForm(
-        data=data, instance=category, event=event, locales=event.locales, prefix=prefix
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    assert category.scores.count() == 0
 
 
 def _make_review_form_context(event, *, num_categories=1, **category_kwargs):
@@ -480,282 +319,122 @@ def _make_review_form_context(event, *, num_categories=1, **category_kwargs):
     return categories, scores_by_cat
 
 
-def test_review_form_init_creates_score_fields():
+def test_review_form_init_builds_score_fields_per_category():
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event)
-    categories, _ = _make_review_form_context(event, num_categories=2)
-
-    form = ReviewForm(
-        event=event, user=user, categories=categories, submission=submission
-    )
-
-    for cat in categories:
-        field_name = f"score_{cat.id}"
-        assert field_name in form.fields
-        assert isinstance(form.fields[field_name], forms.ChoiceField)
-
-
-@pytest.mark.parametrize("text_mandatory", (True, False))
-def test_review_form_init_text_required(text_mandatory):
-    event = EventFactory(
-        review_settings={"text_mandatory": True} if text_mandatory else {}
-    )
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
-    categories, _ = _make_review_form_context(event)
-
-    form = ReviewForm(
-        event=event, user=user, categories=categories, submission=submission
-    )
-
-    assert form.fields["text"].required is text_mandatory
-
-
-def test_review_form_build_score_field_required_category():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
-    categories, scores = _make_review_form_context(event, required=True)
-    cat = categories[0]
-
-    form = ReviewForm(
-        event=event, user=user, categories=categories, submission=submission
-    )
-
-    field = form.fields[f"score_{cat.id}"]
-    assert field.required is True
-    choice_values = [c[0] for c in field.choices]
-    assert "-" not in choice_values
-    assert len(field.choices) == 3  # Only the three score values
-
-
-def test_review_form_build_score_field_optional_category():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
-    categories, _ = _make_review_form_context(event, required=False)
-    cat = categories[0]
-
-    form = ReviewForm(
-        event=event, user=user, categories=categories, submission=submission
-    )
-
-    field = form.fields[f"score_{cat.id}"]
-    assert field.required is False
-    choice_values = [c[0] for c in field.choices]
-    assert choice_values[0] == "-"
-
-
-def test_review_form_build_score_field_read_only():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
-    categories, _ = _make_review_form_context(event)
-    cat = categories[0]
-
-    form = ReviewForm(
-        event=event,
-        user=user,
-        categories=categories,
-        submission=submission,
-        read_only=True,
-    )
-
-    assert form.fields[f"score_{cat.id}"].disabled is True
-
-
-def test_review_form_build_score_field_hide_optional():
-    event = EventFactory(review_settings={"score_mandatory": True})
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
-    categories, _ = _make_review_form_context(event)
-    cat = categories[0]
-
-    form = ReviewForm(
-        event=event, user=user, categories=categories, submission=submission
-    )
-
-    assert "hide-optional" in form.fields[f"score_{cat.id}"].widget.attrs.get(
-        "class", ""
-    )
-
-
-def test_review_form_build_score_field_existing_review():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
-    categories, scores = _make_review_form_context(event)
-    cat = categories[0]
+    (required_cat,), scores = _make_review_form_context(event, required=True)
+    (optional_cat,), _ = _make_review_form_context(event, required=False)
+    categories = [required_cat, optional_cat]
+    other_cat = ReviewScoreCategoryFactory(event=event)
     review = ReviewFactory(submission=submission, user=user)
-    chosen_score = scores[cat][2]  # "Yes"
+    chosen_score = scores[required_cat][2]
     review.scores.add(chosen_score)
 
     form = ReviewForm(
+        event=event, user=user, categories=categories, submission=submission
+    )
+
+    assert form.fields["text"].required is False
+    required_field = form.fields[f"score_{required_cat.id}"]
+    assert isinstance(required_field, forms.ChoiceField)
+    assert required_field.required is True
+    assert [choice for choice, _ in required_field.choices] == [
+        score.id for score in scores[required_cat]
+    ]
+    optional_field = form.fields[f"score_{optional_cat.id}"]
+    assert optional_field.required is False
+    assert [choice for choice, _ in optional_field.choices][0] == "-"
+    assert "hide-optional" not in optional_field.widget.attrs.get("class", "")
+    assert [field.name for field in form.get_score_fields()] == [
+        f"score_{required_cat.id}",
+        f"score_{optional_cat.id}",
+    ]
+    assert form.get_score_field(required_cat).name == f"score_{required_cat.id}"
+    assert form.get_score_field(other_cat) is None
+
+    form = ReviewForm(
         event=event,
         user=user,
         categories=categories,
         submission=submission,
         instance=review,
+        read_only=True,
     )
 
-    assert form.fields[f"score_{cat.id}"].initial == str(chosen_score.id)
+    assert form.fields[f"score_{required_cat.id}"].initial == str(chosen_score.id)
+    assert form.fields[f"score_{optional_cat.id}"].initial is None
+    assert all(form.fields[f"score_{cat.id}"].disabled for cat in categories)
 
-
-def test_review_form_get_score_fields():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
-    categories, _ = _make_review_form_context(event, num_categories=2)
-
-    form = ReviewForm(
-        event=event, user=user, categories=categories, submission=submission
+    event = EventFactory(
+        review_settings={"text_mandatory": True, "score_mandatory": True}
     )
-
-    score_fields = list(form.get_score_fields())
-    assert len(score_fields) == 2
-    assert score_fields[0].name == f"score_{categories[0].id}"
-    assert score_fields[1].name == f"score_{categories[1].id}"
-
-
-def test_review_form_get_score_field_existing():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
     categories, _ = _make_review_form_context(event)
-    cat = categories[0]
-
-    form = ReviewForm(
-        event=event, user=user, categories=categories, submission=submission
-    )
-
-    field = form.get_score_field(cat)
-    assert field is not None
-    assert field.name == f"score_{cat.id}"
-
-
-def test_review_form_get_score_field_missing():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
-    categories, _ = _make_review_form_context(event)
-    other_cat = ReviewScoreCategoryFactory(event=event)
-
-    form = ReviewForm(
-        event=event, user=user, categories=categories, submission=submission
-    )
-
-    assert form.get_score_field(other_cat) is None
-
-
-def test_review_form_clean_converts_dash_to_empty():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
-    categories, scores = _make_review_form_context(event, required=False)
-    cat = categories[0]
-
     form = ReviewForm(
         event=event,
         user=user,
         categories=categories,
-        submission=submission,
-        data={"text": "Good talk", f"score_{cat.id}": "-"},
+        submission=SubmissionFactory(event=event),
     )
 
-    assert form.is_valid()
-    assert form.cleaned_data[f"score_{cat.id}"] == ""
+    assert form.fields["text"].required is True
+    assert (
+        form.fields[f"score_{categories[0].id}"].widget.attrs["class"]
+        == "hide-optional"
+    )
 
 
-@pytest.mark.parametrize(
-    ("provide_score", "expected_valid"), ((True, True), (False, False))
-)
-def test_review_form_clean_score_mandatory(provide_score, expected_valid):
+def test_review_form_clean_enforces_mandatory_and_valid_scores():
     event = EventFactory(review_settings={"score_mandatory": True})
     user = UserFactory()
     submission = SubmissionFactory(event=event)
     categories, scores = _make_review_form_context(event, required=False)
     cat = categories[0]
-    score_value = str(scores[cat][1].id) if provide_score else "-"
 
-    form = ReviewForm(
-        event=event,
-        user=user,
-        categories=categories,
-        submission=submission,
-        data={"text": "Good talk", f"score_{cat.id}": score_value},
-    )
+    def build(score_value):
+        return ReviewForm(
+            event=event,
+            user=user,
+            categories=categories,
+            submission=submission,
+            data={"text": "Good talk", f"score_{cat.id}": score_value},
+        )
 
-    assert form.is_valid() is expected_valid
-    if not expected_valid:
-        assert form.errors["__all__"]
-
-
-def test_review_form_save_creates_review():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
-    categories, scores = _make_review_form_context(event)
-    cat = categories[0]
-    chosen_score = scores[cat][2]  # "Yes"
-
-    form = ReviewForm(
-        event=event,
-        user=user,
-        categories=categories,
-        submission=submission,
-        data={"text": "Great talk!", f"score_{cat.id}": str(chosen_score.id)},
-    )
+    form = build(str(scores[cat][1].id))
     assert form.is_valid(), form.errors
-    review = form.save()
+    assert form.cleaned_data[f"score_{cat.id}"] == str(scores[cat][1].id)
 
-    assert review.submission == submission
-    assert review.user == user
-    assert review.text == "Great talk!"
-    assert list(review.scores.all()) == [chosen_score]
+    form = build("-")
+    assert not form.is_valid()
+    assert list(form.errors) == ["__all__"]
+    assert form.cleaned_data[f"score_{cat.id}"] == ""
+
+    form = build("99999")
+    assert not form.is_valid()
+    assert list(form.errors) == [f"score_{cat.id}", "__all__"]
 
 
-def test_review_form_save_updates_existing_review():
+def test_review_form_save_creates_updates_and_clears_scores():
     event = EventFactory()
     user = UserFactory()
     submission = SubmissionFactory(event=event)
-    categories, scores = _make_review_form_context(event)
-    cat = categories[0]
-    old_score = scores[cat][0]
-    new_score = scores[cat][2]
-    review = ReviewFactory(submission=submission, user=user)
-    review.scores.add(old_score)
-
-    form = ReviewForm(
-        event=event,
-        user=user,
-        categories=categories,
-        submission=submission,
-        instance=review,
-        data={"text": "Updated review", f"score_{cat.id}": str(new_score.id)},
+    categories, scores = _make_review_form_context(
+        event, num_categories=2, required=False
     )
-    assert form.is_valid(), form.errors
-    updated = form.save()
+    cat1, cat2 = categories
+    chosen_score = scores[cat1][2]
 
-    assert updated.pk == review.pk
-    assert updated.text == "Updated review"
-    assert list(updated.scores.all()) == [new_score]
+    def build(text, score1, score2="-", instance=None):
+        return ReviewForm(
+            event=event,
+            user=user,
+            categories=categories,
+            submission=submission,
+            instance=instance,
+            data={"text": text, f"score_{cat1.id}": score1, f"score_{cat2.id}": score2},
+        )
 
-
-def test_review_form_save_concurrent_duplicate_updates_existing_review():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
-    categories, scores = _make_review_form_context(event)
-    cat = categories[0]
-    chosen_score = scores[cat][2]
-    form = ReviewForm(
-        event=event,
-        user=user,
-        categories=categories,
-        submission=submission,
-        data={"text": "Second save", f"score_{cat.id}": str(chosen_score.id)},
-    )
+    form = build("Second save", str(chosen_score.id))
     assert form.is_valid(), form.errors
     concurrent_review = ReviewFactory(
         submission=submission, user=user, text="First save"
@@ -765,72 +444,23 @@ def test_review_form_save_concurrent_duplicate_updates_existing_review():
 
     assert review.pk == concurrent_review.pk
     assert review.created == concurrent_review.created
+    assert review.user_id == user.pk
     assert review.text == "Second save"
     assert list(review.scores.all()) == [chosen_score]
     assert list(submission.reviews.all()) == [review]
 
-
-def test_review_form_save_without_score():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
-    categories, _ = _make_review_form_context(event, required=False)
-    cat = categories[0]
-
-    form = ReviewForm(
-        event=event,
-        user=user,
-        categories=categories,
-        submission=submission,
-        data={"text": "No score", f"score_{cat.id}": "-"},
-    )
+    new_score = scores[cat1][0]
+    form = build("Updated review", str(new_score.id), str(scores[cat2][1].id), review)
     assert form.is_valid(), form.errors
-    review = form.save()
+    updated = form.save()
 
-    assert list(review.scores.all()) == []
+    assert updated.pk == review.pk
+    assert updated.text == "Updated review"
+    assert set(updated.scores.all()) == {new_score, scores[cat2][1]}
 
-
-def test_review_form_clean_invalid_score_choice():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
-    categories, _ = _make_review_form_context(event)
-    cat = categories[0]
-
-    form = ReviewForm(
-        event=event,
-        user=user,
-        categories=categories,
-        submission=submission,
-        data={"text": "LGTM", f"score_{cat.id}": "99999"},
-    )
-
-    assert form.is_valid() is False
-    assert f"score_{cat.id}" in form.errors
-
-
-def test_review_form_save_multiple_categories_partial_scores():
-    event = EventFactory()
-    user = UserFactory()
-    submission = SubmissionFactory(event=event)
-    categories, scores = _make_review_form_context(
-        event, num_categories=2, required=False
-    )
-    cat1, cat2 = categories
-    chosen_score = scores[cat1][1]
-
-    form = ReviewForm(
-        event=event,
-        user=user,
-        categories=categories,
-        submission=submission,
-        data={
-            "text": "Partial review",
-            f"score_{cat1.id}": str(chosen_score.id),
-            f"score_{cat2.id}": "-",
-        },
-    )
+    form = build("No score", "-", "-", review)
     assert form.is_valid(), form.errors
-    review = form.save()
+    cleared = form.save()
 
-    assert list(review.scores.all()) == [chosen_score]
+    assert cleared.pk == review.pk
+    assert list(cleared.scores.all()) == []

@@ -35,17 +35,42 @@ def make_context(event=None, submissions=None, questions=None, **request_kwargs)
 
 
 @pytest.mark.parametrize(
-    ("visibility", "expected_present"), (("optional", True), ("do_not_ask", False))
+    ("cfp_fields", "expected"),
+    (
+        ({"avatar": {"visibility": "do_not_ask"}}, {}),
+        (
+            {"avatar": {"visibility": "optional"}},
+            {"avatar_url": False, "avatar": False},
+        ),
+        (
+            {
+                "avatar": {"visibility": "required"},
+                "availabilities": {"visibility": "required"},
+            },
+            {"avatar_url": False, "avatar": True, "availabilities": True},
+        ),
+    ),
+    ids=("not_requested", "optional", "required"),
 )
-def test_speaker_serializer_init_avatar_url_field_presence(
-    visibility, expected_present
-):
-    event = EventFactory(cfp__fields={"avatar": {"visibility": visibility}})
+def test_speaker_update_serializer_init_fields_follow_cfp(cfp_fields, expected):
+    event = EventFactory(cfp__fields=cfp_fields)
     speaker = SpeakerFactory(event=event)
 
-    serializer = SpeakerSerializer(speaker, context=make_context(event=event))
+    serializer = SpeakerUpdateSerializer(speaker, context=make_context(event=event))
 
-    assert ("avatar_url" in serializer.fields) is expected_present
+    assert {
+        name: field.required
+        for name, field in serializer.fields.items()
+        if name in ("avatar_url", "avatar", "availabilities")
+    } == expected
+
+
+def test_speaker_orga_serializer_without_event_keeps_all_fields():
+    speaker = SpeakerFactory()
+
+    serializer = SpeakerOrgaSerializer(speaker, context=make_context(event=None))
+
+    assert "availabilities" in serializer.fields
 
 
 @pytest.mark.parametrize(
@@ -63,183 +88,17 @@ def test_speaker_serializer_to_representation_display_name(
     assert serializer.data["name"] == expected
 
 
-def test_speaker_serializer_get_submissions_empty_without_context():
+def test_speaker_serializer_submissions_and_answers_empty_without_context():
     event = EventFactory()
     speaker = SpeakerFactory(event=event)
 
     serializer = SpeakerSerializer(speaker, context=make_context(event=event))
 
     assert serializer.data["submissions"] == []
-
-
-def test_speaker_serializer_get_submissions_returns_codes():
-    event = EventFactory()
-    role = SpeakerRoleFactory(submission__event=event, speaker__event=event)
-
-    context = make_context(event=event, submissions=True)
-    serializer = SpeakerSerializer(role.speaker, context=context)
-
-    assert serializer.data["submissions"] == [role.submission.code]
-
-
-def test_speaker_serializer_get_answers_empty_without_questions():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-
-    serializer = SpeakerSerializer(speaker, context=make_context(event=event))
-
     assert serializer.data["answers"] == []
 
 
-def test_speaker_serializer_get_answers_filters_speaker_questions():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-    speaker_question = QuestionFactory(
-        event=event, target=QuestionTarget.SPEAKER, position=1
-    )
-    submission_question = QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, position=2
-    )
-    speaker_answer = AnswerFactory(
-        question=speaker_question, speaker=speaker, submission=None
-    )
-    AnswerFactory(question=submission_question, speaker=speaker, submission=None)
-
-    context = make_context(
-        event=event, questions=[speaker_question, submission_question]
-    )
-    serializer = SpeakerSerializer(speaker, context=context)
-
-    assert serializer.data["answers"] == [speaker_answer.pk]
-
-
-def test_speaker_serializer_get_answers_sorted_by_question_position():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-    q1 = QuestionFactory(event=event, target=QuestionTarget.SPEAKER, position=10)
-    q2 = QuestionFactory(event=event, target=QuestionTarget.SPEAKER, position=1)
-    a1 = AnswerFactory(question=q1, speaker=speaker, submission=None)
-    a2 = AnswerFactory(question=q2, speaker=speaker, submission=None)
-
-    context = make_context(event=event, questions=[q1, q2])
-    serializer = SpeakerSerializer(speaker, context=context)
-
-    assert serializer.data["answers"] == [a2.pk, a1.pk]
-
-
-def test_speaker_serializer_update_without_availabilities():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event, biography="Old bio")
-
-    serializer = SpeakerSerializer(
-        speaker,
-        data={"biography": "New bio"},
-        partial=True,
-        context=make_context(event=event),
-    )
-    serializer.is_valid(raise_exception=True)
-    result = serializer.save()
-
-    result.refresh_from_db()
-    assert result.biography == "New bio"
-
-
-def test_speaker_orga_serializer_removes_availabilities_when_not_requested():
-    event = EventFactory(cfp__fields={"availabilities": {"visibility": "do_not_ask"}})
-    speaker = SpeakerFactory(event=event)
-
-    serializer = SpeakerOrgaSerializer(speaker, context=make_context(event=event))
-
-    assert "availabilities" not in serializer.fields
-
-
-def test_speaker_orga_serializer_makes_availabilities_required_when_cfp_requires():
-    event = EventFactory(cfp__fields={"availabilities": {"visibility": "required"}})
-    speaker = SpeakerFactory(event=event)
-
-    serializer = SpeakerOrgaSerializer(speaker, context=make_context(event=event))
-
-    assert serializer.fields["availabilities"].required is True
-
-
-def test_speaker_orga_serializer_without_event_keeps_all_fields():
-    speaker = SpeakerFactory()
-
-    serializer = SpeakerOrgaSerializer(speaker, context=make_context(event=None))
-
-    assert "availabilities" in serializer.fields
-
-
-def test_speaker_update_serializer_removes_avatar_when_not_requested():
-    event = EventFactory(cfp__fields={"avatar": {"visibility": "do_not_ask"}})
-    speaker = SpeakerFactory(event=event)
-
-    serializer = SpeakerUpdateSerializer(speaker, context=make_context(event=event))
-
-    assert "avatar" not in serializer.fields
-
-
-def test_speaker_update_serializer_update_with_avatar(make_image):
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-    assert speaker.profile_picture is None
-
-    serializer = SpeakerUpdateSerializer(
-        speaker, context=make_context(event=event), partial=True
-    )
-    serializer.update(speaker, {"avatar": make_image("avatar.png")})
-
-    speaker.refresh_from_db()
-    assert speaker.profile_picture_id is not None
-
-
-def test_speaker_update_serializer_update_without_avatar():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-
-    serializer = SpeakerUpdateSerializer(
-        speaker, context=make_context(event=event), partial=True
-    )
-    serializer.update(speaker, {"biography": "updated"})
-
-    speaker.refresh_from_db()
-    assert speaker.profile_picture is None
-    assert speaker.biography == "updated"
-
-
-def test_speaker_update_serializer_name_change_backfills_empty_user_name():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event, user__name="", name="")
-
-    serializer = SpeakerUpdateSerializer(
-        speaker, context=make_context(event=event), partial=True
-    )
-    serializer.update(speaker, {"name": "Speaker Name"})
-
-    speaker.user.refresh_from_db()
-    assert speaker.user.name == "Speaker Name"
-
-
-def test_speaker_orga_serializer_update_with_availabilities():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-    start = event.datetime_from
-    end = start + dt.timedelta(hours=2)
-
-    serializer = SpeakerOrgaSerializer(
-        speaker, context=make_context(event=event), partial=True
-    )
-    serializer.update(speaker, {"availabilities": [{"start": start, "end": end}]})
-
-    avails = list(speaker.availabilities.all())
-    assert len(avails) == 1
-    assert avails[0].start == start
-    assert avails[0].end == end
-    assert avails[0].person_id == speaker.pk
-    assert avails[0].event_id == event.pk
-
-
-def test_speaker_serializer_get_submissions_expanded():
+def test_speaker_serializer_get_submissions_codes_and_expanded():
     event = EventFactory()
     role = SpeakerRoleFactory(submission__event=event, speaker__event=event)
     speaker = (
@@ -255,62 +114,168 @@ def test_speaker_serializer_get_submissions_expanded():
         .get(pk=role.speaker.pk)
     )
 
-    context = make_context(
-        event=event, submissions=True, data={"expand": "submissions"}
-    )
-    serializer = SpeakerSerializer(speaker, context=context)
+    codes = SpeakerSerializer(
+        speaker, context=make_context(event=event, submissions=True)
+    ).data["submissions"]
+    expanded = SpeakerSerializer(
+        speaker,
+        context=make_context(
+            event=event, submissions=True, data={"expand": "submissions"}
+        ),
+    ).data["submissions"]
 
-    data = serializer.data
-
-    assert len(data["submissions"]) == 1
-    assert data["submissions"][0]["code"] == role.submission.code
+    assert codes == [role.submission.code]
+    assert [submission["code"] for submission in expanded] == [role.submission.code]
 
 
-def test_speaker_orga_serializer_managed_speaker_effective_values():
+def test_speaker_serializer_get_answers_filters_speaker_questions_sorted_by_position():
     event = EventFactory()
-    speaker = SpeakerFactory(
-        event=event, user=None, name="Managed Speaker", email="contact@example.com"
+    speaker = SpeakerFactory(event=event)
+    late_question = QuestionFactory(
+        event=event, target=QuestionTarget.SPEAKER, position=10
     )
+    early_question = QuestionFactory(
+        event=event, target=QuestionTarget.SPEAKER, position=1
+    )
+    submission_question = QuestionFactory(
+        event=event, target=QuestionTarget.SUBMISSION, position=2
+    )
+    late_answer = AnswerFactory(
+        question=late_question, speaker=speaker, submission=None
+    )
+    early_answer = AnswerFactory(
+        question=early_question, speaker=speaker, submission=None
+    )
+    AnswerFactory(question=submission_question, speaker=speaker, submission=None)
+    questions = [late_question, early_question, submission_question]
+
+    pks = SpeakerSerializer(
+        speaker, context=make_context(event=event, questions=questions)
+    ).data["answers"]
+    expanded = SpeakerSerializer(
+        speaker,
+        context=make_context(
+            event=event, questions=questions, data={"expand": "answers"}
+        ),
+    ).data["answers"]
+
+    assert pks == [early_answer.pk, late_answer.pk]
+    assert [answer["id"] for answer in expanded] == [early_answer.pk, late_answer.pk]
+
+
+def test_speaker_update_serializer_update_without_avatar_or_availabilities():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+
+    serializer = SpeakerUpdateSerializer(
+        speaker, context=make_context(event=event), partial=True
+    )
+    serializer.update(speaker, {"biography": "updated"})
+
+    speaker.refresh_from_db()
+    assert speaker.profile_picture is None
+    assert speaker.biography == "updated"
+    assert list(speaker.availabilities.all()) == []
+
+
+def test_speaker_update_serializer_update_sets_avatar_availabilities_and_name(
+    make_image,
+):
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event, user__name="", name="")
+    user = speaker.user
+    start = event.datetime_from
+    end = start + dt.timedelta(hours=2)
+    assert speaker.profile_picture is None
+
+    serializer = SpeakerUpdateSerializer(
+        speaker, context=make_context(event=event), partial=True
+    )
+    serializer.update(
+        speaker,
+        {
+            "avatar": make_image("avatar.png"),
+            "availabilities": [{"start": start, "end": end}],
+            "name": "Speaker Name",
+        },
+    )
+
+    speaker.refresh_from_db()
+    user.refresh_from_db()
+    assert speaker.profile_picture_id is not None
+    assert user.name == "Speaker Name"
+    avails = list(speaker.availabilities.all())
+    assert len(avails) == 1
+    assert avails[0].start == start
+    assert avails[0].end == end
+    assert avails[0].person_id == speaker.pk
+    assert avails[0].event_id == event.pk
+
+
+@pytest.mark.parametrize(
+    ("speaker_kwargs", "expected"),
+    (
+        (
+            {"user": None, "name": "Managed Speaker", "email": "contact@example.com"},
+            {
+                "email": "contact@example.com",
+                "locale": "en",
+                "timezone": None,
+                "is_managed": True,
+            },
+        ),
+        (
+            {"user__email": "account@example.com"},
+            {"email": "account@example.com", "is_managed": False},
+        ),
+        (
+            {"user__email": "account@example.com", "email": "contact@example.com"},
+            {"email": "contact@example.com", "is_managed": False},
+        ),
+    ),
+    ids=("managed", "account", "contact_overrides_account"),
+)
+def test_speaker_orga_serializer_effective_values(speaker_kwargs, expected):
+    event = EventFactory(locale="en")
+    speaker = SpeakerFactory(event=event, **speaker_kwargs)
 
     data = SpeakerOrgaSerializer(speaker, context=make_context(event=event)).data
 
-    assert data["email"] == "contact@example.com"
-    assert data["locale"] == event.locale
-    assert data["timezone"] is None
-    assert data["is_managed"] is True
+    assert {key: data[key] for key in expected} == expected
 
 
-def test_speaker_orga_serializer_account_speaker_effective_values():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event, user__email="account@example.com")
-
-    data = SpeakerOrgaSerializer(speaker, context=make_context(event=event)).data
-
-    assert data["email"] == "account@example.com"
-    assert data["is_managed"] is False
-
-
-def test_speaker_orga_serializer_contact_email_overrides_account():
-    event = EventFactory()
-    speaker = SpeakerFactory(
-        event=event, user__email="account@example.com", email="contact@example.com"
-    )
-
-    data = SpeakerOrgaSerializer(speaker, context=make_context(event=event)).data
-
-    assert data["email"] == "contact@example.com"
-
-
-def test_speaker_update_serializer_email_writes_profile_not_account():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event, user__email="account@example.com")
+@pytest.mark.parametrize(
+    ("speaker_kwargs", "data", "field", "profile_value", "user_value", "shown"),
+    (
+        (
+            {"user__email": "account@example.com"},
+            {"email": "contact@example.com"},
+            "email",
+            "contact@example.com",
+            "account@example.com",
+            "contact@example.com",
+        ),
+        ({"user__locale": "en"}, {"locale": "de"}, "locale", "de", "en", "de"),
+        (
+            {"locale": "de", "user__locale": "en"},
+            {"locale": ""},
+            "locale",
+            None,
+            "en",
+            "en",
+        ),
+    ),
+    ids=("email", "locale", "empty_locale_clears_override"),
+)
+def test_speaker_update_serializer_writes_profile_not_account(
+    speaker_kwargs, data, field, profile_value, user_value, shown
+):
+    event = EventFactory(locales=["en", "de"])
+    speaker = SpeakerFactory(event=event, **speaker_kwargs)
     user = speaker.user
 
     serializer = SpeakerUpdateSerializer(
-        speaker,
-        data={"email": "contact@example.com"},
-        partial=True,
-        context=make_context(event=event),
+        speaker, data=data, partial=True, context=make_context(event=event)
     )
 
     assert serializer.is_valid(), serializer.errors
@@ -320,42 +285,9 @@ def test_speaker_update_serializer_email_writes_profile_not_account():
     user.refresh_from_db()
     speaker.user = user
     speaker.event = event
-    assert speaker.email == "contact@example.com"
-    assert user.email == "account@example.com"
-    assert serializer.to_representation(result)["email"] == "contact@example.com"
-
-
-def test_speaker_update_serializer_locale_writes_profile_not_account():
-    event = EventFactory(locales=["en", "de"])
-    speaker = SpeakerFactory(event=event, user__locale="en")
-    user = speaker.user
-
-    serializer = SpeakerUpdateSerializer(
-        speaker, data={"locale": "de"}, partial=True, context=make_context(event=event)
-    )
-
-    assert serializer.is_valid(), serializer.errors
-    serializer.save()
-
-    speaker.refresh_from_db()
-    user.refresh_from_db()
-    assert speaker.locale == "de"
-    assert user.locale == "en"
-
-
-def test_speaker_update_serializer_empty_locale_clears_override():
-    event = EventFactory(locales=["en", "de"])
-    speaker = SpeakerFactory(event=event, locale="de", user__locale="en")
-
-    serializer = SpeakerUpdateSerializer(
-        speaker, data={"locale": ""}, partial=True, context=make_context(event=event)
-    )
-
-    assert serializer.is_valid(), serializer.errors
-    serializer.save()
-
-    speaker.refresh_from_db()
-    assert speaker.locale is None
+    assert getattr(speaker, field) == profile_value
+    assert getattr(user, field) == user_value
+    assert serializer.to_representation(result)[field] == shown
 
 
 def test_speaker_update_serializer_locale_rejects_unoffered_language():
@@ -367,53 +299,17 @@ def test_speaker_update_serializer_locale_rejects_unoffered_language():
     )
 
     assert not serializer.is_valid()
-    assert "locale" in serializer.errors
+    assert serializer.errors == {
+        "locale": ["This language is not enabled for this event."]
+    }
 
 
-def test_speaker_create_serializer_creates_managed_profile():
+def test_speaker_create_serializer_creates_managed_profile_with_update_fields():
     event = EventFactory()
-    serializer = SpeakerCreateSerializer(
-        data={"name": "New Speaker", "email": "new@example.com"},
-        context=make_context(event=event),
-    )
-
-    assert serializer.is_valid(), serializer.errors
-    profile = serializer.save()
-
-    assert profile.pk
-    assert profile.user is None
-    assert profile.origin == SpeakerProfileOrigin.ORGA
-    assert profile.name == "New Speaker"
-    assert profile.email == "new@example.com"
-    assert (
-        profile.logged_actions().filter(action_type="pretalx.speaker.create").exists()
-    )
-
-
-@pytest.mark.parametrize(
-    "data",
-    (
-        pytest.param({"email": "new@example.com"}, id="missing"),
-        pytest.param(
-            {"email": "new@example.com", "name": "x" * 121}, id="over-model-max-length"
-        ),
-    ),
-)
-def test_speaker_create_serializer_rejects_invalid_name(data):
-    event = EventFactory()
-
-    serializer = SpeakerCreateSerializer(data=data, context=make_context(event=event))
-
-    assert not serializer.is_valid()
-    assert "name" in serializer.errors
-
-
-def test_speaker_create_serializer_accepts_all_update_fields():
-    event = EventFactory()
-
     serializer = SpeakerCreateSerializer(
         data={
             "name": "New Speaker",
+            "email": "new@example.com",
             "biography": "A bio",
             "internal_notes": "notes",
             "has_arrived": True,
@@ -426,23 +322,34 @@ def test_speaker_create_serializer_accepts_all_update_fields():
 
     profile.refresh_from_db()
     assert profile.user is None
+    assert profile.origin == SpeakerProfileOrigin.ORGA
+    assert profile.name == "New Speaker"
+    assert profile.email == "new@example.com"
     assert profile.biography == "A bio"
     assert profile.internal_notes == "notes"
     assert profile.has_arrived is True
-
-
-def test_speaker_serializer_get_answers_expanded():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-    question = QuestionFactory(event=event, target=QuestionTarget.SPEAKER, position=1)
-    answer = AnswerFactory(question=question, speaker=speaker, submission=None)
-
-    context = make_context(
-        event=event, questions=[question], data={"expand": "answers"}
+    assert (
+        profile.logged_actions().filter(action_type="pretalx.speaker.create").exists()
     )
-    serializer = SpeakerSerializer(speaker, context=context)
 
-    data = serializer.data
 
-    assert len(data["answers"]) == 1
-    assert data["answers"][0]["id"] == answer.pk
+@pytest.mark.parametrize(
+    ("data", "error"),
+    (
+        pytest.param(
+            {"email": "new@example.com"}, "This field is required.", id="missing"
+        ),
+        pytest.param(
+            {"email": "new@example.com", "name": "x" * 121},
+            "Ensure this value has at most 120 characters (it has 121).",
+            id="over-model-max-length",
+        ),
+    ),
+)
+def test_speaker_create_serializer_rejects_invalid_name(data, error):
+    event = EventFactory()
+
+    serializer = SpeakerCreateSerializer(data=data, context=make_context(event=event))
+
+    assert not serializer.is_valid()
+    assert serializer.errors == {"name": [error]}

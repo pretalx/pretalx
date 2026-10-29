@@ -9,48 +9,26 @@ from tests.factories import SpeakerFactory, SubmissionFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_create_feedback_auto_assigns_single_speaker():
-    submission = SubmissionFactory()
-    speaker = SpeakerFactory(event=submission.event)
-    submission.speakers.add(speaker)
-
-    feedback = create_feedback(Feedback(talk=submission, review="Wonderful!"))
-
-    assert feedback.pk is not None
-    assert feedback.talk == submission
-    assert feedback.speaker == speaker
-    assert feedback.review == "Wonderful!"
-
-
-def test_create_feedback_keeps_speaker_none_when_multiple_speakers():
+def test_create_feedback_assigns_speaker_only_when_unambiguous():
     submission = SubmissionFactory()
     speaker1 = SpeakerFactory(event=submission.event)
-    speaker2 = SpeakerFactory(event=submission.event)
-    submission.speakers.add(speaker1, speaker2)
-
-    feedback = create_feedback(Feedback(talk=submission, review="General feedback"))
-
-    assert feedback.speaker is None
-
-
-def test_create_feedback_uses_passed_speaker():
-    submission = SubmissionFactory()
-    speaker1 = SpeakerFactory(event=submission.event)
-    speaker2 = SpeakerFactory(event=submission.event)
-    submission.speakers.add(speaker1, speaker2)
-
-    feedback = create_feedback(
-        Feedback(talk=submission, speaker=speaker2, review="Nice!")
-    )
-
-    assert feedback.speaker == speaker2
-
-
-def test_create_feedback_includes_rating():
-    submission = SubmissionFactory()
-    speaker = SpeakerFactory(event=submission.event)
-    submission.speakers.add(speaker)
+    submission.speakers.add(speaker1)
 
     feedback = create_feedback(Feedback(talk=submission, rating=5, review="Great"))
 
+    assert feedback.pk is not None
+    assert feedback.talk == submission
+    assert feedback.speaker == speaker1
     assert feedback.rating == 5
+    assert feedback.review == "Great"
+
+    speaker2 = SpeakerFactory(event=submission.event)
+    submission.speakers.add(speaker2)
+
+    general = create_feedback(Feedback(talk=submission, review="General feedback"))
+    assert general.speaker is None
+
+    targeted = create_feedback(
+        Feedback(talk=submission, speaker=speaker2, review="Nice!")
+    )
+    assert targeted.speaker == speaker2

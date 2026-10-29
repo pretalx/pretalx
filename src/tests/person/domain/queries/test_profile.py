@@ -31,29 +31,28 @@ from tests.utils import make_published_schedule
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
+NON_DRAFT_STATES = (
+    SubmissionStates.SUBMITTED,
+    SubmissionStates.WITHDRAWN,
+    SubmissionStates.REJECTED,
+    SubmissionStates.CANCELED,
+    SubmissionStates.ACCEPTED,
+    SubmissionStates.CONFIRMED,
+)
 
-def test_other_speaker_profiles_returns_user_profiles_on_other_events():
+
+def test_other_speaker_profiles_returns_same_user_profiles_on_other_events():
     user = UserFactory()
     current_event = EventFactory()
     other_event = EventFactory()
     current = SpeakerFactory(user=user, event=current_event, biography="here")
     other = SpeakerFactory(user=user, event=other_event, biography="there")
+    SpeakerFactory(user=UserFactory(), event=other_event)
 
     with scope(event=current_event):
         result = list(other_speaker_profiles(current))
 
     assert result == [other]
-    assert current not in result
-
-
-def test_other_speaker_profiles_excludes_other_users():
-    user = UserFactory()
-    other_user = UserFactory()
-    event = EventFactory()
-    profile = SpeakerFactory(user=user, event=event)
-    SpeakerFactory(user=other_user, event=event)
-
-    assert list(other_speaker_profiles(profile)) == []
 
 
 def test_annotate_speaker_submission_counts_counts_per_event():
@@ -91,14 +90,11 @@ def test_annotate_user_submission_counts_counts_per_events():
     assert result.accepted_submission_count == 1
 
 
-def test_visible_talk_slots_no_schedule_returns_empty(event):
+def test_visible_talk_slots_lists_scheduled_slots(event):
     speaker = SpeakerFactory(event=event)
     with scope(event=event):
         assert list(visible_talk_slots(speaker)) == []
 
-
-def test_visible_talk_slots_with_schedule(event):
-    speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event)
     submission.speakers.add(speaker)
     schedule = ScheduleFactory(event=event)
@@ -131,20 +127,22 @@ def test_visible_talk_slots_annotates_signup_status_per_feature_flag(
 
 
 @pytest.mark.parametrize(
-    ("role", "expect_with_accepted", "expect_without_accepted"),
+    ("role", "expected"),
     (
-        ("speaker", True, False),
-        ("submitter", False, True),
-        ("all", True, True),
-        ("", True, True),
+        ("speaker", {"with_accepted"}),
+        ("submitter", {"without_accepted"}),
+        ("all", {"with_accepted", "without_accepted"}),
+        ("", {"with_accepted", "without_accepted"}),
     ),
 )
-def test_filter_by_accepted_role(role, expect_with_accepted, expect_without_accepted):
+def test_filter_by_accepted_role(role, expected):
     event = EventFactory()
-    with_accepted = SpeakerFactory(event=event)
+    profiles = {
+        "with_accepted": SpeakerFactory(event=event),
+        "without_accepted": SpeakerFactory(event=event),
+    }
     accepted = SubmissionFactory(event=event, state="accepted")
-    accepted.speakers.add(with_accepted)
-    without_accepted = SpeakerFactory(event=event)
+    accepted.speakers.add(profiles["with_accepted"])
 
     qs = annotate_speaker_submission_counts(
         SpeakerProfile.objects.filter(event=event),
@@ -153,26 +151,26 @@ def test_filter_by_accepted_role(role, expect_with_accepted, expect_without_acce
     )
     filtered = set(filter_by_accepted_role(qs, role))
 
-    expected = set()
-    if expect_with_accepted:
-        expected.add(with_accepted)
-    if expect_without_accepted:
-        expected.add(without_accepted)
-    assert filtered == expected
+    assert filtered == {profiles[name] for name in expected}
 
 
-def test_speakers_for_event_returns_speakers_of_scheduled_talks():
+def test_speakers_for_event_returns_distinct_speakers_of_scheduled_talks():
     event = EventFactory()
-    [scheduled] = make_published_schedule(event, item_count=1)
+    [first, second] = make_published_schedule(event, item_count=2)
     with scope(event=event):
-        scheduled_speaker = scheduled.speakers.get()
+        first_speaker = first.speakers.get()
+        second_speaker = second.speakers.get()
+        second.speakers.add(first_speaker)
         # A speaker with a confirmed but unscheduled submission must not show up.
         unscheduled_speaker = SpeakerFactory(event=event)
         unscheduled = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         unscheduled.speakers.add(unscheduled_speaker)
 
     with scope(event=event):
-        assert list(speakers_for_event(event)) == [scheduled_speaker]
+        result = list(speakers_for_event(event))
+
+    assert len(result) == 2
+    assert set(result) == {first_speaker, second_speaker}
 
 
 def test_speakers_for_event_no_released_schedule_returns_empty():
@@ -187,71 +185,34 @@ def test_speakers_for_event_no_released_schedule_returns_empty():
         assert list(speakers_for_event(event)) == []
 
 
-def test_speakers_for_event_deduplicates_speakers_on_multiple_talks():
+def test_submitters_for_event_includes_non_draft_submitters_and_optionally_bare_profiles():
     event = EventFactory()
-    [first, second] = make_published_schedule(event, item_count=2)
+    submitters = set()
     with scope(event=event):
-        shared = first.speakers.get()
-        second.speakers.add(shared)
-
-    with scope(event=event):
-        result = list(speakers_for_event(event))
-
-    assert result.count(shared) == 1
-
-
-def test_submitters_for_event_includes_any_non_draft_state():
-    event = EventFactory()
-    states = (
-        SubmissionStates.SUBMITTED,
-        SubmissionStates.WITHDRAWN,
-        SubmissionStates.REJECTED,
-        SubmissionStates.CANCELED,
-        SubmissionStates.ACCEPTED,
-        SubmissionStates.CONFIRMED,
-    )
-    expected_speakers = set()
-    with scope(event=event):
-        for state in states:
+        for state in NON_DRAFT_STATES:
             speaker = SpeakerFactory(event=event)
-            sub = SubmissionFactory(event=event, state=state)
-            sub.speakers.add(speaker)
-            expected_speakers.add(speaker)
-
-    with scope(event=event):
-        result = set(submitters_for_event(event))
-
-    assert result == expected_speakers
-
-
-def test_submitters_for_event_excludes_draft_submitters():
-    event = EventFactory()
-    with scope(event=event):
-        kept = SpeakerFactory(event=event)
-        kept_sub = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        kept_sub.speakers.add(kept)
-
+            SubmissionFactory(event=event, state=state).speakers.add(speaker)
+            submitters.add(speaker)
         draft_only = SpeakerFactory(event=event)
-        draft = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
-        draft.speakers.add(draft_only)
+        SubmissionFactory(event=event, state=SubmissionStates.DRAFT).speakers.add(
+            draft_only
+        )
+        bare_orga = SpeakerFactory(
+            event=event, user=None, origin=SpeakerProfileOrigin.ORGA
+        )
+        bare_import = SpeakerFactory(
+            event=event, user=None, origin=SpeakerProfileOrigin.IMPORT
+        )
+        SpeakerFactory(event=event, origin=SpeakerProfileOrigin.CFP)
 
-    with scope(event=event):
-        result = list(submitters_for_event(event))
-
-    assert result == [kept]
-
-
-def test_submitters_for_event_empty_event_returns_empty():
-    event = EventFactory()
-    with scope(event=event):
-        # A CfP-origin speaker without a submission must not appear.
-        SpeakerFactory(event=event)
-
-    with scope(event=event):
-        assert list(submitters_for_event(event)) == []
+        assert set(submitters_for_event(event)) == submitters
+        assert set(submitters_for_event(event, include_bare=True)) == submitters | {
+            bare_orga,
+            bare_import,
+        }
 
 
-def test_draft_only_speakers_for_event_excludes_speakers_without_proposals():
+def test_draft_only_speakers_for_event_lists_speakers_with_only_draft_proposals():
     event = EventFactory()
     with scope(event=event):
         draft_only = SpeakerFactory(event=event)
@@ -259,34 +220,17 @@ def test_draft_only_speakers_for_event_excludes_speakers_without_proposals():
             draft_only
         )
         SpeakerFactory(event=event)
+        for state in NON_DRAFT_STATES:
+            speaker = SpeakerFactory(event=event)
+            SubmissionFactory(event=event, state=SubmissionStates.DRAFT).speakers.add(
+                speaker
+            )
+            SubmissionFactory(event=event, state=state).speakers.add(speaker)
 
         assert list(draft_only_speakers_for_event(event)) == [draft_only]
 
 
-@pytest.mark.parametrize(
-    "state",
-    (
-        SubmissionStates.SUBMITTED,
-        SubmissionStates.WITHDRAWN,
-        SubmissionStates.REJECTED,
-        SubmissionStates.CANCELED,
-        SubmissionStates.ACCEPTED,
-        SubmissionStates.CONFIRMED,
-    ),
-)
-def test_draft_only_speakers_for_event_excludes_speakers_with_other_proposals(state):
-    event = EventFactory()
-    with scope(event=event):
-        speaker = SpeakerFactory(event=event)
-        SubmissionFactory(event=event, state=SubmissionStates.DRAFT).speakers.add(
-            speaker
-        )
-        SubmissionFactory(event=event, state=state).speakers.add(speaker)
-
-        assert list(draft_only_speakers_for_event(event)) == []
-
-
-def test_speaker_by_email_matches_contact_and_account_email():
+def test_speaker_by_email_matches_contact_then_account_email():
     event = EventFactory()
     with scope(event=event):
         contact = SpeakerFactory(
@@ -301,24 +245,18 @@ def test_speaker_by_email_matches_contact_and_account_email():
             user__email="account@example.com",
             origin=SpeakerProfileOrigin.ORGA,
         )
-
-        assert speaker_by_email(event, "Contact@example.com") == contact
-        assert speaker_by_email(event, "account@example.com") == account_backed
-        assert speaker_by_email(event, "nobody@example.com") is None
-
-
-def test_speaker_by_email_contact_email_beats_account_fallback():
-    event = EventFactory()
-    with scope(event=event):
-        profile = SpeakerFactory(
+        both = SpeakerFactory(
             event=event,
-            email="contact@example.com",
-            user__email="account@example.com",
+            email="both@example.com",
+            user__email="both-account@example.com",
             origin=SpeakerProfileOrigin.ORGA,
         )
 
-        assert speaker_by_email(event, "contact@example.com") == profile
-        assert speaker_by_email(event, "account@example.com") is None
+        assert speaker_by_email(event, "Contact@example.com") == contact
+        assert speaker_by_email(event, "account@example.com") == account_backed
+        assert speaker_by_email(event, "both@example.com") == both
+        assert speaker_by_email(event, "both-account@example.com") is None
+        assert speaker_by_email(event, "nobody@example.com") is None
 
 
 def test_speaker_by_email_duplicates_prefer_profile_with_submissions():
@@ -378,24 +316,3 @@ def test_filter_reachable():
         result = set(filter_reachable(SpeakerProfile.objects.filter(event=event)))
 
     assert result == {account, contact_only}
-
-
-@pytest.mark.parametrize(
-    ("origin", "included"),
-    (
-        (SpeakerProfileOrigin.ORGA, True),
-        (SpeakerProfileOrigin.IMPORT, True),
-        (SpeakerProfileOrigin.CFP, False),
-    ),
-)
-def test_submitters_for_event_session_less_profiles_by_origin(origin, included):
-    event = EventFactory()
-    with scope(event=event):
-        profile = SpeakerFactory(event=event, user=None, origin=origin)
-
-    with scope(event=event):
-        result = list(submitters_for_event(event, include_bare=True))
-        narrow = list(submitters_for_event(event))
-
-    assert (profile in result) is included
-    assert profile not in narrow

@@ -22,65 +22,53 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 def test_activitylog_str():
     log = ActivityLogFactory()
+    bare = ActivityLogFactory(event=None, person=None)
 
-    result = str(log)
-
-    assert result == (
+    assert str(log) == (
         f"ActivityLog(event={log.event.slug}, person={log.person.name}, "
         f"content_object={log.content_object}, action_type={log.action_type})"
     )
-
-
-def test_activitylog_str_without_event_or_person():
-    log = ActivityLogFactory(event=None, person=None)
-
-    result = str(log)
-
-    assert result == (
+    assert str(bare) == (
         f"ActivityLog(event=None, person=None, "
-        f"content_object={log.content_object}, action_type={log.action_type})"
+        f"content_object={bare.content_object}, action_type={bare.action_type})"
     )
 
 
-def test_activitylog_json_data_returns_data():
-    log = ActivityLog(data={"key": "value"})
-
-    assert log.json_data == {"key": "value"}
-
-
-def test_activitylog_json_data_returns_empty_dict_for_none():
-    log = ActivityLog(data=None)
-
-    assert log.json_data == {}
+@pytest.mark.parametrize(
+    ("data", "expected"), (({"key": "value"}, {"key": "value"}), (None, {}))
+)
+def test_activitylog_json_data(data, expected):
+    assert ActivityLog(data=data).json_data == expected
 
 
-def test_activitylog_display_known_action_type():
-    log = ActivityLogFactory(action_type="pretalx.submission.create")
+@pytest.mark.parametrize(
+    ("action_type", "expected"),
+    (
+        ("pretalx.submission.create", LOG_NAMES["pretalx.submission.create"]),
+        ("pretalx.totally.unknown.action", "pretalx.totally.unknown.action"),
+    ),
+    ids=("known", "unknown_falls_back_to_action_type"),
+)
+def test_activitylog_display(action_type, expected):
+    log = ActivityLogFactory(action_type=action_type)
 
-    result = log.display
-
-    assert result == LOG_NAMES["pretalx.submission.create"]
-
-
-def test_activitylog_display_unknown_action_falls_back_to_action_type():
-    log = ActivityLogFactory(action_type="pretalx.totally.unknown.action")
-
-    result = log.display
-
-    assert result == "pretalx.totally.unknown.action"
+    assert log.display == expected
 
 
-def test_activitylog_display_object_without_content_object():
+def test_activitylog_deleted_content_object_has_no_display_or_changes():
     submission = SubmissionFactory()
-    log = ActivityLogFactory(content_object=submission, event=submission.event)
+    log = ActivityLogFactory(
+        content_object=submission,
+        event=submission.event,
+        data={"changes": {"title": {"old": "A", "new": "B"}}},
+    )
     # Delete the submission so content_object resolves to None
     submission.delete()
     # Clear Django's generic FK cache so it re-fetches
     log.refresh_from_db()
 
-    result = log.display_object
-
-    assert result == ""
+    assert log.display_object == ""
+    assert log.changes is None
 
 
 def test_activitylog_content_object_none_for_uninstalled_model():
@@ -105,38 +93,31 @@ def test_activitylog_content_object_none_without_content_type():
     assert ActivityLog().content_object is None
 
 
-def test_activitylog_changes_returns_none_without_data():
-    log = ActivityLogFactory(data=None)
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    (
+        (None, None),
+        ({"some_key": "some_value"}, None),
+        ({"changes": {"title": {"old": None, "new": None}}}, {}),
+    ),
+    ids=("no_data", "no_changes_key", "empty_old_and_new"),
+)
+def test_activitylog_changes_without_usable_changes(data, expected):
+    log = ActivityLogFactory(data=data)
 
-    assert log.changes is None
+    assert log.changes == expected
 
 
-def test_activitylog_detail_url_with_event():
+def test_activitylog_detail_url():
     log = ActivityLogFactory()
+    global_log = ActivityLogFactory(event=None)
 
     assert log.detail_url == reverse(
         "orga:event.history.detail", kwargs={"event": log.event.slug, "pk": log.pk}
     )
-
-
-def test_activitylog_detail_url_without_event():
-    log = ActivityLogFactory(event=None)
-
-    assert log.detail_url == reverse("orga:admin.log.detail", kwargs={"pk": log.pk})
-
-
-def test_activitylog_changes_returns_none_without_changes_key():
-    log = ActivityLogFactory(data={"some_key": "some_value"})
-
-    assert log.changes is None
-
-
-def test_activitylog_changes_skips_empty_old_and_new():
-    log = ActivityLogFactory(data={"changes": {"title": {"old": None, "new": None}}})
-
-    result = log.changes
-
-    assert result == {}
+    assert global_log.detail_url == reverse(
+        "orga:admin.log.detail", kwargs={"pk": global_log.pk}
+    )
 
 
 def test_activitylog_changes_parses_field_changes():
@@ -204,20 +185,6 @@ def test_activitylog_changes_question_key_nonexistent():
     result = log.changes
 
     assert result == {"question-99999": {"old": "a", "new": "b"}}
-
-
-def test_activitylog_changes_returns_none_when_content_object_deleted():
-    submission = SubmissionFactory()
-    log = ActivityLogFactory(
-        content_object=submission,
-        event=submission.event,
-        data={"changes": {"title": {"old": "A", "new": "B"}}},
-    )
-    submission.delete()
-
-    result = log.changes
-
-    assert result is None
 
 
 def test_activitylog_display_object_with_known_content_object():
