@@ -7,6 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load form_media %}
 {% load i18n %}
 
+{% block title %}{% translate "Feedback" %} :: {{ talk.title }}{% endblock title %}
+
 {% block scripts %}
     {% form_media %}
 {% endblock scripts %}

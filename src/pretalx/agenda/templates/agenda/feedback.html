@@ -8,6 +8,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load rich_text %}
 {% load static %}
 
+{% block title %}{% translate "Feedback" %} :: {{ talk.title }}{% endblock title %}
+
 {% block agenda_stylesheets %}
     <link rel="stylesheet" href="{% static 'agenda/css/feedback.css' %}">
 {% endblock agenda_stylesheets %}

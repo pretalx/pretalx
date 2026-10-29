@@ -10,6 +10,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load rich_text %}
 {% load rules %}
 
+{% block title %}{% translate "Call for Proposals" %}{% endblock title %}
+
 {% block content %}
     {% with cfp=request.event.cfp %}
         {% has_perm "submission.list_featured_submission" request.user request.event as can_view_featured_submissions %}

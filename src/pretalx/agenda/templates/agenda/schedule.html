@@ -9,6 +9,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load static %}
 {% load vite %}
 
+{% block title %}
+    {% if request.resolver_match.url_name == "talks" %}
+        {{ phrases.schedule.sessions }}
+    {% else %}
+        {% if schedule.version and schedule != schedule.event.current_schedule %}{{ phrases.schedule.version }}
+            {{ schedule.version }} ::
+        {% endif %}{{ phrases.schedule.schedule }}
+    {% endif %}
+{% endblock title %}
+
 {% block container_width %}
     {% if not show_talk_list %}main-schedule{% else %}list-schedule{% endif %}{% endblock container_width %}
 
