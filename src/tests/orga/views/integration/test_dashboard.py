@@ -27,14 +27,39 @@ from tests.utils import make_orga_user
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-def test_start_redirect_view_anonymous_redirects_to_login(client):
-    response = client.get(reverse("orga:start.redirect"))
-
-    assert response.status_code == 302
-    assert "/orga/login/" in response.url
+def _tiles(response):
+    return [(str(tile["small"]), tile["large"]) for tile in response.context["tiles"]]
 
 
-def test_start_redirect_view_single_orga_event_redirects_to_event(client, event):
+def _attention_items(response):
+    return [
+        (item.get("count"), str(item.get("text", item.get("type"))))
+        for item in response.context["attention_items"]
+    ]
+
+
+def test_dashboard_views_redirect_anonymous_to_login(client):
+    for url in (reverse("orga:start.redirect"), reverse("orga:event.list")):
+        response = client.get(url)
+        assert response.status_code == 302, url
+        assert response.url == f"/orga/login/?next={url}", url
+
+
+def test_dashboard_views_deny_unrelated_user(client, event):
+    client.force_login(make_orga_user(event, can_change_organiser_settings=False))
+
+    assert client.get(reverse("orga:organiser.list")).status_code == 404
+
+    client.force_login(UserFactory())
+
+    for url in (
+        reverse("orga:organiser.dashboard", kwargs={"organiser": event.organiser.slug}),
+        event.orga_urls.base,
+    ):
+        assert client.get(url).status_code == 404, url
+
+
+def test_start_redirect_view_orga_user(client, event):
     user = make_orga_user(event)
     client.force_login(user)
 
@@ -43,10 +68,16 @@ def test_start_redirect_view_single_orga_event_redirects_to_event(client, event)
     assert response.status_code == 302
     assert response.url == event.orga_urls.base
 
+    with scopes_disabled():
+        EventFactory(organiser=event.organiser)
 
-def test_start_redirect_view_single_speaker_event_redirects_to_submissions(
-    client, event
-):
+    response = client.get(reverse("orga:start.redirect"))
+
+    assert response.status_code == 302
+    assert response.url == reverse("orga:event.list")
+
+
+def test_start_redirect_view_speaker(client, event):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event)
@@ -58,12 +89,8 @@ def test_start_redirect_view_single_speaker_event_redirects_to_submissions(
     assert response.status_code == 302
     assert response.url == event.urls.user_submissions
 
-
-def test_start_redirect_view_multiple_events_redirects_to_list(client, event):
     with scopes_disabled():
-        EventFactory(organiser=event.organiser)
-    user = make_orga_user(event)
-    client.force_login(user)
+        make_orga_user(event).teams.get().members.add(speaker.user)
 
     response = client.get(reverse("orga:start.redirect"))
 
@@ -71,39 +98,30 @@ def test_start_redirect_view_multiple_events_redirects_to_list(client, event):
     assert response.url == reverse("orga:event.list")
 
 
-def test_start_redirect_view_both_roles_redirects_to_list(client, event):
+def test_event_list_view_groups_events_by_role_and_date(client, event):
+    user = make_orga_user(event)
     with scopes_disabled():
-        user = make_orga_user(event)
-        speaker = SpeakerFactory(event=event, user=user)
-        submission = SubmissionFactory(event=event)
+        other_event = EventFactory(name="Unrelated Event")
+        past_event = EventFactory(
+            organiser=event.organiser,
+            date_from=now().date() - dt.timedelta(days=30),
+            date_to=now().date() - dt.timedelta(days=28),
+        )
+        speaker_event = EventFactory()
+        speaker = SpeakerFactory(event=speaker_event, user=user)
+        submission = SubmissionFactory(event=speaker_event)
         submission.speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.get(reverse("orga:start.redirect"))
-
-    assert response.status_code == 302
-    assert response.url == reverse("orga:event.list")
-
-
-def test_event_list_view_orga_user_sees_own_event(client, event):
-    with scopes_disabled():
-        other_event = EventFactory()
-    user = make_orga_user(event)
     client.force_login(user)
 
     response = client.get(reverse("orga:event.list"))
 
     assert response.status_code == 200
+    assert list(response.context["current_orga_events"]) == [event]
+    assert list(response.context["past_orga_events"]) == [past_event]
+    assert list(response.context["speaker_events"]) == [speaker_event]
     content = response.content.decode()
-    assert event.name in content
+    assert str(event.name) in content
     assert str(other_event.name) not in content
-
-
-def test_event_list_view_anonymous_redirects_to_login(client):
-    response = client.get(reverse("orga:event.list"))
-
-    assert response.status_code == 302
-    assert "/orga/login/" in response.url
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -124,62 +142,28 @@ def test_event_list_view_admin_sees_all_events(
         assert str(event.name) in content
 
 
-@pytest.mark.parametrize(
-    ("user_type", "expected"),
-    (
-        ("administrator without organiser", False),
-        ("administrator with organiser", True),
-        ("team member", True),
-    ),
-)
-def test_event_list_view_offers_event_creation_only_with_an_organiser(
-    client, user_type, expected
-):
-    with scopes_disabled():
-        if user_type == "team member":
-            user = make_orga_user(EventFactory(), can_create_events=True)
-        else:
-            user = UserFactory(is_administrator=True)
-            if user_type == "administrator with organiser":
-                OrganiserFactory()
-    client.force_login(user)
+def test_event_list_view_offers_event_creation_only_with_an_organiser(client):
+    admin = UserFactory(is_administrator=True)
+    client.force_login(admin)
 
     response = client.get(reverse("orga:event.list"))
 
     assert response.status_code == 200
-    assert ("/orga/event/new/" in response.content.decode()) is expected
+    assert "/orga/event/new/" not in response.content.decode()
 
-
-def test_event_list_view_separates_current_and_past_events(client, event):
     with scopes_disabled():
-        past_event = EventFactory(
-            organiser=event.organiser,
-            date_from=now().date() - dt.timedelta(days=30),
-            date_to=now().date() - dt.timedelta(days=28),
-        )
-    user = make_orga_user(event)
-    client.force_login(user)
+        event = EventFactory()
+
+    response = client.get(reverse("orga:event.list"))
+
+    assert "/orga/event/new/" in response.content.decode()
+
+    client.force_login(make_orga_user(event, can_create_events=True))
 
     response = client.get(reverse("orga:event.list"))
 
     assert response.status_code == 200
-    assert list(response.context["current_orga_events"]) == [event]
-    assert list(response.context["past_orga_events"]) == [past_event]
-
-
-def test_event_list_view_shows_speaker_events(client, event):
-    user = make_orga_user(event)
-    with scopes_disabled():
-        speaker_event = EventFactory()
-        speaker = SpeakerFactory(event=speaker_event, user=user)
-        submission = SubmissionFactory(event=speaker_event)
-        submission.speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.get(reverse("orga:event.list"))
-
-    assert response.status_code == 200
-    assert list(response.context["speaker_events"]) == [speaker_event]
+    assert "/orga/event/new/" in response.content.decode()
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -201,6 +185,8 @@ def test_organiser_list_view_admin_sees_all_organisers(
 
 
 def test_organiser_list_view_orga_user_sees_own_organiser(client, event):
+    with scopes_disabled():
+        other_organiser = OrganiserFactory(name="Unrelated Organiser")
     user = make_orga_user(event, can_change_organiser_settings=True)
     client.force_login(user)
 
@@ -209,15 +195,7 @@ def test_organiser_list_view_orga_user_sees_own_organiser(client, event):
     assert response.status_code == 200
     content = response.content.decode()
     assert str(event.organiser.name) in content
-
-
-def test_organiser_list_view_orga_user_without_settings_perm_gets_404(client, event):
-    user = make_orga_user(event, can_change_organiser_settings=False)
-    client.force_login(user)
-
-    response = client.get(reverse("orga:organiser.list"))
-
-    assert response.status_code == 404
+    assert str(other_organiser.name) not in content
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -244,17 +222,6 @@ def test_organiser_event_list_view_shows_organiser_events(
     content = response.content.decode()
     assert str(event.name) in content
     assert str(other_event.name) not in content
-
-
-def test_organiser_event_list_view_unauthorized_user_gets_404(client, event):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.get(
-        reverse("orga:organiser.dashboard", kwargs={"organiser": event.organiser.slug})
-    )
-
-    assert response.status_code == 404
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -285,84 +252,20 @@ def test_event_dashboard_view_orga_user_sees_dashboard(
     assert len(email_tiles) == 1
 
 
-def test_event_dashboard_view_non_orga_user_gets_404(client, event):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.base)
-
-    assert response.status_code == 404
-
-
-def test_event_dashboard_view_with_submissions(client, event):
+def test_event_dashboard_view_counts_submissions_sessions_speakers_and_reviews(
+    client, event
+):
     with scopes_disabled():
-        SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    user = make_orga_user(event)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.base)
-
-    assert response.status_code == 200
-    tiles = response.context["tiles"]
-    proposal_tiles = [t for t in tiles if "proposal" in str(t.get("small", "")).lower()]
-    assert len(proposal_tiles) == 1
-    assert proposal_tiles[0]["large"] == 1
-
-
-def test_event_dashboard_view_with_accepted_submissions(client, event):
-    with scopes_disabled():
-        SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    user = make_orga_user(event)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.base)
-
-    assert response.status_code == 200
-    tiles = response.context["tiles"]
-    session_tiles = [t for t in tiles if "session" in str(t.get("small", "")).lower()]
-    assert len(session_tiles) == 1
-
-
-def test_event_dashboard_view_with_published_schedule(client, published_talk_slot):
-    event = published_talk_slot.submission.event
-    user = make_orga_user(event)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.base)
-
-    assert response.status_code == 200
-    tiles = response.context["tiles"]
-    assert not [t for t in tiles if "current schedule" in str(t.get("small", ""))]
-
-
-def test_event_dashboard_view_with_pending_state_submissions(client, event):
-    with scopes_disabled():
-        SubmissionFactory(
+        pending = SubmissionFactory(
             event=event,
             state=SubmissionStates.SUBMITTED,
             pending_state=SubmissionStates.ACCEPTED,
         )
-    user = make_orga_user(event)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.base)
-
-    assert response.status_code == 200
-    pending_items = [
-        item
-        for item in response.context["attention_items"]
-        if "pending changes" in str(item.get("text", ""))
-    ]
-    assert len(pending_items) == 1
-    assert pending_items[0]["count"] == 1
-
-
-def test_event_dashboard_view_with_speakers(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        submission.speakers.add(speaker)
-        slot = TalkSlotFactory(submission=submission, is_visible=True)
+        ReviewFactory(submission=pending)
+        SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+        confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        confirmed.speakers.add(SpeakerFactory(event=event))
+        slot = TalkSlotFactory(submission=confirmed, is_visible=True)
         freeze_schedule(slot.schedule, "v1", notify_speakers=False)
     user = make_orga_user(event)
     client.force_login(user)
@@ -370,91 +273,78 @@ def test_event_dashboard_view_with_speakers(client, event):
     response = client.get(event.orga_urls.base)
 
     assert response.status_code == 200
-    tiles = response.context["tiles"]
-    speaker_tiles = [t for t in tiles if "speaker" in str(t.get("small", "")).lower()]
-    assert len(speaker_tiles) == 1
-    assert speaker_tiles[0]["large"] == 1
-
-
-def test_event_dashboard_view_future_event_shows_days_until(client):
-    today = now().date()
-    with scopes_disabled():
-        event = EventFactory(
-            date_from=today + dt.timedelta(days=10),
-            date_to=today + dt.timedelta(days=12),
-        )
-    user = make_orga_user(event)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.base)
-
-    tiles = response.context["tiles"]
-    countdown_tiles = [
-        t for t in tiles if "until event start" in str(t.get("small", ""))
+    assert _tiles(response) == [
+        ("session", 1),
+        ("speaker", 1),
+        ("proposals", 3),
+        ("review", 1),
+        ("sent emails", 0),
     ]
-    assert len(countdown_tiles) == 1
-    assert countdown_tiles[0]["large"] == 10
+    session_tile, _, proposal_tile, *_ = response.context["tiles"]
+    assert [
+        (legend["label"], legend["count"]) for legend in session_tile["legend"]
+    ] == [("confirmed", 1), ("unconfirmed", 1)]
+    assert [
+        (legend["label"], legend["count"]) for legend in proposal_tile["legend"]
+    ] == [("accepted", 2), ("rejected", 0)]
+    assert _attention_items(response) == [
+        (1, "submission has pending changes"),
+        (1, "session is still unconfirmed"),
+    ]
 
 
-def test_event_dashboard_view_past_event_shows_days_since(client):
+def test_event_dashboard_view_shows_event_date_progress(client, event):
     today = now().date()
-    with scopes_disabled():
-        event = EventFactory(
-            date_from=today - dt.timedelta(days=10),
-            date_to=today - dt.timedelta(days=8),
-        )
     user = make_orga_user(event)
     client.force_login(user)
 
+    event.date_from = today + dt.timedelta(days=10)
+    event.date_to = today + dt.timedelta(days=12)
+    event.save()
     response = client.get(event.orga_urls.base)
 
-    tiles = response.context["tiles"]
-    since_tiles = [t for t in tiles if "since event end" in str(t.get("small", ""))]
-    assert len(since_tiles) == 1
+    assert _tiles(response) == [
+        ("days until event start", 10),
+        ("submitters", 0),
+        ("sent emails", 0),
+    ]
+    assert "running_day" not in response.context
 
-
-def test_event_dashboard_view_multi_day_running_event_shows_day_number(client):
-    today = now().date()
-    with scopes_disabled():
-        event = EventFactory(
-            date_from=today - dt.timedelta(days=1), date_to=today + dt.timedelta(days=1)
-        )
-    user = make_orga_user(event)
-    client.force_login(user)
-
+    event.date_from = today - dt.timedelta(days=10)
+    event.date_to = today - dt.timedelta(days=8)
+    event.save()
     response = client.get(event.orga_urls.base)
 
+    assert _tiles(response) == [
+        ("submitters", 0),
+        ("days since event end", 8),
+        ("sent emails", 0),
+    ]
+    assert "running_day" not in response.context
+
+    event.date_from = today - dt.timedelta(days=1)
+    event.date_to = today + dt.timedelta(days=1)
+    event.save()
+    response = client.get(event.orga_urls.base)
+
+    assert _tiles(response) == [("submitters", 0), ("sent emails", 0)]
     assert response.context["running_day"] == 2
     assert response.context["running_day_total"] == 3
 
-
-def test_event_dashboard_view_single_day_running_event_no_day_number(client):
-    today = now().date()
-    with scopes_disabled():
-        event = EventFactory(date_from=today, date_to=today)
-    user = make_orga_user(event)
-    client.force_login(user)
-
+    event.date_from = today
+    event.date_to = today
+    event.save()
     response = client.get(event.orga_urls.base)
 
+    assert _tiles(response) == [("submitters", 0), ("sent emails", 0)]
     assert "running_day" not in response.context
 
 
-def test_event_dashboard_view_reviewer_only_access(client, event):
+def test_event_dashboard_view_reviewer_sees_review_queue_without_speaker_names(
+    client, event
+):
     with scopes_disabled():
-        user = UserFactory()
-        team = TeamFactory(organiser=event.organiser, is_reviewer=True, all_events=True)
-        team.members.add(user)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.base)
-
-    assert response.status_code == 200
-
-
-def test_event_dashboard_view_reviewer_does_not_see_speaker_names(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
+        speaker = SpeakerFactory(event=event, name="Hidden Speaker Name")
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         submission.speakers.add(speaker)
         ActivityLogFactory(
@@ -471,10 +361,18 @@ def test_event_dashboard_view_reviewer_does_not_see_speaker_names(client, event)
     response = client.get(event.orga_urls.base)
 
     assert response.status_code == 200
-    assert speaker.user.name not in response.content.decode()
+    assert "Hidden Speaker Name" not in response.content.decode()
+    assert _attention_items(response) == [(1, "proposal is waiting for your review")]
+    assert response.context["attention_items"][0]["url"] == event.orga_urls.reviews
 
 
-def test_event_dashboard_view_not_public_shows_live_row_and_dialog(client, event):
+def trial_blocker(signal, sender, check, **kwargs):
+    raise ValueError(f"Trial mode, [sign up here](/p/billing/). check={check}")
+
+
+def test_event_dashboard_view_go_live_row_and_activation_blockers(
+    client, event, register_signal_handler
+):
     with scopes_disabled():
         event.is_public = False
         event.save()
@@ -484,23 +382,12 @@ def test_event_dashboard_view_not_public_shows_live_row_and_dialog(client, event
     response = client.get(event.orga_urls.base)
 
     assert response.context["attention_items"][0] == {"type": "live"}
-    assert "dialog-live" in response.content.decode()
+    assert response.context["activation_blockers"] == []
+    content = response.content.decode()
+    assert "dialog-live" in content
+    assert "Go live" in content
 
-
-def trial_blocker(signal, sender, check, **kwargs):
-    raise ValueError(f"Trial mode, [sign up here](/p/billing/). check={check}")
-
-
-def test_event_dashboard_view_activation_blocker_replaces_go_live_button(
-    client, event, register_signal_handler
-):
-    with scopes_disabled():
-        event.is_public = False
-        event.save()
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
     register_signal_handler(activate_event, trial_blocker)
-
     response = client.get(event.orga_urls.base)
 
     content = response.content.decode()
@@ -510,23 +397,27 @@ def test_event_dashboard_view_activation_blocker_replaces_go_live_button(
     assert content.count('href="/p/billing/"') == 2
     assert "Go live" not in content
 
+    response = client.get(event.orga_urls.live)
 
-@pytest.mark.parametrize(
-    ("is_public", "can_change_event_settings"), ((True, True), (False, False))
-)
-def test_event_dashboard_view_activation_check_only_for_organisers_of_hidden_events(
-    client, event, register_signal_handler, is_public, can_change_event_settings
-):
+    assert response.status_code == 302
+    assert response.url == event.orga_urls.base
+
     with scopes_disabled():
-        event.is_public = is_public
+        event.is_public = True
         event.save()
-    user = make_orga_user(event, can_change_event_settings=can_change_event_settings)
-    client.force_login(user)
-    register_signal_handler(activate_event, trial_blocker)
-
     response = client.get(event.orga_urls.base)
 
     assert response.context["activation_blockers"] == []
+    assert response.context["attention_items"] == []
+
+    with scopes_disabled():
+        event.is_public = False
+        event.save()
+    client.force_login(make_orga_user(event, can_change_event_settings=False))
+    response = client.get(event.orga_urls.base)
+
+    assert response.context["activation_blockers"] == []
+    assert response.context["attention_items"] == []
 
 
 def test_event_dashboard_view_warns_about_access_code_only_cfp(client, event):
@@ -541,64 +432,14 @@ def test_event_dashboard_view_warns_about_access_code_only_cfp(client, event):
     assert "nobody can submit a proposal without an access code" in content
     assert event.cfp.urls.types in content
 
-
-def test_event_dashboard_view_warns_about_access_code_only_tracks(client, event):
     with scopes_disabled():
+        event.submission_types.update(requires_access_code=False)
         event.cfp.fields = {**event.cfp.fields, "track": {"visibility": "required"}}
         event.cfp.save()
         TrackFactory(event=event, requires_access_code=True)
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
 
     response = client.get(event.orga_urls.base)
 
     content = response.content.decode()
     assert "every track requires an access code" in content
     assert event.cfp.urls.tracks in content
-
-
-def test_event_dashboard_view_live_get_redirects_to_dashboard(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.live)
-
-    assert response.status_code == 302
-    assert response.url == event.orga_urls.base
-
-
-def test_event_dashboard_view_reviewer_sees_waiting_reviews_attention_item(
-    client, event
-):
-    with scopes_disabled():
-        SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        user = UserFactory()
-        team = TeamFactory(organiser=event.organiser, is_reviewer=True, all_events=True)
-        team.members.add(user)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.base)
-
-    waiting_items = [
-        item
-        for item in response.context["attention_items"]
-        if "waiting for your review" in str(item.get("text", ""))
-    ]
-    assert len(waiting_items) == 1
-    assert waiting_items[0]["count"] == 1
-    assert waiting_items[0]["url"] == event.orga_urls.reviews
-
-
-def test_event_dashboard_view_with_reviews(client, event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        ReviewFactory(submission=submission)
-    user = make_orga_user(event)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.base)
-
-    tiles = response.context["tiles"]
-    review_tiles = [t for t in tiles if str(t.get("small", "")) == "review"]
-    assert len(review_tiles) == 1
-    assert review_tiles[0]["large"] == 1

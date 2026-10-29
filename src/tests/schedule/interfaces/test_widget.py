@@ -19,18 +19,25 @@ from tests.factories import (
     TalkSlotFactory,
     TrackFactory,
 )
+from tests.utils import refresh
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_build_widget_data_basic(event):
+def test_build_widget_data_talk_with_track_and_speaker(event):
+    track = TrackFactory(event=event)
     room = RoomFactory(event=event)
+    speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(
-        event=event, state=SubmissionStates.CONFIRMED, content_locale="de-formal"
+        event=event,
+        state=SubmissionStates.CONFIRMED,
+        content_locale="de-formal",
+        track=track,
     )
+    submission.speakers.add(speaker)
     with scope(event=event):
         schedule = event.wip_schedule
-    TalkSlotFactory(
+    slot = TalkSlotFactory(
         submission=submission,
         schedule=schedule,
         room=room,
@@ -41,20 +48,62 @@ def test_build_widget_data_basic(event):
 
     with scope(event=event):
         data = build_widget_data(schedule)
+        future = build_widget_data(
+            schedule, filter_updated=tz_now() + dt.timedelta(hours=1)
+        )
+        event.cfp.fields["do_not_record"] = {"visibility": "do_not_ask"}
+        event.cfp.save()
+        without_do_not_record = build_widget_data(schedule)
+    room = refresh(room)
 
-    assert data["version"] is None
-    assert data["schedule_id"] == schedule.pk
-    assert data["event_start"] == event.date_from.isoformat()
-    assert data["event_end"] == event.date_to.isoformat()
-    assert len(data["talks"]) == 1
-    assert data["talks"][0]["code"] == submission.code
-    assert data["talks"][0]["content_locale"] == "de-formal"
-    assert data["talks"][0]["content_lang"] == "de"
-    assert len(data["rooms"]) == 1
-    assert data["rooms"][0]["id"] == room.id
+    assert data == {
+        "version": None,
+        "schedule_id": schedule.pk,
+        "timezone": event.timezone,
+        "event_start": event.date_from.isoformat(),
+        "event_end": event.date_to.isoformat(),
+        "talks": [
+            {
+                "code": submission.code,
+                "id": slot.id,
+                "title": submission.title,
+                "abstract": submission.abstract,
+                "speakers": [speaker.code],
+                "track": track.id,
+                "start": slot.local_start,
+                "end": slot.local_end,
+                "room": room.id,
+                "duration": submission.get_duration(),
+                "updated": slot.updated.isoformat(),
+                "content_locale": "de-formal",
+                "content_lang": "de",
+                "do_not_record": False,
+            }
+        ],
+        "tracks": [
+            {
+                "id": track.id,
+                "name": track.name,
+                "description": track.description,
+                "color": track.color,
+            }
+        ],
+        "rooms": [{"id": room.id, "name": room.name, "description": room.description}],
+        "speakers": [
+            {
+                "code": speaker.code,
+                "name": speaker.get_display_name(),
+                "avatar": None,
+                "avatar_thumbnail_default": None,
+                "avatar_thumbnail_tiny": None,
+            }
+        ],
+    }
+    assert future["talks"] == []
+    assert "do_not_record" not in without_do_not_record["talks"][0]
 
 
-def test_build_widget_data_excludes_invisible_by_default(event):
+def test_build_widget_data_invisible_talk_only_with_all_talks(event):
     room = RoomFactory(event=event)
     submission = SubmissionFactory(event=event)
     with scope(event=event):
@@ -69,141 +118,65 @@ def test_build_widget_data_excludes_invisible_by_default(event):
     )
 
     with scope(event=event):
-        data = build_widget_data(schedule)
+        default = build_widget_data(schedule)
+        all_talks = build_widget_data(schedule, all_talks=True)
 
-    assert len(data["talks"]) == 0
-
-
-def test_build_widget_data_all_talks_includes_invisible(event):
-    room = RoomFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    with scope(event=event):
-        schedule = event.wip_schedule
-    TalkSlotFactory(
-        submission=submission,
-        schedule=schedule,
-        room=room,
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=1),
-        is_visible=False,
-    )
-
-    with scope(event=event):
-        data = build_widget_data(schedule, all_talks=True)
-
-    assert len(data["talks"]) == 1
-    assert data["talks"][0]["state"] == submission.state
+    assert default["talks"] == []
+    assert [(talk["code"], talk["state"]) for talk in all_talks["talks"]] == [
+        (submission.code, submission.state)
+    ]
 
 
-@pytest.mark.parametrize(
-    ("include_blockers", "expected_count"),
-    ((False, 0), (True, 1)),
-    ids=["excluded_by_default", "included_when_requested"],
-)
-def test_build_widget_data_blockers(event, include_blockers, expected_count):
+def test_build_widget_data_breaks_and_blockers(event):
     room = RoomFactory(event=event)
     with scope(event=event):
         schedule = event.wip_schedule
-    TalkSlotFactory(
-        submission=None,
-        schedule=schedule,
-        room=room,
-        slot_type=SlotType.BLOCKER,
-        is_visible=True,
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=1),
-    )
-
-    with scope(event=event):
-        data = build_widget_data(schedule, include_blockers=include_blockers)
-
-    assert len(data["talks"]) == expected_count
-
-
-def test_build_widget_data_break_slot(event):
-    room = RoomFactory(event=event)
-    with scope(event=event):
-        schedule = event.wip_schedule
-    TalkSlotFactory(
+    start = event.datetime_from
+    end = start + dt.timedelta(hours=1)
+    break_slot = TalkSlotFactory(
         submission=None,
         schedule=schedule,
         room=room,
         slot_type=SlotType.BREAK,
         is_visible=True,
         description="Lunch",
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=1),
+        start=start,
+        end=end,
     )
-
-    with scope(event=event):
-        data = build_widget_data(schedule)
-
-    assert len(data["talks"]) == 1
-    assert data["talks"][0]["slot_type"] == SlotType.BREAK
-    assert "code" not in data["talks"][0]
-
-
-def test_build_widget_data_includes_tracks(event):
-    track = TrackFactory(event=event)
-    room = RoomFactory(event=event)
-    submission = SubmissionFactory(event=event, track=track)
-    with scope(event=event):
-        schedule = event.wip_schedule
-    TalkSlotFactory(
-        submission=submission,
+    blocker = TalkSlotFactory(
+        submission=None,
         schedule=schedule,
         room=room,
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=1),
+        slot_type=SlotType.BLOCKER,
         is_visible=True,
+        start=start,
+        end=end,
     )
 
     with scope(event=event):
-        data = build_widget_data(schedule)
+        default = build_widget_data(schedule)
+        with_blockers = build_widget_data(schedule, include_blockers=True)
 
-    assert len(data["tracks"]) == 1
-    assert data["tracks"][0]["id"] == track.id
-    assert data["tracks"][0]["color"] == track.color
+    assert default["talks"] == [
+        {
+            "id": break_slot.id,
+            "title": "Lunch",
+            "start": start,
+            "end": break_slot.local_end,
+            "room": room.id,
+            "slot_type": SlotType.BREAK,
+        }
+    ]
+    assert {(talk["id"], talk["slot_type"]) for talk in with_blockers["talks"]} == {
+        (break_slot.id, SlotType.BREAK),
+        (blocker.id, SlotType.BLOCKER),
+    }
 
 
-def test_build_widget_data_includes_speakers(event):
+def test_build_widget_data_rooms(event):
     room = RoomFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker)
-    with scope(event=event):
-        schedule = event.wip_schedule
-    TalkSlotFactory(
-        submission=submission,
-        schedule=schedule,
-        room=room,
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=1),
-        is_visible=True,
-    )
-
-    with scope(event=event):
-        data = build_widget_data(schedule)
-
-    assert len(data["speakers"]) == 1
-    assert data["speakers"][0]["code"] == speaker.code
-
-
-def test_build_widget_data_all_rooms(event):
-    room1 = RoomFactory(event=event)
-    room2 = RoomFactory(event=event)
+    unused = RoomFactory(event=event)
     hidden = RoomFactory(event=event, hidden=True)
-    with scope(event=event):
-        schedule = event.wip_schedule
-        data = build_widget_data(schedule, all_rooms=True)
-
-    room_ids = {r["id"] for r in data["rooms"]}
-    assert room_ids == {room1.id, room2.id}
-    assert hidden.id not in room_ids
-
-
-def test_build_widget_data_keeps_hidden_room_in_released_version(event):
-    room = RoomFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     with scope(event=event):
         schedule = event.wip_schedule
@@ -214,68 +187,40 @@ def test_build_widget_data_keeps_hidden_room_in_released_version(event):
         start=event.datetime_from,
         end=event.datetime_from + dt.timedelta(hours=1),
     )
+
     with scope(event=event):
+        used_rooms = build_widget_data(schedule)["rooms"]
+        all_rooms = build_widget_data(schedule, all_rooms=True)["rooms"]
         freeze_schedule(schedule, "v1", notify_speakers=False)
         room.hidden = True
         room.save()
-        data = build_widget_data(schedule)
+        released = build_widget_data(schedule)
 
-    assert data["talks"][0]["room"] == room.id
-    assert [r["id"] for r in data["rooms"]] == [room.id]
+    assert [r["id"] for r in used_rooms] == [room.id]
+    assert [r["id"] for r in all_rooms] == [room.id, unused.id]
+    assert hidden.id not in [r["id"] for r in all_rooms]
+    assert released["talks"][0]["room"] == room.id
+    assert [r["id"] for r in released["rooms"]] == [room.id]
 
 
-def test_build_widget_data_filter_updated(event):
+def test_build_widget_data_roomless_talk_and_skipped_zero_duration(event):
     room = RoomFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    with scope(event=event):
-        schedule = event.wip_schedule
-    TalkSlotFactory(
-        submission=submission,
-        schedule=schedule,
-        room=room,
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=1),
-        is_visible=True,
+    roomless = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    zero_duration = SubmissionFactory(
+        event=event, state=SubmissionStates.CONFIRMED, duration=0
     )
-
-    future = tz_now() + dt.timedelta(hours=1)
-    with scope(event=event):
-        data = build_widget_data(schedule, filter_updated=future)
-
-    assert len(data["talks"]) == 0
-
-
-def test_build_widget_data_includes_talk_without_room(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     with scope(event=event):
         schedule = event.wip_schedule
     TalkSlotFactory(
-        submission=submission,
+        submission=roomless,
         schedule=schedule,
         room=None,
         start=event.datetime_from,
         end=event.datetime_from + dt.timedelta(hours=1),
         is_visible=True,
     )
-
-    with scope(event=event):
-        data = build_widget_data(schedule)
-
-    assert len(data["talks"]) == 1
-    assert data["talks"][0]["code"] == submission.code
-    assert data["talks"][0]["room"] is None
-    assert data["rooms"] == []
-
-
-def test_build_widget_data_skips_zero_duration_without_times(event):
-    room = RoomFactory(event=event)
-    submission = SubmissionFactory(
-        event=event, state=SubmissionStates.CONFIRMED, duration=0
-    )
-    with scope(event=event):
-        schedule = event.wip_schedule
     TalkSlotFactory(
-        submission=submission,
+        submission=zero_duration,
         schedule=schedule,
         room=room,
         start=None,
@@ -286,7 +231,10 @@ def test_build_widget_data_skips_zero_duration_without_times(event):
     with scope(event=event):
         data = build_widget_data(schedule)
 
-    assert len(data["talks"]) == 0
+    assert [(talk["code"], talk["room"]) for talk in data["talks"]] == [
+        (roomless.code, None)
+    ]
+    assert [r["id"] for r in data["rooms"]] == [room.id]
 
 
 @pytest.mark.parametrize(
@@ -323,29 +271,4 @@ def test_build_widget_data_signup_status(
             AttendeeSignupFactory(submission=submission)
         data = build_widget_data(schedule)
 
-    if expected == "__missing__":
-        assert "signup_status" not in data["talks"][0]
-    else:
-        assert data["talks"][0]["signup_status"] == expected
-
-
-def test_build_widget_data_omits_do_not_record_when_not_requested(event):
-    event.cfp.fields["do_not_record"] = {"visibility": "do_not_ask"}
-    event.cfp.save()
-    room = RoomFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    with scope(event=event):
-        schedule = event.wip_schedule
-    TalkSlotFactory(
-        submission=submission,
-        schedule=schedule,
-        room=room,
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=1),
-        is_visible=True,
-    )
-
-    with scope(event=event):
-        data = build_widget_data(schedule)
-
-    assert "do_not_record" not in data["talks"][0]
+    assert data["talks"][0].get("signup_status", "__missing__") == expected

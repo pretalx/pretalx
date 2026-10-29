@@ -25,6 +25,15 @@ def claim_url(event, token="claimtoken123"):
     return reverse("cfp:event.claim", kwargs={"event": event.slug, "token": token})
 
 
+def promote_log_count(user):
+    with scopes_disabled():
+        return (
+            actions_by(user)
+            .filter(action_type="pretalx.user.email.verification.promote")
+            .count()
+        )
+
+
 def test_claim_anonymous_sees_auth_form_and_profile_stays_unlinked(client, event):
     profile = make_invited_profile(event)
 
@@ -32,6 +41,11 @@ def test_claim_anonymous_sees_auth_form_and_profile_stays_unlinked(client, event
 
     assert response.status_code == 200
     assert response.context["auth_form"] is not None
+
+    response = client.post(claim_url(event), {"login_email": "nope"})
+
+    assert response.status_code == 200
+    assert response.context["auth_form"].errors
     profile.refresh_from_db()
     assert profile.user is None
 
@@ -93,98 +107,40 @@ def test_claim_anonymous_register_matching_address_promotes_without_mail(client,
     assert profile.user is None
 
 
-def test_claim_accept_matching_email_promotes(client, event):
-    profile = make_invited_profile(event, email="Invited@Example.COM")
-    user = UserFactory(
-        email="invited@example.com",
-        email_verification_state=EmailVerificationState.LEGACY,
-    )
-    client.force_login(user)
-
-    response = client.post(claim_url(event))
-
-    assert response.status_code == 302
-    profile.refresh_from_db()
-    assert profile.user_id == user.pk
-    user.refresh_from_db()
-    assert user.email_verification_state == EmailVerificationState.VERIFIED
-    with scopes_disabled():
-        assert (
-            actions_by(user)
-            .filter(action_type="pretalx.user.email.verification.promote")
-            .count()
-            == 1
-        )
-
-
-def test_claim_accept_null_contact_email_does_not_promote(client, event):
-    profile = make_invited_profile(event, email=None)
-    user = UserFactory(
-        email="invited@example.com",
-        email_verification_state=EmailVerificationState.UNVERIFIED,
-    )
-    client.force_login(user)
-
-    client.post(claim_url(event))
-
-    profile.refresh_from_db()
-    assert profile.user_id == user.pk
-    user.refresh_from_db()
-    assert user.email_verification_state == EmailVerificationState.UNVERIFIED
-
-
-def test_claim_merge_matching_email_promotes(client, event):
-    make_invited_profile(event)
-    user = UserFactory(
-        email="invited@example.com",
-        email_verification_state=EmailVerificationState.LEGACY,
-    )
-    with scopes_disabled():
-        user.get_speaker(event)
-    client.force_login(user)
-
-    response = client.post(claim_url(event), {"name": "merged", "email": "merged"})
-
-    assert response.status_code == 302
-    user.refresh_from_db()
-    assert user.email_verification_state == EmailVerificationState.VERIFIED
-    with scopes_disabled():
-        assert (
-            actions_by(user)
-            .filter(action_type="pretalx.user.email.verification.promote")
-            .count()
-            == 1
-        )
-
-
-def test_claim_confirm_page_shows_speaker_visible_data_only(client, event):
-    profile = make_invited_profile(
-        event,
-        biography="A biography",
-        internal_notes="Secret organiser notes",
-        has_arrived=True,
-    )
-    client.force_login(UserFactory())
-
-    response = client.get(claim_url(event))
-
-    assert response.status_code == 200
-    content = response.text
-    assert "Invited Speaker" in content
-    assert "A biography" in content
-    assert "invited@example.com" in content
-    assert "Secret organiser notes" not in content
-    profile.refresh_from_db()
-    assert profile.user is None
-
-
-def test_claim_accept_links_profile_and_redirects_to_profile_edit(client, event):
-    profile = make_invited_profile(event, locale="de")
+@pytest.mark.parametrize(
+    ("profile_email", "user_email", "initial_state", "expected_state", "promotions"),
+    (
+        (
+            "Invited@Example.COM",
+            "invited@example.com",
+            EmailVerificationState.LEGACY,
+            EmailVerificationState.VERIFIED,
+            1,
+        ),
+        (
+            None,
+            "invited@example.com",
+            EmailVerificationState.UNVERIFIED,
+            EmailVerificationState.UNVERIFIED,
+            0,
+        ),
+        (
+            "invited@example.com",
+            "different-address@example.com",
+            EmailVerificationState.UNVERIFIED,
+            EmailVerificationState.UNVERIFIED,
+            0,
+        ),
+    ),
+    ids=["matching_email_promotes", "null_contact_email", "different_email"],
+)
+def test_claim_accept_links_profile_and_redirects_to_profile_edit(
+    client, event, profile_email, user_email, initial_state, expected_state, promotions
+):
+    profile = make_invited_profile(event, email=profile_email, locale="de")
     old_guid = profile.guid
     user = UserFactory(
-        email="different-address@example.com",
-        locale="en",
-        email_verification_state=EmailVerificationState.UNVERIFIED,
+        email=user_email, locale="en", email_verification_state=initial_state
     )
     client.force_login(user)
 
@@ -202,11 +158,35 @@ def test_claim_accept_links_profile_and_redirects_to_profile_edit(client, event)
     # registrations adopt the profile locale.
     user.refresh_from_db()
     assert user.locale == "en"
-    assert user.email_verification_state == EmailVerificationState.UNVERIFIED
+    assert user.email_verification_state == expected_state
+    assert promote_log_count(user) == promotions
+
+
+def test_claim_confirm_page_shows_speaker_visible_data_only(client, event):
+    profile = make_invited_profile(
+        event,
+        biography="A biography",
+        internal_notes="Secret organiser notes",
+        has_arrived=True,
+        locale="en",
+    )
+    client.force_login(UserFactory())
+
+    response = client.get(claim_url(event))
+
+    assert response.status_code == 200
+    content = response.text
+    assert "Invited Speaker" in content
+    assert "A biography" in content
+    assert "invited@example.com" in content
+    assert "Secret organiser notes" not in content
+    assert response.context["claimed_locale_name"] == "English"
+    profile.refresh_from_db()
+    assert profile.user is None
 
 
 def test_claim_with_existing_profile_shows_merge_form(client, event):
-    make_invited_profile(event)
+    profile = make_invited_profile(event)
     user = UserFactory()
     with scopes_disabled():
         user.get_speaker(event)
@@ -216,16 +196,26 @@ def test_claim_with_existing_profile_shows_merge_form(client, event):
 
     assert response.status_code == 200
     form = response.context["merge_form"]
-    assert form is not None
-    assert "name" in form.fields
-    assert "email" in form.fields
+    assert set(form.fields) == {"name", "email"}
+
+    response = client.post(claim_url(event), {})
+
+    assert response.status_code == 200
+    assert response.context["merge_form"].errors
+    with scopes_disabled():
+        assert SpeakerProfile.objects.filter(pk=profile.pk).exists()
 
 
-def test_claim_merge_repoints_submission_and_deletes_managed_profile(client, event):
+def test_claim_merge_repoints_submission_deletes_managed_profile_and_promotes(
+    client, event
+):
     profile = make_invited_profile(event)
     with scopes_disabled():
         role = SpeakerRoleFactory(submission__event=event, speaker=profile)
-    user = UserFactory()
+    user = UserFactory(
+        email="invited@example.com",
+        email_verification_state=EmailVerificationState.LEGACY,
+    )
     with scopes_disabled():
         existing = user.get_speaker(event)
     client.force_login(user)
@@ -241,6 +231,9 @@ def test_claim_merge_repoints_submission_and_deletes_managed_profile(client, eve
         existing.refresh_from_db()
         assert existing.name == "Invited Speaker"
         assert existing.email == "invited@example.com"
+    user.refresh_from_db()
+    assert user.email_verification_state == EmailVerificationState.VERIFIED
+    assert promote_log_count(user) == 1
 
 
 def test_claim_invalid_token_shows_error_and_modifies_nothing(client, event):
@@ -251,20 +244,13 @@ def test_claim_invalid_token_shows_error_and_modifies_nothing(client, event):
 
     assert response.status_code == 404
     assert response.context["claimed_profile"] is None
-    profile.refresh_from_db()
-    assert profile.user is None
-    assert profile.invitation_token == "claimtoken123"
-
-
-def test_claim_post_invalid_token_modifies_nothing(client, event):
-    profile = make_invited_profile(event)
-    client.force_login(UserFactory())
 
     response = client.post(claim_url(event, token="wrongtoken"))
 
     assert response.status_code == 404
     profile.refresh_from_db()
     assert profile.user is None
+    assert profile.invitation_token == "claimtoken123"
 
 
 def test_old_pw_reset_invite_url_redirects_to_password_reset(client, event):
@@ -274,27 +260,6 @@ def test_old_pw_reset_invite_url_redirects_to_password_reset(client, event):
     assert response.url == reverse(
         "cfp:event.recover", kwargs={"event": event.slug, "token": "sometoken123"}
     )
-
-
-def test_claim_confirm_page_shows_locale_name(client, event):
-    make_invited_profile(event, locale="en")
-    client.force_login(UserFactory())
-
-    response = client.get(claim_url(event))
-
-    assert response.status_code == 200
-    assert response.context["claimed_locale_name"] == "English"
-
-
-def test_claim_anonymous_invalid_auth_form_rerenders(client, event):
-    profile = make_invited_profile(event)
-
-    response = client.post(claim_url(event), {"login_email": "nope"})
-
-    assert response.status_code == 200
-    assert response.context["auth_form"].errors
-    profile.refresh_from_db()
-    assert profile.user is None
 
 
 def test_claim_anonymous_login_path_returns_to_claim(client, event):
@@ -315,18 +280,3 @@ def test_claim_anonymous_login_path_returns_to_claim(client, event):
     assert user.locale == "en"
     profile.refresh_from_db()
     assert profile.user is None
-
-
-def test_claim_merge_form_invalid_rerenders(client, event):
-    profile = make_invited_profile(event)
-    user = UserFactory()
-    with scopes_disabled():
-        user.get_speaker(event)
-    client.force_login(user)
-
-    response = client.post(claim_url(event), {})
-
-    assert response.status_code == 200
-    assert response.context["merge_form"].errors
-    with scopes_disabled():
-        assert SpeakerProfile.objects.filter(pk=profile.pk).exists()

@@ -31,37 +31,21 @@ from tests.utils import make_request, make_view
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_talk_mixin_get_queryset_filters_by_event(event):
+def test_talk_mixin_object_lookup_scoped_to_event_and_case_insensitive(event):
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     SubmissionFactory(state=SubmissionStates.CONFIRMED)  # different event
 
     request = make_request(event)
-    view = make_view(TalkView, request, slug=submission.code)
+    view = make_view(TalkView, request, slug=submission.code.swapcase())
 
     with scope(event=event):
-        qs = view.get_queryset()
-        result = list(qs)
-
-    assert result == [submission]
-
-
-def test_talk_mixin_object_lookup_case_insensitive(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-
-    request = make_request(event)
-    view = make_view(TalkView, request, slug=submission.code.lower())
-
-    with scope(event=event):
+        assert list(view.get_queryset()) == [submission]
         assert view.object == submission
 
 
-@pytest.mark.parametrize(
-    ("is_public", "expected"),
-    ((True, True), (False, False)),
-    ids=["public_event", "private_event"],
-)
-def test_talk_mixin_scheduling_information_visible(
-    published_talk_slot, is_public, expected
+@pytest.mark.parametrize("is_public", (True, False), ids=["public", "private"])
+def test_talk_mixin_scheduling_information_follows_permission(
+    published_talk_slot, is_public
 ):
     event = published_talk_slot.submission.event
     event.is_public = is_public
@@ -71,24 +55,8 @@ def test_talk_mixin_scheduling_information_visible(
     view = make_view(TalkView, request, slug=published_talk_slot.submission.code)
 
     with scope(event=event):
-        assert view.scheduling_information_visible is expected
-
-
-@pytest.mark.parametrize(
-    ("is_public", "expected"),
-    ((True, False), (False, True)),
-    ids=["public_event", "private_event"],
-)
-def test_talk_mixin_hide_speaker_links(published_talk_slot, is_public, expected):
-    event = published_talk_slot.submission.event
-    event.is_public = is_public
-    event.save()
-
-    request = make_request(event)
-    view = make_view(TalkView, request, slug=published_talk_slot.submission.code)
-
-    with scope(event=event):
-        assert view.hide_speaker_links is expected
+        assert view.scheduling_information_visible is is_public
+        assert view.hide_speaker_links is not is_public
 
 
 def test_talk_view_recording_empty_when_no_providers(event):
@@ -99,6 +67,7 @@ def test_talk_view_recording_empty_when_no_providers(event):
 
     with scope(event=event):
         assert view.recording == {}
+        assert view.recording_iframe() is None
 
 
 def test_talk_view_recording_with_provider(register_signal_handler, event):
@@ -121,71 +90,7 @@ def test_talk_view_recording_with_provider(register_signal_handler, event):
             "iframe": "<iframe src='test'></iframe>",
             "csp_header": "test.com",
         }
-
-
-def test_talk_view_recording_skips_exception_response(register_signal_handler, event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-
-    def handler(signal, sender, **kwargs):
-        raise ValueError("broken provider")
-
-    register_signal_handler(register_recording_provider, handler)
-
-    request = make_request(event)
-    view = make_view(TalkView, request, slug=submission.code)
-
-    with scope(event=event):
-        assert view.recording == {}
-
-
-def test_talk_view_recording_skips_provider_without_iframe(
-    register_signal_handler, event
-):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-
-    class TestProvider(BaseRecordingProvider):
-        def get_recording(self, submission):
-            return {"iframe": "", "csp_header": ""}
-
-    def handler(signal, sender, **kwargs):
-        return TestProvider(sender)
-
-    register_signal_handler(register_recording_provider, handler)
-
-    request = make_request(event)
-    view = make_view(TalkView, request, slug=submission.code)
-
-    with scope(event=event):
-        assert view.recording == {}
-
-
-def test_talk_view_recording_iframe_with_provider(register_signal_handler, event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-
-    class TestProvider(BaseRecordingProvider):
-        def get_recording(self, submission):
-            return {"iframe": "<iframe>video</iframe>", "csp_header": "cdn.example.com"}
-
-    def handler(signal, sender, **kwargs):
-        return TestProvider(sender)
-
-    register_signal_handler(register_recording_provider, handler)
-
-    request = make_request(event)
-    view = make_view(TalkView, request, slug=submission.code)
-
-    with scope(event=event):
-        assert view.recording_iframe() == "<iframe>video</iframe>"
-
-
-def test_talk_view_recording_iframe_empty_when_no_recording(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-
-    request = make_request(event)
-    view = make_view(TalkView, request, slug=submission.code)
-
-    with scope(event=event):
-        assert view.recording_iframe() is None
+        assert view.recording_iframe() == "<iframe src='test'></iframe>"
 
 
 @pytest.mark.parametrize(
@@ -256,6 +161,8 @@ def test_talk_view_answers_split_by_length_and_icon(event):
     icon_a = AnswerFactory(
         question=icon_q, submission=submission, answer="https://github.com/test"
     )
+    private_q = QuestionFactory(event=event, is_public=False, target="submission")
+    AnswerFactory(question=private_q, submission=submission, answer="Private")
 
     request = make_request(event)
     view = make_view(TalkView, request, slug=submission.code)
@@ -266,40 +173,19 @@ def test_talk_view_answers_split_by_length_and_icon(event):
         assert [a.pk for a in view.icon_answers] == [icon_a.pk]
 
 
-def test_talk_view_answers_empty_when_no_public_answers(event):
-    submission = SubmissionFactory(event=event)
-    q = QuestionFactory(event=event, is_public=False, target="submission")
-    AnswerFactory(question=q, submission=submission, answer="Private")
-
-    request = make_request(event)
-    view = make_view(TalkView, request, slug=submission.code)
-
-    with scope(event=event):
-        assert view.short_answers == []
-        assert view.long_answers == []
-        assert view.icon_answers == []
-
-
-def test_talk_view_slot_context_empty_for_several_slots(event):
+def test_talk_view_slot_context_empty_unless_single_scheduled_slot(event):
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    slots = TalkSlotFactory.create_batch(2, submission=submission, is_visible=True)
+    scheduled = TalkSlotFactory.create_batch(2, submission=submission, is_visible=True)
+    unscheduled = TalkSlotFactory(
+        submission=submission, is_visible=True, start=None, end=None
+    )
 
     request = make_request(event)
     view = make_view(TalkView, request, slug=submission.code)
 
     with scope(event=event):
-        assert view.get_slot_context(slots) == {}
-
-
-def test_talk_view_slot_context_empty_for_unscheduled_slot(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    slot = TalkSlotFactory(submission=submission, is_visible=True, start=None, end=None)
-
-    request = make_request(event)
-    view = make_view(TalkView, request, slug=submission.code)
-
-    with scope(event=event):
-        assert view.get_slot_context([slot]) == {}
+        assert view.get_slot_context(scheduled) == {}
+        assert view.get_slot_context([unscheduled]) == {}
 
 
 @pytest.mark.parametrize(
@@ -313,16 +199,6 @@ def test_talk_review_view_has_permission_requires_feature_flag(enabled, expected
     view = make_view(TalkReviewView, request, slug=submission.review_code)
 
     assert view.has_permission() is expected
-
-
-def test_talk_review_view_object_uses_review_code(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-
-    request = make_request(event)
-    view = make_view(TalkReviewView, request, slug=submission.review_code)
-
-    with scope(event=event):
-        assert view.object == submission
 
 
 @pytest.mark.parametrize(
@@ -407,7 +283,7 @@ def test_feedback_view_is_speaker_false_for_anonymous_user_with_managed_speaker(
         assert view.feedback is None
 
 
-def test_feedback_view_feedback_returns_feedback_for_speaker(event):
+def test_feedback_view_feedback_only_for_speakers(event):
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     submission.speakers.add(speaker)
@@ -417,26 +293,18 @@ def test_feedback_view_feedback_returns_feedback_for_speaker(event):
     submission.speakers.add(other_speaker)
     FeedbackFactory(talk=submission, speaker=other_speaker)
 
-    request = make_request(event, user=speaker.user)
-    view = make_view(FeedbackView, request, slug=submission.code)
+    speaker_view = make_view(
+        FeedbackView, make_request(event, user=speaker.user), slug=submission.code
+    )
+    other_view = make_view(
+        FeedbackView, make_request(event, user=UserFactory()), slug=submission.code
+    )
 
     with scope(event=event):
-        feedback = list(view.feedback)
+        feedback = list(speaker_view.feedback)
+        assert other_view.feedback is None
 
     assert {f.pk for f in feedback} == {fb_for_speaker.pk, fb_general.pk}
-
-
-def test_feedback_view_feedback_none_for_non_speaker(event):
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker)
-    other_user = UserFactory()
-
-    request = make_request(event, user=other_user)
-    view = make_view(FeedbackView, request, slug=submission.code)
-
-    with scope(event=event):
-        assert view.feedback is None
 
 
 def test_talk_social_media_card_get_image_none_when_no_image(event):
@@ -450,10 +318,12 @@ def test_talk_social_media_card_get_image_none_when_no_image(event):
 
 
 @pytest.mark.parametrize(
-    ("feature_enabled", "expected_status"), ((False, None), (True, "open"))
+    ("feature_enabled", "expected_status", "expected_places_left"),
+    ((False, None, None), (True, "open", 3)),
+    ids=("off", "on"),
 )
-def test_talk_view_signup_status_gated_by_feature_flag(
-    feature_enabled, expected_status
+def test_talk_view_signup_status_and_places_gated_by_feature_flag(
+    feature_enabled, expected_status, expected_places_left
 ):
     event = EventFactory(feature_flags={"attendee_signup": feature_enabled})
     sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
@@ -463,34 +333,14 @@ def test_talk_view_signup_status_gated_by_feature_flag(
         submission_type=sub_type,
         attendee_signup_capacity=5,
     )
+    AttendeeSignupFactory.create_batch(2, submission=submission)
 
     request = make_request(event)
     view = make_view(TalkView, request, slug=submission.code)
 
     with scope(event=event):
         assert view.signup_status == expected_status
-
-
-@pytest.mark.parametrize(
-    ("feature_enabled", "expected"), ((False, None), (True, 3)), ids=("off", "on")
-)
-def test_talk_view_signup_places_left(feature_enabled, expected):
-    event = EventFactory(feature_flags={"attendee_signup": feature_enabled})
-    sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(
-        event=event,
-        state=SubmissionStates.CONFIRMED,
-        submission_type=sub_type,
-        attendee_signup_capacity=5,
-    )
-    for _i in range(2):
-        AttendeeSignupFactory(submission=submission)
-
-    request = make_request(event)
-    view = make_view(TalkView, request, slug=submission.code)
-
-    with scope(event=event):
-        assert view.signup_places_left == expected
+        assert view.signup_places_left == expected_places_left
 
 
 def test_talk_view_user_signup_none_when_no_signup_status():

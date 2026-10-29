@@ -40,7 +40,7 @@ def test_event_detail_object_prefetches_extra_links(event, django_assert_num_que
 
 
 @pytest.mark.parametrize("is_admin", (True, False))
-def test_event_detail_get_form_kwargs_is_administrator(is_admin):
+def test_event_detail_admin_gets_delete_link_and_form_flag(is_admin):
     event = EventFactory()
     user = UserFactory(is_administrator=is_admin)
     TeamFactory(organiser=event.organiser, all_events=True).members.add(user)
@@ -48,46 +48,24 @@ def test_event_detail_get_form_kwargs_is_administrator(is_admin):
     view = make_view(EventDetail, request)
     view.object  # noqa: B018 -- force cached_property
 
-    kwargs = view.get_form_kwargs()
-
-    assert kwargs["is_administrator"] is is_admin
-
-
-@pytest.mark.parametrize("is_admin", (True, False))
-def test_event_detail_context_delete_link_requires_admin(is_admin):
-    event = EventFactory()
-    user = UserFactory(is_administrator=is_admin)
-    TeamFactory(organiser=event.organiser, all_events=True).members.add(user)
-    request = make_request(event, user=user)
-    view = make_view(EventDetail, request)
-    view.object  # noqa: B018 -- force cached_property
     context = view.get_context_data()
 
+    assert view.get_form_kwargs()["is_administrator"] is is_admin
     assert ("submit_buttons_extra" in context) is is_admin
     assert "submit_buttons" in context
+    assert "font_preview_url" not in context
 
 
-def test_event_history_get_queryset(event):
+def test_event_history_get_queryset_scoped_to_event(event):
     submission = SubmissionFactory(event=event)
     user = UserFactory()
-    ActivityLogFactory(
+    log = ActivityLogFactory(
         event=event,
         person=user,
         content_object=submission,
         action_type="pretalx.submission.create",
     )
-    request = make_request(event, user=user)
-    view = make_view(EventHistory, request)
-
-    qs = view.get_queryset()
-
-    assert qs.count() == 1
-    assert qs.first().event == event
-
-
-def test_event_history_get_queryset_excludes_other_events(event):
     other_event = EventFactory()
-    user = UserFactory()
     ActivityLogFactory(
         event=other_event,
         person=user,
@@ -95,51 +73,22 @@ def test_event_history_get_queryset_excludes_other_events(event):
         action_type="pretalx.event.update",
     )
     request = make_request(event, user=user)
-    view = make_view(EventHistory, request)
 
-    qs = view.get_queryset()
-
-    assert qs.count() == 0
-
-
-def test_event_history_detail_get_queryset_scoped_to_event(event):
-    user = UserFactory()
-    log = ActivityLogFactory(
-        event=event,
-        person=user,
-        content_object=event,
-        action_type="pretalx.event.update",
-    )
-    request = make_request(event, user=user)
-    view = make_view(EventHistoryDetail, request, pk=log.pk)
-
-    qs = view.get_queryset()
-
-    assert list(qs) == [log]
+    assert list(make_view(EventHistory, request).get_queryset()) == [log]
+    assert list(make_view(EventHistoryDetail, request, pk=log.pk).get_queryset()) == [
+        log
+    ]
 
 
 @pytest.mark.parametrize(
-    ("htmx_headers", "expected"), ((None, False), ({"HX-Request": "true"}, True))
-)
-def test_event_history_detail_is_htmx(event, htmx_headers, expected):
-    user = make_orga_user(event)
-    request = make_request(
-        event, user=user, **({"headers": htmx_headers} if htmx_headers else {})
-    )
-    view = make_view(EventHistoryDetail, request)
-
-    assert view.is_htmx is expected
-
-
-@pytest.mark.parametrize(
-    ("htmx_headers", "expected_template"),
+    ("htmx_headers", "expected", "expected_template"),
     (
-        (None, "orga/event/history_detail.html"),
-        ({"HX-Request": "true"}, "orga/event/history_detail_content.html"),
+        (None, False, "orga/event/history_detail.html"),
+        ({"HX-Request": "true"}, True, "orga/event/history_detail_content.html"),
     ),
 )
-def test_event_history_detail_get_template_names(
-    event, htmx_headers, expected_template
+def test_event_history_detail_htmx_template(
+    event, htmx_headers, expected, expected_template
 ):
     user = make_orga_user(event)
     request = make_request(
@@ -147,6 +96,7 @@ def test_event_history_detail_get_template_names(
     )
     view = make_view(EventHistoryDetail, request)
 
+    assert view.is_htmx is expected
     assert view.get_template_names() == [expected_template]
 
 
@@ -191,36 +141,6 @@ def test_invitation_view_invitation_property(event):
     assert result == invite
 
 
-def test_event_detail_context_includes_font_preview_url_when_fonts_available(
-    register_signal_handler,
-):
-    event = EventFactory()
-
-    def handler(signal, sender, **kwargs):
-        return {"PluginFont": {"regular": {"woff2": "fonts/plugin.woff2"}}}
-
-    register_signal_handler(register_fonts, handler)
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventDetail, request)
-
-    context = view.get_context_data()
-
-    assert "font_preview_url" in context
-    assert "font-preview.css" in context["font_preview_url"]
-
-
-def test_event_detail_context_no_font_preview_url_without_fonts():
-    event = EventFactory()
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(EventDetail, request)
-
-    context = view.get_context_data()
-
-    assert "font_preview_url" not in context
-
-
 def test_font_preview_css_returns_empty_when_no_fonts():
     event = EventFactory()
     user = make_orga_user(event)
@@ -248,10 +168,11 @@ def test_font_preview_css_returns_font_face_rules(register_signal_handler):
     register_signal_handler(register_fonts, handler)
     user = make_orga_user(event)
     request = make_request(event, user=user)
-    view = make_view(FontPreviewCSS, request)
 
-    response = view.get(request)
+    context = make_view(EventDetail, request).get_context_data()
+    response = make_view(FontPreviewCSS, request).get(request)
 
+    assert "font-preview.css" in context["font_preview_url"]
     assert response.status_code == 200
     content = response.content.decode()
     assert "@font-face {" in content

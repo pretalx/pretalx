@@ -29,30 +29,13 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_speaker_profile_form_init_uses_given_instance():
-    speaker = SpeakerFactory(biography="Existing bio")
+def test_speaker_profile_form_init_uses_instance_and_its_name():
+    speaker = SpeakerFactory(name="Profile Name", biography="Existing bio")
 
     form = SpeakerProfileForm(event=speaker.event, instance=speaker)
 
     assert form.instance == speaker
     assert form.user == speaker.user
-
-
-def test_speaker_profile_form_init_keeps_instance_for_managed_profile():
-    speaker = SpeakerFactory(user=None, name="Managed", biography="Managed bio")
-
-    form = SpeakerProfileForm(event=speaker.event, instance=speaker)
-
-    assert form.instance == speaker
-    assert form.user is None
-    assert form.fields["name"].initial == "Managed"
-
-
-def test_speaker_profile_form_init_name_from_profile():
-    speaker = SpeakerFactory(name="Profile Name")
-
-    form = SpeakerProfileForm(event=speaker.event, instance=speaker)
-
     assert form.fields["name"].initial == "Profile Name"
 
 
@@ -72,53 +55,51 @@ def test_speaker_profile_form_init_name_falls_back_to_kwarg():
     assert form.fields["name"].initial == "Given Name"
 
 
-@pytest.mark.parametrize(
-    ("with_email", "expect_present"), ((True, True), (False, False))
-)
-def test_speaker_profile_form_init_email_field_presence(with_email, expect_present):
-    speaker = SpeakerFactory(user__email="speaker@test.com")
+def test_speaker_profile_form_managed_speaker_shows_and_saves_contact_email():
+    speaker = SpeakerFactory(user=None, name="Managed", biography="Managed bio")
+
+    form = SpeakerProfileForm(event=speaker.event, instance=speaker)
+
+    assert form.instance == speaker
+    assert form.user is None
+    assert form.fields["name"].initial == "Managed"
+    assert "email" in form.fields
+    assert "placeholder" not in form.fields["email"].widget.attrs
 
     form = SpeakerProfileForm(
-        event=speaker.event, instance=speaker, with_email=with_email
+        data={"email": "contact@example.com", "name": "Managed", "biography": "Bio"},
+        event=speaker.event,
+        instance=speaker,
     )
+    assert form.is_valid(), form.errors
+    form.save()
 
-    assert ("email" in form.fields) is expect_present
-    if expect_present:
-        assert not form.initial.get("email")
-        assert form.fields["email"].widget.attrs["placeholder"] == "speaker@test.com"
+    speaker.refresh_from_db()
+    assert speaker.email == "contact@example.com"
+    assert speaker.effective_email == "contact@example.com"
 
 
-def test_speaker_profile_form_email_initial_from_profile_override():
+def test_speaker_profile_form_email_field_shows_contact_initial_and_account_placeholder():
     speaker = SpeakerFactory(email="contact@test.com", user__email="account@test.com")
 
     form = SpeakerProfileForm(event=speaker.event, instance=speaker)
 
     assert form.initial["email"] == "contact@test.com"
-
-
-def test_speaker_profile_form_email_field_shown_for_managed_speaker():
-    speaker = SpeakerFactory(user=None, name="Managed")
-
-    form = SpeakerProfileForm(event=speaker.event, instance=speaker)
-
-    assert "email" in form.fields
-    assert "placeholder" not in form.fields["email"].widget.attrs
-
-
-def test_speaker_profile_form_init_without_instance_excludes_email_field():
-    event = EventFactory()
-
-    form = SpeakerProfileForm(event=event)
-
-    assert "email" not in form.fields
-
-
-def test_speaker_profile_form_essential_only_excludes_email_field():
-    speaker = SpeakerFactory()
-
-    form = SpeakerProfileForm(
-        event=speaker.event, instance=speaker, essential_only=True
+    assert form.fields["email"].widget.attrs["placeholder"] == "account@test.com"
+    assert "account email address (account@test.com)" in str(
+        form.fields["email"].help_text
     )
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    ({"with_email": False}, {"essential_only": True}, {"instance": None}),
+    ids=("without_email", "essential_only", "without_instance"),
+)
+def test_speaker_profile_form_excludes_email_field(kwargs):
+    speaker = SpeakerFactory(user__email="speaker@test.com")
+
+    form = SpeakerProfileForm(**{"event": speaker.event, "instance": speaker} | kwargs)
 
     assert "email" not in form.fields
 
@@ -142,135 +123,38 @@ def test_speaker_profile_form_reorders_fields_with_field_configuration():
     assert keys.index("biography") < keys.index("name")
 
 
-def test_speaker_profile_form_biography_suggestions_shown_when_other_profiles_exist():
-    event = EventFactory()
-    other_event = EventFactory()
+@pytest.mark.parametrize(
+    ("own_biography", "other_biography", "is_orga", "widget_class"),
+    (
+        ("", "I speak at many conferences.", False, BiographyWidget),
+        ("", "", False, MarkdownWidget),
+        ("I have a bio already.", "Other bio", False, MarkdownWidget),
+        ("", "I speak at many conferences.", True, MarkdownWidget),
+    ),
+    ids=("suggestions", "no_other_biography", "own_biography", "orga"),
+)
+def test_speaker_profile_form_biography_suggestions(
+    own_biography, other_biography, is_orga, widget_class
+):
     user = UserFactory()
-    speaker = SpeakerFactory(user=user, event=event, biography="")
-    SpeakerFactory(
-        user=user, event=other_event, biography="I speak at many conferences."
-    )
+    speaker = SpeakerFactory(user=user, biography=own_biography)
+    SpeakerFactory(user=user, event=EventFactory(), biography=other_biography)
 
-    form = SpeakerProfileForm(event=event, instance=speaker)
+    form = SpeakerProfileForm(event=speaker.event, instance=speaker, is_orga=is_orga)
 
-    assert isinstance(form.fields["biography"].widget, BiographyWidget)
-
-
-def test_speaker_profile_form_no_suggestions_without_other_profiles():
-    event = EventFactory()
-    user = UserFactory()
-    speaker = SpeakerFactory(user=user, event=event, biography="")
-
-    form = SpeakerProfileForm(event=event, instance=speaker)
-
-    assert isinstance(form.fields["biography"].widget, MarkdownWidget)
-    assert not isinstance(form.fields["biography"].widget, BiographyWidget)
-
-
-def test_speaker_profile_form_no_suggestions_when_biography_already_exists():
-    other_event = EventFactory()
-    user = UserFactory()
-    speaker = SpeakerFactory(user=user, biography="I have a bio already.")
-    SpeakerFactory(user=user, event=other_event, biography="Other bio")
-
-    form = SpeakerProfileForm(event=speaker.event, instance=speaker)
-
-    assert isinstance(form.fields["biography"].widget, MarkdownWidget)
-    assert not isinstance(form.fields["biography"].widget, BiographyWidget)
-
-
-def test_speaker_profile_form_no_suggestions_for_orga():
-    event = EventFactory()
-    other_event = EventFactory()
-    user = UserFactory()
-    speaker = SpeakerFactory(user=user, event=event, biography="")
-    SpeakerFactory(
-        user=user, event=other_event, biography="I speak at many conferences."
-    )
-
-    form = SpeakerProfileForm(event=event, instance=speaker, is_orga=True)
-
-    assert isinstance(form.fields["biography"].widget, MarkdownWidget)
-    assert not isinstance(form.fields["biography"].widget, BiographyWidget)
-
-
-def test_speaker_profile_form_accepts_contact_email_of_other_account():
-    UserFactory(email="taken@example.com")
-    speaker = SpeakerFactory()
-
-    form = SpeakerProfileForm(
-        data={"email": "taken@example.com", "name": "Test", "biography": "A bio"},
-        event=speaker.event,
-        instance=speaker,
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    speaker.refresh_from_db()
-    assert speaker.email == "taken@example.com"
+    assert type(form.fields["biography"].widget) is widget_class
 
 
 def test_speaker_profile_form_save_sets_profile_email_not_account_email():
-    speaker = SpeakerFactory(user__email="old@example.com")
+    UserFactory(email="taken@example.com")
+    speaker = SpeakerFactory(name="Old Name", user__email="old@example.com")
     user = speaker.user
 
     form = SpeakerProfileForm(
-        data={"email": "new@example.com", "name": "Speaker", "biography": "A bio"},
-        event=speaker.event,
-        instance=speaker,
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    speaker.refresh_from_db()
-    user.refresh_from_db()
-    assert speaker.email == "new@example.com"
-    assert user.email == "old@example.com"
-    assert speaker.effective_email == "new@example.com"
-
-
-def test_speaker_profile_form_clearing_email_falls_back_to_account():
-    speaker = SpeakerFactory(
-        email="contact@example.com", user__email="account@example.com"
-    )
-
-    form = SpeakerProfileForm(
-        data={"email": "", "name": "Speaker", "biography": "A bio"},
-        event=speaker.event,
-        instance=speaker,
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    speaker = SpeakerProfile.objects.select_related("user").get(pk=speaker.pk)
-    assert speaker.email is None
-    assert speaker.effective_email == "account@example.com"
-
-
-def test_speaker_profile_form_saves_email_for_managed_speaker():
-    speaker = SpeakerFactory(user=None, name="Managed")
-
-    form = SpeakerProfileForm(
-        data={"email": "contact@example.com", "name": "Managed", "biography": "Bio"},
-        event=speaker.event,
-        instance=speaker,
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    speaker.refresh_from_db()
-    assert speaker.email == "contact@example.com"
-    assert speaker.effective_email == "contact@example.com"
-
-
-def test_speaker_profile_form_save_updates_profile_in_place():
-    speaker = SpeakerFactory(name="Old Name")
-
-    form = SpeakerProfileForm(
         data={
-            "email": speaker.user.email,
+            "email": "taken@example.com",
             "name": "New Speaker",
-            "biography": "My bio",
+            "biography": "A bio",
         },
         event=speaker.event,
         instance=speaker,
@@ -278,80 +162,67 @@ def test_speaker_profile_form_save_updates_profile_in_place():
     assert form.is_valid(), form.errors
     result = form.save()
 
+    user.refresh_from_db()
     assert result.pk == speaker.pk
     assert result.event == speaker.event
-    assert result.user == speaker.user
+    assert result.user == user
     assert result.name == "New Speaker"
+    assert result.email == "taken@example.com"
+    assert result.effective_email == "taken@example.com"
+    assert user.email == "old@example.com"
+
+    form = SpeakerProfileForm(
+        data={"email": "", "name": "New Speaker", "biography": "A bio"},
+        event=speaker.event,
+        instance=result,
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    speaker = SpeakerProfile.objects.select_related("user").get(pk=speaker.pk)
+    assert speaker.email is None
+    assert speaker.effective_email == "old@example.com"
 
 
 def test_speaker_profile_form_locale_choices_limited_to_event_locales():
-    event = EventFactory(locales=["en", "de"], locale="en")
-    speaker = SpeakerFactory(event=event)
-
-    form = SpeakerProfileForm(event=event, instance=speaker, is_orga=True)
-
-    assert [code for code, _ in form.fields["locale"].choices if code] == ["en", "de"]
-    assert form.fields["locale"].choices[0][0] == ""
-
-
-def test_speaker_profile_form_locale_saves_profile_not_user():
-    event = EventFactory(locales=["en", "de"], locale="en")
-    speaker = SpeakerFactory(event=event, user__locale="en")
-
-    form = SpeakerProfileForm(
-        data={"name": "Speaker", "biography": "A bio", "locale": "de"},
-        event=event,
-        instance=speaker,
-        is_orga=True,
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    speaker = SpeakerProfile.objects.select_related("user", "event").get(pk=speaker.pk)
-    assert speaker.locale == "de"
-    assert speaker.user.locale == "en"
-    assert speaker.effective_locale == "de"
-
-
-def test_speaker_profile_form_locale_rejects_unoffered_language():
-    event = EventFactory(locales=["en", "de"], locale="en")
-    speaker = SpeakerFactory(event=event)
-
-    form = SpeakerProfileForm(
-        data={"name": "Speaker", "biography": "A bio", "locale": "fr"},
-        event=event,
-        instance=speaker,
-        is_orga=True,
-    )
-
-    assert not form.is_valid()
-    assert "locale" in form.errors
-
-
-def test_speaker_profile_form_locale_optional_clears_override():
-    event = EventFactory(locales=["en", "de"], locale="en")
-    speaker = SpeakerFactory(event=event, locale="de")
-
-    form = SpeakerProfileForm(
-        data={"name": "Speaker", "biography": "A bio", "locale": ""},
-        event=event,
-        instance=speaker,
-        is_orga=True,
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    speaker.refresh_from_db()
-    assert speaker.locale is None
-
-
-def test_speaker_profile_form_locale_fallback_label_ignores_unoffered_user_locale():
     event = EventFactory(locales=["en", "de"], locale="en")
     speaker = SpeakerFactory(event=event, user__locale="fr")
 
     form = SpeakerProfileForm(event=event, instance=speaker, is_orga=True)
 
+    assert [code for code, _ in form.fields["locale"].choices if code] == ["en", "de"]
+    assert form.fields["locale"].choices[0][0] == ""
     assert "English" in str(form.fields["locale"].choices[0][1])
+
+
+def test_speaker_profile_form_locale_saves_profile_override_not_user():
+    event = EventFactory(locales=["en", "de"], locale="en")
+    speaker = SpeakerFactory(event=event, user__locale="en")
+    data = {"name": "Speaker", "biography": "A bio"}
+
+    form = SpeakerProfileForm(
+        data=data | {"locale": "de"}, event=event, instance=speaker, is_orga=True
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+    speaker = SpeakerProfile.objects.select_related("user", "event").get(pk=speaker.pk)
+    assert speaker.locale == "de"
+    assert speaker.user.locale == "en"
+    assert speaker.effective_locale == "de"
+
+    form = SpeakerProfileForm(
+        data=data | {"locale": "fr"}, event=event, instance=speaker, is_orga=True
+    )
+    assert not form.is_valid()
+    assert list(form.errors) == ["locale"]
+
+    form = SpeakerProfileForm(
+        data=data | {"locale": ""}, event=event, instance=speaker, is_orga=True
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+    speaker.refresh_from_db(fields=["locale"])
+    assert speaker.locale is None
 
 
 def test_speaker_profile_form_email_help_text_from_cfp_config_wins():
@@ -365,13 +236,19 @@ def test_speaker_profile_form_email_help_text_from_cfp_config_wins():
     assert "Custom email help" in str(form.fields["email"].help_text)
     assert "account email address" not in str(form.fields["email"].help_text)
     assert form.fields["email"].widget.attrs["placeholder"] == "account@test.com"
+    assert not form.initial.get("email")
 
 
-def test_speaker_profile_form_locale_hidden_for_speaker_facing_form():
-    event = EventFactory(locales=["en", "de"], locale="en")
+@pytest.mark.parametrize(
+    ("locales", "is_orga"),
+    ((["en", "de"], False), (["en"], True)),
+    ids=("speaker_facing", "single_locale"),
+)
+def test_speaker_profile_form_locale_hidden(locales, is_orga):
+    event = EventFactory(locales=locales, locale="en")
     speaker = SpeakerFactory(event=event)
 
-    form = SpeakerProfileForm(event=event, instance=speaker)
+    form = SpeakerProfileForm(event=event, instance=speaker, is_orga=is_orga)
 
     assert "locale" not in form.fields
 
@@ -389,40 +266,20 @@ def test_speaker_profile_form_applies_cfp_labels_without_field_configuration():
     assert str(form.fields["biography"].label) == "Custom Bio"
 
 
-def test_speaker_profile_form_locale_hidden_for_single_locale_event():
-    speaker = SpeakerFactory()
-
-    form = SpeakerProfileForm(event=speaker.event, instance=speaker, is_orga=True)
-
-    assert "locale" not in form.fields
-
-
 @pytest.mark.parametrize(
-    ("visibility", "expect_required"), (("required", True), ("optional", False))
+    ("field", "visibility", "required"),
+    (
+        ("avatar", "required", True),
+        ("avatar", "optional", False),
+        ("biography", "do_not_ask", None),
+    ),
 )
-def test_speaker_profile_form_avatar_required_matches_cfp(visibility, expect_required):
-    event = EventFactory(cfp__fields={"avatar": {"visibility": visibility}})
+def test_speaker_profile_form_field_follows_cfp_visibility(field, visibility, required):
+    event = EventFactory(cfp__fields={field: {"visibility": visibility}})
 
     form = SpeakerProfileForm(event=event)
 
-    assert form.fields["avatar"].required is expect_required
-
-
-def test_speaker_profile_form_hides_field_when_do_not_ask():
-    event = EventFactory(cfp__fields={"biography": {"visibility": "do_not_ask"}})
-
-    form = SpeakerProfileForm(event=event)
-
-    assert "biography" not in form.fields
-
-
-def test_speaker_profile_form_init_availabilities_when_enabled():
-    event = EventFactory(cfp__fields={"availabilities": {"visibility": "optional"}})
-
-    form = SpeakerProfileForm(event=event)
-
-    assert "availabilities" in form.fields
-    assert form.fields["availabilities"].event == event
+    assert getattr(form.fields.get(field), "required", None) == required
 
 
 def test_speaker_profile_form_availability_error_fallback():
@@ -466,18 +323,11 @@ def test_speaker_profile_form_save_with_availabilities():
         event=event,
         instance=speaker,
     )
+    assert form.fields["availabilities"].event == event
     assert form.is_valid(), form.errors
     result = form.save()
 
     assert result.availabilities.count() == 1
-
-
-def test_speaker_profile_form_init_without_avatar_when_do_not_ask():
-    event = EventFactory(cfp__fields={"avatar": {"visibility": "do_not_ask"}})
-
-    form = SpeakerProfileForm(event=event)
-
-    assert "avatar" not in form.fields
 
 
 def test_speaker_profile_form_save_without_avatar():
@@ -489,6 +339,7 @@ def test_speaker_profile_form_save_without_avatar():
         event=event,
         instance=speaker,
     )
+    assert "avatar" not in form.fields
     assert form.is_valid(), form.errors
     result = form.save()
 
@@ -496,51 +347,27 @@ def test_speaker_profile_form_save_without_avatar():
     assert result.name == "Test"
 
 
-def test_speaker_availability_form_init_creates_field_when_event_and_speaker():
-    event = EventFactory(cfp__fields={"availabilities": {"visibility": "optional"}})
+@pytest.mark.parametrize(
+    ("visibility", "required"),
+    (("optional", False), ("required", True), ("do_not_ask", None)),
+)
+def test_speaker_availability_form_field_follows_cfp_visibility(visibility, required):
+    event = EventFactory(cfp__fields={"availabilities": {"visibility": visibility}})
     speaker = SpeakerFactory(event=event)
 
     form = SpeakerAvailabilityForm(event=event, speaker=speaker)
 
-    assert "availabilities" in form.fields
-    assert form.fields["availabilities"].required is False
+    assert getattr(form.fields.get("availabilities"), "required", None) == required
 
 
-def test_speaker_availability_form_init_marks_field_required_when_required():
-    event = EventFactory(cfp__fields={"availabilities": {"visibility": "required"}})
-    speaker = SpeakerFactory(event=event)
+def test_speaker_availability_form_without_event_and_speaker_has_no_field_and_saves_nothing():
+    unbound = SpeakerAvailabilityForm()
+    bound = SpeakerAvailabilityForm(data={})
 
-    form = SpeakerAvailabilityForm(event=event, speaker=speaker)
-
-    assert form.fields["availabilities"].required is True
-
-
-def test_speaker_availability_form_init_no_field_when_availabilities_not_requested():
-    event = EventFactory(cfp__fields={"availabilities": {"visibility": "do_not_ask"}})
-    speaker = SpeakerFactory(event=event)
-
-    form = SpeakerAvailabilityForm(event=event, speaker=speaker)
-
-    assert "availabilities" not in form.fields
-
-
-def test_speaker_availability_form_init_no_field_without_event_and_speaker():
-    form = SpeakerAvailabilityForm()
-
-    assert "availabilities" not in form.fields
-
-
-def test_speaker_availability_form_save_returns_none_without_cleaned_data():
-    form = SpeakerAvailabilityForm()
-
-    assert form.save() is None
-
-
-def test_speaker_availability_form_save_skips_replace_without_availabilities_field():
-    form = SpeakerAvailabilityForm(data={})
-    assert form.is_valid()
-
-    assert form.save() is None
+    assert "availabilities" not in unbound.fields
+    assert unbound.save() is None
+    assert bound.is_valid()
+    assert bound.save() is None
 
 
 def test_speaker_availability_form_save_replaces_availabilities():
@@ -577,48 +404,30 @@ def test_orga_profile_form_save_updates_user():
     assert user.locale == "de"
 
 
-def test_speaker_invite_form_requires_invitation_link():
-    speaker = SpeakerFactory(user=None, email="managed@example.com")
-
-    with scope(event=speaker.event):
-        form = SpeakerInviteForm(
-            profile=speaker,
-            data={"subject": "Claim your profile", "text": "No link in here."},
-        )
-        valid = form.is_valid()
-
-    assert not valid
-    assert "text" in form.errors
-
-
-def test_speaker_invite_form_accepts_text_with_invitation_link():
-    speaker = SpeakerFactory(user=None, email="managed@example.com")
-
-    with scope(event=speaker.event):
-        form = SpeakerInviteForm(
-            profile=speaker,
-            data={
+@pytest.mark.parametrize(
+    ("data", "errors"),
+    (
+        (
+            {
                 "subject": "Claim your profile",
                 "text": "Please claim it: {invitation_link}",
             },
-        )
-        valid = form.is_valid()
-
-    assert valid, form.errors
-
-
-def test_speaker_invite_form_empty_subject_skips_placeholder_validation():
+            [],
+        ),
+        ({"subject": "Claim your profile", "text": "No link in here."}, ["text"]),
+        ({"subject": "", "text": "Please claim it: {invitation_link}"}, ["subject"]),
+    ),
+    ids=("valid", "missing_invitation_link", "empty_subject"),
+)
+def test_speaker_invite_form_clean(data, errors):
     speaker = SpeakerFactory(user=None, email="managed@example.com")
 
     with scope(event=speaker.event):
-        form = SpeakerInviteForm(
-            profile=speaker,
-            data={"subject": "", "text": "Please claim it: {invitation_link}"},
-        )
+        form = SpeakerInviteForm(profile=speaker, data=data)
         valid = form.is_valid()
 
-    assert not valid
-    assert list(form.errors) == ["subject"]
+    assert valid == (not errors), form.errors
+    assert list(form.errors) == errors
 
 
 @pytest.mark.parametrize("with_submission", (False, True))

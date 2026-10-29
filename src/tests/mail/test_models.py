@@ -48,37 +48,49 @@ def test_queued_mail_mark_sent_updates_state_and_timestamp():
     assert mail.error_timestamp is None
 
 
-def test_queued_mail_mark_failed_stores_error():
+@pytest.mark.parametrize(
+    ("exception", "expected_error_data"),
+    (
+        (
+            ConnectionError("Connection refused"),
+            {"error": "Connection refused", "type": "ConnectionError"},
+        ),
+        (
+            smtplib.SMTPResponseException(550, b"Mailbox not found"),
+            {
+                "error": "Mailbox not found",
+                "type": "SMTPResponseException",
+                "smtp_code": 550,
+            },
+        ),
+        (
+            smtplib.SMTPResponseException(451, b"Temporary failure"),
+            {
+                "error": "Temporary failure",
+                "type": "SMTPResponseException",
+                "smtp_code": 451,
+            },
+        ),
+        (
+            smtplib.SMTPResponseException(550, "Already a string"),
+            {
+                "error": "Already a string",
+                "type": "SMTPResponseException",
+                "smtp_code": 550,
+            },
+        ),
+    ),
+    ids=("connection_error", "smtp_bytes", "smtp_temporary", "smtp_str"),
+)
+def test_queued_mail_mark_failed_stores_error(exception, expected_error_data):
     mail = QueuedMailFactory(state=QueuedMailStates.SENDING)
 
-    mail.mark_failed(ConnectionError("Connection refused"))
+    mail.mark_failed(exception)
     mail.refresh_from_db()
 
     assert mail.state == QueuedMailStates.DRAFT
-    assert mail.error_data["type"] == "ConnectionError"
-    assert "Connection refused" in mail.error_data["error"]
+    assert mail.error_data == expected_error_data
     assert mail.error_timestamp is not None
-
-
-@pytest.mark.parametrize(
-    ("smtp_code", "smtp_error", "expected_error_str"),
-    (
-        (550, b"Mailbox not found", "Mailbox not found"),
-        (451, b"Temporary failure", "Temporary failure"),
-        (550, "Already a string", "Already a string"),
-    ),
-)
-def test_queued_mail_mark_failed_with_smtp_exception(
-    smtp_code, smtp_error, expected_error_str
-):
-    mail = QueuedMailFactory(state=QueuedMailStates.SENDING)
-    exc = smtplib.SMTPResponseException(smtp_code, smtp_error)
-
-    mail.mark_failed(exc)
-    mail.refresh_from_db()
-
-    assert mail.error_data["smtp_code"] == smtp_code
-    assert mail.error_data["error"] == expected_error_str
 
 
 def test_queued_mail_prefixed_subject_without_event():

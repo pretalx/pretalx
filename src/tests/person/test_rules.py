@@ -27,49 +27,25 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.parametrize(
-    ("is_admin", "expected"), ((True, True), (False, False)), ids=["admin", "non_admin"]
-)
-def test_is_administrator_matches_admin_flag(is_admin, expected):
-    user = UserFactory(is_administrator=is_admin)
-    assert is_administrator(user, None) is expected
-
-
-def test_is_administrator_returns_false_for_none():
+def test_is_administrator_matches_admin_flag():
+    assert is_administrator(UserFactory(is_administrator=True), None) is True
+    assert is_administrator(UserFactory(is_administrator=False), None) is False
     assert is_administrator(None, None) is False
 
 
-def test_is_reviewer_returns_true_for_reviewer():
+def test_is_reviewer_checks_team_once(django_assert_num_queries):
     event = EventFactory()
-    user = UserFactory()
+    reviewer = UserFactory()
     team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
-    team.members.add(user)
+    team.members.add(reviewer)
+    other = UserFactory()
 
     info = SpeakerInformationFactory(event=event)
 
-    assert is_reviewer(user, info) is True
-
-
-def test_is_reviewer_returns_false_for_non_reviewer():
-    event = EventFactory()
-    user = UserFactory()
-
-    info = SpeakerInformationFactory(event=event)
-
-    assert is_reviewer(user, info) is False
-
-
-def test_is_reviewer_does_not_query_on_repeated_calls(django_assert_num_queries):
-    event = EventFactory()
-    user = UserFactory()
-    team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
-    team.members.add(user)
-
-    info = SpeakerInformationFactory(event=event)
-
-    assert is_reviewer(user, info) is True
+    assert is_reviewer(reviewer, info) is True
     with django_assert_num_queries(0):
-        assert is_reviewer(user, info) is True
+        assert is_reviewer(reviewer, info) is True
+    assert is_reviewer(other, info) is False
 
 
 @pytest.mark.parametrize("user", (None, AnonymousUser()), ids=["none", "anonymous"])
@@ -143,25 +119,21 @@ def test_can_mark_speakers_arrived_respects_event_window(
     assert can_mark_speakers_arrived(None, info) is expected
 
 
-def test_is_deletable_speaker_profile_managed_without_submissions():
+def test_is_deletable_speaker_profile_only_for_managed_profiles_without_submissions():
     profile = SpeakerFactory(user=None, origin=SpeakerProfileOrigin.ORGA)
     assert is_deletable_speaker_profile(None, profile) is True
 
-
-def test_is_deletable_speaker_profile_false_with_submissions():
-    profile = SpeakerFactory(user=None, origin=SpeakerProfileOrigin.ORGA)
     submission = SubmissionFactory(event=profile.event)
     submission.speakers.add(profile)
     assert is_deletable_speaker_profile(None, profile) is False
 
-
-def test_is_deletable_speaker_profile_false_for_self_managed():
-    profile = SpeakerFactory()
+    profile.submission_count = 0
+    assert is_deletable_speaker_profile(None, profile) is True
+    profile.submission_count = 1
     assert is_deletable_speaker_profile(None, profile) is False
 
-
-def test_is_deletable_speaker_profile_false_for_non_profile():
-    assert is_deletable_speaker_profile(None, EventFactory()) is False
+    assert is_deletable_speaker_profile(None, SpeakerFactory()) is False
+    assert is_deletable_speaker_profile(None, profile.event) is False
 
 
 def test_delete_rule_denies_administrator_for_undeletable_profile():
@@ -169,17 +141,6 @@ def test_delete_rule_denies_administrator_for_undeletable_profile():
     profile = SpeakerFactory(origin=SpeakerProfileOrigin.ORGA)
 
     assert admin.has_perm("person.delete_speakerprofile", profile) is False
-
-
-def test_is_deletable_speaker_profile_uses_submission_count_annotation():
-    profile = SpeakerFactory(user=None, origin=SpeakerProfileOrigin.ORGA)
-    submission = SubmissionFactory(event=profile.event)
-    submission.speakers.add(profile)
-
-    profile.submission_count = 0
-    assert is_deletable_speaker_profile(None, profile) is True
-    profile.submission_count = 1
-    assert is_deletable_speaker_profile(None, profile) is False
 
 
 def test_can_view_information_delegates_to_information_for_user():

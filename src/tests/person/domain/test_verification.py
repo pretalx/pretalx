@@ -49,33 +49,16 @@ def _log_entries(user, action_type):
     return list(actions_by(user).filter(action_type=action_type))
 
 
-def test_verification_token_round_trip():
-    user = UserFactory()
-
-    token = make_verification_token(user, KIND_VERIFY)
-
-    assert parse_verification_token(token) == (user, KIND_VERIFY)
-
-
-def test_verification_token_change_round_trip():
-    user = UserFactory()
-    user.pending_email = "pending@example.com"
-    user.pending_email_sent = now()
-    user.save()
-
-    token = make_verification_token(user, KIND_CHANGE)
-
-    assert parse_verification_token(token) == (user, KIND_CHANGE)
-
-
-def test_verification_token_contains_no_addresses():
+@pytest.mark.parametrize("kind", (KIND_VERIFY, KIND_CHANGE))
+def test_verification_token_round_trip_without_addresses(kind):
     user = UserFactory(email="secret-address@example.com")
     user.pending_email = "secret-pending@example.com"
     user.pending_email_sent = now()
     user.save()
 
-    token = make_verification_token(user, KIND_CHANGE)
+    token = make_verification_token(user, kind)
 
+    assert parse_verification_token(token) == (user, kind)
     assert "secret-address" not in token
     assert "secret-pending" not in token
     payload = signing.loads(token, salt=VERIFICATION_SALT)
@@ -84,34 +67,40 @@ def test_verification_token_contains_no_addresses():
     assert "secret-pending" not in str(payload.values())
 
 
-def test_make_verification_token_change_requires_pending_email():
+def test_change_kind_requires_pending_email():
     user = UserFactory()
+    djmail.outbox = []
 
     with pytest.raises(ValueError, match="pending"):
         make_verification_token(user, KIND_CHANGE)
+    with pytest.raises(ValueError, match="pending"):
+        send_verification_mail(user, KIND_CHANGE)
+
+    assert djmail.outbox == []
 
 
-def test_parse_verification_token_rejects_garbage():
-    UserFactory()
-
-    with pytest.raises(InvalidVerificationTokenError):
-        parse_verification_token("garbage-token")
-
-
-def test_parse_verification_token_rejects_expired_token():
+def test_parse_verification_token_rejects_garbage_and_expired_tokens():
     user = UserFactory()
     real_time = time.time()
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(time, "time", lambda: real_time - 25 * 3600)
-        token = make_verification_token(user, KIND_VERIFY)
+        expired = make_verification_token(user, KIND_VERIFY)
 
+    with pytest.raises(InvalidVerificationTokenError):
+        parse_verification_token("garbage-token")
     with pytest.raises(ExpiredVerificationTokenError):
-        parse_verification_token(token)
+        parse_verification_token(expired)
 
 
-def test_parse_verification_token_rejects_unknown_user():
+@pytest.mark.parametrize(
+    "payload",
+    ({"user": "NONEXIST"}, {"kind": "bogus"}),
+    ids=["unknown_user", "unknown_kind"],
+)
+def test_parse_verification_token_rejects_unknown_user_or_kind(payload):
+    user = UserFactory()
     token = signing.dumps(
-        {"user": "NONEXIST", "kind": KIND_VERIFY, "check": "0" * 16},
+        {"user": user.code, "kind": KIND_VERIFY, "check": "0" * 16} | payload,
         salt=VERIFICATION_SALT,
     )
 
@@ -119,35 +108,22 @@ def test_parse_verification_token_rejects_unknown_user():
         parse_verification_token(token)
 
 
-def test_parse_verification_token_rejects_unknown_kind():
-    user = UserFactory()
-    token = signing.dumps(
-        {"user": user.code, "kind": "bogus", "check": "0" * 16}, salt=VERIFICATION_SALT
-    )
-
-    with pytest.raises(InvalidVerificationTokenError):
-        parse_verification_token(token)
-
-
-def test_parse_verification_token_rejects_stale_token_after_email_change():
+@pytest.mark.parametrize(
+    ("kind", "field", "value"),
+    (
+        (KIND_VERIFY, "email", "after@example.com"),
+        (KIND_CHANGE, "pending_email", "second@example.com"),
+    ),
+    ids=["email_change", "pending_change"],
+)
+def test_parse_verification_token_rejects_stale_token(kind, field, value):
     user = UserFactory(email="before@example.com")
-    token = make_verification_token(user, KIND_VERIFY)
-
-    user.email = "after@example.com"
-    user.save()
-
-    with pytest.raises(InvalidVerificationTokenError):
-        parse_verification_token(token)
-
-
-def test_parse_verification_token_rejects_stale_token_after_pending_change():
-    user = UserFactory()
     user.pending_email = "first@example.com"
     user.pending_email_sent = now()
     user.save()
-    token = make_verification_token(user, KIND_CHANGE)
+    token = make_verification_token(user, kind)
 
-    user.pending_email = "second@example.com"
+    setattr(user, field, value)
     user.save()
 
     with pytest.raises(InvalidVerificationTokenError):
@@ -204,16 +180,6 @@ def test_send_verification_mail_change_kind_goes_to_pending_address():
     assert actions[0].data == {"email": "pending@example.com", "kind": KIND_CHANGE}
 
 
-def test_send_verification_mail_change_kind_requires_pending_email():
-    user = UserFactory()
-    djmail.outbox = []
-
-    with pytest.raises(ValueError, match="pending"):
-        send_verification_mail(user, KIND_CHANGE)
-
-    assert djmail.outbox == []
-
-
 @pytest.mark.parametrize(
     ("elapsed", "expected"),
     ((None, 0), (150, 150), (400, 0)),
@@ -231,7 +197,7 @@ def test_send_cooldown_remaining(elapsed, expected):
     assert send_cooldown_remaining(user) == expected
 
 
-def test_confirm_verification_verify_kind_sets_verified():
+def test_confirm_verification_verify_kind_sets_verified_once():
     user = UserFactory(email_verification_state=EmailVerificationState.UNVERIFIED)
     token = make_verification_token(user, KIND_VERIFY)
 
@@ -244,19 +210,12 @@ def test_confirm_verification_verify_kind_sets_verified():
     assert len(actions) == 1
     assert actions[0].data == {"email": user.email}
 
-
-def test_confirm_verification_repeated_confirmation_raises_without_duplicate_log():
-    user = UserFactory(email_verification_state=EmailVerificationState.UNVERIFIED)
-    token = make_verification_token(user, KIND_VERIFY)
-    confirm_verification(token)
-
     with pytest.raises(AlreadyVerifiedError):
         confirm_verification(token)
 
     user.refresh_from_db()
     assert user.email_verification_state == EmailVerificationState.VERIFIED
-    actions = _log_entries(user, "pretalx.user.email.verification.confirm")
-    assert len(actions) == 1
+    assert len(_log_entries(user, "pretalx.user.email.verification.confirm")) == 1
 
 
 @pytest.mark.parametrize(
@@ -414,8 +373,13 @@ def test_request_email_change_neutralises_injection_in_pending_address():
     assert "<script>" not in notice.body
 
 
-def test_cancel_email_change_clears_pending_and_logs():
+def test_cancel_email_change_clears_pending_and_logs_only_when_pending():
     user = UserFactory()
+
+    cancel_email_change(user)
+
+    assert _log_entries(user, "pretalx.user.email.change.cancel") == []
+
     user.pending_email = "pending@example.com"
     user.pending_email_sent = now()
     user.save()
@@ -428,14 +392,6 @@ def test_cancel_email_change_clears_pending_and_logs():
     actions = _log_entries(user, "pretalx.user.email.change.cancel")
     assert len(actions) == 1
     assert actions[0].data == {"pending_email": "pending@example.com"}
-
-
-def test_cancel_email_change_without_pending_is_a_noop():
-    user = UserFactory()
-
-    cancel_email_change(user)
-
-    assert _log_entries(user, "pretalx.user.email.change.cancel") == []
 
 
 @pytest.mark.parametrize(
@@ -453,21 +409,25 @@ def test_pending_email_expired(sent_offset_hours, expected):
     assert pending_email_expired(user) is expected
 
 
-def test_correct_unverified_email_replaces_address_and_sends_fresh_link(event):
+def test_correct_unverified_email_replaces_address_once_during_cooldown(event):
     user = UserFactory(
         email="typo@example.com",
         email_verification_state=EmailVerificationState.UNVERIFIED,
     )
     old_token = make_verification_token(user, KIND_VERIFY)
+    send_verification_mail(user, KIND_VERIFY)
     djmail.outbox = []
 
     correct_unverified_email(user, "Fixed@Example.COM", event=event)
+    with pytest.raises(SendCooldownError):
+        correct_unverified_email(user, "second@example.com")
 
     user.refresh_from_db()
     assert user.email == "fixed@example.com"
     assert user.email_verification_state == EmailVerificationState.UNVERIFIED
     assert len(djmail.outbox) == 1
     assert djmail.outbox[0].to == ["fixed@example.com"]
+    assert f"/{event.slug}/verify/" in djmail.outbox[0].body
     actions = _log_entries(user, "pretalx.user.email.verification.correct")
     assert len(actions) == 1
     assert actions[0].data == {
@@ -495,8 +455,10 @@ def test_correct_unverified_email_requires_unverified_state(state):
     assert djmail.outbox == []
 
 
-def test_send_verification_mail_blocked_during_cooldown():
+def test_send_cooldown_blocks_resend_and_grants_one_free_pass():
     user = UserFactory()
+
+    check_send_cooldown(user, free_pass=True)
     send_verification_mail(user, KIND_VERIFY)
     djmail.outbox = []
 
@@ -507,34 +469,9 @@ def test_send_verification_mail_blocked_during_cooldown():
     assert "more seconds" in excinfo.value.message
     assert djmail.outbox == []
 
-
-def test_check_send_cooldown_free_pass_only_consumed_during_cooldown():
-    user = UserFactory()
-
     check_send_cooldown(user, free_pass=True)
-    send_verification_mail(user, KIND_VERIFY)
-    check_send_cooldown(user, free_pass=True)
-
     with pytest.raises(SendCooldownError):
         check_send_cooldown(user, free_pass=True)
-
-
-def test_correct_unverified_email_is_free_once_during_cooldown():
-    user = UserFactory(
-        email="typo@example.com",
-        email_verification_state=EmailVerificationState.UNVERIFIED,
-    )
-    send_verification_mail(user, KIND_VERIFY)
-    djmail.outbox = []
-
-    correct_unverified_email(user, "fixed@example.com")
-    with pytest.raises(SendCooldownError):
-        correct_unverified_email(user, "second@example.com")
-
-    user.refresh_from_db()
-    assert user.email == "fixed@example.com"
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == ["fixed@example.com"]
 
 
 def test_correct_unverified_email_rejects_taken_address():
@@ -637,15 +574,28 @@ def test_promote_on_invitation_match_no_match_changes_nothing(invited_email):
 
 
 @pytest.mark.parametrize(
-    ("initial", "target"),
+    ("initial", "target", "expected_log"),
     (
-        (EmailVerificationState.UNVERIFIED, EmailVerificationState.VERIFIED),
-        (EmailVerificationState.LEGACY, EmailVerificationState.VERIFIED),
-        (EmailVerificationState.VERIFIED, EmailVerificationState.UNVERIFIED),
+        (
+            EmailVerificationState.UNVERIFIED,
+            EmailVerificationState.VERIFIED,
+            [{"state": EmailVerificationState.VERIFIED}],
+        ),
+        (
+            EmailVerificationState.LEGACY,
+            EmailVerificationState.VERIFIED,
+            [{"state": EmailVerificationState.VERIFIED}],
+        ),
+        (
+            EmailVerificationState.VERIFIED,
+            EmailVerificationState.UNVERIFIED,
+            [{"state": EmailVerificationState.UNVERIFIED}],
+        ),
+        (EmailVerificationState.VERIFIED, EmailVerificationState.VERIFIED, []),
     ),
-    ids=["promote_unverified", "promote_legacy", "demote_verified"],
+    ids=["promote_unverified", "promote_legacy", "demote_verified", "same_state"],
 )
-def test_set_verification_state_applies_and_logs_actor(initial, target):
+def test_set_verification_state_applies_and_logs_actor(initial, target, expected_log):
     admin = UserFactory(is_administrator=True)
     user = UserFactory(email_verification_state=initial)
     djmail.outbox = []
@@ -657,27 +607,9 @@ def test_set_verification_state_applies_and_logs_actor(initial, target):
     actions = list(
         user.logged_actions().filter(action_type="pretalx.user.email.verification.set")
     )
-    assert [action.data for action in actions] == [{"state": target}]
-    assert actions[0].person == admin
+    assert [action.data for action in actions] == expected_log
+    assert all(action.person == admin for action in actions)
     assert djmail.outbox == []
-
-
-def test_set_verification_state_same_state_logs_nothing():
-    admin = UserFactory(is_administrator=True)
-    user = UserFactory(email_verification_state=EmailVerificationState.VERIFIED)
-
-    set_verification_state(user, EmailVerificationState.VERIFIED, actor=admin)
-
-    user.refresh_from_db()
-    assert user.email_verification_state == EmailVerificationState.VERIFIED
-    assert (
-        list(
-            user.logged_actions().filter(
-                action_type="pretalx.user.email.verification.set"
-            )
-        )
-        == []
-    )
 
 
 @pytest.mark.parametrize("state", (EmailVerificationState.LEGACY, "nonsense"))

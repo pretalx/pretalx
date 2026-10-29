@@ -46,166 +46,72 @@ from tests.utils import make_orga_user, make_request, make_view, query_dict
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_submission_view_mixin_get_submission_queryset(event):
+def _state_change_view(event, user, submission, url_name, path="/"):
+    request = make_request(
+        event,
+        user=user,
+        path=path,
+        resolver_match=ResolverMatch(lambda: None, (), {}, url_name=url_name),
+    )
+    return make_view(SubmissionStateChange, request, code=submission.code)
+
+
+def test_submission_view_mixin_properties(event):
     user = make_orga_user(event, can_change_submissions=True)
     submission = SubmissionFactory(event=event)
-
     request = make_request(event, user=user)
     view = make_view(SubmissionStateChange, request, code=submission.code)
 
-    qs = list(view._get_submission_queryset())
-
-    assert qs == [submission]
-
-
-def test_submission_view_mixin_get_lightweight_submission_queryset(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionStateChange, request, code=submission.code)
-
-    qs = list(view._get_lightweight_submission_queryset())
-
-    assert qs == [submission]
-
-
-def test_submission_view_mixin_object_resolves_by_code(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionStateChange, request, code=submission.code)
-
+    assert list(view._get_submission_queryset()) == [submission]
+    assert list(view._get_lightweight_submission_queryset()) == [submission]
     assert view.object == submission
-
-
-def test_submission_view_mixin_has_anonymised_review(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionStateChange, request, code=submission.code)
-
     assert view.has_anonymised_review is False
+    assert view.is_publicly_visible is False
 
-
-def test_submission_view_mixin_has_anonymised_review_with_anon_phase(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
     phase = event.review_phases.first()
     phase.can_see_speaker_names = False
     phase.save()
 
-    request = make_request(event, user=user)
-    view = make_view(SubmissionStateChange, request, code=submission.code)
-
-    assert view.has_anonymised_review is True
+    anonymised = make_view(SubmissionStateChange, request, code=submission.code)
+    assert anonymised.has_anonymised_review is True
 
 
-def test_submission_view_mixin_is_publicly_visible_false(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionStateChange, request, code=submission.code)
-
-    assert view.is_publicly_visible is False
-
-
-def test_submission_state_change_action(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-
-    request = make_request(
-        event,
-        user=user,
-        resolver_match=ResolverMatch(
-            lambda: None, (), {}, url_name="submissions.accept"
-        ),
-    )
-    view = make_view(SubmissionStateChange, request, code=submission.code)
-
-    assert view._action == "accept"
-
-
-def test_submission_state_change_target(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-
-    request = make_request(
-        event,
-        user=user,
-        resolver_match=ResolverMatch(
-            lambda: None, (), {}, url_name="submissions.reject"
-        ),
-    )
-    view = make_view(SubmissionStateChange, request, code=submission.code)
-
-    assert view._target == SubmissionStates.REJECTED
-    assert view.target() == SubmissionStates.REJECTED
-
-
-def test_submission_state_change_get_success_url_with_next(event):
+def test_submission_state_change_action_target_and_success_url(event):
     user = make_orga_user(event, can_change_submissions=True)
     submission = SubmissionFactory(event=event)
     next_url = event.orga_urls.submissions
 
-    request = make_request(
-        event,
-        user=user,
-        path=f"/?next={next_url}",
-        resolver_match=ResolverMatch(
-            lambda: None, (), {}, url_name="submissions.accept"
-        ),
+    accept = _state_change_view(event, user, submission, "submissions.accept")
+    reject = _state_change_view(event, user, submission, "submissions.reject")
+    with_next = _state_change_view(
+        event, user, submission, "submissions.accept", path=f"/?next={next_url}"
     )
-    view = make_view(SubmissionStateChange, request, code=submission.code)
 
-    assert view.get_success_url() == next_url
+    assert accept._action == "accept"
+    assert accept.get_success_url() == event.orga_urls.submissions
+    assert reject._target == SubmissionStates.REJECTED
+    assert reject.target() == SubmissionStates.REJECTED
+    assert with_next.get_success_url() == next_url
 
 
-def test_submission_state_change_get_success_url_default(event):
+def test_submission_delete_action_text_mentions_schedule_only_with_slots(event):
     user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-
-    request = make_request(
-        event,
-        user=user,
-        resolver_match=ResolverMatch(
-            lambda: None, (), {}, url_name="submissions.accept"
-        ),
-    )
-    view = make_view(SubmissionStateChange, request, code=submission.code)
-
-    assert view.get_success_url() == event.orga_urls.submissions
-
-
-def test_submission_delete_action_text_without_slots(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionDelete, request, code=submission.code)
-
-    text = view.action_text
-
-    assert "schedule" not in str(text).lower()
-
-
-def test_submission_delete_action_text_with_slots(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    slot = TalkSlotFactory(submission=submission, is_visible=True)
+    unscheduled = SubmissionFactory(event=event)
+    scheduled = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    scheduled.speakers.add(SpeakerFactory(event=event))
+    slot = TalkSlotFactory(submission=scheduled, is_visible=True)
     freeze_schedule(slot.schedule, "v1", notify_speakers=False)
-
     request = make_request(event, user=user)
-    view = make_view(SubmissionDelete, request, code=submission.code)
 
-    text = str(view.action_text)
+    unscheduled_text = str(
+        make_view(SubmissionDelete, request, code=unscheduled.code).action_text
+    )
+    scheduled_text = str(
+        make_view(SubmissionDelete, request, code=scheduled.code).action_text
+    )
 
-    assert "schedule" in text.lower()
+    assert "schedule" not in unscheduled_text.lower()
+    assert "schedule" in scheduled_text.lower()
 
 
 def test_submission_view_mixin_context_without_comment_feature(event):
@@ -232,10 +138,9 @@ def test_submission_speakers_speakers_property(event):
     request = make_request(event, user=user)
     view = make_view(SubmissionSpeakers, request, code=submission.code)
 
-    speakers = view.speakers
-
-    assert len(speakers) == 1
-    assert speakers[0]["speaker"] == speaker
+    assert len(view.speakers) == 1
+    assert view.speakers[0]["speaker"] == speaker
+    assert view.speakers[0]["other_submissions"] == []
 
 
 def test_submission_speakers_other_submissions_hidden_outside_reviewer_tracks(event):
@@ -263,68 +168,66 @@ def test_submission_speakers_other_submissions_hidden_outside_reviewer_tracks(ev
     assert view.speakers[0]["other_submissions"] == [visible]
 
 
-def test_submission_content_object_returns_none_for_new(event):
+def test_submission_content_object_and_can_edit(event):
     user = make_orga_user(event, can_change_submissions=True)
-
-    request = make_request(event, user=user, path="/orga/event/test/submissions/new/")
-    view = make_view(SubmissionContent, request)
-
-    assert view.object is None
-
-
-def test_submission_content_object_returns_submission(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionContent, request, code=submission.code)
-
-    assert view.object == submission
-
-
-def test_submission_content_can_edit_true_for_orga(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionContent, request, code=submission.code)
-
-    assert view.can_edit is True
-
-
-def test_submission_content_can_edit_false_for_reviewer(event):
     reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
     submission = SubmissionFactory(event=event)
-
-    request = make_request(event, user=reviewer)
-    view = make_view(SubmissionContent, request, code=submission.code)
-
-    assert view.can_edit is False
-
-
-def test_submission_list_pending_changes_count(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    SubmissionFactory(event=event, pending_state=SubmissionStates.ACCEPTED)
-
     request = make_request(event, user=user)
-    request.GET = query_dict()
-    view = make_view(SubmissionList, request)
+    new_request = make_request(
+        event, user=user, path="/orga/event/test/submissions/new/"
+    )
+    invalid_request = make_request(event, user=user, path="/invalid/")
 
-    assert view.pending_changes == 1
+    assert make_view(SubmissionContent, new_request).object is None
+    assert isinstance(
+        make_view(SubmissionContent, invalid_request, code="ZZZZZ").object, Http404
+    )
+    view = make_view(SubmissionContent, request, code=submission.code)
+    assert view.object == submission
+    assert view.can_edit is True
+    reviewer_view = make_view(
+        SubmissionContent, make_request(event, user=reviewer), code=submission.code
+    )
+    assert reviewer_view.can_edit is False
 
 
-def test_submission_list_defaults_to_active_states(event):
+def test_submission_list_properties(event):
     user = make_orga_user(event, can_change_submissions=True)
     submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    confirmed = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.CONFIRMED,
+        pending_state=SubmissionStates.ACCEPTED,
+    )
     SubmissionFactory(event=event, state=SubmissionStates.REJECTED)
     SubmissionFactory(event=event, state=SubmissionStates.CANCELED)
     SubmissionFactory(event=event, state=SubmissionStates.WITHDRAWN)
-
+    short_q = QuestionFactory(
+        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.STRING
+    )
+    QuestionFactory(
+        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.TEXT
+    )
+    QuestionFactory(
+        event=event, target=QuestionTarget.SPEAKER, variant=QuestionVariant.STRING
+    )
     request = make_request(event, user=user)
+    request.GET = query_dict()
     view = make_view(SubmissionList, request)
+    view.object_list = []
 
+    assert view.pending_changes == 1
     assert set(view.get_queryset()) == {submitted, confirmed}
+    assert view.show_submission_types is False
+    assert list(view.short_questions) == [short_q]
+    assert "submission_type" in view.get_table_kwargs()["exclude"]
+
+    SubmissionTypeFactory(event=event)
+    with_types = make_view(SubmissionList, request)
+    with_types.object_list = []
+
+    assert with_types.show_submission_types is True
+    assert "submission_type" not in with_types.get_table_kwargs()["exclude"]
 
 
 def test_submission_list_annotates_resource_count(event):
@@ -381,58 +284,35 @@ def test_submission_list_annotates_full_speaker_count_when_searching_speakers(ev
     assert counts == {matched_by_speaker.code: 3, matched_by_title.code: 0}
 
 
-def test_submission_list_show_tracks_false_when_disabled():
-    event = EventFactory(feature_flags={"use_tracks": False})
+@pytest.mark.parametrize(
+    ("use_tracks", "track_count", "expected"),
+    ((False, 0, False), (True, 0, False), (True, 1, True)),
+    ids=("disabled", "no-tracks", "with-tracks"),
+)
+def test_submission_list_and_stats_show_tracks(use_tracks, track_count, expected):
+    event = EventFactory(feature_flags={"use_tracks": use_tracks})
     user = make_orga_user(event, can_change_submissions=True)
-
+    for _ in range(track_count):
+        TrackFactory(event=event)
     request = make_request(event, user=user)
     request.GET = query_dict()
-    view = make_view(SubmissionList, request)
 
-    assert not view.show_tracks
+    assert make_view(SubmissionList, request).show_tracks is expected
+    assert make_view(SubmissionStats, request).show_tracks is expected
 
 
-def test_submission_list_show_tracks_true_when_tracks_exist():
+@pytest.mark.parametrize("track_count", (1, 2))
+def test_submission_list_show_tracks_with_limit_tracks(track_count):
     event = EventFactory(feature_flags={"use_tracks": True})
-    user = make_orga_user(event, can_change_submissions=True)
-    TrackFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
+    tracks = [TrackFactory(event=event) for _ in range(track_count)]
+    team = user.teams.first()
+    team.limit_tracks.add(*tracks)
 
     request = make_request(event, user=user)
-    request.GET = query_dict()
     view = make_view(SubmissionList, request)
 
     assert view.show_tracks is True
-
-
-def test_submission_list_show_submission_types(event):
-    user = make_orga_user(event, can_change_submissions=True)
-
-    request = make_request(event, user=user)
-    request.GET = query_dict()
-    view = make_view(SubmissionList, request)
-
-    assert view.show_submission_types is False
-
-
-def test_submission_list_short_questions(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    short_q = QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.STRING
-    )
-    QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.TEXT
-    )
-    QuestionFactory(
-        event=event, target=QuestionTarget.SPEAKER, variant=QuestionVariant.STRING
-    )
-
-    request = make_request(event, user=user)
-    request.GET = query_dict()
-    view = make_view(SubmissionList, request)
-
-    result = list(view.short_questions)
-
-    assert result == [short_q]
 
 
 def test_feedback_list_queryset(event):
@@ -441,28 +321,13 @@ def test_feedback_list_queryset(event):
     speaker = SpeakerFactory(event=event)
     submission.speakers.add(speaker)
     feedback = FeedbackFactory(talk=submission)
-
+    FeedbackFactory(talk=SubmissionFactory())
     request = make_request(event, user=user)
-    view = make_view(FeedbackList, request, code=submission.code)
 
-    qs = list(view.get_queryset())
-
-    assert qs == [feedback]
-
-
-def test_all_feedbacks_list_queryset(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-    feedback = FeedbackFactory(talk=submission)
-    other_submission = SubmissionFactory()
-    FeedbackFactory(talk=other_submission)
-
-    request = make_request(event, user=user)
-    view = make_view(AllFeedbacksList, request)
-
-    qs = list(view.get_queryset())
-
-    assert qs == [feedback]
+    assert list(
+        make_view(FeedbackList, request, code=submission.code).get_queryset()
+    ) == [feedback]
+    assert list(make_view(AllFeedbacksList, request).get_queryset()) == [feedback]
 
 
 def test_all_feedbacks_list_queryset_track_limited_reviewer(event):
@@ -489,62 +354,26 @@ def test_all_feedbacks_list_queryset_track_limited_reviewer(event):
     assert list(view.get_queryset()) == [visible_feedback]
 
 
-def test_submission_stats_show_submission_types_single(event):
-    user = make_orga_user(event, can_change_submissions=True)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionStats, request)
-
-    assert view.show_submission_types() is False
-
-
-def test_submission_stats_show_tracks_false_when_disabled():
-    event = EventFactory(feature_flags={"use_tracks": False})
-    user = make_orga_user(event, can_change_submissions=True)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionStats, request)
-
-    assert view.show_tracks is False
-
-
-def test_submission_stats_show_tracks_true_when_tracks_exist():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    user = make_orga_user(event, can_change_submissions=True)
-    TrackFactory(event=event)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionStats, request)
-
-    assert view.show_tracks is True
-
-
-def test_submission_stats_submission_state_data(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionStats, request)
-
-    data = json.loads(view.submission_state_data)
-
-    assert len(data) == 2
-    labels = {item["label"] for item in data}
-    assert len(labels) == 2
-
-
-def test_submission_stats_submission_type_data(event):
+def test_submission_stats_data_without_tracks(event):
     user = make_orga_user(event, can_change_submissions=True)
     sub_type = SubmissionTypeFactory(event=event, name="Keynote", default_duration=30)
-    SubmissionFactory(event=event, submission_type=sub_type)
-
+    SubmissionFactory(event=event, submission_type=sub_type, state="submitted")
+    SubmissionFactory(event=event, submission_type=sub_type, state="accepted")
     request = make_request(event, user=user)
     view = make_view(SubmissionStats, request)
 
-    data = json.loads(view.submission_type_data())
-
-    assert data == [{"label": "Keynote", "value": 1}]
+    assert view.show_submission_types() is True
+    assert view.show_tracks is False
+    assert json.loads(view.submission_state_data) == [
+        {"label": "accepted", "value": 1},
+        {"label": "submitted", "value": 1},
+    ]
+    assert json.loads(view.submission_type_data()) == [{"label": "Keynote", "value": 2}]
+    assert view.submission_track_data() == ""
+    assert json.loads(view.talk_state_data()) == [{"label": "accepted", "value": 1}]
+    assert json.loads(view.talk_type_data()) == [{"label": "Keynote", "value": 1}]
+    assert view.talk_track_data() == ""
+    assert view.talk_timeline_data() == ""
 
 
 def test_submission_stats_scoped_to_track_limited_reviewer():
@@ -575,56 +404,6 @@ def test_submission_stats_scoped_to_track_limited_reviewer():
     assert state_data == [{"label": "submitted", "value": 1}]
 
 
-def test_submission_stats_submission_track_data_empty_when_disabled():
-    event = EventFactory(feature_flags={"use_tracks": False})
-    user = make_orga_user(event, can_change_submissions=True)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionStats, request)
-
-    assert view.submission_track_data() == ""
-
-
-def test_submission_stats_talk_state_data(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionStats, request)
-
-    data = json.loads(view.talk_state_data())
-
-    assert len(data) == 1
-    assert data[0]["value"] == 1
-
-
-def test_submission_stats_talk_type_data(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    sub_type = SubmissionTypeFactory(event=event, name="Keynote", default_duration=30)
-    SubmissionFactory(
-        event=event, submission_type=sub_type, state=SubmissionStates.ACCEPTED
-    )
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionStats, request)
-
-    data = json.loads(view.talk_type_data())
-
-    assert data == [{"label": "Keynote", "value": 1}]
-
-
-def test_submission_stats_talk_track_data_empty_when_disabled():
-    event = EventFactory(feature_flags={"use_tracks": False})
-    user = make_orga_user(event, can_change_submissions=True)
-    SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionStats, request)
-
-    assert view.talk_track_data() == ""
-
-
 @pytest.mark.parametrize(
     ("counts", "expected"),
     (
@@ -641,50 +420,36 @@ def test_serialize_pie_chart_data(counts, expected):
     assert serialize_pie_chart_data(Counter(counts)) == expected
 
 
-def test_submission_stats_submission_data_empty_without_submissions():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    TrackFactory(event=event)
-    user = make_orga_user(event, can_change_submissions=True)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionStats, request)
-
-    assert view.submission_state_data == ""
-    assert view.submission_type_data() == ""
-    assert view.submission_track_data() == ""
-
-
-def test_submission_stats_talk_data_empty_without_accepted_submissions():
+def test_submission_stats_data_empty_without_matching_submissions():
     event = EventFactory(feature_flags={"use_tracks": True})
     track = TrackFactory(event=event)
     user = make_orga_user(event, can_change_submissions=True)
-    SubmissionFactory(event=event, track=track, state=SubmissionStates.SUBMITTED)
-
     request = make_request(event, user=user)
-    view = make_view(SubmissionStats, request)
+    empty = make_view(SubmissionStats, request)
 
-    assert view.talk_state_data() == ""
-    assert view.talk_type_data() == ""
-    assert view.talk_track_data() == ""
+    assert empty.show_submission_types() is False
+    assert empty.submission_state_data == ""
+    assert empty.submission_type_data() == ""
+    assert empty.submission_track_data() == ""
+    assert empty.submission_timeline_data() == ""
+    assert empty.total_submission_timeline_data() == ""
+
+    sub = SubmissionFactory(event=event, track=track, state=SubmissionStates.SUBMITTED)
+    sub.log_action("pretalx.submission.create")
+    unaccepted = make_view(SubmissionStats, request)
+
+    assert unaccepted.talk_state_data() == ""
+    assert unaccepted.talk_type_data() == ""
+    assert unaccepted.talk_track_data() == ""
+    assert unaccepted.raw_submission_timeline_data is None
+    assert unaccepted.submission_timeline_data() == ""
+    assert unaccepted.total_submission_timeline_data() == ""
 
 
-def test_tag_view_get_queryset(event):
+def test_tag_view_get_queryset_counts_non_draft_submissions(event):
     user = make_orga_user(event, can_change_submissions=True)
     tag = TagFactory(event=event)
     TagFactory()
-
-    request = make_request(event, user=user)
-    view = make_view(TagView, request)
-
-    qs = list(view.get_queryset())
-
-    assert len(qs) == 1
-    assert qs[0] == tag
-
-
-def test_tag_view_submission_count_excludes_drafts(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    tag = TagFactory(event=event)
     published = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     draft = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
     published.tags.add(tag)
@@ -693,37 +458,27 @@ def test_tag_view_submission_count_excludes_drafts(event):
     request = make_request(event, user=user)
     view = make_view(TagView, request)
 
-    result = view.get_queryset().get(pk=tag.pk)
+    qs = list(view.get_queryset())
 
-    assert result.submission_count == 1
+    assert qs == [tag]
+    assert qs[0].submission_count == 1
 
 
-def test_comment_list_comments_property(event):
+def test_comment_list_and_delete_resolve_comment(event):
     user = make_orga_user(event, can_change_submissions=True)
     submission = SubmissionFactory(event=event)
     speaker = SpeakerFactory(event=event)
     submission.speakers.add(speaker)
     comment = SubmissionCommentFactory(submission=submission, user=user)
-
     request = make_request(event, user=user)
-    view = make_view(CommentList, request, code=submission.code)
 
-    comments = list(view.comments)
-
-    assert comments == [comment]
-
-
-def test_comment_delete_object(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    comment = SubmissionCommentFactory(submission=submission, user=user)
-
-    request = make_request(event, user=user)
-    view = make_view(CommentDelete, request, code=submission.code, pk=comment.pk)
-
-    assert view.object == comment
+    assert list(make_view(CommentList, request, code=submission.code).comments) == [
+        comment
+    ]
+    assert (
+        make_view(CommentDelete, request, code=submission.code, pk=comment.pk).object
+        == comment
+    )
 
 
 def test_submission_history_queryset(event):
@@ -755,21 +510,8 @@ def test_apply_pending_bulk_submissions(event, state):
     request.GET = query_dict()
     view = make_view(ApplyPendingBulk, request)
 
-    subs = list(view.submissions)
-
-    assert subs == [sub1]
-
-
-def test_apply_pending_bulk_submission_count(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    SubmissionFactory(event=event, pending_state=SubmissionStates.ACCEPTED)
-    SubmissionFactory(event=event, pending_state=SubmissionStates.REJECTED)
-
-    request = make_request(event, user=user)
-    request.GET = query_dict()
-    view = make_view(ApplyPendingBulk, request)
-
-    assert view.submission_count == 2
+    assert list(view.submissions) == [sub1]
+    assert view.submission_count == 1
 
 
 @pytest.mark.parametrize(
@@ -797,38 +539,6 @@ def test_reviewer_submission_filter_is_only_reviewer(event, user_kwargs, expecte
     assert view.is_only_reviewer is expected
 
 
-def test_submission_stats_submission_timeline_data_empty_with_no_submissions(event):
-    user = make_orga_user(event, can_change_submissions=True)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionStats, request)
-
-    assert view.submission_timeline_data() == ""
-    assert view.total_submission_timeline_data() == ""
-
-
-def test_submission_stats_submission_timeline_data_empty_with_single_date(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    sub = SubmissionFactory(event=event)
-    sub.log_action("pretalx.submission.create")
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionStats, request)
-
-    assert view.raw_submission_timeline_data is None
-    assert view.submission_timeline_data() == ""
-    assert view.total_submission_timeline_data() == ""
-
-
-def test_submission_stats_talk_timeline_data_empty(event):
-    user = make_orga_user(event, can_change_submissions=True)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionStats, request)
-
-    assert view.talk_timeline_data() == ""
-
-
 def test_submission_stats_timeline_annotations_with_cfp_deadline():
     event = EventFactory(cfp__deadline=tz_now() + dt.timedelta(days=7))
     user = make_orga_user(event, can_change_submissions=True)
@@ -839,41 +549,3 @@ def test_submission_stats_timeline_annotations_with_cfp_deadline():
     data = json.loads(view.timeline_annotations())
 
     assert len(data["deadlines"]) == 1
-
-
-@pytest.mark.parametrize("track_count", (1, 2))
-def test_submission_list_show_tracks_with_limit_tracks(track_count):
-    event = EventFactory(feature_flags={"use_tracks": True})
-    user = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
-    tracks = [TrackFactory(event=event) for _ in range(track_count)]
-    team = user.teams.first()
-    team.limit_tracks.add(*tracks)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionList, request)
-
-    assert view.show_tracks is True
-
-
-def test_submission_content_object_returns_not_found_for_invalid_code(event):
-    user = make_orga_user(event, can_change_submissions=True)
-
-    request = make_request(event, user=user, path="/invalid/")
-    view = make_view(SubmissionContent, request, code="ZZZZZ")
-
-    result = view.object
-
-    assert isinstance(result, Http404)
-
-
-def test_submission_list_get_table_kwargs_with_multiple_types(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    SubmissionTypeFactory(event=event)
-    request = make_request(event, user=user)
-    request.GET = query_dict()
-    view = make_view(SubmissionList, request)
-    view.object_list = []
-
-    kwargs = view.get_table_kwargs()
-
-    assert "submission_type" not in kwargs["exclude"]

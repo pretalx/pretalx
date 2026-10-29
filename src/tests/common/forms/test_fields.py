@@ -29,6 +29,7 @@ from pretalx.common.forms.fields import (
     SizeFileField,
 )
 from pretalx.common.forms.widgets import MultiEmailInput
+from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.models import Availability
 from tests.factories import (
     AvailabilityFactory,
@@ -56,16 +57,18 @@ def test_size_file_field_init_max_size(kwargs, expected):
     assert field.max_size == expected
 
 
-def test_new_password_field_exposes_min_length():
-    field = NewPasswordField()
-    assert field.widget.attrs.get("minlength") == 8
-    assert "8 characters" in field.help_text
-
-
-def test_new_password_field_keeps_existing_help_text():
-    field = NewPasswordField(help_text="custom help")
-    assert field.widget.attrs.get("minlength") == 8
-    assert field.help_text == "custom help"
+@pytest.mark.parametrize(
+    ("kwargs", "help_text"),
+    (
+        ({}, "Your password must contain at least 8 characters."),
+        ({"help_text": "custom help"}, "custom help"),
+    ),
+    ids=("default_help", "custom_help"),
+)
+def test_new_password_field_exposes_min_length(kwargs, help_text):
+    field = NewPasswordField(**kwargs)
+    assert field.widget.attrs["minlength"] == 8
+    assert field.help_text == help_text
 
 
 def test_new_password_confirmation_field_exposes_min_length():
@@ -73,18 +76,7 @@ def test_new_password_confirmation_field_exposes_min_length():
     assert field.widget.attrs.get("minlength") == 8
 
 
-def test_size_file_field_sets_widget_data_attrs():
-    field = SizeFileField(max_size=5000)
-    assert field.widget.attrs["data-maxsize"] == 5000
-    assert field.widget.attrs["data-sizewarning"]
-
-
-def test_size_file_field_help_text_includes_size_warning():
-    field = SizeFileField(max_size=1024)
-    assert "1.0KB" in field.help_text
-
-
-def test_size_file_field_help_text_stays_lazy():
+def test_size_file_field_widget_data_and_lazy_help_text():
     field = SizeFileField(max_size=1024)
 
     with translation.override("en"):
@@ -92,16 +84,24 @@ def test_size_file_field_help_text_stays_lazy():
     with translation.override("de"):
         german = str(field.help_text)
 
+    assert field.widget.attrs["data-maxsize"] == 1024
+    assert field.widget.attrs["data-sizewarning"]
     assert english != german
+    assert "1.0KB" in english
     assert "1.0KB" in german
 
 
-def test_size_file_field_validate_accepts_small_file():
-    field = SizeFileField(max_size=10000, required=False)
-    small_file = SimpleUploadedFile(
-        "test.txt", b"small content", content_type="text/plain"
-    )
-    field.validate(small_file)
+@pytest.mark.parametrize(
+    ("max_size", "value"),
+    (
+        (10000, SimpleUploadedFile("test.txt", b"small content")),
+        (10, ""),
+        (None, SimpleUploadedFile("test.txt", b"x" * 10000)),
+    ),
+    ids=("small_file", "non_upload_value", "no_max_size"),
+)
+def test_size_file_field_validate_accepts(max_size, value):
+    SizeFileField(max_size=max_size, required=False).validate(value)
 
 
 def test_size_file_field_validate_rejects_oversized_file():
@@ -111,37 +111,32 @@ def test_size_file_field_validate_rejects_oversized_file():
         field.validate(big_file)
 
 
-def test_size_file_field_validate_skips_non_upload_values():
-    field = SizeFileField(max_size=10, required=False)
-    field.validate("")
-
-
-def test_size_file_field_validate_skips_when_no_max_size():
-    field = SizeFileField(max_size=None, required=False)
-    big_file = SimpleUploadedFile("test.txt", b"x" * 10000, content_type="text/plain")
-    field.validate(big_file)
-
-
 def test_extension_file_input_sets_accept_attribute():
     extensions = {
         ".pdf": ["application/pdf", ".pdf"],
         ".doc": ["application/msword", ".doc"],
     }
     field = ExtensionFileField(extensions=extensions, required=False)
-    accept = field.widget.attrs["accept"]
-    assert "application/pdf" in accept
-    assert ".pdf" in accept
-    assert "application/msword" in accept
+    assert set(field.widget.attrs["accept"].split(",")) == {
+        ".doc",
+        ".pdf",
+        "application/pdf",
+        "application/msword",
+    }
 
 
 @pytest.mark.parametrize(
-    "filename", ("doc.pdf", "doc.PDF"), ids=("lowercase", "uppercase")
+    "value",
+    (
+        SimpleUploadedFile("doc.pdf", b"content", content_type="application/pdf"),
+        SimpleUploadedFile("doc.PDF", b"content", content_type="application/pdf"),
+        "",
+    ),
+    ids=("lowercase", "uppercase", "empty"),
 )
-def test_extension_file_field_validate_accepts_valid_extension(filename):
-    extensions = {".pdf": ["application/pdf"]}
-    field = ExtensionFileField(extensions=extensions, required=False)
-    pdf_file = SimpleUploadedFile(filename, b"content", content_type="application/pdf")
-    field.validate(pdf_file)
+def test_extension_file_field_validate_accepts(value):
+    field = ExtensionFileField(extensions={".pdf": ["application/pdf"]}, required=False)
+    field.validate(value)
 
 
 def test_extension_file_field_validate_rejects_invalid_extension():
@@ -153,12 +148,6 @@ def test_extension_file_field_validate_rejects_invalid_extension():
     with pytest.raises(ValidationError) as exc_info:
         field.validate(exe_file)
     assert ".exe" in str(exc_info.value)
-
-
-def test_extension_file_field_validate_empty_value_passes():
-    extensions = {".pdf": ["application/pdf"]}
-    field = ExtensionFileField(extensions=extensions, required=False)
-    field.validate("")
 
 
 @pytest.mark.parametrize("extensions", (FILE_EXTENSIONS, IMAGE_EXTENSIONS))
@@ -175,18 +164,17 @@ def test_image_field_uses_image_extensions():
     assert "image/jpeg" in accept
 
 
-def test_image_field_rejects_non_image():
+@pytest.mark.parametrize(
+    ("filename", "content_type", "body"),
+    (
+        ("bad.txt", "text/plain", b"content"),
+        ("logo.png", "image/png", b"<script>alert(1)</script>"),
+    ),
+    ids=("non_image_extension", "non_image_content"),
+)
+def test_image_field_clean_rejects_non_image(filename, content_type, body):
     field = ImageField(required=False)
-    txt_file = SimpleUploadedFile("bad.txt", b"content", content_type="text/plain")
-    with pytest.raises(ValidationError):
-        field.validate(txt_file)
-
-
-def test_image_field_clean_rejects_non_image_content():
-    field = ImageField(required=False)
-    payload = SimpleUploadedFile(
-        "logo.png", b"<script>alert(1)</script>", content_type="image/png"
-    )
+    payload = SimpleUploadedFile(filename, body, content_type=content_type)
     with pytest.raises(ValidationError):
         field.clean(payload)
 
@@ -204,75 +192,89 @@ def test_profile_picture_field_set_widget_data():
     assert field.widget.upload_only is True
 
 
-def test_profile_picture_field_clean_non_dict_returns_none():
-    field = ProfilePictureField(required=False)
-    assert field.clean("not a dict") is None
-
-
-def test_profile_picture_field_clean_keep_without_current_required():
-    field = ProfilePictureField(required=True, current_picture=None)
-    with pytest.raises(ValidationError) as exc_info:
-        field.clean({"action": "keep"})
-    assert exc_info.value.code == "required"
-
-
-def test_profile_picture_field_clean_keep_with_current_picture():
-    field = ProfilePictureField(required=True, current_picture="existing")
-    result = field.clean({"action": "keep"})
-    assert result is None
-
-
-def test_profile_picture_field_clean_keep_not_required():
-    field = ProfilePictureField(required=False, current_picture=None)
-    result = field.clean({"action": "keep"})
-    assert result is None
-
-
-def test_profile_picture_field_clean_remove_when_required():
-    field = ProfilePictureField(required=True)
-    with pytest.raises(ValidationError) as exc_info:
-        field.clean({"action": "remove"})
-    assert exc_info.value.code == "required"
-
-
-def test_profile_picture_field_clean_remove_when_not_required():
-    field = ProfilePictureField(required=False)
-    result = field.clean({"action": "remove"})
-    assert result is False
-
-
-def test_profile_picture_field_clean_upload_no_file():
-    field = ProfilePictureField(required=False)
-    with pytest.raises(ValidationError) as exc_info:
-        field.clean({"action": "upload", "file": None})
-    assert exc_info.value.code == "required"
+@pytest.mark.parametrize(
+    ("kwargs", "data", "expected"),
+    (
+        ({"required": False}, "not a dict", None),
+        ({"required": True, "current_picture": "existing"}, {"action": "keep"}, None),
+        ({"required": False, "current_picture": None}, {"action": "keep"}, None),
+        ({"required": False}, {"action": "remove"}, False),
+        ({"required": False}, {"action": "unknown_action"}, None),
+    ),
+    ids=(
+        "non_dict",
+        "keep_with_current",
+        "keep_not_required",
+        "remove_not_required",
+        "unknown_action",
+    ),
+)
+def test_profile_picture_field_clean(kwargs, data, expected):
+    assert ProfilePictureField(**kwargs).clean(data) is expected
 
 
 @pytest.mark.parametrize(
-    ("filename", "content_type", "body"),
+    ("kwargs", "data", "code"),
     (
-        ("test.txt", "text/plain", b"data"),
-        ("avatar.html", "image/png", b"<script>alert(1)</script>"),
+        ({"required": True, "current_picture": None}, {"action": "keep"}, "required"),
+        ({"required": True}, {"action": "remove"}, "required"),
+        ({"required": False}, {"action": "upload", "file": None}, "required"),
+        ({"required": False, "upload_only": True}, {"action": "select_1"}, "invalid"),
+        (
+            {"required": False},
+            {"action": "upload", "file": SimpleUploadedFile("test.txt", b"data")},
+            "invalid",
+        ),
+        (
+            {"required": False},
+            {
+                "action": "upload",
+                "file": SimpleUploadedFile(
+                    "avatar.html",
+                    b"<script>alert(1)</script>",
+                    content_type="image/png",
+                ),
+            },
+            "invalid",
+        ),
+        (
+            {"required": False},
+            {
+                "action": "upload",
+                "file": SimpleUploadedFile(
+                    "big.png",
+                    b"x" * (settings.FILE_UPLOAD_DEFAULT_LIMIT + 1),
+                    content_type="image/png",
+                ),
+            },
+            "invalid",
+        ),
+        (
+            {"required": False},
+            {
+                "action": "upload",
+                "file": SimpleUploadedFile(
+                    "avatar.png", b"x" * 100, content_type="image/png"
+                ),
+            },
+            None,
+        ),
     ),
-    ids=("wrong_content_type", "non_image_extension"),
+    ids=(
+        "keep_without_current_required",
+        "remove_required",
+        "upload_no_file",
+        "select_when_upload_only",
+        "upload_wrong_content_type",
+        "upload_non_image_extension",
+        "upload_oversized",
+        "upload_non_image_content",
+    ),
 )
-def test_profile_picture_field_clean_upload_rejects_non_image(
-    filename, content_type, body
-):
-    field = ProfilePictureField(required=False)
-    payload = SimpleUploadedFile(filename, body, content_type=content_type)
+def test_profile_picture_field_clean_rejects(kwargs, data, code):
     with pytest.raises(ValidationError) as exc_info:
-        field.clean({"action": "upload", "file": payload})
-    assert exc_info.value.code == "invalid"
-
-
-def test_profile_picture_field_clean_upload_oversized_file():
-    field = ProfilePictureField(required=False)
-    big_data = b"x" * (settings.FILE_UPLOAD_DEFAULT_LIMIT + 1)
-    big_file = SimpleUploadedFile("big.png", big_data, content_type="image/png")
-    with pytest.raises(ValidationError) as exc_info:
-        field.clean({"action": "upload", "file": big_file})
-    assert exc_info.value.code == "invalid"
+        ProfilePictureField(**kwargs).clean(data)
+    assert exc_info.value.code == code
 
 
 def test_profile_picture_field_clean_upload_valid_file(make_image):
@@ -280,13 +282,6 @@ def test_profile_picture_field_clean_upload_valid_file(make_image):
     valid_file = make_image("avatar.png")
     result = field.clean({"action": "upload", "file": valid_file})
     assert result == valid_file
-
-
-def test_profile_picture_field_clean_upload_non_image():
-    field = ProfilePictureField(required=False)
-    fake_file = SimpleUploadedFile("avatar.png", b"x" * 100, content_type="image/png")
-    with pytest.raises(ValidationError):
-        field.clean({"action": "upload", "file": fake_file})
 
 
 def test_image_field_rejects_pixel_bomb(make_image, monkeypatch):
@@ -297,11 +292,6 @@ def test_image_field_rejects_pixel_bomb(make_image, monkeypatch):
         with pytest.raises(ValidationError) as exc_info:
             field.validate(make_image(width=10, height=10))
     assert "pixels" in str(exc_info.value)
-
-
-def test_image_field_accepts_valid_image(make_image):
-    field = ImageField(required=False)
-    field.validate(make_image())
 
 
 def test_image_field_skips_stored_file(monkeypatch):
@@ -332,61 +322,43 @@ def test_profile_picture_field_clean_select_valid_picture():
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "pk_suffix", ("99999", "abc"), ids=("nonexistent", "non_numeric")
+    "make_pk_suffix",
+    (
+        lambda: "99999",
+        lambda: "abc",
+        lambda: ProfilePictureFactory(user=UserFactory()).pk,
+    ),
+    ids=("nonexistent", "non_numeric", "other_users_picture"),
 )
-def test_profile_picture_field_clean_select_invalid_pk(pk_suffix):
+def test_profile_picture_field_clean_select_invalid_pk(make_pk_suffix):
     user = UserFactory()
     field = ProfilePictureField(required=False, user=user)
 
     with pytest.raises(ValidationError) as exc_info:
-        field.clean({"action": f"select_{pk_suffix}"})
+        field.clean({"action": f"select_{make_pk_suffix()}"})
     assert exc_info.value.code == "invalid"
-
-
-@pytest.mark.django_db
-def test_profile_picture_field_clean_select_other_users_picture():
-    user = UserFactory()
-    other_user = UserFactory()
-    picture = ProfilePictureFactory(user=other_user)
-    field = ProfilePictureField(required=False, user=user)
-
-    with pytest.raises(ValidationError) as exc_info:
-        field.clean({"action": f"select_{picture.pk}"})
-    assert exc_info.value.code == "invalid"
-
-
-def test_profile_picture_field_clean_select_when_upload_only():
-    field = ProfilePictureField(required=False, upload_only=True)
-    with pytest.raises(ValidationError) as exc_info:
-        field.clean({"action": "select_1"})
-    assert exc_info.value.code == "invalid"
-
-
-def test_profile_picture_field_has_changed_non_dict_returns_false():
-    field = ProfilePictureField()
-    assert field.has_changed(None, "not a dict") is False
 
 
 @pytest.mark.parametrize(
-    ("action", "expected"),
-    (("keep", False), ("remove", True), ("upload", True), ("select_1", True)),
+    ("data", "expected"),
+    (
+        ("not a dict", False),
+        ({"action": "keep"}, False),
+        ({"action": "remove"}, True),
+        ({"action": "upload"}, True),
+        ({"action": "select_1"}, True),
+    ),
+    ids=("non_dict", "keep", "remove", "upload", "select"),
 )
-def test_profile_picture_field_has_changed(action, expected):
+def test_profile_picture_field_has_changed(data, expected):
     field = ProfilePictureField()
-    assert field.has_changed(None, {"action": action}) is expected
+    assert field.has_changed(None, data) is expected
 
 
 def test_profile_picture_field_disabled_ignores_submitted_data():
     field = ProfilePictureField(disabled=True)
 
     assert field.bound_data({"action": "remove", "file": None}, "current") == "current"
-
-
-@pytest.mark.django_db
-def test_profile_picture_field_save_none_does_nothing():
-    user = UserFactory()
-    field = ProfilePictureField()
-    field.save(instance=user, user=user, value=None)
 
 
 @pytest.mark.parametrize(
@@ -468,14 +440,10 @@ def test_datetime_field_allows_empty_when_not_required():
     assert field.clean("") is None
 
 
-def test_color_field_accepts_valid_hex():
+@pytest.mark.parametrize("value", ("#ff0000", "#f00"), ids=("long", "short"))
+def test_color_field_accepts_valid_hex(value):
     field = ColorField()
-    assert field.clean("#ff0000") == "#ff0000"
-
-
-def test_color_field_accepts_short_hex():
-    field = ColorField()
-    assert field.clean("#f00") == "#f00"
+    assert field.clean(value) == value
 
 
 @pytest.mark.parametrize(
@@ -492,32 +460,32 @@ def test_color_field_rejects_invalid_hex(value):
 def test_color_field_widget_attrs_include_pattern():
     field = ColorField()
     attrs = field.widget_attrs(field.widget)
-    assert "pattern" in attrs
+    assert attrs["pattern"] == "#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})"
 
 
-def test_honeypot_field_validate_raises_on_true():
-    field = HoneypotField()
-    with pytest.raises(ValidationError):
-        field.validate(True)
-
-
-def test_honeypot_field_validate_passes_on_false():
+def test_honeypot_field_validate_rejects_only_true():
     field = HoneypotField()
     field.validate(False)
+    with pytest.raises(ValidationError):
+        field.validate(True)
 
 
 @pytest.mark.django_db
 def test_availabilities_field_init_with_event_sets_initial(event):
     room = RoomFactory(event=event)
-    AvailabilityFactory(
+    avail = AvailabilityFactory(
         event=event, room=room, start=event.datetime_from, end=event.datetime_to
     )
     field = AvailabilitiesField(event=event, instance=room)
 
-    initial = json.loads(field.initial)
-    assert "availabilities" in initial
-    assert "event" in initial
-    assert initial["event"]["timezone"] == event.timezone
+    assert json.loads(field.initial) == {
+        "availabilities": [avail.serialize()],
+        "event": {
+            "timezone": event.timezone,
+            "date_from": str(event.date_from),
+            "date_to": str(event.date_to),
+        },
+    }
 
 
 @pytest.mark.django_db
@@ -541,64 +509,44 @@ def test_availabilities_field_get_event_context_without_event():
 
 
 @pytest.mark.django_db
-def test_availabilities_field_get_event_context_with_event(event):
-    field = AvailabilitiesField(event=event)
-    ctx = field._get_event_context()
-    assert ctx["event"]["timezone"] == event.timezone
-    assert ctx["event"]["date_from"] == str(event.date_from)
-    assert ctx["event"]["date_to"] == str(event.date_to)
-
-
-@pytest.mark.django_db
-def test_availabilities_field_get_event_context_with_resolution(event):
+def test_availabilities_field_get_event_context_with_event_and_resolution(event):
     field = AvailabilitiesField(event=event, resolution=15)
-    ctx = field._get_event_context()
-    assert ctx["resolution"] == 15
+    assert field._get_event_context() == {
+        "event": {
+            "timezone": event.timezone,
+            "date_from": str(event.date_from),
+            "date_to": str(event.date_to),
+        },
+        "resolution": 15,
+    }
 
 
 @pytest.mark.django_db
-def test_availabilities_field_get_event_context_includes_room_constraints(event):
+def test_availabilities_field_get_event_context_room_constraints(event):
     room = RoomFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    speaker_field = AvailabilitiesField(event=event, instance=speaker)
+    room_field = AvailabilitiesField(event=event, instance=room)
+
+    assert "constraints" not in speaker_field._get_event_context()
+
     AvailabilityFactory(
         event=event, room=room, start=event.datetime_from, end=event.datetime_to
     )
-    speaker = SpeakerFactory(event=event)
-    field = AvailabilitiesField(event=event)
-    field.instance = speaker
-    ctx = field._get_event_context()
-    assert "constraints" in ctx
-    assert len(ctx["constraints"]) == 1
 
-
-@pytest.mark.django_db
-def test_availabilities_field_get_event_context_no_constraints_for_room(event):
-    room = RoomFactory(event=event)
-    field = AvailabilitiesField(event=event, instance=room)
-    ctx = field._get_event_context()
-    assert "constraints" not in ctx
+    assert speaker_field._get_event_context()["constraints"] == [
+        {
+            "start": event.datetime_from.astimezone(event.tz).isoformat(),
+            "end": event.datetime_to.astimezone(event.tz).isoformat(),
+        }
+    ]
+    assert "constraints" not in room_field._get_event_context()
 
 
 @pytest.mark.django_db
 def test_availabilities_field_prepare_value_adds_event_context(event):
     field = AvailabilitiesField(event=event)
-    data = json.dumps({"availabilities": []})
-    result = field.prepare_value(data)
-    parsed = json.loads(result)
-    assert "event" in parsed
-
-
-@pytest.mark.django_db
-def test_availabilities_field_prepare_value_preserves_existing_event(event):
-    field = AvailabilitiesField(event=event)
-    data = json.dumps({"availabilities": [], "event": {"timezone": "custom"}})
-    result = field.prepare_value(data)
-    parsed = json.loads(result)
-    assert parsed["event"]["timezone"] == "custom"
-
-
-@pytest.mark.django_db
-def test_availabilities_field_prepare_value_serialises_stored_list(event):
-    field = AvailabilitiesField(event=event)
+    context = field._get_event_context()
     avails = [
         {
             "start": "2026-01-01T10:00:00+00:00",
@@ -608,193 +556,155 @@ def test_availabilities_field_prepare_value_serialises_stored_list(event):
         }
     ]
 
-    parsed = json.loads(field.prepare_value(avails))
+    assert json.loads(field.prepare_value(json.dumps({"availabilities": []}))) == {
+        "availabilities": [],
+        **context,
+    }
+    assert json.loads(field.prepare_value(avails)) == {
+        "availabilities": avails,
+        **context,
+    }
+    assert json.loads(
+        field.prepare_value(
+            json.dumps({"availabilities": [], "event": {"timezone": "custom"}})
+        )
+    ) == {"availabilities": [], "event": {"timezone": "custom"}}
 
-    assert parsed["availabilities"] == avails
-    assert parsed["event"]["timezone"] == str(event.timezone)
 
-
-def test_availabilities_field_prepare_value_non_string():
-    field = AvailabilitiesField(event=None)
-    result = field.prepare_value(42)
-    assert result == 42
-
-
-def test_availabilities_field_prepare_value_invalid_json():
+@pytest.mark.parametrize("value", (42, "not json{{{"), ids=("non_string", "bad_json"))
+def test_availabilities_field_prepare_value_returns_unparseable_input(value):
     field = AvailabilitiesField(event=EventFactory.build())
-    result = field.prepare_value("not json{{{")
-    assert result == "not json{{{"
+    assert field.prepare_value(value) == value
+
+
+def _at(event, day, hour):
+    return dt.datetime.combine(day, dt.time(hour, 0), tzinfo=event.tz)
 
 
 @pytest.mark.django_db
-def test_availabilities_field_clean_valid_json(event):
-    start = dt.datetime.combine(event.date_from, dt.time(9, 0), tzinfo=event.tz)
-    end = dt.datetime.combine(event.date_from, dt.time(17, 0), tzinfo=event.tz)
-    data = json.dumps(
-        {"availabilities": [{"start": start.isoformat(), "end": end.isoformat()}]}
-    )
+@pytest.mark.parametrize(
+    ("build_value", "expected"),
+    (
+        (
+            lambda e: json.dumps(
+                {
+                    "availabilities": [
+                        {
+                            "start": _at(e, e.date_from, 9).isoformat(),
+                            "end": _at(e, e.date_from, 17).isoformat(),
+                        }
+                    ]
+                }
+            ),
+            lambda e: [(_at(e, e.date_from, 9), _at(e, e.date_from, 17))],
+        ),
+        (
+            lambda e: [
+                {
+                    "start": _at(e, e.date_from, 9).isoformat(),
+                    "end": _at(e, e.date_from, 17).isoformat(),
+                }
+            ],
+            lambda e: [(_at(e, e.date_from, 9), _at(e, e.date_from, 17))],
+        ),
+        (
+            lambda e: {
+                "availabilities": [
+                    {
+                        "start": _at(e, e.date_from, 9).isoformat(),
+                        "end": _at(e, e.date_from, 17).isoformat(),
+                        "id": 42,
+                        "allDay": True,
+                    }
+                ]
+            },
+            lambda e: [(_at(e, e.date_from, 9), _at(e, e.date_from, 17))],
+        ),
+        (
+            lambda e: json.dumps(
+                {
+                    "availabilities": [
+                        {
+                            "start": _at(
+                                e, e.date_from - dt.timedelta(days=5), 9
+                            ).isoformat(),
+                            "end": _at(
+                                e, e.date_to + dt.timedelta(days=5), 17
+                            ).isoformat(),
+                        }
+                    ]
+                }
+            ),
+            lambda e: [
+                (_at(e, e.date_from, 0), _at(e, e.date_to + dt.timedelta(days=1), 0))
+            ],
+        ),
+        (lambda e: "", lambda e: []),
+    ),
+    ids=("json_string", "list_input", "dict_strips_id_and_allday", "clamped", "empty"),
+)
+def test_availabilities_field_clean(event, build_value, expected):
     field = AvailabilitiesField(event=event, required=False)
 
-    result = field.clean(data)
+    result = field.clean(build_value(event))
 
-    assert len(result) == 1
     assert all(isinstance(a, Availability) for a in result)
+    assert [(a.start, a.end) for a in result] == expected(event)
 
 
 @pytest.mark.django_db
-def test_availabilities_field_clean_empty_required(event):
-    field = AvailabilitiesField(event=event, required=True)
-    with pytest.raises(ValidationError):
-        field.clean("")
-
-
-@pytest.mark.django_db
-def test_availabilities_field_clean_empty_not_required(event):
-    field = AvailabilitiesField(event=event, required=False)
-    result = field.clean("")
-    assert result == []
-
-
-@pytest.mark.django_db
-def test_availabilities_field_clean_invalid_json(event):
-    field = AvailabilitiesField(event=event, required=False)
-    with pytest.raises(ValidationError) as exc_info:
-        field.clean("not valid json")
-    assert exc_info.value.code == "invalid_json"
-
-
-@pytest.mark.django_db
-def test_availabilities_field_clean_non_dict_json(event):
-    field = AvailabilitiesField(event=event, required=False)
-    with pytest.raises(ValidationError) as exc_info:
-        field.clean(json.dumps([1, 2, 3]))
-    assert exc_info.value.code == "invalid_format"
-
-
-@pytest.mark.django_db
-def test_availabilities_field_clean_availabilities_not_list(event):
-    field = AvailabilitiesField(event=event, required=False)
-    with pytest.raises(ValidationError) as exc_info:
-        field.clean(json.dumps({"availabilities": "not a list"}))
-    assert exc_info.value.code == "invalid_format"
-
-
-@pytest.mark.django_db
-def test_availabilities_field_clean_empty_availabilities_required(event):
-    field = AvailabilitiesField(event=event, required=True)
-    with pytest.raises(ValidationError):
-        field.clean(json.dumps({"availabilities": []}))
-
-
-@pytest.mark.django_db
-def test_availabilities_field_clean_availability_not_dict(event):
-    field = AvailabilitiesField(event=event, required=False)
-    with pytest.raises(ValidationError) as exc_info:
-        field.clean(json.dumps({"availabilities": ["not a dict"]}))
-    assert exc_info.value.code == "invalid_availability_format"
-
-
-@pytest.mark.django_db
-def test_availabilities_field_clean_availability_extra_keys(event):
-    field = AvailabilitiesField(event=event, required=False)
-    start = dt.datetime.combine(event.date_from, dt.time(9, 0), tzinfo=event.tz)
-    end = dt.datetime.combine(event.date_from, dt.time(17, 0), tzinfo=event.tz)
-    with pytest.raises(ValidationError) as exc_info:
-        field.clean(
+@pytest.mark.parametrize(
+    ("required", "value", "code"),
+    (
+        (True, "", "required"),
+        (True, json.dumps({"availabilities": []}), "required_availability"),
+        (False, "not valid json", "invalid_json"),
+        (False, json.dumps([1, 2, 3]), "invalid_format"),
+        (False, json.dumps({"availabilities": "not a list"}), "invalid_format"),
+        (
+            False,
+            json.dumps({"availabilities": ["not a dict"]}),
+            "invalid_availability_format",
+        ),
+        (
+            False,
             json.dumps(
                 {
                     "availabilities": [
                         {
-                            "start": start.isoformat(),
-                            "end": end.isoformat(),
+                            "start": "2026-01-01T09:00:00+00:00",
+                            "end": "2026-01-01T17:00:00+00:00",
                             "extra": "bad",
                         }
                     ]
                 }
-            )
-        )
-    assert exc_info.value.code == "invalid_availability_format"
-
-
-@pytest.mark.django_db
-def test_availabilities_field_clean_strips_id_and_allday(event):
-    start = dt.datetime.combine(event.date_from, dt.time(9, 0), tzinfo=event.tz)
-    end = dt.datetime.combine(event.date_from, dt.time(17, 0), tzinfo=event.tz)
-    data = json.dumps(
-        {
-            "availabilities": [
-                {
-                    "start": start.isoformat(),
-                    "end": end.isoformat(),
-                    "id": 42,
-                    "allDay": True,
-                }
-            ]
-        }
-    )
-    field = AvailabilitiesField(event=event, required=False)
-
-    result = field.clean(data)
-
-    assert len(result) == 1
-
-
-@pytest.mark.django_db
-def test_availabilities_field_clean_invalid_date_string(event):
-    field = AvailabilitiesField(event=event, required=False)
+            ),
+            "invalid_availability_format",
+        ),
+        (
+            False,
+            json.dumps(
+                {"availabilities": [{"start": "not-a-date", "end": "also-not"}]}
+            ),
+            "invalid_date",
+        ),
+    ),
+    ids=(
+        "empty_required",
+        "no_availabilities_required",
+        "invalid_json",
+        "non_dict_json",
+        "availabilities_not_list",
+        "availability_not_dict",
+        "extra_keys",
+        "invalid_date",
+    ),
+)
+def test_availabilities_field_clean_rejects(event, required, value, code):
+    field = AvailabilitiesField(event=event, required=required)
     with pytest.raises(ValidationError) as exc_info:
-        field.clean(
-            json.dumps({"availabilities": [{"start": "not-a-date", "end": "also-not"}]})
-        )
-    assert exc_info.value.code == "invalid_date"
-
-
-@pytest.mark.django_db
-def test_availabilities_field_clean_clamps_to_event_dates(event):
-    early = dt.datetime.combine(
-        event.date_from - dt.timedelta(days=5), dt.time(9, 0), tzinfo=event.tz
-    )
-    late = dt.datetime.combine(
-        event.date_to + dt.timedelta(days=5), dt.time(17, 0), tzinfo=event.tz
-    )
-    data = json.dumps(
-        {"availabilities": [{"start": early.isoformat(), "end": late.isoformat()}]}
-    )
-    field = AvailabilitiesField(event=event, required=False)
-
-    result = field.clean(data)
-
-    assert len(result) == 1
-    event_start = dt.datetime.combine(event.date_from, dt.time(), tzinfo=event.tz)
-    event_end = dt.datetime.combine(
-        event.date_to, dt.time(), tzinfo=event.tz
-    ) + dt.timedelta(days=1)
-    assert result[0].start == event_start
-    assert result[0].end == event_end
-
-
-@pytest.mark.django_db
-def test_availabilities_field_clean_list_input(event):
-    start = dt.datetime.combine(event.date_from, dt.time(9, 0), tzinfo=event.tz)
-    end = dt.datetime.combine(event.date_from, dt.time(17, 0), tzinfo=event.tz)
-
-    result = AvailabilitiesField(event=event, required=False).clean(
-        [{"start": start.isoformat(), "end": end.isoformat()}]
-    )
-
-    assert len(result) == 1
-
-
-@pytest.mark.django_db
-def test_availabilities_field_clean_dict_input(event):
-    start = dt.datetime.combine(event.date_from, dt.time(9, 0), tzinfo=event.tz)
-    end = dt.datetime.combine(event.date_from, dt.time(17, 0), tzinfo=event.tz)
-
-    result = AvailabilitiesField(event=event, required=False).clean(
-        {"availabilities": [{"start": start.isoformat(), "end": end.isoformat()}]}
-    )
-
-    assert len(result) == 1
+        field.clean(value)
+    assert exc_info.value.code == code
 
 
 @pytest.mark.django_db
@@ -820,102 +730,42 @@ def test_availabilities_field_serialize_empty_instance(event):
     assert "event" in parsed
 
 
-def test_profile_picture_field_clean_unknown_action_returns_none():
-    field = ProfilePictureField(required=False)
-    result = field.clean({"action": "unknown_action"})
-    assert result is None
-
-
 @pytest.mark.django_db
-def test_profile_picture_field_save_upload_sets_avatar(make_image):
+def test_profile_picture_field_save_applies_cleaned_value(make_image):
     speaker = SpeakerFactory()
     user = speaker.user
-    image = make_image("avatar.png")
+    first = ProfilePictureFactory(user=user)
+    second = ProfilePictureFactory(user=user)
     field = ProfilePictureField()
 
-    field.save(instance=speaker, user=user, value=image)
+    def stored_picture_id():
+        return SpeakerProfile.objects.values_list("profile_picture_id", flat=True).get(
+            pk=speaker.pk
+        )
 
-    speaker.refresh_from_db()
-    assert speaker.profile_picture_id is not None
+    field.save(instance=speaker, user=user, value=None)
+    field.save(instance=speaker, user=user, value=False)
+    assert stored_picture_id() is None
 
+    field.save(instance=speaker, user=user, value=first)
+    user.refresh_from_db(fields=["profile_picture"])
+    assert stored_picture_id() == first.pk
+    assert user.profile_picture_id == first.pk
 
-@pytest.mark.django_db
-def test_profile_picture_field_save_remove_clears_picture():
-    speaker = SpeakerFactory()
-    old_picture = ProfilePictureFactory(user=speaker.user)
-    speaker.profile_picture = old_picture
-    speaker.save(update_fields=["profile_picture"])
-    field = ProfilePictureField()
+    first_updated = first.updated
+    field.save(instance=speaker, user=user, value=second)
+    first.refresh_from_db()
+    assert stored_picture_id() == second.pk
+    assert first.updated > first_updated
 
-    field.save(instance=speaker, user=speaker.user, value=False)
+    second_updated = second.updated
+    field.save(instance=speaker, user=user, value=False)
+    second.refresh_from_db()
+    assert stored_picture_id() is None
+    assert second.updated > second_updated
 
-    speaker.refresh_from_db()
-    assert speaker.profile_picture is None
-    old_picture.refresh_from_db()
-    assert old_picture.updated  # timestamp was bumped
-
-
-@pytest.mark.django_db
-def test_profile_picture_field_save_select_sets_new_picture():
-    speaker = SpeakerFactory()
-    user = speaker.user
-    assert user.profile_picture is None
-    new_picture = ProfilePictureFactory(user=user)
-    old_picture = ProfilePictureFactory(user=user)
-    speaker.profile_picture = old_picture
-    speaker.save(update_fields=["profile_picture"])
-    field = ProfilePictureField()
-
-    field.save(instance=speaker, user=user, value=new_picture)
-
-    speaker.refresh_from_db()
-    user.refresh_from_db()
-    assert speaker.profile_picture_id == new_picture.pk
-    assert user.profile_picture_id == new_picture.pk
-    old_picture.refresh_from_db()
-    assert old_picture.updated  # timestamp was bumped
-
-
-@pytest.mark.django_db
-def test_profile_picture_field_save_remove_noop_when_already_none():
-    speaker = SpeakerFactory()
-    assert speaker.profile_picture is None
-    field = ProfilePictureField()
-
-    field.save(instance=speaker, user=speaker.user, value=False)
-
-    speaker.refresh_from_db()
-    assert speaker.profile_picture is None
-
-
-@pytest.mark.django_db
-def test_profile_picture_field_save_select_without_old_picture():
-    speaker = SpeakerFactory()
-    user = speaker.user
-    assert speaker.profile_picture is None
-    assert user.profile_picture is None
-    new_picture = ProfilePictureFactory(user=user)
-    field = ProfilePictureField()
-
-    field.save(instance=speaker, user=user, value=new_picture)
-
-    speaker.refresh_from_db()
-    user.refresh_from_db()
-    assert speaker.profile_picture_id == new_picture.pk
-    assert user.profile_picture_id == new_picture.pk
-
-
-@pytest.mark.django_db
-def test_availabilities_field_get_event_context_no_constraints_without_room_avails(
-    event,
-):
-    speaker = SpeakerFactory(event=event)
-    field = AvailabilitiesField(event=event)
-    field.instance = speaker
-
-    ctx = field._get_event_context()
-
-    assert "constraints" not in ctx
+    field.save(instance=speaker, user=user, value=make_image("avatar.png"))
+    assert stored_picture_id() not in (None, first.pk, second.pk)
 
 
 @pytest.mark.django_db
@@ -940,59 +790,24 @@ def test_multi_email_field_uses_multi_email_input_widget():
     assert isinstance(field.widget, MultiEmailInput)
 
 
-def test_multi_email_field_clean_comma_separated():
-    field = MultiEmailField(required=False)
-
-    result = field.clean("a@example.com,b@example.com")
-
-    assert result == ["a@example.com", "b@example.com"]
-
-
-def test_multi_email_field_clean_newline_separated():
-    field = MultiEmailField(required=False)
-
-    result = field.clean("a@example.com\nb@example.com")
-
-    assert result == ["a@example.com", "b@example.com"]
-
-
-def test_multi_email_field_clean_strips_whitespace():
-    field = MultiEmailField(required=False)
-
-    result = field.clean("  a@example.com  ,  b@example.com  ")
-
-    assert result == ["a@example.com", "b@example.com"]
-
-
-def test_multi_email_field_clean_lowercases():
-    field = MultiEmailField(required=False)
-
-    result = field.clean("Test@Example.COM")
-
-    assert result == ["test@example.com"]
-
-
-def test_multi_email_field_clean_deduplicates_preserving_order():
-    field = MultiEmailField(required=False)
-
-    result = field.clean("b@example.com,a@example.com,b@example.com")
-
-    assert result == ["b@example.com", "a@example.com"]
-
-
-def test_multi_email_field_clean_empty_returns_empty_list():
-    field = MultiEmailField(required=False)
-
-    result = field.clean("")
-
-    assert result == []
-
-
-def test_multi_email_field_clean_invalid_raises():
-    field = MultiEmailField(required=False)
-
-    with pytest.raises(ValidationError, match="not-an-email"):
-        field.clean("valid@example.com,not-an-email")
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    (
+        ("a@example.com,b@example.com", ["a@example.com", "b@example.com"]),
+        ("a@example.com\nb@example.com", ["a@example.com", "b@example.com"]),
+        ("  a@example.com  ,  b@example.com  ", ["a@example.com", "b@example.com"]),
+        ("Test@Example.COM", ["test@example.com"]),
+        (
+            "b@example.com,a@example.com,b@example.com",
+            ["b@example.com", "a@example.com"],
+        ),
+        ("a@example.com,,\n,b@example.com", ["a@example.com", "b@example.com"]),
+        ("", []),
+    ),
+    ids=("comma", "newline", "whitespace", "lowercases", "dedup", "blanks", "empty"),
+)
+def test_multi_email_field_clean(raw, expected):
+    assert MultiEmailField(required=False).clean(raw) == expected
 
 
 def test_multi_email_field_clean_invalid_lists_all_offending_tokens():
@@ -1021,14 +836,6 @@ def test_multi_email_field_clean_invalid_lists_all_offending_tokens():
 )
 def test_multi_token_field_has_changed(initial, data, expected):
     assert MultiDomainField(required=False).has_changed(initial, data) is expected
-
-
-def test_multi_email_field_clean_skips_blank_entries():
-    field = MultiEmailField(required=False)
-
-    result = field.clean("a@example.com,,\n,b@example.com")
-
-    assert result == ["a@example.com", "b@example.com"]
 
 
 @pytest.mark.parametrize(

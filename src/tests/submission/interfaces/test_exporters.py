@@ -33,130 +33,77 @@ def _orga_request(event):
     return request
 
 
-def test_speaker_question_data_get_csv_data_returns_speaker_answers():
+def test_speaker_question_data_get_csv_data_lists_visible_active_speaker_answers():
     event = EventFactory()
-    speaker = SpeakerFactory(event=event)
+    speaker = SpeakerFactory(event=event, name="Alice")
+    managed = SpeakerFactory(event=event, user=None, name="Managed Speaker")
     question = QuestionFactory(
         event=event, target="speaker", question="Favourite colour?"
     )
     AnswerFactory(question=question, speaker=speaker, submission=None, answer="Blue")
+    AnswerFactory(question=question, speaker=managed, submission=None, answer="Red")
+    inactive = QuestionFactory(event=event, target="speaker", active=False)
+    AnswerFactory(question=inactive, speaker=speaker, submission=None, answer="Old")
+    restricted = QuestionFactory(event=event, target="speaker", question="Hidden")
+    restricted.limit_teams.add(TeamFactory(organiser=event.organiser, all_events=True))
+    AnswerFactory(question=restricted, speaker=speaker, submission=None, answer="H")
+    AnswerFactory(
+        question=question,
+        submission=SubmissionFactory(event=event),
+        speaker=None,
+        answer="No speaker",
+    )
+    exporter = SpeakerQuestionData(ScheduleFactory.build(event=event))
+    anonymous_request = RequestFactory().get("/")
+    anonymous_request.user = AnonymousUser()
 
-    field_names, data = SpeakerQuestionData(
-        ScheduleFactory.build(event=event)
-    ).get_csv_data(_orga_request(event))
+    field_names, data = exporter.get_csv_data(_orga_request(event))
+    _, anonymous_data = exporter.get_csv_data(anonymous_request)
 
     assert field_names == ["code", "name", "email", "question", "answer"]
-    assert len(data) == 1
-    assert data[0]["code"] == speaker.code
-    assert data[0]["name"] == speaker.get_display_name()
-    assert data[0]["email"] == speaker.user.email
-    assert str(data[0]["question"]) == "Favourite colour?"
-    assert data[0]["answer"] == "Blue"
+    assert data == [
+        {
+            "code": speaker.code,
+            "name": "Alice",
+            "email": speaker.user.email,
+            "question": "Favourite colour?",
+            "answer": "Blue",
+        },
+        {
+            "code": managed.code,
+            "name": "Managed Speaker",
+            "email": "",
+            "question": "Favourite colour?",
+            "answer": "Red",
+        },
+    ]
+    assert anonymous_data == []
 
 
-def test_speaker_question_data_managed_speaker_uses_effective_email():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event, user=None, name="Managed Speaker")
-    question = QuestionFactory(event=event, target="speaker", question="Colour?")
-    AnswerFactory(question=question, speaker=speaker, submission=None, answer="Blue")
-
-    _, data = SpeakerQuestionData(ScheduleFactory.build(event=event)).get_csv_data(
-        _orga_request(event)
-    )
-
-    assert len(data) == 1
-    assert data[0]["name"] == "Managed Speaker"
-    assert data[0]["email"] == ""
-
-
-def test_speaker_question_data_excludes_inactive_questions():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-    question = QuestionFactory(event=event, target="speaker", active=False)
-    AnswerFactory(question=question, speaker=speaker, submission=None)
-
-    _, data = SpeakerQuestionData(ScheduleFactory.build(event=event)).get_csv_data(
-        _orga_request(event)
-    )
-
-    assert data == []
-
-
-def test_speaker_question_data_excludes_answers_without_speaker():
-    event = EventFactory()
-    question = QuestionFactory(event=event, target="speaker")
-    submission = SubmissionFactory(event=event)
-    AnswerFactory(question=question, submission=submission, speaker=None)
-
-    _, data = SpeakerQuestionData(ScheduleFactory.build(event=event)).get_csv_data(
-        _orga_request(event)
-    )
-
-    assert data == []
-
-
-def test_speaker_question_data_returns_empty_for_anonymous_user():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-    question = QuestionFactory(event=event, target="speaker")
-    AnswerFactory(question=question, speaker=speaker, submission=None)
-
-    request = RequestFactory().get("/")
-    request.user = AnonymousUser()
-
-    _, data = SpeakerQuestionData(ScheduleFactory.build(event=event)).get_csv_data(
-        request
-    )
-
-    assert data == []
-
-
-def test_speaker_question_data_excludes_team_restricted_questions():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-    other_team = TeamFactory(organiser=event.organiser, all_events=True)
-    visible_q = QuestionFactory(event=event, target="speaker", question="Visible")
-    restricted_q = QuestionFactory(event=event, target="speaker", question="Hidden")
-    restricted_q.limit_teams.add(other_team)
-    AnswerFactory(question=visible_q, speaker=speaker, submission=None, answer="V")
-    AnswerFactory(question=restricted_q, speaker=speaker, submission=None, answer="H")
-
-    _, data = SpeakerQuestionData(ScheduleFactory.build(event=event)).get_csv_data(
-        _orga_request(event)
-    )
-
-    assert [row["answer"] for row in data] == ["V"]
-
-
-def test_submission_question_data_get_csv_data_returns_submission_answers():
+def test_submission_question_data_get_csv_data_lists_this_events_answers():
     event = EventFactory()
     submission = SubmissionFactory(event=event)
     question = QuestionFactory(
         event=event, target="submission", question="Session level?"
     )
     AnswerFactory(question=question, submission=submission, answer="Beginner")
+    other_event = EventFactory()
+    AnswerFactory(
+        question=QuestionFactory(event=other_event, target="submission"),
+        submission=SubmissionFactory(event=other_event),
+        answer="Elsewhere",
+    )
 
     field_names, data = SubmissionQuestionData(
         ScheduleFactory.build(event=event)
     ).get_csv_data(_orga_request(event))
 
     assert field_names == ["code", "title", "question", "answer"]
-    assert len(data) == 1
-    assert data[0]["code"] == submission.code
-    assert data[0]["title"] == submission.title
-    assert str(data[0]["question"]) == "Session level?"
-    assert data[0]["answer"] == "Beginner"
-
-
-def test_submission_question_data_excludes_other_events():
-    event = EventFactory()
-    other_event = EventFactory()
-    question = QuestionFactory(event=other_event, target="submission")
-    submission = SubmissionFactory(event=other_event)
-    AnswerFactory(question=question, submission=submission)
-
-    _, data = SubmissionQuestionData(ScheduleFactory.build(event=event)).get_csv_data(
-        _orga_request(event)
-    )
-
-    assert data == []
+    assert data == [
+        {
+            "code": submission.code,
+            "title": submission.title,
+            "question": "Session level?",
+            "answer": "Beginner",
+        }
+    ]

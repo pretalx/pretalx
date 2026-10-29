@@ -145,170 +145,115 @@ def _make_orga_crud_view(event, user, *, action="list", obj=None):
 # --- FormSignalMixin ---
 
 
-def test_form_signal_mixin_extra_forms_returns_empty_list_when_no_signal(event):
-    mixin = _make_form_signal_mixin(event)
-    assert mixin.extra_forms == []
-
-
-def test_form_signal_mixin_extra_forms_skips_exception_responses(
-    event, register_signal_handler
-):
-    def handler(signal, sender, **kwargs):
-        raise ValueError("broken plugin")
-
-    register_signal_handler(_test_form_signal, handler)
-
-    mixin = _make_form_signal_mixin(
-        event,
-        extra_forms_signal="tests.common.views.unit.test_generic._test_form_signal",
-    )
-    mixin.get_form_kwargs = dict
-    assert mixin.extra_forms == []
-
-
-def test_form_signal_mixin_extra_forms_extends_list_response(
+def test_form_signal_mixin_extra_forms_collects_handler_responses(
     event, register_signal_handler
 ):
     form_a = SimpleNamespace(name="a")
     form_b = SimpleNamespace(name="b")
+    form_single = SimpleNamespace(name="single")
 
-    def handler(signal, sender, **kwargs):
+    def list_handler(signal, sender, **kwargs):
         return [form_a, form_b]
 
-    register_signal_handler(_test_form_signal, handler)
+    def single_handler(signal, sender, **kwargs):
+        return form_single
 
-    mixin = _make_form_signal_mixin(
-        event,
-        extra_forms_signal="tests.common.views.unit.test_generic._test_form_signal",
-    )
-    mixin.get_form_kwargs = dict
-
-    assert mixin.extra_forms == [form_a, form_b]
-
-
-def test_form_signal_mixin_extra_forms_appends_single_response(
-    event, register_signal_handler
-):
-    form = SimpleNamespace(name="single")
-
-    def handler(signal, sender, **kwargs):
-        return form
-
-    register_signal_handler(_test_form_signal, handler)
-
-    mixin = _make_form_signal_mixin(
-        event,
-        extra_forms_signal="tests.common.views.unit.test_generic._test_form_signal",
-    )
-    mixin.get_form_kwargs = dict
-
-    assert mixin.extra_forms == [form]
-
-
-def test_form_signal_mixin_extra_forms_skips_falsy_response(
-    event, register_signal_handler
-):
-    def handler(signal, sender, **kwargs):
+    def falsy_handler(signal, sender, **kwargs):
         return None
 
-    register_signal_handler(_test_form_signal, handler)
+    def broken_handler(signal, sender, **kwargs):
+        raise ValueError("broken plugin")
 
-    mixin = FormSignalMixin()
-    mixin.extra_forms_signal = "tests.common.views.unit.test_generic._test_form_signal"
-    mixin.request = _with_messages(make_request(event))
+    for handler in (list_handler, single_handler, falsy_handler, broken_handler):
+        register_signal_handler(_test_form_signal, handler)
+    mixin = _make_form_signal_mixin(
+        event,
+        extra_forms_signal="tests.common.views.unit.test_generic._test_form_signal",
+    )
     mixin.get_form_kwargs = dict
 
-    assert mixin.extra_forms == []
+    assert mixin.extra_forms == [form_a, form_b, form_single]
 
 
 def test_form_signal_mixin_get_context_data_includes_extra_forms(event):
     mixin = _make_form_signal_mixin(event)
+
     context = mixin.get_context_data(foo="bar")
-    assert context["extra_forms"] == []
-    assert context["foo"] == "bar"
+
+    assert mixin.extra_forms == []
+    assert context == {"foo": "bar", "extra_forms": []}
 
 
-def test_form_signal_mixin_form_valid_shows_error_for_invalid_extra_form(event):
-    invalid_form = SimpleNamespace(
-        is_valid=lambda: False, errors=["Something went wrong"]
-    )
+def _raise(exc):
+    def raiser():
+        raise exc
 
+    return raiser
+
+
+@pytest.mark.parametrize(
+    ("extra_form", "expected_messages"),
+    (
+        pytest.param(
+            SimpleNamespace(is_valid=lambda: False, errors=["Something went wrong"]),
+            ["Something went wrong"],
+            id="invalid_with_errors",
+        ),
+        pytest.param(
+            SimpleNamespace(is_valid=lambda: False, errors=[]),
+            [],
+            id="invalid_without_errors",
+        ),
+        pytest.param(
+            SimpleNamespace(
+                is_valid=lambda: True,
+                save=_raise(IntegrityError("duplicate")),
+                label=None,
+            ),
+            ["Some changes could not be saved."],
+            id="integrity_error",
+        ),
+        pytest.param(
+            SimpleNamespace(
+                is_valid=lambda: True,
+                save=_raise(ValidationError("bad data")),
+                label="My Plugin",
+            ),
+            ["[My Plugin] Some changes could not be saved."],
+            id="validation_error_with_label",
+        ),
+    ),
+)
+def test_form_signal_mixin_form_valid_reports_extra_form_failures(
+    event, extra_form, expected_messages
+):
     mixin = _make_form_signal_mixin(event)
-    type(mixin).extra_forms = property(lambda self: [invalid_form])
+    type(mixin).extra_forms = property(lambda self: [extra_form])
 
     mixin.form_valid(SimpleNamespace())
 
-    msgs = list(mixin.request._messages)
-    assert len(msgs) == 1
-    assert "Something went wrong" in str(msgs[0])
-
-
-def test_form_signal_mixin_form_valid_skips_invalid_extra_form_without_errors(event):
-    invalid_form = SimpleNamespace(is_valid=lambda: False, errors=[])
-
-    mixin = _make_form_signal_mixin(event)
-    type(mixin).extra_forms = property(lambda self: [invalid_form])
-
-    mixin.form_valid(SimpleNamespace())
-
-    assert len(list(mixin.request._messages)) == 0
-
-
-def test_form_signal_mixin_form_valid_handles_integrity_error(event):
-    def raise_integrity():
-        raise IntegrityError("duplicate")
-
-    valid_form = SimpleNamespace(
-        is_valid=lambda: True, save=raise_integrity, label=None
-    )
-
-    mixin = _make_form_signal_mixin(event)
-    type(mixin).extra_forms = property(lambda self: [valid_form])
-
-    mixin.form_valid(SimpleNamespace())
-
-    assert len(list(mixin.request._messages)) == 1
-
-
-def test_form_signal_mixin_form_valid_handles_validation_error_with_label(event):
-    def raise_validation():
-        raise ValidationError("bad data")
-
-    valid_form = SimpleNamespace(
-        is_valid=lambda: True, save=raise_validation, label="My Plugin"
-    )
-
-    mixin = _make_form_signal_mixin(event)
-    type(mixin).extra_forms = property(lambda self: [valid_form])
-
-    mixin.form_valid(SimpleNamespace())
-
-    msgs = list(mixin.request._messages)
-    assert len(msgs) == 1
-    assert "[My Plugin]" in str(msgs[0])
+    assert [str(m) for m in mixin.request._messages] == expected_messages
 
 
 # --- FormLoggingMixin ---
 
 
-def test_form_logging_mixin_get_log_kwargs_returns_user_and_orga(event):
+def test_form_logging_mixin_form_valid_shows_message_for_known_actions_only(event):
     user = UserFactory()
-    mixin = _make_form_logging_mixin(event, user)
-    assert mixin.get_log_kwargs() == {"person": user, "orga": True}
-
-
-def test_form_logging_mixin_form_valid_shows_success_message(event):
-    user = UserFactory()
-    mixin = _make_form_logging_mixin(event, user, action="update")
-
     form = SimpleNamespace(
         save=lambda: None, instance=SimpleNamespace(pk=None), has_changed=lambda: False
     )
+
+    mixin = _make_form_logging_mixin(event, user, action="update")
     mixin.form_valid(form)
 
-    msgs = list(mixin.request._messages)
-    assert len(msgs) == 1
-    assert str(msgs[0]) == str(phrases.base.saved)
+    assert mixin.get_log_kwargs() == {"person": user, "orga": True}
+    assert [str(m) for m in mixin.request._messages] == [str(phrases.base.saved)]
+
+    mixin = _make_form_logging_mixin(event, user, action="custom_action")
+    mixin.form_valid(form)
+
+    assert list(mixin.request._messages) == []
 
 
 def test_form_logging_mixin_form_valid_skip_logging_delegates_to_super(event):
@@ -366,18 +311,6 @@ def test_form_logging_mixin_form_valid_logs_without_get_instance_data(event):
     assert "new_data" not in kwargs
 
 
-def test_form_logging_mixin_form_valid_no_message_for_unknown_action(event):
-    user = UserFactory()
-    mixin = _make_form_logging_mixin(event, user, action="custom_action")
-
-    form = SimpleNamespace(
-        save=lambda: None, instance=SimpleNamespace(pk=None), has_changed=lambda: False
-    )
-    mixin.form_valid(form)
-
-    assert len(list(mixin.request._messages)) == 0
-
-
 def test_form_logging_mixin_form_valid_skip_logging_without_super(event):
     user = UserFactory()
 
@@ -420,57 +353,39 @@ def test_generic_login_view_dispatch_redirects_authenticated_user(event):
         def success_url(self):
             return "/orga/"
 
-    view = TestLoginView()
-    view.request = make_request(event, user=user)
-    view.kwargs = {}
-    view.args = []
-
-    response = view.dispatch(view.request)
-    assert response.status_code == 302
-    assert response.url == "/orga/"
-
-
-def test_generic_login_view_dispatch_redirects_on_no_reverse_match(event):
-    user = UserFactory()
-
-    class TestLoginView(GenericLoginView):
-        @property
-        def success_url(self):
-            return "/fallback/"
-
+    class BrokenLoginView(TestLoginView):
         def get_success_url(self, ignore_next=False):
             raise NoReverseMatch("no match")
 
-    view = TestLoginView()
-    view.request = make_request(event, user=user)
-    view.kwargs = {}
-    view.args = []
+    for view_class in (TestLoginView, BrokenLoginView):
+        view = view_class()
+        view.request = make_request(event, user=user)
+        view.kwargs = {}
+        view.args = []
 
-    response = view.dispatch(view.request)
-    assert response.status_code == 302
-    assert response.url == "/fallback/"
+        response = view.dispatch(view.request)
 
-
-def test_generic_login_view_get_next_url_or_fallback_returns_next_url():
-    request = _rf.get("/", QUERY_STRING="next=/dashboard/")
-    result = GenericLoginView.get_next_url_or_fallback(request, "/fallback/")
-    assert result == "/dashboard/"
+        assert response.status_code == 302
+        assert response.url == "/orga/"
 
 
-def test_generic_login_view_get_next_url_or_fallback_returns_fallback_when_ignore_next():
-    request = _rf.get("/", QUERY_STRING="next=/dashboard/")
+@pytest.mark.parametrize(
+    ("query", "ignore_next", "expected"),
+    (
+        ("next=/dashboard/", False, "/dashboard/"),
+        ("next=/dashboard/", True, "/fallback/"),
+        ("page=2&sort=name", False, "/fallback/?page=2&sort=name"),
+    ),
+    ids=("next", "ignore_next", "preserves_extra_params"),
+)
+def test_generic_login_view_get_next_url_or_fallback(query, ignore_next, expected):
+    request = _rf.get("/", QUERY_STRING=query)
+
     result = GenericLoginView.get_next_url_or_fallback(
-        request, "/fallback/", ignore_next=True
+        request, "/fallback/", ignore_next=ignore_next
     )
-    assert result == "/fallback/"
 
-
-def test_generic_login_view_get_next_url_or_fallback_preserves_extra_params():
-    request = _rf.get("/", QUERY_STRING="page=2&sort=name")
-    result = GenericLoginView.get_next_url_or_fallback(request, "/fallback/")
-    assert result.startswith("/fallback/?")
-    assert "page=2" in result
-    assert "sort=name" in result
+    assert result == expected
 
 
 def test_generic_login_view_get_redirect_falls_back_on_no_reverse_match(event):
@@ -511,30 +426,23 @@ def test_generic_login_view_get_form_kwargs_includes_request_and_reset_link(even
     assert "/orga/" in kwargs["success_url"]
 
 
-def test_generic_reset_view_form_valid_with_no_user_redirects(event):
-    view = GenericResetView()
-    view.request = _with_messages(make_request(event))
-    view.get_success_url = lambda: "/login/"
-
-    form = SimpleNamespace(cleaned_data={"user": None})
-    response = view.form_valid(form)
-
-    assert response.status_code == 302
-    assert response.url == "/login/"
-
-
-def test_generic_reset_view_form_valid_with_recent_reset_redirects(event):
+def test_generic_reset_view_form_valid_redirects_without_mail_for_no_or_recent_user(
+    event,
+):
     user = UserFactory(pw_reset_time=now() - dt.timedelta(hours=1))
-
     view = GenericResetView()
     view.request = _with_messages(make_request(event))
     view.get_success_url = lambda: "/login/"
 
-    form = SimpleNamespace(cleaned_data={"user": user})
-    response = view.form_valid(form)
+    for form_user in (None, user):
+        response = view.form_valid(SimpleNamespace(cleaned_data={"user": form_user}))
 
-    assert response.status_code == 302
-    assert response.url == "/login/"
+        assert response.status_code == 302
+        assert response.url == "/login/"
+
+    assert not ActivityLog.objects.filter(
+        action_type="pretalx.user.password.reset"
+    ).exists()
 
 
 def test_generic_reset_view_form_valid_handles_send_mail_exception(event, monkeypatch):
@@ -595,34 +503,23 @@ def test_crud_view_is_generic(event, action, expected):
     assert view.is_generic is expected
 
 
-def test_crud_view_permission_denied_raises_http404_for_non_cfp(event):
+def test_crud_view_permission_denied_redirects_only_anonymous_cfp_users(event):
     view = _make_crud_view(event, action="list")
+    view.get_generic_permission_object = lambda: event
+
     with pytest.raises(Http404):
         view.permission_denied()
+    with pytest.raises(Http404):
+        view.dispatch(view.request)
 
-
-def test_crud_view_permission_denied_redirects_anonymous_cfp_user(event):
-    view = _make_crud_view(event, action="list")
-    view.request.resolver_match = SimpleNamespace(namespaces=["cfp"])
-    response = view.permission_denied()
-    assert response.status_code == 302
-    assert event.urls.login in response.url
-
-
-def test_crud_view_permission_denied_redirect_includes_get_params(event):
-    view = _make_crud_view(event, action="list")
     view.request.resolver_match = SimpleNamespace(namespaces=["cfp"])
     view.request.GET = QueryDict("page=2&sort=name")
     response = view.permission_denied()
-    assert "page=2" in response.url
-    assert "sort=name" in response.url
 
-
-def test_crud_view_dispatch_calls_permission_denied_on_no_access(event):
-    view = _make_crud_view(event, action="list")
-    view.get_generic_permission_object = lambda: event
-    with pytest.raises(Http404):
-        view.dispatch(view.request)
+    assert response.status_code == 302
+    assert (
+        response.url == f"http://testserver{event.urls.login}?next=/&page=2&sort=name"
+    )
 
 
 def test_crud_view_list_with_pagination(event):
@@ -672,26 +569,20 @@ def test_crud_view_get_queryset(event, queryset_attr):
     assert qs.model is Tag
 
 
-def test_crud_view_get_success_url_returns_next_url_when_present(event):
+def test_crud_view_get_success_url(event):
     user = make_orga_user(event)
+
     view = _make_crud_view(event, user=user, action="update")
     view.request.GET = QueryDict("next=/custom/")
     assert view.get_success_url() == "/custom/"
 
-
-def test_crud_view_get_success_url_returns_list_for_delete(event):
-    user = make_orga_user(event)
-    view = _make_crud_view(event, user=user, action="delete")
+    view = _make_crud_view(event, user=user, action="update")
     view.reverse = lambda action, instance=None: f"/reversed/{action}/"
     assert view.get_success_url() == "/reversed/list/"
-
-
-def test_crud_view_get_success_url_returns_detail_when_not_detail_is_update(event):
-    user = make_orga_user(event)
-    view = _make_crud_view(event, user=user, action="update")
     view.detail_is_update = False
-    view.reverse = lambda action, instance=None: f"/reversed/{action}/"
     assert view.get_success_url() == "/reversed/detail/"
+    view.action = "delete"
+    assert view.get_success_url() == "/reversed/list/"
 
 
 @pytest.mark.parametrize(
@@ -729,14 +620,11 @@ def test_crud_view_reverse_without_namespace(event):
         view.reverse("list")
 
 
-def test_crud_view_get_generic_title_returns_str_of_instance(event):
+def test_crud_view_get_generic_title(event):
     tag = TagFactory(event=event, tag="Python")
     view = _make_crud_view(event, action="update")
+
     assert view.get_generic_title(instance=tag) == "Python"
-
-
-def test_crud_view_get_generic_title_returns_model_name_without_instance(event):
-    view = _make_crud_view(event, action="list")
     assert view.get_generic_title() == "Tag"
 
 
@@ -753,37 +641,24 @@ def test_crud_view_get_form_kwargs_includes_locales_for_i18n_form(event):
     assert kwargs["locales"] == event.locales
 
 
-def test_crud_view_get_context_data_for_object(event):
-    user = make_orga_user(event)
-    tag = TagFactory(event=event)
-
-    view = _make_crud_view(event, user=user, action="update", obj=tag)
-    view.get_generic_permission_object = lambda: event
-    context = view.get_context_data()
-    assert context["object"] is tag
-    assert context["tag"] is tag
-    assert context["action"] == "update"
-
-
 def test_crud_view_get_context_data_for_object_list(event):
     user = make_orga_user(event)
-
     view = _make_crud_view(event, user=user, action="list")
     view.get_generic_permission_object = lambda: event
+    view.reverse = lambda action, instance=None: f"/reversed/{action}/"
     view.object_list = Tag.objects.none()
+
     context = view.get_context_data()
     assert "object_list" in context
     assert "tag_list" in context
+    assert context["create_url"] == "/reversed/create/"
 
-
-def test_crud_view_get_context_data_without_create_permission(event):
-    user = make_orga_user(event)
-
-    view = _make_crud_view(event, user=user, action="list")
-    view.get_generic_permission_object = lambda: event
-    view.object_list = Tag.objects.none()
     view.__dict__["has_create_permission"] = False
+    view.context_object_name = ""
     context = view.get_context_data()
+    assert "object_list" in context
+    assert "tag_list" not in context
+    assert "_list" not in context
     assert "create_url" not in context
 
 
@@ -798,6 +673,9 @@ def test_crud_view_get_context_data_hides_history_without_log_entries(event, act
 
     assert view.history_log_entries == []
     assert "tablist" not in context
+    assert context["object"] is tag
+    assert context["tag"] is tag
+    assert context["action"] == action
 
 
 @pytest.mark.parametrize("action", ("detail", "update"))
@@ -841,18 +719,6 @@ def test_crud_view_get_context_data_skips_context_object_name_when_empty(event):
     assert "tag" not in context or context.get("tag") is not tag
 
 
-def test_crud_view_get_context_data_skips_list_name_when_empty(event):
-    user = make_orga_user(event)
-
-    view = _make_crud_view(event, user=user, action="list")
-    view.context_object_name = ""
-    view.get_generic_permission_object = lambda: event
-    view.object_list = Tag.objects.none()
-    context = view.get_context_data()
-    assert "object_list" in context
-    assert "_list" not in context
-
-
 def test_crud_view_perform_delete_no_message(event):
     user = make_orga_user(event)
     tag = TagFactory(event=event)
@@ -890,116 +756,117 @@ def test_crud_view_get_url_pattern(action, expected):
     assert CRUDView.get_url_pattern("tags", action) == expected
 
 
-def test_crud_view_get_url_pattern_update_with_detail_is_update():
-    CRUDView.detail_is_update = True
-    assert CRUDView.get_url_pattern("tags", "update") == "tags/<int:pk>/"
-
-
-def test_crud_view_get_url_pattern_update_without_detail_is_update():
+def test_crud_view_get_url_pattern_update_depends_on_detail_is_update():
     class TestView(CRUDView):
         detail_is_update = False
 
+    assert CRUDView.get_url_pattern("tags", "update") == "tags/<int:pk>/"
     assert TestView.get_url_pattern("tags", "update") == "tags/<int:pk>/edit/"
 
 
-def test_crud_view_get_urls_excludes_detail_when_detail_is_update():
-    urls = CRUDView.get_urls("tags", "tag", namespace="orga")
-    url_names = [u.name for u in urls]
-    assert "tag.detail" not in url_names
-    assert "tag.list" in url_names
-    assert "tag.update" in url_names
-
-
-def test_crud_view_get_urls_includes_detail_when_not_detail_is_update():
+def test_crud_view_get_urls_includes_detail_only_when_not_detail_is_update():
     class TestView(CRUDView):
         detail_is_update = False
         model = Tag
 
-    urls = TestView.get_urls("tags", "tag", namespace="orga")
-    url_names = [u.name for u in urls]
-    assert "tag.detail" in url_names
+    assert [u.name for u in CRUDView.get_urls("tags", "tag", namespace="orga")] == [
+        "tag.list",
+        "tag.create",
+        "tag.update",
+        "tag.delete",
+    ]
+    assert [u.name for u in TestView.get_urls("tags", "tag", namespace="orga")] == [
+        "tag.list",
+        "tag.detail",
+        "tag.create",
+        "tag.update",
+        "tag.delete",
+    ]
 
 
 # --- CRUDView template names ---
 
 
-def test_crud_view_list_template_names():
+@pytest.mark.parametrize(
+    ("action", "template_namespace", "expected"),
+    (
+        (
+            "list",
+            None,
+            [
+                "common/tag/list.html",
+                "common/tag_list.html",
+                "common/generic/list.html",
+            ],
+        ),
+        (
+            "create",
+            None,
+            [
+                "common/tag/create.html",
+                "common/tag_create.html",
+                "common/tag/_form.html",
+                "common/tag_form.html",
+                "common/generic/create.html",
+            ],
+        ),
+        (
+            "list",
+            "orga/submission",
+            [
+                "orga/submission/tag/list.html",
+                "orga/submission/tag_list.html",
+                "common/generic/list.html",
+            ],
+        ),
+    ),
+    ids=("list", "create_with_form_fallback", "custom_namespace"),
+)
+def test_crud_view_get_template_names(action, template_namespace, expected):
     view = CRUDView()
     view.model = Tag
-    view.action = "list"
-    view.template_namespace = None
-    templates = view.get_template_names()
-    assert "common/tag/list.html" in templates
-    assert "common/tag_list.html" in templates
-    assert templates[-1] == "common/generic/list.html"
+    view.action = action
+    view.template_namespace = template_namespace
 
-
-def test_crud_view_create_template_names_include_form_fallback():
-    view = CRUDView()
-    view.model = Tag
-    view.action = "create"
-    view.template_namespace = None
-    templates = view.get_template_names()
-    assert "common/tag/_form.html" in templates
-    assert "common/tag_form.html" in templates
-    assert templates[-1] == "common/generic/create.html"
-
-
-def test_crud_view_custom_namespace_template_names():
-    view = CRUDView()
-    view.model = Tag
-    view.action = "list"
-    view.template_namespace = "orga/submission"
-    templates = view.get_template_names()
-    assert "orga/submission/tag/list.html" in templates
+    assert view.get_template_names() == expected
 
 
 # --- OrgaTableMixin ---
 
 
-def test_orga_table_mixin_get_paginate_by_returns_none_when_table_class_set(event):
+@pytest.mark.parametrize(
+    ("request_get", "max_page_size", "expected"),
+    (
+        (None, 100, 50),
+        ("page_size=abc", 100, 50),
+        ("page_size=30", 100, 30),
+        ("page_size=9999", 100, 100),
+        ("page_size=200", 0, 200),
+    ),
+    ids=("default", "invalid", "explicit", "clamped", "unclamped"),
+)
+def test_orga_table_mixin_get_paginate_by_from_query(
+    event, request_get, max_page_size, expected
+):
     user = UserFactory()
-    mixin = _make_table_mixin(event, user, table_class="SomeTable")
-    assert mixin.get_paginate_by() is None
+    mixin = _make_table_mixin(event, user, request_get=request_get)
+    mixin.max_page_size = max_page_size
 
-
-def test_orga_table_mixin_get_paginate_by_returns_default(event):
-    user = UserFactory()
-    mixin = _make_table_mixin(event, user)
-    assert mixin.get_paginate_by() == 50
-
-
-def test_orga_table_mixin_get_paginate_by_clamps_to_max_page_size(event):
-    user = UserFactory()
-    mixin = _make_table_mixin(event, user, request_get="page_size=9999")
-    mixin.max_page_size = 100
-    assert mixin.get_paginate_by() == 100
-
-
-def test_orga_table_mixin_get_paginate_by_invalid_page_size_returns_default(event):
-    user = UserFactory()
-    mixin = _make_table_mixin(event, user, request_get="page_size=abc")
-    assert mixin.get_paginate_by() == 50
-
-
-def test_orga_table_mixin_get_paginate_by_does_not_store_in_session(event):
-    user = UserFactory()
-    mixin = _make_table_mixin(event, user, request_get="page_size=30")
-    assert mixin.get_paginate_by() == 30
+    assert mixin.get_paginate_by() == expected
     assert dict(mixin.request.session) == {}
 
 
-def test_orga_table_mixin_get_paginate_by_uses_table_page_size_when_set(event):
-    user = UserFactory()
-    mixin = _make_table_mixin(event, user)
-    mixin._table_page_size = 15
-    assert mixin.get_paginate_by() == 15
-
-
-def test_orga_table_mixin_get_paginate_by_clamps_saved_page_size(event, settings):
+def test_orga_table_mixin_get_paginate_by_prefers_table_page_size(event, settings):
     settings.MAX_PAGINATION_LIMIT = 100
     user = UserFactory()
     mixin = _make_table_mixin(event, user)
+
+    mixin.table_class = "SomeTable"
+    assert mixin.get_paginate_by() is None
+
+    mixin._table_page_size = 15
+    assert mixin.get_paginate_by() == 15
+
     mixin._table_page_size = 250
     assert mixin.get_paginate_by() == 100
 
@@ -1034,19 +901,6 @@ def test_orga_table_mixin_get_table_pagination_anonymous_skips_preferences(event
     table = SimpleNamespace(data=[], name="test_table", event=event)
 
     assert mixin.get_table_pagination(table)["per_page"] == 20
-
-
-def test_orga_table_mixin_get_paginate_by_no_clamping_when_max_page_size_zero(event):
-    user = make_orga_user(event)
-    mixin = OrgaTableMixin()
-    mixin.table_class = None
-    mixin.table_template_name = "django_tables2/table.html"
-    mixin.max_page_size = 0
-    request = make_request(event, user=user)
-    request.resolver_match = SimpleNamespace(url_name="tag.list")
-    request.GET = QueryDict("page_size=200")
-    mixin.request = request
-    assert mixin.get_paginate_by() == 200
 
 
 @pytest.mark.parametrize(
@@ -1090,57 +944,41 @@ def test_orga_table_mixin_get_table_pagination_disabled_for_dragsort(event):
     assert plain_pagination
 
 
-def test_orga_table_mixin_get_context_data_with_table_without_page(event):
-    user = UserFactory()
-    mixin = _make_table_mixin(event, user)
-    mixin.get_table = lambda *a, **kw: SimpleNamespace(page=None, paginator=None)
-    mixin.object_list = []
-    context = mixin.get_context_data()
-    assert context.get("is_paginated") is not True
-
-
-def test_orga_table_mixin_get_table_kwargs_adds_event_and_user(event):
-    user = UserFactory()
-    mixin = _make_table_mixin(event, user)
-    kwargs = mixin.get_table_kwargs()
-    assert kwargs["event"] is event
-    assert kwargs["user"] is user
-
-
-def test_orga_table_mixin_get_table_returns_none_when_no_table_class(event):
-    user = UserFactory()
-    mixin = _make_table_mixin(event, user)
-    assert mixin.get_table() is None
-
-
-def test_orga_table_mixin_get_context_data_with_table_page(event):
+def test_orga_table_mixin_get_context_data_marks_pagination_from_table_page(event):
     fake_paginator = SimpleNamespace(count=10)
     fake_page = SimpleNamespace(paginator=fake_paginator, has_other_pages=lambda: True)
-    fake_table = SimpleNamespace(page=fake_page, paginator=fake_paginator)
-
     user = UserFactory()
     mixin = _make_table_mixin(event, user)
-    mixin.get_table = lambda *a, **kw: fake_table
     mixin.object_list = []
+
+    assert mixin.get_table() is None
+    assert mixin.get_table_kwargs() == {"event": event, "user": user}
+
+    mixin.get_table = lambda *a, **kw: SimpleNamespace(page=None, paginator=None)
+    assert mixin.get_context_data().get("is_paginated") is not True
+
+    mixin.get_table = lambda *a, **kw: SimpleNamespace(
+        page=fake_page, paginator=fake_paginator
+    )
     context = mixin.get_context_data()
     assert context["page_obj"] is fake_page
     assert context["paginator"] is fake_paginator
     assert context["is_paginated"] is True
 
 
-def test_orga_table_mixin_get_template_names_returns_htmx_partial(event):
+def test_orga_table_mixin_get_template_names_returns_htmx_partial_only_for_htmx(event):
     user = UserFactory()
     mixin = _make_table_mixin(event, user)
     mixin.table_class = "SomeTable"
-    mixin.request.META["HTTP_HX_REQUEST"] = "true"
-    mixin.request.META["HTTP_HX_TARGET"] = "table-content-main"
-    assert mixin.get_template_names() == ["django_tables2/table.html#table-content"]
-
-
-def test_orga_table_mixin_get_template_names_returns_normal_for_non_htmx(event):
-    user = UserFactory()
-    mixin = _make_table_mixin(event, user)
     assert mixin.get_template_names() == ["test/template.html"]
+
+    mixin = _make_table_mixin(
+        event,
+        user,
+        table_class="SomeTable",
+        request_headers={"HX-Request": "true", "HX-Target": "table-content-main"},
+    )
+    assert mixin.get_template_names() == ["django_tables2/table.html#table-content"]
 
 
 def test_orga_table_mixin_dispatch_sets_hx_push_url_for_htmx(event):
@@ -1174,77 +1012,48 @@ def test_orga_table_mixin_dispatch_sets_hx_push_url_for_htmx(event):
 # --- OrgaCRUDView ---
 
 
-def test_orga_crud_view_event_property(event):
+def test_orga_crud_view_with_event(event):
     user = make_orga_user(event)
     view = _make_orga_crud_view(event, user)
+    view.form_class = forms.Form
+
     assert view.event is event
+    assert view.get_generic_permission_object() is event
+    assert view.get_reverse_kwargs("list") == {"event": event.slug}
+    assert view.get_form_kwargs()["event"] is event
+    assert view.get_log_kwargs()["orga"] is True
+    assert view.get_template_names()[-1] == "orga/generic/list.html"
+    assert view.get_table_kwargs() == {
+        "event": event,
+        "user": user,
+        "has_update_permission": True,
+        "has_delete_permission": True,
+    }
 
 
-def test_orga_crud_view_organiser_property(event):
+def test_orga_crud_view_with_organiser_only(event):
     user = make_orga_user(event)
     view = _make_orga_crud_view(event, user)
+    view.form_class = forms.Form
+    del view.request.event
     view.request.organiser = event.organiser
+
+    assert view.event is None
     assert view.organiser is event.organiser
+    assert view.get_generic_permission_object() is event.organiser
+    assert view.get_reverse_kwargs("list") == {"organiser": event.organiser.slug}
+    assert view.get_form_kwargs()["organiser"] is event.organiser
+    assert "event" not in view.get_form_kwargs()
 
 
-def test_orga_crud_view_get_reverse_kwargs_includes_event_slug(event):
-    user = make_orga_user(event)
-    view = _make_orga_crud_view(event, user)
-    kwargs = view.get_reverse_kwargs("list")
-    assert kwargs["event"] == event.slug
-
-
-def test_orga_crud_view_get_reverse_kwargs_includes_organiser_slug(event):
-    user = make_orga_user(event)
-    view = _make_orga_crud_view(event, user)
-    del view.request.event
-    view.request.organiser = event.organiser
-    view.__dict__.pop("event", None)
-    view.__dict__.pop("organiser", None)
-    kwargs = view.get_reverse_kwargs("list")
-    assert kwargs.get("organiser") == event.organiser.slug
-
-
-def test_orga_crud_view_get_reverse_kwargs_without_event_or_organiser(event):
-    user = make_orga_user(event)
-    view = _make_orga_crud_view(event, user)
-    del view.request.event
-    view.__dict__.pop("event", None)
-    view.__dict__.pop("organiser", None)
-    kwargs = view.get_reverse_kwargs("list")
-    assert "event" not in kwargs
-    assert "organiser" not in kwargs
-
-
-def test_orga_crud_view_get_form_kwargs_includes_event(event):
-    user = make_orga_user(event)
-    view = _make_orga_crud_view(event, user)
-    view.form_class = forms.Form
-    kwargs = view.get_form_kwargs()
-    assert kwargs["event"] is event
-
-
-def test_orga_crud_view_get_form_kwargs_includes_organiser_when_no_event(event):
+def test_orga_crud_view_without_event_or_organiser(event):
     user = make_orga_user(event)
     view = _make_orga_crud_view(event, user)
     view.form_class = forms.Form
     del view.request.event
-    view.request.organiser = event.organiser
-    view.__dict__.pop("event", None)
-    kwargs = view.get_form_kwargs()
-    assert kwargs.get("organiser") is event.organiser
 
-
-def test_orga_crud_view_get_form_kwargs_without_event_or_organiser(event):
-    user = make_orga_user(event)
-    view = _make_orga_crud_view(event, user)
-    view.form_class = forms.Form
-    del view.request.event
-    view.__dict__.pop("event", None)
-    view.__dict__.pop("organiser", None)
-    kwargs = view.get_form_kwargs()
-    assert "event" not in kwargs
-    assert "organiser" not in kwargs
+    assert view.get_reverse_kwargs("list") == {}
+    assert not {"event", "organiser"} & set(view.get_form_kwargs())
 
 
 def test_orga_crud_view_form_valid_without_event_skips_event_assignment(event):
@@ -1261,39 +1070,3 @@ def test_orga_crud_view_form_valid_without_event_skips_event_assignment(event):
     result = view.form_valid(form)
     assert result.status_code == 302
     assert instance.event is None
-
-
-def test_orga_crud_view_get_generic_permission_object_returns_event(event):
-    user = make_orga_user(event)
-    view = _make_orga_crud_view(event, user)
-    assert view.get_generic_permission_object() is event
-
-
-def test_orga_crud_view_get_generic_permission_object_returns_organiser(event):
-    user = make_orga_user(event)
-    view = _make_orga_crud_view(event, user)
-    del view.request.event
-    view.request.organiser = event.organiser
-    view.__dict__.pop("event", None)
-    assert view.get_generic_permission_object() is event.organiser
-
-
-def test_orga_crud_view_get_log_kwargs_includes_orga_true(event):
-    user = make_orga_user(event)
-    view = _make_orga_crud_view(event, user)
-    assert view.get_log_kwargs()["orga"] is True
-
-
-def test_orga_crud_view_get_template_names_includes_orga_generic(event):
-    user = make_orga_user(event)
-    view = _make_orga_crud_view(event, user, action="list")
-    templates = view.get_template_names()
-    assert templates[-1] == "orga/generic/list.html"
-
-
-def test_orga_crud_view_get_table_kwargs_includes_permissions(event):
-    user = make_orga_user(event)
-    view = _make_orga_crud_view(event, user)
-    kwargs = view.get_table_kwargs()
-    assert "has_update_permission" in kwargs
-    assert "has_delete_permission" in kwargs

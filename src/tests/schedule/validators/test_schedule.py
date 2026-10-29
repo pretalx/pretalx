@@ -12,41 +12,17 @@ from tests.factories import EventFactory, ScheduleFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_validate_unique_version_accepts_unique_version():
+def test_validate_unique_version_is_case_insensitive_and_skips_self():
     event = EventFactory()
-    ScheduleFactory(event=event, version="v1")
+    schedule = ScheduleFactory(event=event, version="V1")
 
     validate_unique_version("v2", event=event)
-
-
-def test_validate_unique_version_rejects_duplicate():
-    event = EventFactory()
-    ScheduleFactory(event=event, version="v1")
-
-    with pytest.raises(ValidationError):
-        validate_unique_version("v1", event=event)
-
-
-def test_validate_unique_version_rejects_duplicate_case_insensitive():
-    event = EventFactory()
-    ScheduleFactory(event=event, version="V1")
-
-    with pytest.raises(ValidationError):
-        validate_unique_version("v1", event=event)
-
-
-def test_validate_unique_version_allows_self_on_update():
-    event = EventFactory()
-    schedule = ScheduleFactory(event=event, version="v1")
-
-    validate_unique_version("v1", event=event, exclude_schedule=schedule)
-
-
-def test_validate_unique_version_skips_when_version_or_event_missing():
-    event = EventFactory()
-
+    validate_unique_version("V1", event=event, exclude_schedule=schedule)
     validate_unique_version(None, event=event)
     validate_unique_version("v1", event=None)
+    for duplicate in ("V1", "v1"):
+        with pytest.raises(ValidationError):
+            validate_unique_version(duplicate, event=event)
 
 
 @pytest.mark.parametrize("version", ("v1.0", "200 km-h", "...", "a.b"))

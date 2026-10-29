@@ -46,136 +46,81 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_save_answer_creates_for_submission():
+def test_save_answer_creates_updates_and_deletes_string_answer():
     submission = SubmissionFactory()
     question = QuestionFactory(
         event=submission.event,
         variant=QuestionVariant.STRING,
         target=QuestionTarget.SUBMISSION,
     )
+
+    assert save_answer(question=question, value="", target_object=submission) is None
+    assert not Answer.objects.filter(question=question).exists()
 
     answer = save_answer(question=question, value="My answer", target_object=submission)
 
-    assert answer.pk is not None
     assert answer.answer == "My answer"
     assert answer.submission == submission
+    assert list(Answer.objects.filter(question=question)) == [answer]
+
+    updated = save_answer(
+        question=question, value="New answer", target_object=submission, existing=answer
+    )
+
+    assert updated.pk == answer.pk
+    assert Answer.objects.get(pk=answer.pk).answer == "New answer"
+
+    assert (
+        save_answer(
+            question=question, value="", target_object=submission, existing=updated
+        )
+        is None
+    )
+    assert not Answer.objects.filter(pk=answer.pk).exists()
 
 
-def test_save_answer_updates_existing():
+def test_save_answer_assigns_target_object_per_question_target():
     submission = SubmissionFactory()
-    question = QuestionFactory(
-        event=submission.event,
-        variant=QuestionVariant.STRING,
-        target=QuestionTarget.SUBMISSION,
-    )
-    existing = AnswerFactory(question=question, submission=submission, answer="Old")
+    speaker = SpeakerFactory(event=submission.event)
+    review = ReviewFactory(submission=submission)
+    sub_q = QuestionFactory(event=submission.event, target=QuestionTarget.SUBMISSION)
+    spk_q = QuestionFactory(event=submission.event, target=QuestionTarget.SPEAKER)
+    rev_q = QuestionFactory(event=submission.event, target=QuestionTarget.REVIEWER)
 
-    answer = save_answer(
-        question=question,
-        value="New answer",
-        target_object=submission,
-        existing=existing,
-    )
+    sub_a = save_answer(question=sub_q, value="Sub", target_object=submission)
+    spk_a = save_answer(question=spk_q, value="Speaker", target_object=speaker)
+    rev_a = save_answer(question=rev_q, value="Review", target_object=review)
 
-    assert answer.pk == existing.pk
-    existing.refresh_from_db()
-    assert existing.answer == "New answer"
-
-
-def test_save_answer_deletes_on_empty_value():
-    submission = SubmissionFactory()
-    question = QuestionFactory(
-        event=submission.event,
-        variant=QuestionVariant.STRING,
-        target=QuestionTarget.SUBMISSION,
-    )
-    existing = AnswerFactory(question=question, submission=submission, answer="Old")
-
-    result = save_answer(
-        question=question, value="", target_object=submission, existing=existing
-    )
-
-    assert result is None
-    assert not Answer.objects.filter(pk=existing.pk).exists()
+    assert (sub_a.submission, sub_a.speaker, sub_a.review) == (submission, None, None)
+    assert (spk_a.submission, spk_a.speaker, spk_a.review) == (None, speaker, None)
+    assert (rev_a.submission, rev_a.speaker, rev_a.review) == (None, None, review)
+    assert sub_a.target_object == submission
+    assert spk_a.target_object == speaker
+    assert rev_a.target_object == review
+    assert [a.answer for a in (sub_a, spk_a, rev_a)] == ["Sub", "Speaker", "Review"]
 
 
-def test_save_answer_noop_for_empty_value_without_existing():
-    submission = SubmissionFactory()
-    question = QuestionFactory(
-        event=submission.event,
-        variant=QuestionVariant.STRING,
-        target=QuestionTarget.SUBMISSION,
-    )
-
-    result = save_answer(question=question, value="", target_object=submission)
-
-    assert result is None
-    assert not Answer.objects.filter(question=question).exists()
-
-
-def test_save_answer_creates_for_speaker():
-    speaker = SpeakerFactory()
-    question = QuestionFactory(
-        event=speaker.event,
-        variant=QuestionVariant.STRING,
-        target=QuestionTarget.SPEAKER,
-    )
-
-    answer = save_answer(
-        question=question, value="Speaker answer", target_object=speaker
-    )
-
-    assert answer.pk is not None
-    assert answer.speaker == speaker
-    assert answer.answer == "Speaker answer"
-
-
-def test_save_answer_creates_for_review():
-    review = ReviewFactory()
-    question = QuestionFactory(
-        event=review.submission.event,
-        variant=QuestionVariant.STRING,
-        target=QuestionTarget.REVIEWER,
-    )
-
-    answer = save_answer(
-        question=question, value="Reviewer answer", target_object=review
-    )
-
-    assert answer.pk is not None
-    assert answer.review == review
-
-
-def test_save_answer_choice_creates_with_option():
-    question = QuestionFactory(variant=QuestionVariant.CHOICES)
-    option = AnswerOptionFactory(question=question, answer="Selected")
-    submission = SubmissionFactory(event=question.event)
-
-    answer = save_answer(question=question, value=option, target_object=submission)
-
-    assert answer.pk is not None
-    assert answer.answer == option.answer
-    assert list(answer.options.all()) == [option]
-
-
-def test_save_answer_choice_update_clears_old_option():
+def test_save_answer_choice_creates_and_replaces_option():
     question = QuestionFactory(variant=QuestionVariant.CHOICES)
     opt1 = AnswerOptionFactory(question=question, answer="Old")
     opt2 = AnswerOptionFactory(question=question, answer="New")
     submission = SubmissionFactory(event=question.event)
-    existing = AnswerFactory(question=question, submission=submission)
-    existing.options.add(opt1)
+
+    answer = save_answer(question=question, value=opt1, target_object=submission)
+
+    assert answer.answer == "Old"
+    assert list(answer.options.all()) == [opt1]
 
     answer = save_answer(
-        question=question, value=opt2, target_object=submission, existing=existing
+        question=question, value=opt2, target_object=submission, existing=answer
     )
 
-    answer.refresh_from_db()
+    answer.refresh_from_db(fields=["answer"])
     assert list(answer.options.all()) == [opt2]
-    assert answer.answer == opt2.answer
+    assert answer.answer == "New"
 
 
-def test_save_answer_multiple_creates_with_options():
+def test_save_answer_multiple_creates_replaces_and_clears_options():
     question = QuestionFactory(variant=QuestionVariant.MULTIPLE)
     opt1 = AnswerOptionFactory(question=question, answer="A")
     opt2 = AnswerOptionFactory(question=question, answer="B")
@@ -187,50 +132,33 @@ def test_save_answer_multiple_creates_with_options():
         target_object=submission,
     )
 
-    assert answer.pk is not None
     assert set(answer.options.all()) == {opt1, opt2}
     assert answer.answer == "A, B"
-
-
-def test_save_answer_multiple_update_clears():
-    question = QuestionFactory(variant=QuestionVariant.MULTIPLE)
-    opt1 = AnswerOptionFactory(question=question, answer="Old")
-    opt2 = AnswerOptionFactory(question=question, answer="New")
-    submission = SubmissionFactory(event=question.event)
-    existing = AnswerFactory(question=question, submission=submission)
-    existing.options.add(opt1)
 
     answer = save_answer(
         question=question,
         value=AnswerOption.objects.filter(pk=opt2.pk),
         target_object=submission,
-        existing=existing,
+        existing=answer,
     )
 
-    answer.refresh_from_db()
+    answer.refresh_from_db(fields=["answer"])
     assert list(answer.options.all()) == [opt2]
-
-
-def test_save_answer_multiple_empty_iterable_clears_options():
-    question = QuestionFactory(variant=QuestionVariant.MULTIPLE)
-    opt = AnswerOptionFactory(question=question, answer="Old")
-    submission = SubmissionFactory(event=question.event)
-    existing = AnswerFactory(question=question, submission=submission)
-    existing.options.add(opt)
+    assert answer.answer == "B"
 
     answer = save_answer(
         question=question,
         value=AnswerOption.objects.none(),
         target_object=submission,
-        existing=existing,
+        existing=answer,
     )
 
-    answer.refresh_from_db()
+    answer.refresh_from_db(fields=["answer"])
     assert list(answer.options.all()) == []
     assert answer.answer == ""
 
 
-def test_save_answer_file_creates_from_uploaded_file(
+def test_save_answer_file_creates_from_upload_and_keeps_path_string(
     django_capture_on_commit_callbacks,
 ):
     question = QuestionFactory(variant=QuestionVariant.FILE)
@@ -244,31 +172,28 @@ def test_save_answer_file_creates_from_uploaded_file(
         answer = save_answer(question=question, value=upload, target_object=submission)
 
     assert not queue.called
-    assert answer.pk is not None
-    assert answer.answer == "file://" + answer.answer_file.name
+    stored_name = answer.answer_file.name
+    assert answer.answer == "file://" + stored_name
     with answer.answer_file.open("rb") as fp:
         assert fp.read() == b"content"
 
-
-@pytest.mark.parametrize("target", ("submission", "speaker", "review"))
-def test_save_answer_file_strips_exif_from_raster_image(
-    target, django_capture_on_commit_callbacks
-):
-    review = ReviewFactory()
-    target_object = {
-        "submission": review.submission,
-        "speaker": SpeakerFactory(event=review.submission.event),
-        "review": review,
-    }[target]
-    question = QuestionFactory(
-        event=review.submission.event,
-        variant=QuestionVariant.FILE,
-        target={
-            "submission": QuestionTarget.SUBMISSION,
-            "speaker": QuestionTarget.SPEAKER,
-            "review": QuestionTarget.REVIEWER,
-        }[target],
+    answer = save_answer(
+        question=question,
+        value="file://" + stored_name,
+        target_object=submission,
+        existing=answer,
     )
+
+    answer.refresh_from_db(fields=["answer", "answer_file"])
+    assert answer.answer == "file://" + stored_name
+    assert answer.answer_file.name == stored_name
+
+
+def test_save_answer_file_strips_exif_from_raster_image(
+    django_capture_on_commit_callbacks,
+):
+    question = QuestionFactory(variant=QuestionVariant.FILE)
+    submission = SubmissionFactory(event=question.event)
     exif = Image.Exif()
     exif[ExifTags.Base.Make] = "Snoopcam"
     buf = BytesIO()
@@ -276,10 +201,8 @@ def test_save_answer_file_strips_exif_from_raster_image(
     upload = SimpleUploadedFile("photo.JPG", buf.getvalue(), content_type="image/jpeg")
 
     with scope(event=question.event), django_capture_on_commit_callbacks(execute=True):
-        answer = save_answer(
-            question=question, value=upload, target_object=target_object
-        )
-    answer.refresh_from_db()
+        answer = save_answer(question=question, value=upload, target_object=submission)
+    answer.refresh_from_db(fields=["answer", "answer_file"])
 
     assert answer.answer_file.name.endswith(".webp")
     assert answer.answer == "file://" + answer.answer_file.name
@@ -299,7 +222,7 @@ def test_save_answer_file_keeps_undecodable_image(django_capture_on_commit_callb
     ):
         answer = save_answer(question=question, value=upload, target_object=submission)
     stored_name = answer.answer_file.name
-    answer.refresh_from_db()
+    answer.refresh_from_db(fields=["answer", "answer_file"])
 
     assert len(callbacks) == 1
 
@@ -332,7 +255,7 @@ def test_save_answer_file_queued_processing_skips_replaced_file(
 
     task_process_image(**queue.call_args_list[0].kwargs["kwargs"])
 
-    answer.refresh_from_db()
+    answer.refresh_from_db(fields=["answer", "answer_file"])
     assert answer.answer_file.name == second_name
     with answer.answer_file.open("rb") as fp:
         assert fp.read() == second_bytes
@@ -347,7 +270,7 @@ def test_save_answer_file_resave_does_not_reprocess(
         answer = save_answer(
             question=question, value=make_image("photo.png"), target_object=submission
         )
-    answer.refresh_from_db()
+    answer.refresh_from_db(fields=["answer", "answer_file"])
     with default_storage.open(answer.answer_file.name, "rb") as fp:
         processed_bytes = fp.read()
 
@@ -367,145 +290,56 @@ def test_save_answer_file_resave_does_not_reprocess(
         )
 
     assert not queue.called
-    answer.refresh_from_db()
+    answer.refresh_from_db(fields=["answer", "answer_file"])
     with answer.answer_file.open("rb") as fp:
         assert fp.read() == processed_bytes
 
 
-def test_save_answer_file_keeps_existing_when_value_is_path_string():
-    question = QuestionFactory(variant=QuestionVariant.FILE)
-    submission = SubmissionFactory(event=question.event)
-    existing = AnswerFactory(
-        question=question, submission=submission, answer="file://existing.pdf"
-    )
-    existing.answer_file.name = "existing.pdf"
-    existing.save()
-    original_file_name = existing.answer_file.name
-
-    answer = save_answer(
-        question=question,
-        value="file://existing.pdf",
-        target_object=submission,
-        existing=existing,
-    )
-
-    answer.refresh_from_db()
-    assert answer.answer == "file://existing.pdf"
-    assert answer.answer_file.name == original_file_name
-
-
-def test_answer_target_object_property_returns_correct_parent():
-    submission = SubmissionFactory()
-    speaker = SpeakerFactory(event=submission.event)
-    review = ReviewFactory(submission=submission)
-    sub_q = QuestionFactory(event=submission.event, target=QuestionTarget.SUBMISSION)
-    spk_q = QuestionFactory(event=submission.event, target=QuestionTarget.SPEAKER)
-    rev_q = QuestionFactory(event=submission.event, target=QuestionTarget.REVIEWER)
-
-    sub_a = AnswerFactory(question=sub_q, submission=submission)
-    spk_a = AnswerFactory(question=spk_q, speaker=speaker)
-    rev_a = AnswerFactory(question=rev_q, review=review)
-
-    assert sub_a.target_object == submission
-    assert spk_a.target_object == speaker
-    assert rev_a.target_object == review
-
-
-def test_answer_target_object_setter_assigns_correct_fk():
-    submission = SubmissionFactory()
-    speaker = SpeakerFactory(event=submission.event)
-    review = ReviewFactory(submission=submission)
-    sub_q = QuestionFactory(event=submission.event, target=QuestionTarget.SUBMISSION)
-    spk_q = QuestionFactory(event=submission.event, target=QuestionTarget.SPEAKER)
-    rev_q = QuestionFactory(event=submission.event, target=QuestionTarget.REVIEWER)
-
-    sub_a = Answer(question=sub_q)
-    sub_a.target_object = submission
-    spk_a = Answer(question=spk_q)
-    spk_a.target_object = speaker
-    rev_a = Answer(question=rev_q)
-    rev_a.target_object = review
-
-    assert sub_a.submission == submission
-    assert sub_a.speaker is None
-    assert sub_a.review is None
-    assert spk_a.speaker == speaker
-    assert spk_a.submission is None
-    assert spk_a.review is None
-    assert rev_a.review == review
-    assert rev_a.submission is None
-    assert rev_a.speaker is None
-
-
-def test_export_answer_files_non_file_question():
-    question = QuestionFactory(variant=QuestionVariant.STRING)
-    cached_file = CachedFileFactory()
-
-    result = export_answer_files(question=question, cached_file=cached_file)
-
-    assert result is None
-    cached_file.refresh_from_db()
-    assert not cached_file.file
-
-
-def test_export_answer_files_no_answers():
-    question = QuestionFactory(variant=QuestionVariant.FILE)
-    cached_file = CachedFileFactory()
-
-    result = export_answer_files(question=question, cached_file=cached_file)
-
-    assert result == str(cached_file.id)
+def _zip_entries(cached_file):
     cached_file.refresh_from_db()
     with ZipFile(BytesIO(cached_file.file.read()), "r") as zf:
-        assert zf.namelist() == []
+        return {name: zf.read(name) for name in zf.namelist()}
 
 
-def test_export_answer_files_creates_zip():
+def test_export_answer_files_bundles_file_answers():
     event = EventFactory()
+    string_question = QuestionFactory(event=event, variant=QuestionVariant.STRING)
     question = QuestionFactory(event=event, variant=QuestionVariant.FILE)
-    submission = SubmissionFactory(event=event)
+    unused = CachedFileFactory()
+    empty = CachedFileFactory()
+    cached_file = CachedFileFactory()
+
+    assert export_answer_files(question=string_question, cached_file=unused) is None
+    unused.refresh_from_db()
+    assert not unused.file
 
     with scope(event=event):
-        answer = AnswerFactory(
-            submission=submission, question=question, answer="doc.pdf"
+        assert export_answer_files(question=question, cached_file=empty) == str(
+            empty.id
         )
-        answer.answer_file.save("doc.pdf", ContentFile(b"pdf content"))
+        assert _zip_entries(empty) == {}
 
-    cached_file = CachedFileFactory()
-    with scope(event=event):
-        result = export_answer_files(question=question, cached_file=cached_file)
-
-    assert result == str(cached_file.id)
-    cached_file.refresh_from_db()
-    with ZipFile(BytesIO(cached_file.file.read()), "r") as zf:
-        names = zf.namelist()
-        assert len(names) == 1
-        assert zf.read(names[0]) == b"pdf content"
-
-
-def test_export_answer_files_multiple_answers():
-    event = EventFactory()
-    question = QuestionFactory(event=event, variant=QuestionVariant.FILE)
-    submission1 = SubmissionFactory(event=event)
-    submission2 = SubmissionFactory(event=event)
-
-    with scope(event=event):
-        a1 = AnswerFactory(submission=submission1, question=question, answer="doc.pdf")
+        a1 = AnswerFactory(
+            submission=SubmissionFactory(event=event), question=question, answer="doc"
+        )
         a1.answer_file.save("doc.pdf", ContentFile(b"content 1"))
-        a2 = AnswerFactory(submission=submission2, question=question, answer="doc.pdf")
+        a2 = AnswerFactory(
+            submission=SubmissionFactory(event=event), question=question, answer="doc"
+        )
         a2.answer_file.save("doc.pdf", ContentFile(b"content 2"))
+        AnswerFactory(
+            submission=SubmissionFactory(event=event),
+            question=question,
+            answer="placeholder",
+            answer_file="",
+        )
 
-    cached_file = CachedFileFactory()
-    with scope(event=event):
         result = export_answer_files(question=question, cached_file=cached_file)
 
     assert result == str(cached_file.id)
-    cached_file.refresh_from_db()
-    with ZipFile(BytesIO(cached_file.file.read()), "r") as zf:
-        names = zf.namelist()
-        assert len(names) == 2
-        contents = {zf.read(n) for n in names}
-        assert contents == {b"content 1", b"content 2"}
+    entries = _zip_entries(cached_file)
+    assert len(entries) == 2
+    assert set(entries.values()) == {b"content 1", b"content 2"}
 
 
 def test_export_answer_files_deduplicates_filenames():
@@ -530,34 +364,9 @@ def test_export_answer_files_deduplicates_filenames():
         result = export_answer_files(question=question, cached_file=cached_file)
 
     assert result == str(cached_file.id)
-    cached_file.refresh_from_db()
-    with ZipFile(BytesIO(cached_file.file.read()), "r") as zf:
-        names = sorted(zf.namelist())
-        assert names == ["doc.pdf", "doc_1.pdf"]
-
-
-def test_export_answer_files_skips_empty_answer_file():
-    event = EventFactory()
-    question = QuestionFactory(event=event, variant=QuestionVariant.FILE)
-    submission = SubmissionFactory(event=event)
-
-    with scope(event=event):
-        AnswerFactory(
-            submission=submission,
-            question=question,
-            answer="placeholder",
-            answer_file="",
-        )
-
-    cached_file = CachedFileFactory()
-    with scope(event=event):
-        result = export_answer_files(question=question, cached_file=cached_file)
-
-    assert result == str(cached_file.id)
-    cached_file.refresh_from_db()
-    assert cached_file.file
-    with ZipFile(BytesIO(cached_file.file.read()), "r") as zf:
-        assert zf.namelist() == []
+    entries = _zip_entries(cached_file)
+    assert set(entries) == {"doc.pdf", "doc_1.pdf"}
+    assert set(entries.values()) == {b"file 1", b"file 2"}
 
 
 def test_export_answer_files_handles_unreadable_file():
@@ -582,35 +391,7 @@ def test_export_answer_files_handles_unreadable_file():
         result = export_answer_files(question=question, cached_file=cached_file)
 
     assert result == str(cached_file.id)
-    cached_file.refresh_from_db()
-    assert cached_file.file
-    with ZipFile(BytesIO(cached_file.file.read()), "r") as zf:
-        names = zf.namelist()
-        assert len(names) == 1
-        assert zf.read(names[0]) == b""
-
-
-def test_replace_question_options_replaces_existing():
-    question = QuestionFactory(variant=QuestionVariant.CHOICES)
-    AnswerOptionFactory(question=question, answer="Old A")
-    AnswerOptionFactory(question=question, answer="Old B")
-
-    replace_question_options(
-        question=question, options_data=[{"answer": "New A"}, {"answer": "New B"}]
-    )
-
-    options = sorted(str(a) for a in question.options.values_list("answer", flat=True))
-    assert options == ["New A", "New B"]
-
-
-def test_replace_question_options_empty_clears_existing():
-    question = QuestionFactory(variant=QuestionVariant.CHOICES)
-    AnswerOptionFactory(question=question)
-    AnswerOptionFactory(question=question)
-
-    replace_question_options(question=question, options_data=[])
-
-    assert question.options.count() == 0
+    assert list(_zip_entries(cached_file).values()) == [b""]
 
 
 def test_export_answer_files_general_exception():
@@ -635,119 +416,55 @@ def test_export_answer_files_general_exception():
     assert result is None
 
 
-def test_delete_question_removes_options_and_log_entries():
+def test_replace_question_options_replaces_then_clears():
+    question = QuestionFactory(variant=QuestionVariant.CHOICES)
+    AnswerOptionFactory(question=question, answer="Old A")
+    AnswerOptionFactory(question=question, answer="Old B")
+
+    replace_question_options(
+        question=question, options_data=[{"answer": "New A"}, {"answer": "New B"}]
+    )
+
+    options = sorted(str(a) for a in question.options.values_list("answer", flat=True))
+    assert options == ["New A", "New B"]
+
+    replace_question_options(question=question, options_data=[])
+
+    assert question.options.count() == 0
+
+
+def test_delete_question_cascades_draft_answers_options_and_logs():
     event = EventFactory()
     question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
     AnswerOptionFactory(question=question)
     AnswerOptionFactory(question=question)
+    speaker_question = QuestionFactory(
+        event=event, variant=QuestionVariant.STRING, target=QuestionTarget.SPEAKER
+    )
     with scope(event=event):
         question.log_action(".create", orga=True)
-        assert question.logged_actions().count() >= 1
-        option_count = question.options.count()
-
-    assert option_count == 2
-
-    with scope(event=event):
-        delete_question(question)
-
-        assert not Question.all_objects.filter(pk=question.pk).exists()
-        assert not AnswerOption.objects.filter(question_id=question.pk).exists()
-
-
-def test_delete_question_raises_protected_when_answered():
-    event = EventFactory()
-    question = QuestionFactory(event=event, variant=QuestionVariant.STRING)
-    submission = SubmissionFactory(event=event)
-    with scope(event=event):
-        AnswerFactory(question=question, submission=submission, answer="x")
-
-    with scope(event=event), pytest.raises(ProtectedError):
-        delete_question(question)
-
-    with scope(event=event):
-        assert Question.all_objects.filter(pk=question.pk).exists()
-
-
-def test_delete_question_deletes_answers_on_draft_submissions():
-    event = EventFactory()
-    question = QuestionFactory(event=event, variant=QuestionVariant.STRING)
-    with scope(event=event):
+        assert question.logged_actions().count() == 1
         draft = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
-        answer = AnswerFactory(question=question, submission=draft, answer="x")
-
-    with scope(event=event):
-        delete_question(question)
-
-        assert not Question.all_objects.filter(pk=question.pk).exists()
-        assert not Answer.objects.filter(pk=answer.pk).exists()
-
-
-def test_delete_question_deletes_answers_of_draft_only_speakers():
-    event = EventFactory()
-    question = QuestionFactory(
-        event=event, variant=QuestionVariant.STRING, target=QuestionTarget.SPEAKER
-    )
-    with scope(event=event):
+        draft_answer = AnswerFactory(question=question, submission=draft, answer="x")
         speaker = SpeakerFactory(event=event)
-        SubmissionFactory(event=event, state=SubmissionStates.DRAFT).speakers.add(
-            speaker
-        )
-        answer = AnswerFactory(
-            question=question, submission=None, speaker=speaker, answer="x"
+        draft.speakers.add(speaker)
+        speaker_answer = AnswerFactory(
+            question=speaker_question, submission=None, speaker=speaker, answer="x"
         )
 
-    with scope(event=event):
         delete_question(question)
+        delete_question(speaker_question)
 
-        assert not Question.all_objects.filter(pk=question.pk).exists()
-        assert not Answer.objects.filter(pk=answer.pk).exists()
-
-
-def test_delete_question_protects_answers_of_speakers_with_submitted_proposals():
-    event = EventFactory()
-    question = QuestionFactory(
-        event=event, variant=QuestionVariant.STRING, target=QuestionTarget.SPEAKER
-    )
-    with scope(event=event):
-        speaker = SpeakerFactory(event=event)
-        SubmissionFactory(event=event, state=SubmissionStates.DRAFT).speakers.add(
-            speaker
-        )
-        SubmissionFactory(event=event, state=SubmissionStates.WITHDRAWN).speakers.add(
-            speaker
-        )
-        answer = AnswerFactory(
-            question=question, submission=None, speaker=speaker, answer="x"
-        )
-
-    with scope(event=event), pytest.raises(ProtectedError):
-        delete_question(question)
-
-    with scope(event=event):
-        assert Question.all_objects.filter(pk=question.pk).exists()
-        assert list(Answer.objects.filter(question=question)) == [answer]
+        assert not Question.all_objects.filter(
+            pk__in=[question.pk, speaker_question.pk]
+        ).exists()
+        assert not AnswerOption.objects.filter(question_id=question.pk).exists()
+        assert not Answer.objects.filter(
+            pk__in=[draft_answer.pk, speaker_answer.pk]
+        ).exists()
 
 
-def test_delete_question_protects_answers_of_speakers_without_proposals():
-    event = EventFactory()
-    question = QuestionFactory(
-        event=event, variant=QuestionVariant.STRING, target=QuestionTarget.SPEAKER
-    )
-    with scope(event=event):
-        speaker = SpeakerFactory(event=event)
-        answer = AnswerFactory(
-            question=question, submission=None, speaker=speaker, answer="x"
-        )
-
-    with scope(event=event), pytest.raises(ProtectedError):
-        delete_question(question)
-
-    with scope(event=event):
-        assert Question.all_objects.filter(pk=question.pk).exists()
-        assert list(Answer.objects.filter(question=question)) == [answer]
-
-
-def test_delete_question_keeps_draft_answers_when_protected():
+def test_delete_question_protects_live_answers_and_keeps_draft_answers():
     event = EventFactory()
     question = QuestionFactory(event=event, variant=QuestionVariant.STRING)
     with scope(event=event):
@@ -771,6 +488,42 @@ def test_delete_question_keeps_draft_answers_when_protected():
         }
 
 
+def test_delete_question_protects_answers_of_non_draft_only_speakers():
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event, variant=QuestionVariant.STRING, target=QuestionTarget.SPEAKER
+    )
+    with scope(event=event):
+        withdrawn_speaker = SpeakerFactory(event=event)
+        SubmissionFactory(event=event, state=SubmissionStates.DRAFT).speakers.add(
+            withdrawn_speaker
+        )
+        SubmissionFactory(event=event, state=SubmissionStates.WITHDRAWN).speakers.add(
+            withdrawn_speaker
+        )
+        answers = {
+            AnswerFactory(
+                question=question,
+                submission=None,
+                speaker=withdrawn_speaker,
+                answer="x",
+            ),
+            AnswerFactory(
+                question=question,
+                submission=None,
+                speaker=SpeakerFactory(event=event),
+                answer="x",
+            ),
+        }
+
+    with scope(event=event), pytest.raises(ProtectedError):
+        delete_question(question)
+
+    with scope(event=event):
+        assert Question.all_objects.filter(pk=question.pk).exists()
+        assert set(Answer.objects.filter(question=question)) == answers
+
+
 def test_delete_question_never_cascades_for_reviewer_target():
     event = EventFactory()
     question = QuestionFactory(
@@ -791,60 +544,42 @@ def test_delete_question_never_cascades_for_reviewer_target():
         assert list(Answer.objects.filter(question=question)) == [leftover]
 
 
-def test_apply_uploaded_options_noop_for_empty():
+def _option_order(question):
+    return list(question.options.order_by("position").values_list("answer", flat=True))
+
+
+def test_apply_uploaded_options_replace_and_merge():
     event = EventFactory()
     question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
-
     with scope(event=event):
         apply_uploaded_options(question=question, options=None, replace=True)
-
         assert question.options.count() == 0
 
-
-def test_apply_uploaded_options_replace_deletes_answers_and_options():
-    event = EventFactory()
-    question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
-    with scope(event=event):
-        old = AnswerOptionFactory(question=question, answer="Old")
+        old = AnswerOptionFactory(question=question, answer="Old", position=5)
         AnswerFactory(question=question, answer="Old")
 
         apply_uploaded_options(
             question=question, options=["New A", "New B"], replace=True
         )
 
-        positions = list(
-            question.options.order_by("position").values_list("answer", flat=True)
-        )
-        assert positions == ["New A", "New B"]
+        assert _option_order(question) == ["New A", "New B"]
         assert question.answers.count() == 0
         assert not question.options.filter(pk=old.pk).exists()
+        new_a = question.options.get(answer="New A")
 
+        apply_uploaded_options(
+            question=question, options=["New B", "New A", "C"], replace=False
+        )
 
-def test_apply_uploaded_options_merge_adds_only_new_and_updates_positions():
-    event = EventFactory()
-    question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
-    with scope(event=event):
-        existing = AnswerOptionFactory(question=question, answer="A", position=5)
+        assert _option_order(question) == ["New B", "New A", "C"]
+        assert question.options.get(pk=new_a.pk).position == 2
 
-        apply_uploaded_options(question=question, options=["A", "B"], replace=False)
+        apply_uploaded_options(
+            question=question, options=["New B", "New A", "C"], replace=False
+        )
 
-        existing.refresh_from_db()
-        assert existing.position == 1
-        assert question.options.count() == 2
-        new = question.options.get(answer="B")
-        assert new.position == 2
-
-
-def test_apply_uploaded_options_merge_no_new_when_all_exist():
-    event = EventFactory()
-    question = QuestionFactory(event=event, variant=QuestionVariant.CHOICES)
-    with scope(event=event):
-        AnswerOptionFactory(question=question, answer="Only", position=3)
-
-        apply_uploaded_options(question=question, options=["Only"], replace=False)
-
-        assert question.options.count() == 1
-        assert question.options.first().position == 1
+        assert _option_order(question) == ["New B", "New A", "C"]
+        assert question.options.count() == 3
 
 
 def test_apply_uploaded_options_merge_i18n_on_multilingual_event():
@@ -862,7 +597,7 @@ def test_apply_uploaded_options_merge_i18n_on_multilingual_event():
         assert question.options.count() == 2
 
 
-def test_set_question_active_activates_and_logs():
+def test_set_question_active_toggles_and_logs_changes_only():
     event = EventFactory()
     user = UserFactory()
     question = QuestionFactory(event=event, active=False)
@@ -870,83 +605,49 @@ def test_set_question_active_activates_and_logs():
     with scope(event=event):
         set_question_active(question, active=True, person=user)
 
-        question.refresh_from_db()
+        question.refresh_from_db(fields=["active"])
         assert question.active is True
-        log = question.logged_actions().first()
+        log = question.logged_actions().get()
         assert log.action_type == "pretalx.question.activate"
         assert log.person == user
 
+        set_question_active(question, active=True)
+        assert question.logged_actions().count() == 1
 
-def test_set_question_active_deactivates_and_logs():
-    event = EventFactory()
-    user = UserFactory()
-    question = QuestionFactory(event=event, active=True)
-
-    with scope(event=event):
         set_question_active(question, active=False, person=user)
 
-        question.refresh_from_db()
+        question.refresh_from_db(fields=["active"])
         assert question.active is False
-        log = question.logged_actions().first()
-        assert log.action_type == "pretalx.question.deactivate"
+        assert [
+            log.action_type for log in question.logged_actions().order_by("pk")
+        ] == ["pretalx.question.activate", "pretalx.question.deactivate"]
 
 
-def test_set_question_active_no_op_when_unchanged():
-    event = EventFactory()
-    question = QuestionFactory(event=event, active=True)
-
-    with scope(event=event):
-        set_question_active(question, active=True)
-        assert not question.logged_actions().exists()
-
-
-def test_reorder_questions_updates_positions_and_logs_once():
+def test_reorder_questions_updates_positions_and_logs_only_changes():
     event = EventFactory()
     user = UserFactory()
     with scope(event=event):
         q1 = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION, position=0)
         q2 = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION, position=1)
+        logs = event.logged_actions().filter(action_type="pretalx.question.reorder")
 
         reorder_questions(
             event,
             target=QuestionTarget.SUBMISSION,
-            ordered_positions=[(0, q2.pk), (1, q1.pk)],
+            ordered_positions=[(0, q1.pk), (1, q2.pk)],
             person=user,
         )
 
-        q1.refresh_from_db()
-        q2.refresh_from_db()
-        assert q1.position == 1
-        assert q2.position == 0
-        logs = event.logged_actions().filter(action_type="pretalx.question.reorder")
-        assert logs.count() == 1
-
-
-def test_reorder_questions_no_changes_skips_log():
-    event = EventFactory()
-    with scope(event=event):
-        q = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION, position=0)
-
-        reorder_questions(
-            event, target=QuestionTarget.SUBMISSION, ordered_positions=[(0, q.pk)]
-        )
-
-        assert (
-            not event.logged_actions()
-            .filter(action_type="pretalx.question.reorder")
-            .exists()
-        )
-
-
-def test_reorder_questions_skips_unknown_ids():
-    event = EventFactory()
-    with scope(event=event):
-        q = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION, position=0)
+        assert not logs.exists()
 
         reorder_questions(
             event,
             target=QuestionTarget.SUBMISSION,
-            ordered_positions=[(0, 999999), (1, q.pk)],
+            ordered_positions=[(0, 999999), (0, q2.pk), (1, q1.pk)],
+            person=user,
         )
-        q.refresh_from_db()
-        assert q.position == 1
+
+        q1.refresh_from_db(fields=["position"])
+        q2.refresh_from_db(fields=["position"])
+        assert (q1.position, q2.position) == (1, 0)
+        assert logs.count() == 1

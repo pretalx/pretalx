@@ -29,9 +29,11 @@ def test_mail_template_serializer_create_sets_event():
     (
         ("validate_subject", "Hello {event_name}"),
         ("validate_text", "Dear {name}, welcome to {event_name}"),
+        ("validate_text", "No placeholders here"),
     ),
+    ids=["subject_placeholder", "text_placeholders", "plain_text"],
 )
-def test_mail_template_serializer_validate_accepts_valid_placeholder(method, text):
+def test_mail_template_serializer_validate_accepts_valid_text(method, text):
     template = MailTemplateFactory()
     serializer = MailTemplateSerializer(
         instance=template, context={"request": make_api_request(event=template.event)}
@@ -41,53 +43,40 @@ def test_mail_template_serializer_validate_accepts_valid_placeholder(method, tex
     assert result == text
 
 
-@pytest.mark.parametrize("method", ("validate_subject", "validate_text"))
-def test_mail_template_serializer_validate_rejects_unknown_placeholder(method):
+@pytest.mark.parametrize(
+    ("method", "text", "message"),
+    (
+        (
+            "validate_subject",
+            "Hello {totally_invalid_placeholder}",
+            "totally_invalid_placeholder",
+        ),
+        (
+            "validate_text",
+            "Hello {totally_invalid_placeholder}",
+            "totally_invalid_placeholder",
+        ),
+        ("validate_text", "Hello {unmatched", "Invalid email template"),
+    ),
+    ids=["subject_unknown_placeholder", "text_unknown_placeholder", "malformed_braces"],
+)
+def test_mail_template_serializer_validate_rejects_invalid_text(method, text, message):
     template = MailTemplateFactory()
     serializer = MailTemplateSerializer(
         instance=template, context={"request": make_api_request(event=template.event)}
     )
 
-    with pytest.raises(ValidationError, match="totally_invalid_placeholder"):
-        getattr(serializer, method)("Hello {totally_invalid_placeholder}")
+    with pytest.raises(ValidationError, match=message):
+        getattr(serializer, method)(text)
 
 
-def test_mail_template_serializer_validate_text_rejects_malformed_braces():
-    template = MailTemplateFactory()
-    serializer = MailTemplateSerializer(
-        instance=template, context={"request": make_api_request(event=template.event)}
-    )
-
-    with pytest.raises(ValidationError, match="Invalid email template"):
-        serializer.validate_text("Hello {unmatched")
-
-
-def test_mail_template_serializer_validate_text_accepts_plain_text():
-    template = MailTemplateFactory()
-    serializer = MailTemplateSerializer(
-        instance=template, context={"request": make_api_request(event=template.event)}
-    )
-
-    result = serializer.validate_text("No placeholders here")
-    assert result == "No placeholders here"
-
-
-def test_mail_template_serializer_validate_text_without_instance_accepts_valid():
+def test_mail_template_serializer_validate_text_without_instance():
     event = EventFactory()
     serializer = MailTemplateSerializer(
         context={"request": make_api_request(event=event)}
     )
 
-    result = serializer.validate_text("Hello {event_name}")
-    assert result == "Hello {event_name}"
-
-
-def test_mail_template_serializer_validate_text_without_instance_rejects_invalid():
-    event = EventFactory()
-    serializer = MailTemplateSerializer(
-        context={"request": make_api_request(event=event)}
-    )
-
+    assert serializer.validate_text("Hello {event_name}") == "Hello {event_name}"
     with pytest.raises(ValidationError, match="Unknown placeholder"):
         serializer.validate_text("Hello {nonexistent_var}")
 

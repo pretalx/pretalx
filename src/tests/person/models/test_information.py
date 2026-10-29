@@ -17,10 +17,7 @@ def test_speaker_information_resource_path(adding):
     path = resource_path(info, "slides.pdf")
 
     assert path.endswith(".pdf")
-    if adding:
-        assert f"/info_{saved_pk}_" not in path
-    else:
-        assert f"/info_{saved_pk}_" in path
+    assert (f"/info_{saved_pk}_" in path) is (not adding)
 
 
 @pytest.mark.django_db

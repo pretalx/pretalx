@@ -21,116 +21,66 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_replace_availabilities_for_room(event):
+def test_replace_availabilities_for_room_and_speaker(event):
     room = RoomFactory(event=event)
-    AvailabilityFactory(event=event, room=room)
-    new_start = event.datetime_from + dt.timedelta(hours=1)
-    new_end = event.datetime_to - dt.timedelta(hours=1)
-    new_avails = [Availability(event=event, room=room, start=new_start, end=new_end)]
-
-    replace_availabilities(room, new_avails)
-    result = list(room.availabilities.all())
-
-    assert len(result) == 1
-    assert result[0].start == new_start
-    assert result[0].end == new_end
-
-
-def test_replace_availabilities_for_speaker(event):
     speaker = SpeakerFactory(event=event)
-    AvailabilityFactory(event=event, person=speaker)
-    new_avails = [
-        Availability(
-            event=event,
-            person=speaker,
-            start=event.datetime_from,
-            end=event.datetime_to,
-        )
-    ]
-
-    replace_availabilities(speaker, new_avails)
-    result = list(speaker.availabilities.all())
-
-    assert len(result) == 1
-
-
-def test_replace_availabilities_with_empty_list_clears(event):
-    room = RoomFactory(event=event)
     AvailabilityFactory(event=event, room=room)
+    AvailabilityFactory(event=event, person=speaker)
+    start = event.datetime_from + dt.timedelta(hours=1)
+    end = event.datetime_to - dt.timedelta(hours=1)
+
+    replace_availabilities(room, [Availability(event=event, start=start, end=end)])
+    replace_availabilities(speaker, [Availability(event=event, start=start, end=end)])
+
+    assert list(room.availabilities.values_list("start", "end")) == [(start, end)]
+    assert list(speaker.availabilities.values_list("start", "end")) == [(start, end)]
 
     replace_availabilities(room, [])
 
     assert list(room.availabilities.all()) == []
+    assert list(speaker.availabilities.values_list("start", "end")) == [(start, end)]
 
 
-def test_merged_speaker_availabilities_single_speaker(event):
-    speaker = SpeakerFactory(event=event)
-    AvailabilityFactory(event=event, person=speaker)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker)
-    slot = TalkSlotFactory(submission=submission)
-
-    result = merged_speaker_availabilities(event.wip_schedule)
-
-    assert slot.id in result
-    assert len(result[slot.id]) == 1
-    assert isinstance(result[slot.id][0], Availability)
-
-
-def test_merged_speaker_availabilities_single_speaker_unions_adjacent(event):
-    speaker = SpeakerFactory(event=event)
-    mid = event.datetime_from + dt.timedelta(hours=2)
-    AvailabilityFactory(event=event, person=speaker, start=event.datetime_from, end=mid)
-    AvailabilityFactory(event=event, person=speaker, start=mid, end=event.datetime_to)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker)
-    slot = TalkSlotFactory(submission=submission)
-
-    result = merged_speaker_availabilities(event.wip_schedule)
-
-    assert len(result[slot.id]) == 1
-
-
-def test_merged_speaker_availabilities_multi_speaker_intersection(event):
-    speaker_a = SpeakerFactory(event=event)
-    speaker_b = SpeakerFactory(event=event)
-    AvailabilityFactory(event=event, person=speaker_a)
-    AvailabilityFactory(event=event, person=speaker_b)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker_a)
-    submission.speakers.add(speaker_b)
-    slot = TalkSlotFactory(submission=submission)
-
-    result = merged_speaker_availabilities(event.wip_schedule)
-
-    assert slot.id in result
-    assert len(result[slot.id]) == 1
-
-
-def test_merged_speaker_availabilities_no_availabilities(event):
-    speaker_a = SpeakerFactory(event=event)
-    speaker_b = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker_a)
-    submission.speakers.add(speaker_b)
-    slot = TalkSlotFactory(submission=submission)
-
-    result = merged_speaker_availabilities(event.wip_schedule)
-
-    assert result[slot.id] == []
-
-
-def test_merged_speaker_availabilities_skips_submissionless_slots(event):
-    speaker = SpeakerFactory(event=event)
-    AvailabilityFactory(event=event, person=speaker)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker)
-    slot = TalkSlotFactory(submission=submission)
-    room = RoomFactory(event=event)
+def test_merged_speaker_availabilities(event):
+    start = event.datetime_from
+    hour = dt.timedelta(hours=1)
+    single = SpeakerFactory(event=event)
+    AvailabilityFactory(event=event, person=single, start=start, end=start + 2 * hour)
+    AvailabilityFactory(
+        event=event, person=single, start=start + 2 * hour, end=start + 4 * hour
+    )
+    pair_a = SpeakerFactory(event=event)
+    pair_b = SpeakerFactory(event=event)
+    AvailabilityFactory(event=event, person=pair_a, start=start, end=start + 3 * hour)
+    AvailabilityFactory(
+        event=event, person=pair_b, start=start + hour, end=start + 5 * hour
+    )
+    unavailable = SpeakerFactory(event=event)
+    slots = {}
+    for key, speakers in (
+        ("single", [single]),
+        ("pair", [pair_a, pair_b]),
+        ("mixed", [unavailable, pair_a]),
+        ("none", [unavailable]),
+    ):
+        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        submission.speakers.set(speakers)
+        slots[key] = TalkSlotFactory(submission=submission)
     TalkSlotFactory(
-        schedule=event.wip_schedule, submission=None, room=room, slot_type="break"
+        schedule=event.wip_schedule,
+        submission=None,
+        room=RoomFactory(event=event),
+        slot_type="break",
     )
 
     result = merged_speaker_availabilities(event.wip_schedule)
 
-    assert set(result) == {slot.id}
+    assert {
+        key: [(avail.start, avail.end) for avail in avails]
+        for key, avails in result.items()
+    } == {
+        slots["single"].id: [(start, start + 4 * hour)],
+        slots["pair"].id: [(start + hour, start + 3 * hour)],
+        slots["mixed"].id: [(start, start + 3 * hour)],
+        slots["none"].id: [],
+    }

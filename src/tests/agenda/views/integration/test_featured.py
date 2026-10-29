@@ -19,7 +19,10 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 def test_featured_view_shows_featured_talks(
     client, item_count, django_assert_num_queries
 ):
-    event = EventFactory(feature_flags={"show_featured": "always", "use_tracks": True})
+    event = EventFactory(
+        feature_flags={"show_featured": "always", "use_tracks": True},
+        featured_sessions_text="Have a look at **these**.",
+    )
     with scopes_disabled():
         track = TrackFactory(event=event)
         featured = SubmissionFactory.create_batch(
@@ -46,6 +49,8 @@ def test_featured_view_shows_featured_talks(
     assert all(sub.title in content for sub in featured)
     assert all(speaker.get_display_name() in content for speaker in speakers)
     assert not_featured.title not in content
+    assert "Have a look at <strong>these</strong>." in content
+    assert "Welcome to our list of featured sessions!" not in content
 
 
 def test_featured_view_redirects_to_schedule_when_released(client):
@@ -73,22 +78,6 @@ def test_featured_view_visible_when_schedule_hidden(client):
 
     assert response.status_code == 200
     assert featured.title in response.content.decode()
-
-
-def test_featured_view_uses_custom_text(client):
-    event = EventFactory(
-        feature_flags={"show_featured": "always"},
-        featured_sessions_text="Have a look at **these**.",
-    )
-    with scopes_disabled():
-        SubmissionFactory(
-            event=event, is_featured=True, state=SubmissionStates.CONFIRMED
-        )
-
-    content = client.get(event.urls.featured, follow=True).content.decode()
-
-    assert "Have a look at <strong>these</strong>." in content
-    assert "Welcome to our list of featured sessions!" not in content
 
 
 def test_sneakpeek_redirect_to_featured(client, event):

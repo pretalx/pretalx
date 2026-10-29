@@ -6,32 +6,17 @@ from pretalx.api.views.feedback import FeedbackViewSet
 from tests.factories import FeedbackFactory
 from tests.utils import make_api_request, make_orga_user, make_view
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
-def test_feedback_viewset_get_queryset_anonymous_returns_empty():
-    feedback = FeedbackFactory()
-    request = make_api_request(event=feedback.talk.event)
-    view = make_view(FeedbackViewSet, request)
-    view.action = "list"
-
-    qs = list(view.get_queryset())
-
-    assert qs == []
-
-
-@pytest.mark.django_db
-def test_feedback_viewset_get_queryset_authenticated_returns_event_feedback():
+def test_feedback_viewset_get_queryset_returns_event_feedback_to_orga_only():
     feedback = FeedbackFactory()
     event = feedback.talk.event
-    other_feedback = FeedbackFactory()
+    FeedbackFactory()
     user = make_orga_user(event, can_change_submissions=True)
-    request = make_api_request(event=event, user=user)
-    view = make_view(FeedbackViewSet, request)
-    view.action = "list"
 
-    qs = list(view.get_queryset())
+    anonymous_view = make_view(FeedbackViewSet, make_api_request(event=event))
+    orga_view = make_view(FeedbackViewSet, make_api_request(event=event, user=user))
 
-    assert qs == [feedback]
-    assert other_feedback not in qs
+    assert list(anonymous_view.get_queryset()) == []
+    assert list(orga_view.get_queryset()) == [feedback]

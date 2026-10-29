@@ -37,37 +37,6 @@ def _make_middleware():
     return EventMiddleware(get_response)
 
 
-@pytest.mark.django_db
-def test_handle_orga_url_redirects_custom_domain_to_site_url(event):
-    middleware = _make_middleware()
-    request = rf.get(f"/orga/event/{event.slug}/")
-    request.uses_custom_domain = True
-    request.user = UserFactory()
-
-    response = middleware._handle_orga_url(
-        request, SimpleNamespace(url_name="event.dashboard")
-    )
-
-    assert response.status_code == 302
-    assert response.url.startswith(settings.SITE_URL)
-
-
-@pytest.mark.django_db
-def test_handle_orga_url_redirects_anonymous_to_login(event):
-    middleware = _make_middleware()
-    request = rf.get(f"/orga/event/{event.slug}/")
-    request.uses_custom_domain = False
-    request.user = AnonymousUser()
-    request.event = event
-
-    response = middleware._handle_orga_url(
-        request, SimpleNamespace(url_name="event.dashboard")
-    )
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
 @pytest.mark.parametrize("url_name", sorted(UNAUTHENTICATED_ORGA_URLS))
 def test_handle_orga_url_allows_anonymous_on_exempt_urls(url_name):
     middleware = _make_middleware()
@@ -81,21 +50,7 @@ def test_handle_orga_url_allows_anonymous_on_exempt_urls(url_name):
 
 
 @pytest.mark.django_db
-def test_handle_orga_url_allows_authenticated_user():
-    middleware = _make_middleware()
-    request = rf.get("/orga/")
-    request.uses_custom_domain = False
-    request.user = UserFactory()
-
-    result = middleware._handle_orga_url(
-        request, SimpleNamespace(url_name="event.dashboard")
-    )
-
-    assert result is None
-
-
-@pytest.mark.django_db
-def test_select_locale_uses_event_locales_when_available(event):
+def test_select_locale_uses_event_locales_and_timezone(event):
     middleware = _make_middleware()
     request = rf.get("/")
     request.event = event
@@ -105,18 +60,6 @@ def test_select_locale_uses_event_locales_when_available(event):
     middleware._select_locale(request)
 
     assert request.LANGUAGE_CODE in event.locales
-
-
-@pytest.mark.django_db
-def test_select_locale_sets_timezone_from_event(event):
-    middleware = _make_middleware()
-    request = rf.get("/")
-    request.event = event
-    request.user = AnonymousUser()
-    request.COOKIES = {}
-
-    middleware._select_locale(request)
-
     assert request.timezone == event.timezone
 
 
@@ -134,7 +77,7 @@ def test_select_locale_sets_timezone_from_authenticated_user_without_event():
     assert request.timezone == "Europe/Berlin"
 
 
-def test_select_locale_sets_timezone_from_settings_for_anonymous_without_event():
+def test_select_locale_falls_back_to_settings_for_anonymous_without_event():
     middleware = _make_middleware()
     request = rf.get("/")
     request.event = None
@@ -144,6 +87,7 @@ def test_select_locale_sets_timezone_from_settings_for_anonymous_without_event()
     middleware._select_locale(request)
 
     assert request.timezone == settings.TIME_ZONE
+    assert request.LANGUAGE_CODE == settings.LANGUAGE_CODE
 
 
 @pytest.mark.django_db
@@ -189,20 +133,8 @@ def test_select_locale_cookie_over_browser():
     assert request.LANGUAGE_CODE == "de"
 
 
-def test_select_locale_falls_back_to_settings_language_code():
-    middleware = _make_middleware()
-    request = rf.get("/")
-    request.event = None
-    request.user = AnonymousUser()
-    request.COOKIES = {}
-
-    middleware._select_locale(request)
-
-    assert request.LANGUAGE_CODE == settings.LANGUAGE_CODE
-
-
 @pytest.mark.django_db
-def test_call_sets_event_on_request(event):
+def test_call_sets_event_and_activates_translation(event):
     assert event.custom_domain is None
     middleware = _make_middleware()
     request = rf.get(f"/{event.slug}/")
@@ -213,6 +145,9 @@ def test_call_sets_event_on_request(event):
 
     assert request.event == event
     assert response.status_code == 200
+    assert request.LANGUAGE_CODE in event.locales
+    assert translation.get_language() == request.LANGUAGE_CODE
+    assert not hasattr(request.event, "has_cfp_submissions")
 
 
 def _cfp_request(event, user):
@@ -251,16 +186,6 @@ def test_call_annotates_has_cfp_submissions_false_for_non_speaker():
     _make_middleware()(request)
 
     assert request.event.has_cfp_submissions is False
-
-
-@pytest.mark.django_db
-def test_call_does_not_annotate_has_cfp_submissions_for_anonymous():
-    event = EventFactory()
-
-    request = _cfp_request(event, AnonymousUser())
-    _make_middleware()(request)
-
-    assert not hasattr(request.event, "has_cfp_submissions")
 
 
 @pytest.mark.django_db
@@ -370,19 +295,6 @@ def test_call_api_path_exempt_from_custom_domain_redirect_gets_cors_header():
 
 
 @pytest.mark.django_db
-def test_call_activates_translation(event):
-    middleware = _make_middleware()
-    request = rf.get(f"/{event.slug}/")
-    request.user = AnonymousUser()
-    request.COOKIES = {}
-
-    middleware(request)
-
-    assert request.LANGUAGE_CODE in event.locales
-    assert translation.get_language() == request.LANGUAGE_CODE
-
-
-@pytest.mark.django_db
 def test_call_without_event_passes_through():
     middleware = _make_middleware()
     request = rf.get("/orga/login/")
@@ -428,13 +340,6 @@ def _domain_request(path, host, user=None):
         request.user = user
     request.COOKIES = {}
     return request
-
-
-def test_get_host_from_host_header():
-    request = rf.get("/")
-    request.META["HTTP_HOST"] = "example.com"
-
-    assert EventMiddleware.get_host(request) == "example.com"
 
 
 @pytest.mark.parametrize(

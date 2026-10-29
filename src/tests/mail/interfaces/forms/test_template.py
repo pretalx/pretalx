@@ -18,127 +18,60 @@ from tests.factories import EventFactory, MailTemplateFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_mail_template_form_init_without_event():
+@pytest.mark.parametrize("kwargs", ({}, {"event": None}), ids=("missing", "none"))
+def test_mail_template_form_requires_event(kwargs):
     with pytest.raises(TypeError):
-        MailTemplateForm()
-
-
-def test_mail_template_form_init_with_none_event():
-    with pytest.raises(TypeError):
-        MailTemplateForm(event=None)
-
-
-def test_mail_template_form_valid_data():
-    event = EventFactory()
-    form = MailTemplateForm(event=event, data={"subject_0": "Hello", "text_0": "World"})
-    assert form.is_valid(), form.errors
+        MailTemplateForm(**kwargs)
 
 
 @pytest.mark.parametrize(
-    ("missing_field", "data"),
+    ("data", "errors"),
     (
-        pytest.param("subject", {"subject_0": "", "text_0": "World"}, id="subject"),
-        pytest.param("text", {"subject_0": "Hello", "text_0": ""}, id="text"),
-    ),
-)
-def test_mail_template_form_clean_requires_field(missing_field, data):
-    event = EventFactory()
-    form = MailTemplateForm(event=event, data=data)
-
-    assert not form.is_valid()
-    assert missing_field in form.errors
-
-
-def test_mail_template_form_clean_subject_valid_placeholder():
-    event = EventFactory()
-    form = MailTemplateForm(
-        event=event, data={"subject_0": "Hello {event_name}", "text_0": "Body text"}
-    )
-    assert form.is_valid(), form.errors
-
-
-@pytest.mark.parametrize(
-    ("field", "data"),
-    (
-        pytest.param(
-            "subject",
+        (
+            {
+                "subject_0": "Hello {event_name}",
+                "text_0": "Visit [our site](https://example.com) please",
+            },
+            [],
+        ),
+        ({"subject_0": "", "text_0": "World"}, ["subject"]),
+        ({"subject_0": "Hello", "text_0": ""}, ["text"]),
+        (
             {"subject_0": "Hello {nonexistent_placeholder}", "text_0": "Body text"},
-            id="subject",
+            ["subject"],
         ),
-        pytest.param(
-            "text", {"subject_0": "Hello", "text_0": "Body {does_not_exist}"}, id="text"
-        ),
+        ({"subject_0": "Hello", "text_0": "Body {does_not_exist}"}, ["text"]),
+        ({"subject_0": "Hello { broken", "text_0": "Body text"}, ["subject"]),
+        ({"subject_0": "Hello", "text_0": "Body { broken"}, ["text"]),
+        # Empty-link rejection lives on MailTemplate.clean(); the modelform's
+        # _post_clean path runs full_clean, so the error reaches form.errors["text"].
+        ({"subject_0": "Hello", "text_0": "[Click here]()"}, ["text"]),
+    ),
+    ids=(
+        "valid",
+        "subject_required",
+        "text_required",
+        "subject_unknown_placeholder",
+        "text_unknown_placeholder",
+        "subject_malformed",
+        "text_malformed",
+        "text_empty_link",
     ),
 )
-def test_mail_template_form_clean_rejects_invalid_placeholder(field, data):
-    event = EventFactory()
-    form = MailTemplateForm(event=event, data=data)
+def test_mail_template_form_clean(data, errors):
+    form = MailTemplateForm(event=EventFactory(), data=data)
 
-    assert not form.is_valid()
-    assert field in form.errors
-
-
-@pytest.mark.parametrize(
-    ("field", "data"),
-    (
-        pytest.param(
-            "subject",
-            {"subject_0": "Hello { broken", "text_0": "Body text"},
-            id="subject",
-        ),
-        pytest.param(
-            "text", {"subject_0": "Hello", "text_0": "Body { broken"}, id="text"
-        ),
-    ),
-)
-def test_mail_template_form_clean_rejects_malformed_placeholder(field, data):
-    event = EventFactory()
-    form = MailTemplateForm(event=event, data=data)
-
-    assert not form.is_valid()
-    assert field in form.errors
+    assert form.is_valid() == (not errors), form.errors
+    assert list(form.errors) == errors
 
 
-def test_mail_template_form_clean_text_empty_link():
-    # Empty-link rejection lives on MailTemplate.clean(); the modelform's
-    # _post_clean path runs full_clean, so the error reaches form.errors["text"].
-    event = EventFactory()
-    form = MailTemplateForm(
-        event=event, data={"subject_0": "Hello", "text_0": "[Click here]()"}
-    )
-
-    assert not form.is_valid()
-    assert "text" in form.errors
-
-
-def test_mail_template_form_clean_text_valid_link():
-    event = EventFactory()
-    form = MailTemplateForm(
-        event=event,
-        data={
-            "subject_0": "Hello",
-            "text_0": "Visit [our site](https://example.com) please",
-        },
-    )
-    assert form.is_valid(), form.errors
-
-
-def test_mail_template_form_get_valid_placeholders_sets_event():
+def test_mail_template_form_groups_valid_placeholders():
     event = EventFactory()
     template = MailTemplateFactory(event=event)
     form = MailTemplateForm(event=event, instance=template)
 
-    placeholders = form.get_valid_placeholders()
-
-    assert "event_name" in placeholders
-
-
-def test_mail_template_form_grouped_placeholders():
-    event = EventFactory()
-    form = MailTemplateForm(event=event)
-
+    assert "event_name" in form.get_valid_placeholders()
     grouped = form.grouped_placeholders
-
     assert "event" in grouped
     assert "user" in grouped
     assert any(p.identifier == "event_name" for p in grouped["event"])
@@ -178,21 +111,6 @@ def test_mail_template_form_read_only():
     assert not form.is_valid()
 
 
-def test_mail_template_form_save():
-    event = EventFactory()
-    form = MailTemplateForm(
-        event=event, data={"subject_0": "Test subject", "text_0": "Test body"}
-    )
-    assert form.is_valid(), form.errors
-
-    template = form.save()
-
-    assert template.pk is not None
-    assert template.event == event
-    assert str(template.subject) == "Test subject"
-    assert str(template.text) == "Test body"
-
-
 class PluginPlaceholder(BaseMailTextPlaceholder):
     identifier = "plugin_greeting"
 
@@ -213,7 +131,7 @@ def _register_plugin_placeholder(register_signal_handler):
     return placeholder
 
 
-def test_mail_template_form_offers_plugin_placeholder_with_base_defaults(
+def test_mail_template_form_offers_and_saves_plugin_placeholder(
     register_signal_handler,
 ):
     event = EventFactory()
@@ -230,9 +148,13 @@ def test_mail_template_form_offers_plugin_placeholder_with_base_defaults(
     )
     assert form.is_valid(), form.errors
 
-    mail = render_template_to_mail(form.save())
+    saved = form.save()
 
-    assert str(mail.text) == f"Hello from {event.name}"
+    assert saved.pk == template.pk
+    assert saved.event == event
+    assert str(saved.subject) == "Hi"
+    assert str(saved.text) == "{plugin_greeting}"
+    assert str(render_template_to_mail(saved).text) == f"Hello from {event.name}"
 
 
 def test_placeholder_picker_renders_plugin_placeholder_without_explanation(

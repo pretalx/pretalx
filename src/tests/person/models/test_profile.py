@@ -4,7 +4,6 @@ import uuid
 
 import pytest
 from django.db.utils import IntegrityError
-from django.utils.translation import gettext_lazy as _
 from django_scopes import scope
 
 from pretalx.common.models.mixins import GenerateCode
@@ -21,36 +20,35 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_speaker_profile_get_display_name_profile_name():
-    speaker = SpeakerFactory(name="Profile Name")
-    assert speaker.get_display_name() == "Profile Name"
+def _guid(prefix, code):
+    return str(
+        uuid.uuid5(GlobalSettings().get_instance_identifier(), f"{prefix}:{code}")
+    )
 
 
-def test_speaker_profile_get_display_name_user_name():
-    speaker = SpeakerFactory(name=None)
-    speaker.user.name = "User Name"
-    assert speaker.get_display_name() == "User Name"
+@pytest.mark.parametrize(
+    ("name", "user_name", "allow_empty", "expected"),
+    (
+        ("Profile Name", "User Name", False, "Profile Name"),
+        (None, "User Name", False, "User Name"),
+        (None, "", False, "Unnamed speaker"),
+        ("Profile Name", "User Name", True, "Profile Name"),
+    ),
+    ids=["profile_name", "user_name", "fallback", "allow_empty_with_name"],
+)
+def test_speaker_profile_get_display_name_with_account(
+    name, user_name, allow_empty, expected
+):
+    speaker = SpeakerFactory(name=name, user__name=user_name)
+    assert speaker.get_display_name(allow_empty=allow_empty) == expected
 
 
-def test_speaker_profile_get_display_name_no_user():
+@pytest.mark.parametrize(
+    ("allow_empty", "expected"), ((False, "Unnamed speaker"), (True, ""))
+)
+def test_speaker_profile_get_display_name_managed_without_name(allow_empty, expected):
     speaker = SpeakerFactory(user=None, name=None)
-    assert speaker.get_display_name() == str(_("Unnamed speaker"))
-
-
-def test_speaker_profile_get_display_name_fallback():
-    speaker = SpeakerFactory(name=None)
-    speaker.user.name = ""
-    assert speaker.get_display_name() == str(_("Unnamed speaker"))
-
-
-def test_speaker_profile_get_display_name_allow_empty():
-    speaker = SpeakerFactory(user=None, name=None)
-    assert speaker.get_display_name(allow_empty=True) == ""
-
-
-def test_speaker_profile_get_display_name_allow_empty_with_name():
-    speaker = SpeakerFactory(name="Profile Name")
-    assert speaker.get_display_name(allow_empty=True) == "Profile Name"
+    assert speaker.get_display_name(allow_empty=allow_empty) == expected
 
 
 def test_speaker_profile_get_initials():
@@ -68,12 +66,20 @@ def test_speaker_profile_no_schedule_returns_empty(event, accessor):
 
 
 def test_speaker_profile_get_instance_data_with_pk(event):
-    speaker = SpeakerFactory(event=event, name="Alice", email="contact@example.com")
+    speaker = SpeakerFactory(
+        event=event,
+        name="Alice",
+        email="contact@example.com",
+        invitation_token="very-secret-claim-token",
+    )
+
     data = speaker.get_instance_data()
 
     assert data["name"] == "Alice"
     assert data["email"] == "contact@example.com"
     assert data["user_email"] == speaker.user.email
+    assert data["profile_picture"] is None
+    assert "invitation_token" not in data
 
 
 def test_speaker_profile_get_instance_data_managed(event):
@@ -92,22 +98,6 @@ def test_speaker_profile_get_instance_data_without_pk():
     assert data["email"] is None
 
 
-def test_speaker_profile_get_instance_data_excludes_invitation_token(event):
-    speaker = SpeakerFactory(event=event)
-    speaker.invitation_token = "very-secret-claim-token"
-    speaker.save()
-
-    data = speaker.get_instance_data()
-
-    assert "invitation_token" not in data
-
-
-def test_speaker_profile_get_instance_data_profile_picture_none(event):
-    speaker = SpeakerFactory(event=event)
-    data = speaker.get_instance_data()
-    assert data["profile_picture"] is None
-
-
 def test_speaker_profile_unique_event_user():
     speaker = SpeakerFactory()
     with pytest.raises(IntegrityError):
@@ -120,82 +110,43 @@ def test_speaker_profile_unique_event_code():
         SpeakerProfile.objects.create(event=speaker.event, user=None, code=speaker.code)
 
 
-def test_speaker_profile_full_availability_empty(event):
-    speaker = SpeakerFactory(event=event)
-    with scope(event=event):
-        result = speaker.full_availability
-    assert result == []
-
-
-def test_speaker_profile_full_availability_with_data(event):
-    speaker = SpeakerFactory(event=event)
-    avail = AvailabilityFactory(event=event, person=speaker)
-
-    with scope(event=event):
-        result = speaker.full_availability
-
-    assert len(result) == 1
-    assert result[0].start == avail.start
-    assert result[0].end == avail.end
-
-
 def test_speaker_profile_full_availability_merges_overlapping(event):
     speaker = SpeakerFactory(event=event)
     start = event.datetime_from
     mid = start + (event.datetime_to - start) / 2
-    AvailabilityFactory(event=event, person=speaker, start=start, end=mid)
-    AvailabilityFactory(event=event, person=speaker, start=mid, end=event.datetime_to)
-
     with scope(event=event):
-        result = speaker.full_availability
+        assert speaker.full_availability == []
 
-    assert len(result) == 1
-    assert result[0].start == start
-    assert result[0].end == event.datetime_to
+    AvailabilityFactory(event=event, person=speaker, start=start, end=mid)
+    with scope(event=event):
+        result = SpeakerProfile.objects.get(pk=speaker.pk).full_availability
+    assert [(a.start, a.end) for a in result] == [(start, mid)]
 
-
-def test_speaker_guid_derived_from_user_code():
-    speaker = SpeakerFactory(user=UserFactory())
-    expected = str(
-        uuid.uuid5(
-            GlobalSettings().get_instance_identifier(), f"user:{speaker.user.code}"
-        )
-    )
-    assert speaker.guid == expected
+    AvailabilityFactory(event=event, person=speaker, start=mid, end=event.datetime_to)
+    with scope(event=event):
+        result = SpeakerProfile.objects.get(pk=speaker.pk).full_availability
+    assert [(a.start, a.end) for a in result] == [(start, event.datetime_to)]
 
 
-def test_speaker_guid_without_user_uses_own_code():
-    speaker = SpeakerFactory(user=None)
-    expected = str(
-        uuid.uuid5(
-            GlobalSettings().get_instance_identifier(), f"speaker:{speaker.code}"
-        )
-    )
-    assert speaker.guid == expected
-
-
-def test_speaker_guid_stable_for_user_across_events():
+def test_speaker_guid_derived_from_user_code_and_stable_across_events():
     user = UserFactory()
-    assert SpeakerFactory(user=user).guid == SpeakerFactory(user=user).guid
+    first = SpeakerFactory(user=user)
+    second = SpeakerFactory(user=user)
+
+    assert first.guid == _guid("user", user.code)
+    assert second.guid == first.guid
+    assert SpeakerFactory().guid != first.guid
 
 
-def test_speaker_guid_different_speakers():
-    assert SpeakerFactory().guid != SpeakerFactory().guid
+def test_speaker_guid_without_user_uses_own_code_and_is_persisted():
+    speaker = SpeakerFactory(user=None)
+
+    assert speaker.guid == _guid("speaker", speaker.code)
+    assert SpeakerProfile.objects.get(pk=speaker.pk).guid == speaker.guid
 
 
 def test_speaker_guid_not_computable_without_user_or_code():
     assert SpeakerProfile(event=EventFactory(), user=None).compute_guid() is None
-
-
-def test_speaker_guid_persisted_at_creation():
-    speaker = SpeakerFactory(user=None)
-    stored = SpeakerProfile.objects.get(pk=speaker.pk).guid
-    expected = str(
-        uuid.uuid5(
-            GlobalSettings().get_instance_identifier(), f"speaker:{speaker.code}"
-        )
-    )
-    assert stored == expected
 
 
 def test_speaker_guid_and_origin_survive_claim():
@@ -303,11 +254,7 @@ def test_speaker_managed_code_collision_retry_keeps_guid_in_sync(monkeypatch):
 
     assert speaker.code != existing_code
     assert call_count == 2
-    assert speaker.guid == str(
-        uuid.uuid5(
-            GlobalSettings().get_instance_identifier(), f"speaker:{speaker.code}"
-        )
-    )
+    assert speaker.guid == _guid("speaker", speaker.code)
 
 
 def test_speaker_guid_recomputed_on_partial_save():

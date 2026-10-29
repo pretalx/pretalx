@@ -84,21 +84,26 @@ def test_vite_hmr_production_returns_empty():
 
 
 @override_settings(VITE_DEV_MODE=False, STATIC_URL="/static/")
-def test_generate_css_tags_with_imports(vite_manifest):
+def test_generate_css_tags_follows_imports_once(vite_manifest):
     vite_manifest.update(
         {
             "src/main.js": {
                 "file": "assets/main.js",
-                "css": ["assets/main.css"],
+                "css": ["assets/main.css", "assets/shared.css"],
                 "imports": ["src/vendor.js"],
             },
-            "src/vendor.js": {"file": "assets/vendor.js", "css": ["assets/vendor.css"]},
+            "src/vendor.js": {
+                "file": "assets/vendor.js",
+                "css": ["assets/vendor.css", "assets/shared.css"],
+            },
         }
     )
-    tags = generate_css_tags("src/main.js")
-    css_text = "".join(tags)
-    assert "assets/main.css" in css_text
-    assert "assets/vendor.css" in css_text
+
+    assert generate_css_tags("src/main.js") == [
+        '<link rel="stylesheet" href="/static/assets/main.css">',
+        '<link rel="stylesheet" href="/static/assets/shared.css">',
+        '<link rel="stylesheet" href="/static/assets/vendor.css">',
+    ]
 
 
 @override_settings(VITE_DEV_MODE=False, STATIC_URL="/static/")
@@ -106,23 +111,6 @@ def test_generate_css_tags_no_css_key(vite_manifest):
     vite_manifest["src/util.js"] = {"file": "assets/util.js"}
     tags = generate_css_tags("src/util.js")
     assert tags == []
-
-
-@override_settings(VITE_DEV_MODE=False, STATIC_URL="/static/")
-def test_generate_css_tags_deduplicates(vite_manifest):
-    vite_manifest.update(
-        {
-            "src/main.js": {
-                "file": "assets/main.js",
-                "css": ["assets/shared.css"],
-                "imports": ["src/vendor.js"],
-            },
-            "src/vendor.js": {"file": "assets/vendor.js", "css": ["assets/shared.css"]},
-        }
-    )
-    tags = generate_css_tags("src/main.js")
-    css_text = "".join(tags)
-    assert css_text.count("assets/shared.css") == 1
 
 
 @override_settings(VITE_DEV_MODE=False, VITE_IGNORE=False)

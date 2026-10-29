@@ -25,31 +25,19 @@ pytestmark = pytest.mark.unit
         ("de", date(2003, 2, 1), date(2003, 4, 3), "1. Februar – 3. April 2003"),
         ("en", date(2003, 2, 1), date(2003, 4, 3), "Feb. 1 – April 3, 2003"),
         ("es", date(2003, 2, 1), date(2003, 4, 3), "1 de febrero - 3 de abril de 2003"),
+        # Different years fall back to DATE_FORMAT
+        ("de", date(2003, 2, 1), date(2005, 4, 3), "1. Februar 2003 – 3. April 2005"),
+        ("en", date(2003, 2, 1), date(2005, 4, 3), "Feb. 1, 2003 – April 3, 2005"),
+        (
+            "es",
+            date(2003, 2, 1),
+            date(2005, 4, 3),
+            "1 de febrero de 2003 -3 de abril de 2005",
+        ),
+        # Unknown locale falls back to DATE_FORMAT
+        ("fr", date(2024, 6, 10), date(2024, 6, 12), "10 juin 2024 – 12 juin 2024"),
     ),
 )
 def test_daterange_locale_formatting(locale, date_from, date_to, expected):
     with translation.override(locale):
         assert daterange(date_from, date_to) == expected
-
-
-@pytest.mark.parametrize("locale", ("de", "en", "es"))
-def test_daterange_different_years_uses_fallback(locale):
-    date_from = date(2003, 2, 1)
-    date_to = date(2005, 4, 3)
-
-    with translation.override(locale):
-        result = daterange(date_from, date_to)
-
-    # The fallback uses DATE_FORMAT, so just verify it contains both years
-    assert "2003" in result
-    assert "2005" in result
-
-
-def test_daterange_unknown_locale_uses_fallback():
-    date_from = date(2024, 6, 10)
-    date_to = date(2024, 6, 12)
-
-    with translation.override("fr"):
-        result = daterange(date_from, date_to)
-
-    assert "2024" in result

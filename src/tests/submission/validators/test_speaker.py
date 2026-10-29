@@ -13,91 +13,102 @@ from tests.factories import EventFactory, SpeakerFactory, SubmissionFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_validate_speakers_within_limit_no_max_set_uses_default_backstop():
+def _messages(validator, *args, **kwargs):
+    try:
+        validator(*args, **kwargs)
+    except ValidationError as exc:
+        return exc.messages
+    return []
+
+
+@pytest.mark.parametrize(
+    ("max_speakers", "current", "pending", "additional", "messages"),
+    (
+        (None, 10, 10, 10, []),
+        (
+            None,
+            1,
+            0,
+            50,
+            [
+                (
+                    "This would exceed the maximum of 50 speakers per proposal. "
+                    "Currently: 1 speaker(s) and 0 pending invitation(s)."
+                )
+            ],
+        ),
+        (3, 1, 1, 1, []),
+        (3, 2, 0, 1, []),
+        (
+            2,
+            1,
+            1,
+            1,
+            [
+                (
+                    "This would exceed the maximum of 2 speakers per proposal. "
+                    "Currently: 1 speaker(s) and 1 pending invitation(s)."
+                )
+            ],
+        ),
+    ),
+    ids=("default_backstop", "over_backstop", "within_limit", "at_limit", "over_limit"),
+)
+def test_validate_speakers_within_limit(
+    max_speakers, current, pending, additional, messages
+):
     event = EventFactory()
-    assert event.cfp.max_speakers is None
+    event.cfp.fields["additional_speaker"]["max"] = max_speakers
+    event.cfp.save()
 
-    validate_speakers_within_limit(event, current=10, pending=10, additional=10)
+    assert (
+        _messages(
+            validate_speakers_within_limit,
+            event,
+            current=current,
+            pending=pending,
+            additional=additional,
+        )
+        == messages
+    )
 
-    with pytest.raises(ValidationError):
-        validate_speakers_within_limit(event, current=1, pending=0, additional=50)
 
-
-def test_validate_speakers_within_limit_within_limit_passes():
+def test_validate_invitation_target():
     event = EventFactory()
     event.cfp.fields["additional_speaker"]["max"] = 3
     event.cfp.save()
-
-    validate_speakers_within_limit(event, current=1, pending=1, additional=1)
-
-
-def test_validate_speakers_within_limit_at_limit_passes():
-    event = EventFactory()
-    event.cfp.fields["additional_speaker"]["max"] = 3
-    event.cfp.save()
-
-    validate_speakers_within_limit(event, current=2, pending=0, additional=1)
-
-
-def test_validate_speakers_within_limit_over_limit_raises():
-    event = EventFactory()
-    event.cfp.fields["additional_speaker"]["max"] = 2
-    event.cfp.save()
-
-    with pytest.raises(ValidationError) as exc_info:
-        validate_speakers_within_limit(event, current=1, pending=1, additional=1)
-
-    assert "maximum" in exc_info.value.messages[0].lower()
-
-
-def test_validate_invitation_target_rejects_existing_speaker():
-    event = EventFactory()
     speaker = SpeakerFactory(event=event)
+    managed = SpeakerFactory(event=event, user=None, email="managed@example.test")
     submission = SubmissionFactory(event=event)
+    empty_submission = SubmissionFactory(event=event)
+
     with scope(event=event):
-        submission.speakers.add(speaker)
-        with pytest.raises(ValidationError) as exc_info:
-            validate_invitation_target(submission, speaker.user.email)
-    assert "already a speaker" in exc_info.value.messages[0].lower()
+        submission.speakers.add(speaker, managed)
+        submission.invitations.create(email="invited@example.test")
+        results = [
+            _messages(validate_invitation_target, submission, email)
+            for email in (
+                speaker.user.email,
+                "Managed@example.test",
+                "Invited@example.test",
+                "fresh@example.test",
+            )
+        ]
+        results.append(
+            _messages(
+                validate_invitation_target, empty_submission, "fresh@example.test"
+            )
+        )
 
-
-def test_validate_invitation_target_rejects_managed_speaker_by_profile_email():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event, user=None, email="managed@example.test")
-    submission = SubmissionFactory(event=event)
-    with scope(event=event):
-        submission.speakers.add(speaker)
-        with pytest.raises(ValidationError) as exc_info:
-            validate_invitation_target(submission, "Managed@example.test")
-    assert "already a speaker" in exc_info.value.messages[0].lower()
-
-
-def test_validate_invitation_target_rejects_pending_invitation():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    email = "invited@example.test"
-    with scope(event=event):
-        submission.invitations.create(email=email)
-        with pytest.raises(ValidationError) as exc_info:
-            validate_invitation_target(submission, email)
-    assert "already been invited" in exc_info.value.messages[0].lower()
-
-
-def test_validate_invitation_target_enforces_limit():
-    event = EventFactory()
-    event.cfp.fields["additional_speaker"]["max"] = 1
-    event.cfp.save()
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    with scope(event=event):
-        submission.speakers.add(speaker)
-        with pytest.raises(ValidationError) as exc_info:
-            validate_invitation_target(submission, "fresh@example.test")
-    assert "maximum" in exc_info.value.messages[0].lower()
-
-
-def test_validate_invitation_target_passes_for_new_email():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    with scope(event=event):
-        validate_invitation_target(submission, "newbie@example.test")
+    assert results == [
+        ["This person is already a speaker on this proposal."],
+        ["This person is already a speaker on this proposal."],
+        ["This person has already been invited to this proposal."],
+        [
+            (
+                "This would exceed the maximum of 3 speakers per proposal. "
+                "Currently: 2 speaker(s) and 1 pending invitation(s)."
+            )
+        ],
+        [],
+    ]

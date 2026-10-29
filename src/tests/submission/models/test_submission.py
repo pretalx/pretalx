@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
-import statistics
 
 import pytest
 from django.db import IntegrityError
@@ -53,18 +52,11 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_generate_invite_code_length():
+def test_generate_invite_code():
     code = generate_invite_code()
+
     assert len(code) == 32
-
-
-def test_generate_invite_code_custom_length():
-    code = generate_invite_code(length=16)
-    assert len(code) == 16
-
-
-def test_generate_invite_code_uses_valid_charset():
-    code = generate_invite_code()
+    assert len(generate_invite_code(length=16)) == 16
     assert all(c in Submission.code_charset for c in code)
 
 
@@ -80,35 +72,27 @@ def test_submission_manager_excludes_drafts():
     assert submission in Submission.all_objects.all()
 
 
-def test_speaker_role_str():
-    submission = SubmissionFactory()
-    speaker = SpeakerFactory(event=submission.event)
-    submission.speakers.add(speaker)
-    role = SpeakerRole.objects.select_related(
-        "submission", "speaker__event", "speaker__user"
-    ).get(submission=submission, speaker=speaker)
-    assert str(role) == f"SpeakerRole(submission={submission.code}, speaker={speaker})"
-
-
-def test_speaker_role_unique_together():
-    submission = SubmissionFactory()
-    speaker = SpeakerFactory(event=submission.event)
-    SpeakerRoleFactory(submission=submission, speaker=speaker, position=0)
-    with pytest.raises(IntegrityError):
-        SpeakerRoleFactory(submission=submission, speaker=speaker, position=1)
-
-
-def test_speaker_role_ordering():
-    submission = SubmissionFactory()
-    speaker1 = SpeakerFactory(event=submission.event)
-    speaker2 = SpeakerFactory(event=submission.event)
-    SpeakerRoleFactory(submission=submission, speaker=speaker1, position=1)
-    SpeakerRoleFactory(submission=submission, speaker=speaker2, position=0)
+def test_submission_speakers_follow_role_positions():
+    submission = SubmissionFactory(title="My Talk")
+    solo = SubmissionFactory(event=submission.event, title="Solo Talk")
+    alice = SpeakerFactory(event=submission.event, name="Alice")
+    bob = SpeakerFactory(event=submission.event, name="Bob")
+    SpeakerRoleFactory(submission=submission, speaker=alice, position=1)
+    SpeakerRoleFactory(submission=submission, speaker=bob, position=0)
     roles = list(
-        SpeakerRole.objects.select_related("speaker").filter(submission=submission)
+        SpeakerRole.objects.select_related(
+            "submission", "speaker__event", "speaker__user"
+        ).filter(submission=submission)
     )
-    assert roles[0].speaker == speaker2
-    assert roles[1].speaker == speaker1
+
+    assert [role.speaker for role in roles] == [bob, alice]
+    assert str(roles[0]) == f"SpeakerRole(submission={submission.code}, speaker={bob})"
+    assert list(submission.sorted_speakers) == [bob, alice]
+    assert submission.display_speaker_names == "Bob, Alice"
+    assert submission.display_title_with_speakers == "“My Talk” by Bob, Alice"
+    assert solo.display_title_with_speakers == "“Solo Talk”"
+    with pytest.raises(IntegrityError):
+        SpeakerRoleFactory(submission=submission, speaker=alice, position=2)
 
 
 @pytest.mark.parametrize(
@@ -136,14 +120,19 @@ def test_submission_log_parent():
     assert submission.log_parent == submission.event
 
 
-def test_submission_get_duration_default():
-    submission = SubmissionFactory(duration=None)
-    assert submission.get_duration() == submission.submission_type.default_duration
+def test_submission_get_duration_falls_back_to_type_default():
+    submission_type = SubmissionTypeFactory(default_duration=100)
+    default = SubmissionFactory(
+        event=submission_type.event, submission_type=submission_type, duration=None
+    )
+    custom = SubmissionFactory(
+        event=submission_type.event, submission_type=submission_type, duration=90
+    )
 
-
-def test_submission_get_duration_custom():
-    submission = SubmissionFactory(duration=45)
-    assert submission.get_duration() == 45
+    assert default.get_duration() == 100
+    assert default.export_duration == "01:40"
+    assert custom.get_duration() == 90
+    assert custom.export_duration == "01:30"
 
 
 @pytest.mark.parametrize(
@@ -194,117 +183,35 @@ def test_submission_reviewer_answers():
     assert list(submission.reviewer_answers) == [a_visible]
 
 
-def test_submission_export_duration():
-    submission = SubmissionFactory(duration=90)
-    assert submission.export_duration == "01:30"
-
-
-def test_submission_export_duration_default():
-    submission_type = SubmissionTypeFactory(default_duration=100)
-    submission = SubmissionFactory(
-        event=submission_type.event, submission_type=submission_type, duration=None
-    )
-    assert submission.export_duration == "01:40"
-
-
 def test_submission_integer_uuid_unique():
     s1 = SubmissionFactory()
     s2 = SubmissionFactory(event=s1.event)
     assert s1.integer_uuid != s2.integer_uuid
 
 
-def test_submission_sorted_speakers():
-    submission = SubmissionFactory()
-    speaker1 = SpeakerFactory(event=submission.event)
-    speaker2 = SpeakerFactory(event=submission.event)
-    SpeakerRoleFactory(submission=submission, speaker=speaker1, position=2)
-    SpeakerRoleFactory(submission=submission, speaker=speaker2, position=1)
-    result = list(submission.sorted_speakers)
-    assert result == [speaker2, speaker1]
+def test_submission_scores_skip_missing_values():
+    unreviewed = SubmissionFactory()
+    reviewed = SubmissionFactory(event=unreviewed.event)
+    for score in (1, None, 2, 6):
+        ReviewFactory(submission=reviewed, score=score)
+
+    assert unreviewed.median_score is None
+    assert unreviewed.mean_score is None
+    assert reviewed.median_score == 2
+    assert reviewed.mean_score == 3.0
 
 
-def test_submission_display_speaker_names():
-    submission = SubmissionFactory()
-    speaker1 = SpeakerFactory(event=submission.event, name="Alice")
-    speaker2 = SpeakerFactory(event=submission.event, name="Bob")
-    SpeakerRoleFactory(submission=submission, speaker=speaker1, position=0)
-    SpeakerRoleFactory(submission=submission, speaker=speaker2, position=1)
-    result = submission.display_speaker_names
-    assert result == "Alice, Bob"
+def test_submission_get_email_locale():
+    event = EventFactory(locales=["en", "de"], locale="en")
+    english = SubmissionFactory(event=event, content_locale="en")
+    german = SubmissionFactory(event=event, content_locale="de")
+    french = SubmissionFactory(event=event, content_locale="fr")
 
-
-def test_submission_display_title_with_speakers():
-    submission = SubmissionFactory(title="My Talk")
-    speaker = SpeakerFactory(event=submission.event, name="Alice")
-    submission.speakers.add(speaker)
-    result = submission.display_title_with_speakers
-    assert "My Talk" in result
-    assert "Alice" in result
-
-
-def test_submission_display_title_with_speakers_no_speakers():
-    submission = SubmissionFactory(title="Solo Talk")
-    result = submission.display_title_with_speakers
-    assert "Solo Talk" in result
-
-
-def test_submission_median_score():
-    submission = SubmissionFactory()
-    ReviewFactory(submission=submission, score=1)
-    ReviewFactory(submission=submission, score=3)
-    ReviewFactory(submission=submission, score=5)
-    assert submission.median_score == statistics.median([1, 3, 5])
-
-
-def test_submission_median_score_none():
-    submission = SubmissionFactory()
-    assert submission.median_score is None
-
-
-def test_submission_median_score_skips_none_scores():
-    submission = SubmissionFactory()
-    ReviewFactory(submission=submission, score=2)
-    ReviewFactory(submission=submission, score=None)
-    ReviewFactory(submission=submission, score=4)
-    assert submission.median_score == statistics.median([2, 4])
-
-
-def test_submission_mean_score():
-    submission = SubmissionFactory()
-    ReviewFactory(submission=submission, score=1)
-    ReviewFactory(submission=submission, score=2)
-    ReviewFactory(submission=submission, score=3)
-    assert submission.mean_score == round(statistics.fmean([1, 2, 3]), 1)
-
-
-def test_submission_mean_score_none():
-    submission = SubmissionFactory()
-    assert submission.mean_score is None
-
-
-@pytest.mark.parametrize(
-    ("content_locale", "event_locales", "fallback", "expected_locale"),
-    (
-        ("en", ["en", "de"], None, "en"),
-        ("de", ["en", "de"], None, "de"),
-        ("fr", ["en", "de"], "de", "de"),
-        ("fr", ["en", "de"], "ja", "en"),
-        ("fr", ["en", "de"], None, "en"),
-    ),
-    ids=[
-        "content_locale_in_event",
-        "content_locale_de_in_event",
-        "fallback_used",
-        "fallback_not_in_event",
-        "no_fallback",
-    ],
-)
-def test_submission_get_email_locale(
-    content_locale, event_locales, fallback, expected_locale
-):
-    event = EventFactory(locales=list(event_locales), locale=event_locales[0])
-    submission = SubmissionFactory(event=event, content_locale=content_locale)
-    assert submission.get_email_locale(fallback=fallback) == expected_locale
+    assert english.get_email_locale() == "en"
+    assert german.get_email_locale() == "de"
+    assert french.get_email_locale(fallback="de") == "de"
+    assert french.get_email_locale(fallback="ja") == "en"
+    assert french.get_email_locale() == "en"
 
 
 def test_submission_clean_resets_content_locale_outside_event():
@@ -315,409 +222,65 @@ def test_submission_clean_resets_content_locale_outside_event():
     assert submission.content_locale == "de"
 
 
-def test_submission_get_instance_data_with_resources():
+def test_submission_get_instance_data_lists_resources_and_tags():
     submission = SubmissionFactory()
     ResourceFactory(
         submission=submission, link="https://example.com", description="Slides"
     )
     ResourceFactory(submission=submission, link="https://example.com/2", description="")
-    data = submission.get_instance_data()
-    assert data["resources"] == (
-        "- [Slides](https://example.com)\n- https://example.com/2"
-    )
-
-
-def test_submission_get_instance_data_skips_empty_resources():
-    submission = SubmissionFactory()
     ResourceFactory(submission=submission, resource=None, description="", link=None)
-    assert "resources" not in submission.get_instance_data()
+    submission.tags.add(TagFactory(event=submission.event, tag="python"))
+    bare = SubmissionFactory(event=submission.event)
+    ResourceFactory(submission=bare, resource=None, description="", link=None)
+    unsaved = Submission(title="Unsaved", code="ABCDEF")
 
-
-def test_submission_get_instance_data_with_tags():
-    submission = SubmissionFactory()
-    tag = TagFactory(event=submission.event, tag="python")
-    submission.tags.add(tag)
     data = submission.get_instance_data()
-    assert "python" in data["tags"]
+    bare_data = bare.get_instance_data()
+    unsaved_data = unsaved.get_instance_data()
 
-
-def test_submission_editable_draft_no_deadline():
-    event = EventFactory(cfp__deadline=None)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
-    assert submission.editable is True
-
-
-def test_submission_editable_draft_past_deadline():
-    event = EventFactory(cfp__deadline=now() - timedelta(hours=1))
-    submission = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
-    assert submission.editable is False
-
-
-def test_submission_editable_draft_track_requires_access_code():
-    event = EventFactory()
-    track = TrackFactory(event=event, requires_access_code=True)
-    submission = SubmissionFactory(
-        event=event, state=SubmissionStates.DRAFT, track=track
-    )
-    assert submission.editable is False
-
-
-def test_submission_editable_draft_type_requires_access_code():
-    event = EventFactory()
-    st = SubmissionTypeFactory(event=event, requires_access_code=True)
-    submission = SubmissionFactory(
-        event=event, state=SubmissionStates.DRAFT, submission_type=st
-    )
-    assert submission.editable is False
-
-
-def test_submission_editable_draft_with_valid_access_code():
-    event = EventFactory(cfp__deadline=now() - timedelta(hours=1))
-    access_code = SubmitterAccessCodeFactory(event=event)
-    submission = SubmissionFactory(
-        event=event, state=SubmissionStates.DRAFT, access_code=access_code
-    )
-    assert submission.editable is True
-
-
-def test_submission_editable_submitted_speakers_cant_edit():
-    event = EventFactory(feature_flags={"speakers_can_edit_submissions": False})
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    assert submission.editable is False
-
-
-def test_submission_editable_submitted_with_feature_flag_and_open_deadline():
-    event = EventFactory(
-        cfp__deadline=now() + timedelta(hours=1),
-        feature_flags={"speakers_can_edit_submissions": True},
-    )
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    assert submission.editable is True
-
-
-def test_submission_editable_accepted_with_feature_flag():
-    event = EventFactory(feature_flags={"speakers_can_edit_submissions": True})
-    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    assert submission.editable is True
-
-
-def test_submission_editable_rejected_not_editable():
-    event = EventFactory(feature_flags={"speakers_can_edit_submissions": True})
-    submission = SubmissionFactory(event=event, state=SubmissionStates.REJECTED)
-    assert submission.editable is False
-
-
-def test_submission_user_state_review_after_deadline():
-    event = EventFactory(cfp__deadline=now() - timedelta(hours=1))
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    assert submission.user_state == "review"
-
-
-def test_submission_user_state_submitted_before_deadline():
-    event = EventFactory(cfp__deadline=now() + timedelta(hours=1))
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    assert submission.user_state == SubmissionStates.SUBMITTED
-
-
-def test_submission_user_state_accepted():
-    submission = SubmissionFactory(state=SubmissionStates.ACCEPTED)
-    assert submission.user_state == SubmissionStates.ACCEPTED
-
-
-def test_submission_add_favourite():
-    submission = SubmissionFactory()
-    user = UserFactory()
-    submission.add_favourite(user)
-    assert SubmissionFavourite.objects.filter(user=user, submission=submission).exists()
-
-
-def test_submission_add_favourite_idempotent():
-    submission = SubmissionFactory()
-    user = UserFactory()
-    submission.add_favourite(user)
-    submission.add_favourite(user)
     assert (
-        SubmissionFavourite.objects.filter(user=user, submission=submission).count()
-        == 1
+        data["resources"] == "- [Slides](https://example.com)\n- https://example.com/2"
     )
+    assert data["tags"] == "- python"
+    assert "resources" not in bare_data
+    assert bare_data["tags"] == ""
+    assert "resources" not in unsaved_data
+    assert "tags" not in unsaved_data
 
 
-def test_submission_remove_favourite():
-    submission = SubmissionFactory()
-    user = UserFactory()
-    submission.add_favourite(user)
-    submission.remove_favourite(user)
-    assert not SubmissionFavourite.objects.filter(
-        user=user, submission=submission
-    ).exists()
+def test_submission_editable_draft_needs_open_cfp_or_access_code():
+    closed = EventFactory(cfp__deadline=now() - timedelta(hours=1))
+    access_code = SubmitterAccessCodeFactory(event=closed)
+    restricted_track = TrackFactory(event=closed, requires_access_code=True)
+    restricted_type = SubmissionTypeFactory(event=closed, requires_access_code=True)
+    open_event = EventFactory(cfp__deadline=None)
+
+    def draft(event, **kwargs):
+        return SubmissionFactory(event=event, state=SubmissionStates.DRAFT, **kwargs)
+
+    assert draft(closed).editable is False
+    assert draft(closed, access_code=access_code).editable is True
+    assert draft(open_event).editable is True
+    assert draft(open_event, track=restricted_track).editable is False
+    assert draft(open_event, submission_type=restricted_type).editable is False
 
 
-@pytest.mark.parametrize(
-    ("state", "expected_count"),
-    ((SubmissionStates.DRAFT, 0), (SubmissionStates.SUBMITTED, 1)),
-    ids=["draft_skipped", "submitted_logged"],
-)
-def test_submission_log_action(state, expected_count):
-    submission = SubmissionFactory(state=state)
-    submission.log_action("pretalx.submission.test")
-    assert submission.logged_actions().count() == expected_count
+def test_submission_editable_by_state_and_cfp():
+    open_event = EventFactory(cfp__deadline=now() + timedelta(hours=1))
+    closed = EventFactory(cfp__deadline=now() - timedelta(hours=1))
+    locked = EventFactory(feature_flags={"speakers_can_edit_submissions": False})
 
+    def submission(event, state):
+        return SubmissionFactory(event=event, state=state)
 
-def test_submission_slot_no_current_schedule():
-    submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
-    with scope(event=submission.event):
-        assert submission.slot is None
-
-
-def test_submission_current_slots_no_current_schedule():
-    submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
-    with scope(event=submission.event):
-        assert submission.current_slots is None
-
-
-def test_submission_public_slots_no_visible_agenda():
-    event = EventFactory(is_public=False)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    with scope(event=event):
-        assert submission.public_slots == []
-
-
-def test_submission_does_accept_feedback_no_slot():
-    submission = SubmissionFactory()
-    with scope(event=submission.event):
-        assert submission.does_accept_feedback is False
-
-
-def test_submission_invitation_str():
-    submission = SubmissionFactory()
-    invitation = SubmissionInvitationFactory(
-        submission=submission, email="test@example.com"
-    )
-    result = str(invitation)
-    assert submission.title in result
-    assert "test@example.com" in result
-
-
-def test_submission_invitation_event():
-    submission = SubmissionFactory()
-    invitation = SubmissionInvitationFactory(
-        submission=submission, email="test@example.com"
-    )
-    assert invitation.event == submission.event
-
-
-def test_submission_invitation_unique_together():
-    submission = SubmissionFactory()
-    SubmissionInvitationFactory(submission=submission, email="test@example.com")
-    with pytest.raises(IntegrityError):
-        SubmissionInvitationFactory(submission=submission, email="test@example.com")
-
-
-def test_submission_score_categories_with_track():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    cat_all = ReviewScoreCategoryFactory(event=event, name="General", active=True)
-    cat_track = ReviewScoreCategoryFactory(
-        event=event, name="Track-specific", active=True
-    )
-    cat_track.limit_tracks.add(track)
-    cat_inactive = ReviewScoreCategoryFactory(
-        event=event, name="Inactive", active=False
-    )
-
-    submission = SubmissionFactory(event=event, track=track)
-    categories = list(submission.score_categories)
-    assert cat_all in categories
-    assert cat_track in categories
-    assert cat_inactive not in categories
-
-
-def test_submission_score_categories_no_track():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    cat_all = ReviewScoreCategoryFactory(event=event, name="General", active=True)
-    cat_track = ReviewScoreCategoryFactory(
-        event=event, name="Track-specific", active=True
-    )
-    cat_track.limit_tracks.add(track)
-
-    submission = SubmissionFactory(event=event, track=None)
-    categories = list(submission.score_categories)
-    assert cat_all in categories
-    assert cat_track not in categories
-
-
-def test_submission_editable_unsaved():
-    submission = Submission()
-    assert submission.editable is True
-
-
-def test_submission_get_content_locale_display():
-    submission = SubmissionFactory(content_locale="en")
-    result = submission.get_content_locale_display()
-    assert result == "English"
-
-
-@pytest.mark.parametrize(
-    ("content_locale", "expected"),
-    (("en", "en"), ("de-formal", "de"), ("zh-hant", "zh-Hant"), ("en-gb", "en-gb")),
-)
-def test_submission_content_language_tag(content_locale, expected):
-    submission = Submission(content_locale=content_locale)
-
-    assert submission.content_language_tag == expected
-
-
-def test_submission_get_content_locale_display_locale_not_in_event():
-    event = EventFactory()  # default content_locales is ['en']
-    submission = SubmissionFactory(event=event, content_locale="de-formal")
-    result = submission.get_content_locale_display()
-    assert result == "Deutsch"
-
-
-def test_submission_does_accept_feedback_with_past_slot():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    room = RoomFactory(event=event)
-    with scope(event=event):
-        update_talk_slots(submission)
-        slot = event.wip_schedule.talks.get(submission=submission)
-        slot.start = now() - timedelta(hours=2)
-        slot.end = now() - timedelta(hours=1)
-        slot.room = room
-        slot.save()
-        freeze_schedule(event.wip_schedule, name="v1")
-    with scope(event=event):
-        assert submission.does_accept_feedback is True
-
-
-def _schedule_and_release(event, submission):
-    update_talk_slots(submission)
-    slot = event.wip_schedule.talks.get(submission=submission)
-    slot.room = RoomFactory(event=event)
-    slot.start = event.datetime_from
-    slot.end = event.datetime_from + dt.timedelta(minutes=30)
-    slot.save()
-    freeze_schedule(event.wip_schedule, name="v1")
-
-
-@pytest.mark.parametrize(
-    ("slot_hours", "expected"),
-    (
-        (((-2, -1),), True),
-        (((-1, 1),), False),
-        (((1, 2),), False),
-        (((-4, -3), (-2, -1)), True),
-        (((-4, -3), (-2, 3)), False),
-    ),
-)
-def test_submission_is_over(slot_hours, expected):
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    with scope(event=event):
-        for start, end in slot_hours:
-            TalkSlotFactory(
-                submission=submission,
-                is_visible=True,
-                start=now() + timedelta(hours=start),
-                end=now() + timedelta(hours=end),
-            )
-        freeze_schedule(event.wip_schedule, name="v1")
-
-    with scope(event=event):
-        assert submission.is_over is expected
-
-
-def test_submission_is_over_without_current_schedule():
-    submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
-    with scope(event=submission.event):
-        assert submission.is_over is False
-
-
-def test_submission_is_over_with_unscheduled_slot():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    with scope(event=event):
-        TalkSlotFactory(submission=submission, is_visible=True, start=None, end=None)
-        freeze_schedule(event.wip_schedule, name="v1")
-
-    with scope(event=event):
-        assert submission.is_over is False
-
-
-def test_submission_public_slots_with_visible_agenda():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-
-    with scope(event=event):
-        _schedule_and_release(event, submission)
-        result = list(submission.public_slots)
-
-    assert [slot.submission for slot in result] == [submission]
-
-
-def test_submission_current_slots_with_schedule():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-
-    with scope(event=event):
-        _schedule_and_release(event, submission)
-        result = list(submission.current_slots)
-
-    assert [slot.submission for slot in result] == [submission]
-
-
-def test_submission_active_resources():
-    submission = SubmissionFactory()
-    r_link = ResourceFactory(submission=submission, link="https://example.com")
-    ResourceFactory(submission=submission, link="")
-    ResourceFactory(submission=submission, link="", resource="None")
-    result = list(submission.active_resources)
-    assert result == [r_link]
-
-
-def test_submission_private_resources():
-    submission = SubmissionFactory()
-    ResourceFactory(submission=submission, link="https://example.com", is_public=False)
-    ResourceFactory(submission=submission, link="https://public.com", is_public=True)
-    result = list(submission.private_resources)
-    assert len(result) == 1
-    assert result[0].is_public is False
-
-
-def test_submission_public_resources():
-    submission = SubmissionFactory()
-    ResourceFactory(submission=submission, link="https://example.com", is_public=False)
-    r_public = ResourceFactory(
-        submission=submission, link="https://public.com", is_public=True
-    )
-    result = list(submission.public_resources)
-    assert result == [r_public]
-
-
-def test_submission_availabilities():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    AvailabilityFactory(
-        event=event,
-        person=speaker,
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=4),
-    )
-    with scope(event=event):
-        result = submission.availabilities
-    assert len(result) == 1
-    assert result[0].start == event.datetime_from
-    assert result[0].end == event.datetime_from + dt.timedelta(hours=4)
-
-
-def test_submission_get_instance_data_unsaved():
-    submission = Submission(title="Unsaved", code="ABCDEF")
-    data = submission.get_instance_data()
-    assert "resources" not in data
-    assert "tags" not in data
+    assert Submission().editable is True
+    assert submission(open_event, SubmissionStates.SUBMITTED).editable is True
+    assert submission(open_event, SubmissionStates.ACCEPTED).editable is True
+    assert submission(open_event, SubmissionStates.REJECTED).editable is False
+    assert submission(closed, SubmissionStates.SUBMITTED).editable is False
+    assert submission(closed, SubmissionStates.ACCEPTED).editable is True
+    assert submission(locked, SubmissionStates.SUBMITTED).editable is False
+    assert submission(locked, SubmissionStates.ACCEPTED).editable is False
 
 
 def test_submission_editable_submitted_past_deadline_with_review_phase():
@@ -739,55 +302,233 @@ def test_submission_editable_submitted_past_deadline_with_review_phase():
         assert submission.editable is True
 
 
+def test_submission_user_state_shows_review_after_deadline():
+    closed = EventFactory(cfp__deadline=now() - timedelta(hours=1))
+    open_event = EventFactory(cfp__deadline=now() + timedelta(hours=1))
+
+    assert (
+        SubmissionFactory(event=closed, state=SubmissionStates.SUBMITTED).user_state
+        == "review"
+    )
+    assert (
+        SubmissionFactory(event=closed, state=SubmissionStates.ACCEPTED).user_state
+        == SubmissionStates.ACCEPTED
+    )
+    assert (
+        SubmissionFactory(event=open_event, state=SubmissionStates.SUBMITTED).user_state
+        == SubmissionStates.SUBMITTED
+    )
+
+
+def test_submission_favourite_add_is_idempotent_and_remove_clears():
+    submission = SubmissionFactory()
+    user = UserFactory()
+    favourites = SubmissionFavourite.objects.filter(user=user, submission=submission)
+
+    submission.add_favourite(user)
+    submission.add_favourite(user)
+    assert favourites.count() == 1
+
+    submission.remove_favourite(user)
+    assert not favourites.exists()
+
+
 @pytest.mark.parametrize(
-    ("state", "expected"),
+    ("state", "expected_count"),
+    ((SubmissionStates.DRAFT, 0), (SubmissionStates.SUBMITTED, 1)),
+    ids=["draft_skipped", "submitted_logged"],
+)
+def test_submission_log_action(state, expected_count):
+    submission = SubmissionFactory(state=state)
+    submission.log_action("pretalx.submission.test")
+    assert submission.logged_actions().count() == expected_count
+
+
+def test_submission_slots_without_current_schedule():
+    event = EventFactory(is_public=False)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+
+    with scope(event=event):
+        assert submission.slot is None
+        assert submission.current_slots is None
+        assert submission.public_slots == []
+        assert submission.does_accept_feedback is False
+        assert submission.is_over is False
+
+
+def test_submission_invitation():
+    submission = SubmissionFactory(title="My Talk")
+    invitation = SubmissionInvitationFactory(
+        submission=submission, email="test@example.com"
+    )
+
+    assert str(invitation) == "Invite to My Talk for test@example.com"
+    assert invitation.event == submission.event
+    with pytest.raises(IntegrityError):
+        SubmissionInvitationFactory(submission=submission, email="test@example.com")
+
+
+def test_submission_score_categories_follow_track():
+    event = EventFactory()
+    event.score_categories.all().delete()
+    track = TrackFactory(event=event)
+    cat_all = ReviewScoreCategoryFactory(event=event, name="General", active=True)
+    cat_track = ReviewScoreCategoryFactory(
+        event=event, name="Track-specific", active=True
+    )
+    cat_track.limit_tracks.add(track)
+    ReviewScoreCategoryFactory(event=event, name="Inactive", active=False)
+    on_track = SubmissionFactory(event=event, track=track)
+    trackless = SubmissionFactory(event=event, track=None)
+
+    assert list(on_track.score_categories) == [cat_all, cat_track]
+    assert list(trackless.score_categories) == [cat_all]
+
+
+def test_submission_get_content_locale_display():
+    event = EventFactory()
+    english = SubmissionFactory(event=event, content_locale="en")
+    german = SubmissionFactory(event=event, content_locale="de-formal")
+
+    assert english.get_content_locale_display() == "English"
+    assert german.get_content_locale_display() == "Deutsch"
+
+
+@pytest.mark.parametrize(
+    ("content_locale", "expected"),
+    (("en", "en"), ("de-formal", "de"), ("zh-hant", "zh-Hant"), ("en-gb", "en-gb")),
+)
+def test_submission_content_language_tag(content_locale, expected):
+    submission = Submission(content_locale=content_locale)
+
+    assert submission.content_language_tag == expected
+
+
+def test_submission_does_accept_feedback_with_past_slot():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    room = RoomFactory(event=event)
+    with scope(event=event):
+        update_talk_slots(submission)
+        slot = event.wip_schedule.talks.get(submission=submission)
+        slot.start = now() - timedelta(hours=2)
+        slot.end = now() - timedelta(hours=1)
+        slot.room = room
+        slot.save()
+        freeze_schedule(event.wip_schedule, name="v1")
+    with scope(event=event):
+        assert submission.does_accept_feedback is True
+
+
+@pytest.mark.parametrize(
+    ("slot_hours", "expected"),
     (
-        (SubmissionStates.SUBMITTED, True),
-        (SubmissionStates.DRAFT, True),
-        (SubmissionStates.ACCEPTED, True),
-        (SubmissionStates.CONFIRMED, True),
-        (SubmissionStates.WITHDRAWN, False),
-        (SubmissionStates.REJECTED, False),
-        (SubmissionStates.CANCELED, False),
+        (((-2, -1),), True),
+        (((-1, 1),), False),
+        (((1, 2),), False),
+        (((-4, -3), (-2, -1)), True),
+        (((-4, -3), (-2, 3)), False),
+        (((None, None),), False),
     ),
 )
-def test_submission_public_review_link_active_by_state(state, expected):
+def test_submission_is_over(slot_hours, expected):
     event = EventFactory()
-    submission = SubmissionFactory(event=event, state=state)
-    assert submission.public_review_link_active is expected
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    with scope(event=event):
+        for start, end in slot_hours:
+            TalkSlotFactory(
+                submission=submission,
+                is_visible=True,
+                start=now() + timedelta(hours=start) if start is not None else None,
+                end=now() + timedelta(hours=end) if end is not None else None,
+            )
+        freeze_schedule(event.wip_schedule, name="v1")
+
+    with scope(event=event):
+        assert submission.is_over is expected
+
+
+def test_submission_current_and_public_slots_with_released_schedule():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+
+    with scope(event=event):
+        update_talk_slots(submission)
+        slot = event.wip_schedule.talks.get(submission=submission)
+        slot.room = RoomFactory(event=event)
+        slot.start = event.datetime_from
+        slot.end = event.datetime_from + dt.timedelta(minutes=30)
+        slot.save()
+        freeze_schedule(event.wip_schedule, name="v1")
+        current = list(submission.current_slots)
+        public = list(submission.public_slots)
+
+    assert [s.pk for s in current] == [submission.slot.pk]
+    assert current[0].submission == submission
+    assert public == current
+
+
+def test_submission_resources_split_by_visibility():
+    submission = SubmissionFactory()
+    private = ResourceFactory(
+        submission=submission, link="https://example.com", is_public=False
+    )
+    public = ResourceFactory(
+        submission=submission, link="https://public.com", is_public=True
+    )
+    ResourceFactory(submission=submission, link="")
+    ResourceFactory(submission=submission, link="", resource="None")
+
+    assert submission.active_resources == [private, public]
+    assert submission.private_resources == [private]
+    assert submission.public_resources == [public]
+
+
+def test_submission_availabilities():
+    event = EventFactory()
+    submission = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
+    AvailabilityFactory(
+        event=event,
+        person=speaker,
+        start=event.datetime_from,
+        end=event.datetime_from + dt.timedelta(hours=4),
+    )
+    with scope(event=event):
+        result = submission.availabilities
+    assert len(result) == 1
+    assert result[0].start == event.datetime_from
+    assert result[0].end == event.datetime_from + dt.timedelta(hours=4)
 
 
 @pytest.mark.parametrize(
     ("state", "feature_enabled", "has_review_code", "expected"),
     (
         (SubmissionStates.SUBMITTED, True, True, True),
+        (SubmissionStates.DRAFT, True, True, True),
+        (SubmissionStates.ACCEPTED, True, True, True),
+        (SubmissionStates.CONFIRMED, True, True, True),
         (SubmissionStates.SUBMITTED, False, True, False),
         (SubmissionStates.SUBMITTED, True, False, False),
         (SubmissionStates.REJECTED, True, True, False),
         (SubmissionStates.REJECTED, False, True, False),
-        (SubmissionStates.WITHDRAWN, True, False, False),
-        (SubmissionStates.CANCELED, False, False, False),
+        (SubmissionStates.WITHDRAWN, True, True, False),
+        (SubmissionStates.CANCELED, True, True, False),
     ),
 )
-def test_submission_public_review_link_active_condition_interaction(
-    state, feature_enabled, has_review_code, expected
+def test_submission_public_review_link_active(
+    state, feature_enabled, has_review_code, expected, django_assert_num_queries
 ):
     event = EventFactory(feature_flags={"submission_public_review": feature_enabled})
     submission = SubmissionFactory(
         event=event, state=state, review_code="abcd1234" if has_review_code else None
     )
-    assert submission.public_review_link_active is expected
-
-
-def test_submission_public_review_link_active_no_query_when_event_loaded(
-    django_assert_num_queries,
-):
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     with scope(event=event):
         loaded = Submission.all_objects.select_related("event").get(pk=submission.pk)
+
     with django_assert_num_queries(0):
-        assert loaded.public_review_link_active is True
+        assert loaded.public_review_link_active is expected
 
 
 @pytest.mark.parametrize(
@@ -825,18 +566,13 @@ def test_submission_requires_signup_computes_from_overrides_and_inheritance(
     assert submission.requires_signup is expected
 
 
-def test_submission_requires_signup_no_track_uses_type_only():
+def test_submission_requires_signup_without_track_or_type():
     event = EventFactory()
     sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, submission_type=sub_type, track=None)
+    trackless = SubmissionFactory(event=event, submission_type=sub_type, track=None)
 
-    assert submission.requires_signup is True
-
-
-def test_submission_requires_signup_unsaved_without_submission_type():
-    event = EventFactory()
-    submission = Submission(event=event)
-    assert submission.requires_signup is False
+    assert trackless.requires_signup is True
+    assert Submission(event=event).requires_signup is False
 
 
 def test_submission_requires_signup_uses_annotation_when_present(
@@ -862,27 +598,7 @@ def test_submission_requires_signup_uses_annotation_when_present(
     assert result is True
 
 
-def test_submission_confirmed_signup_count_uses_annotation_when_present(
-    django_assert_num_queries,
-):
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    with scope(event=event):
-        AttendeeSignupFactory(submission=submission)
-        AttendeeSignupFactory(
-            submission=submission, state=AttendeeSignupStates.CANCELED
-        )
-        annotated = annotate_confirmed_signup_count(event.submissions.all()).get(
-            pk=submission.pk
-        )
-
-    with django_assert_num_queries(0):
-        result = annotated.confirmed_signup_count
-
-    assert result == 1
-
-
-def test_submission_confirmed_signup_count_falls_back_to_query():
+def test_submission_confirmed_signup_count(django_assert_num_queries):
     event = EventFactory()
     submission = SubmissionFactory(event=event)
     with scope(event=event):
@@ -892,31 +608,30 @@ def test_submission_confirmed_signup_count_falls_back_to_query():
             submission=submission, state=AttendeeSignupStates.CANCELED
         )
         assert submission.confirmed_signup_count == 2
+        annotated = annotate_confirmed_signup_count(event.submissions.all()).get(
+            pk=submission.pk
+        )
+
+    with django_assert_num_queries(0):
+        assert annotated.confirmed_signup_count == 2
 
 
-def test_submission_effective_signup_capacity_uses_override():
+def test_submission_effective_signup_capacity_prefers_override(
+    django_assert_num_queries,
+):
     event = EventFactory()
-    submission = SubmissionFactory(event=event, attendee_signup_capacity=42)
-    assert submission.effective_signup_capacity == 42
+    overridden = SubmissionFactory(event=event, attendee_signup_capacity=42)
+    plain = SubmissionFactory(event=event)
+    annotated = SubmissionFactory(event=event, attendee_signup_capacity=42)
+    annotated._annotated_signup_capacity = None
+
+    assert overridden.effective_signup_capacity == 42
+    assert plain.effective_signup_capacity is None
+    with django_assert_num_queries(0):
+        assert annotated.effective_signup_capacity is None
 
 
-def test_submission_effective_signup_capacity_falls_back_to_room():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    schedule = ScheduleFactory(event=event, version="v1")
-    room = RoomFactory(event=event, capacity=88)
-    with scope(event=event):
-        TalkSlotFactory(submission=submission, schedule=schedule, room=room)
-    submission = Submission.objects.select_related("event").get(pk=submission.pk)
-    assert submission.effective_signup_capacity == 88
-
-
-def test_submission_effective_signup_capacity_none_without_override_or_room():
-    submission = SubmissionFactory()
-    assert submission.effective_signup_capacity is None
-
-
-def test_submission_effective_signup_capacity_uses_annotation_when_present(
+def test_submission_effective_signup_capacity_falls_back_to_room(
     django_assert_num_queries,
 ):
     event = EventFactory()
@@ -928,55 +643,30 @@ def test_submission_effective_signup_capacity_uses_annotation_when_present(
         annotated = annotate_submission_signup_status(
             event.submissions.all(), event.current_schedule
         ).get(pk=submission.pk)
+    submission = Submission.objects.select_related("event").get(pk=submission.pk)
 
+    assert submission.effective_signup_capacity == 88
     with django_assert_num_queries(0):
-        result = annotated.effective_signup_capacity
-
-    assert result == 88
-
-
-def test_submission_effective_signup_capacity_short_circuits_on_null_annotation(
-    django_assert_num_queries,
-):
-    submission = SubmissionFactory()
-    submission._annotated_signup_capacity = None
-    with django_assert_num_queries(0):
-        assert submission.effective_signup_capacity is None
+        assert annotated.effective_signup_capacity == 88
 
 
 @pytest.mark.parametrize(
-    ("capacity", "confirmed", "expected"),
-    ((None, 1, None), (5, 2, 3), (2, 3, 0)),
-    ids=("unlimited", "places_remaining", "never_negative"),
+    ("capacity", "confirmed", "places_left", "percent"),
+    ((None, 1, None, None), (5, 2, 3, 40), (2, 3, 0, 100), (10, 3, 7, 30)),
+    ids=("unlimited", "places_remaining", "never_negative", "under_capacity"),
 )
-def test_submission_signup_places_left(capacity, confirmed, expected):
+def test_submission_signup_places_left_and_percent(
+    capacity, confirmed, places_left, percent
+):
     event = EventFactory()
     submission = SubmissionFactory(event=event, attendee_signup_capacity=capacity)
     with scope(event=event):
         for _ in range(confirmed):
             AttendeeSignupFactory(submission=submission)
     submission = Submission.objects.select_related("event").get(pk=submission.pk)
-    assert submission.signup_places_left == expected
 
-
-def test_submission_signup_capacity_percent_none_without_capacity():
-    submission = SubmissionFactory()
-    assert submission.signup_capacity_percent is None
-
-
-@pytest.mark.parametrize(
-    ("capacity", "confirmed", "expected"),
-    ((10, 3, 30), (2, 5, 100)),
-    ids=("under_capacity", "capped_at_100"),
-)
-def test_submission_signup_capacity_percent_calculation(capacity, confirmed, expected):
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, attendee_signup_capacity=capacity)
-    with scope(event=event):
-        for _ in range(confirmed):
-            AttendeeSignupFactory(submission=submission)
-    submission = Submission.objects.get(pk=submission.pk)
-    assert submission.signup_capacity_percent == expected
+    assert submission.signup_places_left == places_left
+    assert submission.signup_capacity_percent == percent
 
 
 @pytest.mark.parametrize(
@@ -1015,14 +705,7 @@ def test_submission_signup_status(
     assert submission.signup_status == expected
 
 
-def test_submission_signup_status_uses_annotation_when_present():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    submission._annotated_signup_status = "full"
-    assert submission.signup_status == "full"
-
-
-def test_submission_signup_status_short_circuits_on_null_annotation(
+def test_submission_signup_status_uses_annotation_when_present(
     django_assert_num_queries,
 ):
     # Non-signup sessions are the common case on annotated querysets, and
@@ -1031,7 +714,11 @@ def test_submission_signup_status_short_circuits_on_null_annotation(
     # annotation value is ``None``.
     event = EventFactory(feature_flags={"attendee_signup": True})
     sub_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    submission = SubmissionFactory(event=event, submission_type=sub_type)
-    submission._annotated_signup_status = None
+    full = SubmissionFactory(event=event, submission_type=sub_type)
+    full._annotated_signup_status = "full"
+    empty = SubmissionFactory(event=event, submission_type=sub_type)
+    empty._annotated_signup_status = None
+
     with django_assert_num_queries(0):
-        assert submission.signup_status is None
+        assert full.signup_status == "full"
+        assert empty.signup_status is None

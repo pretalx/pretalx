@@ -10,21 +10,16 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.django_db
-def test_calendar_response_serves_ics_attachment():
-    slot = TalkSlotFactory()
-    cal = get_slot_ical(slot)
+def test_calendar_response_serves_ics_attachment_with_safe_filename():
+    cal = get_slot_ical(TalkSlotFactory())
 
     response = CalendarResponse(cal, "myevent-CODE")
+    unicode_response = CalendarResponse(cal, "münich-café")
 
     assert response["Content-Type"] == "text/calendar"
     assert response["Content-Disposition"] == 'attachment; filename="myevent-CODE.ics"'
     assert response.content.decode() == serialize_calendar(cal)
-
-
-@pytest.mark.django_db
-def test_calendar_response_sanitizes_filename():
-    slot = TalkSlotFactory()
-
-    response = CalendarResponse(get_slot_ical(slot), "münich-café")
-
-    assert response["Content-Disposition"] == 'attachment; filename="munich-cafe.ics"'
+    assert (
+        unicode_response["Content-Disposition"]
+        == 'attachment; filename="munich-cafe.ics"'
+    )

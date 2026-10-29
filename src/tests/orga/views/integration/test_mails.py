@@ -18,7 +18,7 @@ from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.mail.signals import request_pre_send
 from pretalx.schedule.domain.release import freeze_schedule
-from pretalx.submission.models import SubmissionStates
+from pretalx.submission.models import Submission, SubmissionStates
 from tests.factories import (
     EventFactory,
     MailTemplateFactory,
@@ -101,6 +101,14 @@ EVENT_MAIL_URLS = (
     "sidebar_count",
 )
 
+COMPOSE_DATA = {
+    "bcc": "",
+    "cc": "",
+    "reply_to": "",
+    "subject_0": "foo",
+    "text_0": "bar",
+}
+
 
 def _event_mail_url(event, mail, url_attr):
     if url_attr == "preview":
@@ -116,59 +124,56 @@ def _event_mail_url(event, mail, url_attr):
     return getattr(event.orga_urls, url_attr)
 
 
-@pytest.mark.parametrize("url_attr", EVENT_MAIL_URLS)
-def test_mail_views_redirect_anonymous_users_to_login(
-    client, event, draft_mail, url_attr
-):
-    response = client.get(_event_mail_url(event, draft_mail, url_attr))
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
+def _drafts(event):
+    with scopes_disabled():
+        return QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT)
 
 
-@pytest.mark.parametrize("url_attr", EVENT_MAIL_URLS)
-@pytest.mark.parametrize(
-    "role", ("unrelated", "orga_without_permission"), ids=("unrelated", "no_permission")
-)
+def _mail_count(event, **filters):
+    with scopes_disabled():
+        return QueuedMail.objects.filter(event=event, **filters).count()
+
+
+def _delete_drafts(event):
+    with scopes_disabled():
+        QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).delete()
+
+
+def test_mail_views_redirect_anonymous_users_to_login(client, event, draft_mail):
+    for url_attr in EVENT_MAIL_URLS:
+        response = client.get(_event_mail_url(event, draft_mail, url_attr))
+
+        assert response.status_code == 302, url_attr
+        assert "/login/" in response.url
+
+
 def test_mail_views_hidden_from_users_without_mail_permission(
-    client, event, draft_mail, url_attr, role
+    client, event, draft_mail
 ):
-    if role == "unrelated":
-        user = UserFactory()
-    else:
-        user = make_orga_user(event, can_change_submissions=False)
-    client.force_login(user)
+    for user in (UserFactory(), make_orga_user(event, can_change_submissions=False)):
+        client.force_login(user)
+        for url_attr in EVENT_MAIL_URLS:
+            response = client.get(_event_mail_url(event, draft_mail, url_attr))
 
-    response = client.get(_event_mail_url(event, draft_mail, url_attr))
+            assert response.status_code == 404, url_attr
+            assert str(draft_mail.subject) not in response.content.decode()
 
-    assert response.status_code == 404
-    assert str(draft_mail.subject) not in response.content.decode()
+    for url_attr in ("base", "send", "delete", "copy"):
+        response = client.post(getattr(draft_mail.urls, url_attr))
 
-
-@pytest.mark.parametrize("url_attr", ("base", "send", "delete", "copy"))
-def test_mail_object_views_hidden_without_mail_permission(
-    client, event, draft_mail, url_attr
-):
-    user = make_orga_user(event, can_change_submissions=False)
-    client.force_login(user)
-
-    response = client.post(getattr(draft_mail.urls, url_attr))
-
-    assert response.status_code == 404
+        assert response.status_code == 404, url_attr
     draft_mail.refresh_from_db()
     assert draft_mail.state == QueuedMailStates.DRAFT
+    assert _mail_count(event) == 1
 
 
-@pytest.mark.parametrize("can_change_teams", (True, False))
-def test_compose_teams_mail_requires_team_permission(client, event, can_change_teams):
-    user = make_orga_user(
-        event, can_change_submissions=True, can_change_teams=can_change_teams
-    )
+def test_compose_teams_mail_requires_team_permission(client, event):
+    user = make_orga_user(event, can_change_submissions=True, can_change_teams=False)
     client.force_login(user)
 
     response = client.get(event.orga_urls.compose_mails_teams)
 
-    assert response.status_code == (200 if can_change_teams else 404)
+    assert response.status_code == 404
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -210,26 +215,33 @@ def test_sent_mail_list_view(
     assert all(m.subject in content for m in sent_mails)
 
 
-def test_mail_detail_edit_updates_recipient(client, event, draft_mail):
+def test_mail_detail_edit_and_send(client, event, draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     djmail.outbox = []
     with scopes_disabled():
         log_count = draft_mail.logged_actions().count()
+    data = {
+        "to": draft_mail.to or "",
+        "bcc": draft_mail.bcc or "",
+        "cc": draft_mail.cc or "",
+        "reply_to": draft_mail.reply_to or "",
+        "subject": draft_mail.subject,
+        "text": draft_mail.text or "",
+    }
+
+    response = client.get(_event_mail_url(event, draft_mail, "preview"))
+    assert response.status_code == 200
+    assert str(draft_mail.text) in response.content.decode()
+
+    response = client.post(draft_mail.urls.base, follow=True, data=data)
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert draft_mail.logged_actions().count() == log_count
 
     response = client.post(
-        draft_mail.urls.base,
-        follow=True,
-        data={
-            "to": "testWIN@example.com",
-            "bcc": draft_mail.bcc or "",
-            "cc": draft_mail.cc or "",
-            "reply_to": draft_mail.reply_to or "",
-            "subject": draft_mail.subject,
-            "text": draft_mail.text or "",
-        },
+        draft_mail.urls.base, follow=True, data={**data, "to": "testWIN@example.com"}
     )
-
     assert response.status_code == 200
     draft_mail.refresh_from_db()
     assert draft_mail.to == "testwin@example.com"
@@ -237,53 +249,21 @@ def test_mail_detail_edit_updates_recipient(client, event, draft_mail):
     with scopes_disabled():
         assert draft_mail.logged_actions().count() == log_count + 1
 
-
-def test_mail_detail_edit_unchanged_no_log(client, event, draft_mail):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        log_count = draft_mail.logged_actions().count()
-
     response = client.post(
         draft_mail.urls.base,
         follow=True,
         data={
-            "to": draft_mail.to or "",
-            "bcc": draft_mail.bcc or "",
-            "cc": draft_mail.cc or "",
-            "reply_to": draft_mail.reply_to or "",
-            "subject": draft_mail.subject,
-            "text": draft_mail.text or "",
-        },
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert draft_mail.logged_actions().count() == log_count
-
-
-def test_mail_detail_edit_and_send(client, event, draft_mail):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    djmail.outbox = []
-
-    response = client.post(
-        draft_mail.urls.base,
-        follow=True,
-        data={
+            **data,
             "to": "winner@example.com",
             "bcc": "bcc1@example.com,bcc2@example.com",
-            "cc": "",
-            "reply_to": draft_mail.reply_to or "",
-            "subject": draft_mail.subject,
             "text": "Updated body.",
             "form": "send",
         },
     )
-
     assert response.status_code == 200
     draft_mail.refresh_from_db()
     assert draft_mail.to == "winner@example.com"
+    assert draft_mail.state == QueuedMailStates.SENT
     assert len(djmail.outbox) == 1
     sent = djmail.outbox[0]
     assert sent.body == "Updated body."
@@ -291,9 +271,10 @@ def test_mail_detail_edit_and_send(client, event, draft_mail):
     assert sent.bcc == ["bcc1@example.com", "bcc2@example.com"]
 
 
-def test_mail_detail_cannot_edit_sent_mail(client, event, sent_mail):
+def test_sent_mail_is_immutable_and_copyable(client, event, sent_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
+    before = sent_mail.sent
 
     response = client.post(
         sent_mail.urls.base,
@@ -307,94 +288,65 @@ def test_mail_detail_cannot_edit_sent_mail(client, event, sent_mail):
             "text": "pwned",
         },
     )
-
     assert response.status_code == 200
     sent_mail.refresh_from_db()
     assert sent_mail.to != "hacker@evil.com"
     assert sent_mail.subject != "HACKED"
 
+    response = client.post(sent_mail.urls.send, follow=True)
+    assert response.status_code == 200
+    sent_mail.refresh_from_db()
+    assert sent_mail.sent == before
+    assert _mail_count(event, state=QueuedMailStates.SENT) == 1
+
+    response = client.get(sent_mail.urls.delete, follow=True)
+    assert response.status_code == 200
+    response = client.post(sent_mail.urls.delete, follow=True)
+    assert response.status_code == 200
+    assert _mail_count(event) == 1
+
+    with scopes_disabled():
+        sent_mail.template = None
+        sent_mail.save()
+    response = client.get(sent_mail.urls.base)
+    assert response.status_code == 200
+    assert "Copy to draft" in response.content.decode()
+
+    response = client.post(sent_mail.urls.copy, follow=True)
+    assert response.status_code == 200
+    assert _mail_count(event) == 2
+    with scopes_disabled():
+        new_mail = _drafts(event).get()
+        assert new_mail.subject == sent_mail.subject
+
 
 def test_send_single_mail(client, event, draft_mail, second_draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
-    with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
-            == 2
-        )
-
-    response = client.post(draft_mail.urls.send, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
-            == 1
-        )
-
-
-def test_send_nonexistent_mail_shows_error(client, event, draft_mail):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
+    assert _drafts(event).count() == 2
 
     url = reverse(
         "orga:mails.outbox.mail.send",
         kwargs={"event": event.slug, "pk": draft_mail.pk + 9999},
     )
     response = client.post(url, follow=True)
-
     assert response.status_code == 200
-    with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
-            == 1
-        )
+    assert _drafts(event).count() == 2
 
-
-def test_cannot_send_already_sent_mail(client, event, sent_mail):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    before = sent_mail.sent
-
-    response = client.post(sent_mail.urls.send, follow=True)
-
+    response = client.post(draft_mail.urls.send, headers={"HX-Request": "true"})
     assert response.status_code == 200
-    sent_mail.refresh_from_db()
-    assert sent_mail.sent == before
-    with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.SENT).count()
-            == 1
-        )
+    assert response.headers.get("HX-Trigger") == "updateSidebarCount"
+    draft_mail.refresh_from_db()
+    assert draft_mail.state == QueuedMailStates.SENT
+    assert list(_drafts(event)) == [second_draft_mail]
+
+    response = client.post(second_draft_mail.urls.send, follow=True)
+    assert response.status_code == 200
+    assert "The email has been sent." in response.content.decode()
+    assert _drafts(event).count() == 0
 
 
 def test_send_all_mails(client, event, draft_mail, second_draft_mail, sent_mail):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
-            == 2
-        )
-
-    response = client.get(event.orga_urls.send_outbox, follow=True)
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
-            == 2
-        )
-
-    response = client.post(event.orga_urls.send_outbox, follow=True)
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
-            == 0
-        )
-
-
-def test_retry_all_failed_mails(client, event, draft_mail, second_draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
@@ -402,47 +354,61 @@ def test_retry_all_failed_mails(client, event, draft_mail, second_draft_mail):
         draft_mail.save()
 
     response = client.post(event.orga_urls.send_outbox + "?failed_only=1", follow=True)
-
     assert response.status_code == 200
-    with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
-            == 1
-        )
-        second_draft_mail.refresh_from_db()
-        assert second_draft_mail.state == QueuedMailStates.DRAFT
+    assert list(_drafts(event)) == [second_draft_mail]
 
-
-def test_delete_single_mail(client, event, draft_mail, second_draft_mail):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        assert QueuedMail.objects.filter(event=event).count() == 2
-
-    response = client.post(draft_mail.urls.delete, follow=True)
-
+    response = client.get(event.orga_urls.send_outbox, follow=True)
     assert response.status_code == 200
-    with scopes_disabled():
-        assert QueuedMail.objects.filter(event=event).count() == 1
+    assert list(_drafts(event)) == [second_draft_mail]
+
+    response = client.post(event.orga_urls.send_outbox, follow=True)
+    assert response.status_code == 200
+    assert _drafts(event).count() == 0
+    assert _mail_count(event, state=QueuedMailStates.SENT) == 3
+
+    response = client.post(event.orga_urls.send_outbox, follow=True)
+    assert response.status_code == 200
+    assert "No emails to send" in response.content.decode()
 
 
 @pytest.mark.parametrize(
-    ("mail_fixture", "next_url", "extra_params", "follows_next"),
+    ("mail_fixture", "next_url", "extra_params", "follows_next", "remaining_drafts"),
     (
-        ("draft_mail", "/orga/event/{slug}/mails/outbox/?page_size=5&page=2", {}, True),
-        ("sent_mail", "/orga/event/{slug}/mails/outbox/?page_size=5&page=2", {}, True),
-        ("draft_mail", "https://evil.example.com/", {}, False),
+        (
+            "draft_mail",
+            "/orga/event/{slug}/mails/outbox/?page_size=5&page=2",
+            {},
+            True,
+            1,
+        ),
+        (
+            "sent_mail",
+            "/orga/event/{slug}/mails/outbox/?page_size=5&page=2",
+            {},
+            True,
+            1,
+        ),
+        ("draft_mail", "https://evil.example.com/", {}, False, 1),
         (
             "draft_mail",
             "/orga/event/{slug}/mails/outbox/?page_size=5&page=2",
             {"all": "true"},
             True,
+            0,
         ),
     ),
     ids=("deleted", "not_deletable", "rejects_external_url", "all_by_template"),
 )
-def test_delete_mail_redirects_to_next(
-    client, event, request, mail_fixture, next_url, extra_params, follows_next
+def test_delete_mail(
+    client,
+    event,
+    request,
+    second_draft_mail,
+    mail_fixture,
+    next_url,
+    extra_params,
+    follows_next,
+    remaining_drafts,
 ):
     mail = request.getfixturevalue(mail_fixture)
     user = make_orga_user(event, can_change_submissions=True)
@@ -455,81 +421,28 @@ def test_delete_mail_redirects_to_next(
 
     assert response.status_code == 302
     assert response.url == (next_url if follows_next else str(event.orga_urls.outbox))
-
-
-def test_delete_all_by_template(
-    client, event, draft_mail, second_draft_mail, sent_mail
-):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.post(draft_mail.urls.delete + "?all=true", follow=True)
-
-    assert response.status_code == 200
+    assert _drafts(event).count() == remaining_drafts
     with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
-            == 0
+        assert QueuedMail.objects.filter(pk=mail.pk).exists() is (
+            mail_fixture == "sent_mail"
         )
-        assert QueuedMail.objects.filter(event=event).count() == 1
-
-
-def test_cannot_discard_sent_mail(client, event, sent_mail):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        assert QueuedMail.objects.filter(event=event).count() == 1
-
-    response = client.get(sent_mail.urls.delete, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert QueuedMail.objects.filter(event=event).count() == 1
 
 
 def test_purge_outbox(client, event, draft_mail, second_draft_mail, sent_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
-    with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
-            == 2
-        )
-        assert QueuedMail.objects.filter(event=event).count() == 3
+    assert _drafts(event).count() == 2
+    assert _mail_count(event) == 3
 
     response = client.get(event.orga_urls.purge_outbox, follow=True)
     assert response.status_code == 200
-    with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
-            == 2
-        )
+    assert _drafts(event).count() == 2
 
     response = client.post(event.orga_urls.purge_outbox, follow=True)
     assert response.status_code == 200
+    assert _drafts(event).count() == 0
     with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
-            == 0
-        )
-        assert QueuedMail.objects.filter(event=event).count() == 1
-
-
-def test_copy_sent_mail_to_draft(client, event, sent_mail):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        assert QueuedMail.objects.filter(event=event).count() == 1
-
-    response = client.post(sent_mail.urls.copy, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert QueuedMail.objects.filter(event=event).count() == 2
-        new_mail = QueuedMail.objects.filter(
-            event=event, state=QueuedMailStates.DRAFT
-        ).first()
-        assert new_mail.subject == sent_mail.subject
+        assert list(QueuedMail.objects.filter(event=event)) == [sent_mail]
 
 
 def test_copy_sent_mail_without_reachable_recipients_shows_error(client, event):
@@ -545,24 +458,8 @@ def test_copy_sent_mail_without_reachable_recipients_shows_error(client, event):
     response = client.post(mail.urls.copy, follow=True)
 
     assert response.status_code == 200
-    with scopes_disabled():
-        assert QueuedMail.objects.filter(event=event).count() == 1
+    assert _mail_count(event) == 1
     assert "could not be copied" in response.content.decode()
-
-
-def test_mail_preview(client, event, draft_mail):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:mails.outbox.mail.preview",
-        kwargs={"event": event.slug, "pk": draft_mail.pk},
-    )
-    response = client.get(url)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert str(draft_mail.text) in content
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -581,489 +478,277 @@ def test_template_list_view(
     assert str(mail_template.subject) in response.content.decode()
 
 
-@pytest.mark.parametrize("variant", ("custom", "role", "create"))
-def test_template_form_page_names_the_template(client, event, mail_template, variant):
+def test_template_form_pages_name_the_template(client, event, mail_template):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
-        match variant:
-            case "custom":
-                url = mail_template.urls.edit
-                expected = f"Email template: {mail_template.subject}"
-            case "role":
-                template = mail_template_by_role(
-                    event, MailTemplateRoles.NEW_SUBMISSION
-                )
-                url = template.urls.edit
-                expected = f"Email template: {template.get_role_display()}"
-            case _:
-                url = event.orga_urls.new_template
-                expected = "New email template"
+        role_template = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
+        role_heading = f"Email template: {role_template.get_role_display()}"
 
-    response = client.get(url)
+    for url, expected in (
+        (mail_template.urls.edit, f"Email template: {mail_template.subject}"),
+        (role_template.urls.edit, role_heading),
+        (event.orga_urls.new_template, "New email template"),
+    ):
+        response = client.get(url)
 
-    assert response.status_code == 200
-    assert expected in response.content.decode()
+        assert response.status_code == 200
+        assert expected in response.content.decode()
 
 
-def test_create_template(client, event):
+def test_template_create_edit_and_delete(client, event, mail_template):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
         before = MailTemplate.objects.filter(event=event).count()
+        fixed_template = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
+        update_template = mail_template_by_role(event, MailTemplateRoles.NEW_SCHEDULE)
+        fixed_text = str(fixed_template.text)
 
     response = client.post(
         event.orga_urls.new_template,
         follow=True,
         data={"subject_0": "[test] subject", "text_0": "text"},
     )
-
     assert response.status_code == 200
     with scopes_disabled():
         assert MailTemplate.objects.filter(event=event).count() == before + 1
         assert MailTemplate.objects.get(event=event, subject__contains="[test] subject")
 
-
-@pytest.mark.parametrize("variant", ("custom", "fixed", "update"))
-def test_edit_template(client, event, mail_template, variant):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        match variant:
-            case "fixed":
-                target = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
-            case "update":
-                target = mail_template_by_role(event, MailTemplateRoles.NEW_SCHEDULE)
-            case _:
-                target = mail_template
-        log_count = target.logged_actions().count()
-
-    response = client.post(
-        target.urls.edit,
-        follow=True,
-        data={"subject_0": "COMPLETELY NEW SUBJECT", "text_0": str(target.text)},
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert log_count + 1 == target.logged_actions().count()
-        assert MailTemplate.objects.get(
-            event=event, subject__contains="COMPLETELY NEW SUBJECT"
+    for index, target in enumerate((mail_template, fixed_template, update_template)):
+        with scopes_disabled():
+            log_count = target.logged_actions().count()
+            text = str(target.text)
+        response = client.post(
+            target.urls.edit,
+            follow=True,
+            data={"subject_0": f"COMPLETELY NEW SUBJECT {index}", "text_0": text},
         )
+        assert response.status_code == 200
+        with scopes_disabled():
+            assert target.logged_actions().count() == log_count + 1
+            assert MailTemplate.objects.get(
+                event=event, subject__contains=f"COMPLETELY NEW SUBJECT {index}"
+            )
 
-
-def test_edit_template_unchanged_no_log(client, event, mail_template):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
     with scopes_disabled():
+        mail_template.refresh_from_db(fields=["subject", "text", "reply_to"])
         log_count = mail_template.logged_actions().count()
-
     response = client.post(
         mail_template.urls.edit,
         follow=True,
         data={
-            "subject_0": str(mail_template.subject),
+            "subject_0": "COMPLETELY NEW SUBJECT 0",
             "text_0": str(mail_template.text),
             "reply_to": mail_template.reply_to or "",
         },
     )
-
     assert response.status_code == 200
     with scopes_disabled():
         assert mail_template.logged_actions().count() == log_count
 
-
-def test_cannot_add_invalid_placeholder_to_template(client, event):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        template = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
-
     response = client.post(
-        template.urls.edit,
+        fixed_template.urls.edit,
         follow=True,
-        data={
-            "subject_0": "HACKED",
-            "text_0": str(template.text) + "{wrong_placeholder}",
-        },
+        data={"subject_0": "HACKED", "text_0": fixed_text + "{wrong_placeholder}"},
     )
-
     assert response.status_code == 200
     with scopes_disabled():
-        template.refresh_from_db()
-    assert "HACKED" not in str(template.subject)
-    assert "{wrong_placeholder}" not in str(template.text)
-
-
-def test_delete_template(client, event, mail_template):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        before = MailTemplate.objects.filter(event=event).count()
+        fixed_template.refresh_from_db(fields=["subject", "text"])
+    assert str(fixed_template.subject) == "COMPLETELY NEW SUBJECT 1"
+    assert str(fixed_template.text) == fixed_text
 
     response = client.get(mail_template.urls.delete, follow=True)
+    assert response.status_code == 200
     with scopes_disabled():
-        assert MailTemplate.objects.filter(event=event).count() == before
+        assert MailTemplate.objects.filter(event=event).count() == before + 1
 
     response = client.post(mail_template.urls.delete, follow=True)
     assert response.status_code == 200
     with scopes_disabled():
-        assert MailTemplate.objects.filter(event=event).count() == before - 1
+        assert MailTemplate.objects.filter(event=event).count() == before
+        assert not MailTemplate.objects.filter(pk=mail_template.pk).exists()
 
 
-def test_compose_session_mail_by_state(client, event, submission, other_submission):
+def test_compose_session_mail_validation(client, event, submission):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
-    with scopes_disabled():
-        other_submission.accept()
-
-    response = client.post(
-        event.orga_urls.compose_mails_sessions + "?state=submitted",
-        follow=True,
-        data={
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
-            "subject_0": "hey {name}",
-            "text_0": "about {submission_title}",
-        },
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        mails = list(
-            QueuedMail.objects.filter(
-                event=event, state=QueuedMailStates.DRAFT
-            ).exclude(template__role=MailTemplateRoles.SUBMISSION_ACCEPT)
-        )
-        assert len(mails) == 1
-        speaker = submission.speakers.select_related("user", "event").first()
-        assert mails[0].subject == f"hey {speaker.user.name}"
-        assert mails[0].text == f"about {submission.title}"
-
-
-def test_compose_session_mail_selected_submissions(
-    client, event, submission, other_submission
-):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.post(
-        event.orga_urls.compose_mails_sessions,
-        follow=True,
-        data={
-            "submissions": [other_submission.code],
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
-            "subject_0": "foo",
-            "text_0": "bar",
-        },
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        mails = list(
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT)
-        )
-        assert len(mails) == 1
-        assert list(mails[0].to_speakers.all()) == [
-            other_submission.speakers.select_related("user", "event").first()
-        ]
-
-
-def test_compose_session_mail_state_plus_specific_submission(
-    client, event, published_talk_slot, other_submission
-):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).delete()
-        confirmed_sub = published_talk_slot.submission
-
-    response = client.post(
-        event.orga_urls.compose_mails_sessions + "?state=submitted",
-        follow=True,
-        data={
-            "submissions": confirmed_sub.code,
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
-            "subject_0": "foo {name}",
-            "text_0": "bar {submission_title}",
-        },
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        mails = list(
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT)
-        )
-        assert len(mails) == 2
-        mail_texts = {m.text for m in mails}
-        assert f"bar {confirmed_sub.title}" in mail_texts
-        assert f"bar {other_submission.title}" in mail_texts
-
-
-def test_compose_session_mail_skip_queue_requires_confirmation(
-    client, event, submission, other_submission
-):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        QueuedMail.objects.filter(event=event).delete()
     djmail.outbox = []
-
-    data = {
-        "submissions": [submission.code, other_submission.code],
-        "bcc": "",
-        "cc": "",
-        "reply_to": "",
-        "subject_0": "hi {name}",
-        "text_0": "talk: {submission_title}",
-        "skip_queue": "on",
-    }
-
-    # Submitting with skip_queue but without confirmation does not send: it
-    # shows a confirmation that states the number of emails again.
-    response = client.post(
-        event.orga_urls.compose_mails_sessions, follow=True, data=data
-    )
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "about to immediately send 2 emails" in content
-    assert "Send 2 emails now" in content
     with scopes_disabled():
-        assert QueuedMail.objects.filter(event=event).count() == 0
-    assert len(djmail.outbox) == 0
-
-
-def test_compose_session_mail_immediate_send_after_confirmation(
-    client, event, submission, other_submission
-):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        QueuedMail.objects.filter(event=event).delete()
-    djmail.outbox = []
+        template = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
 
     response = client.post(
-        event.orga_urls.compose_mails_sessions,
-        follow=True,
-        data={
-            "submissions": [submission.code, other_submission.code],
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
-            "subject_0": "hi {name}",
-            "text_0": "talk: {submission_title}",
-            "skip_queue": "on",
-            "action": "send_immediately",
-        },
+        event.orga_urls.compose_mails_sessions, follow=True, data=COMPOSE_DATA
     )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
-            == 0
-        )
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.SENT).count()
-            == 2
-        )
-    assert len(djmail.outbox) == 2
-
-
-def test_compose_session_mail_no_recipients_fails(client, event, submission):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.post(
-        event.orga_urls.compose_mails_sessions,
-        follow=True,
-        data={"bcc": "", "cc": "", "reply_to": "", "subject_0": "foo", "text_0": "bar"},
-    )
-
     assert response.status_code == 200
     assert "at least one filter" in response.content.decode()
-    with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
-            == 0
-        )
-
-
-def test_compose_session_mail_field_errors_are_marked_up_in_the_content_fieldset(
-    client, event, submission
-):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
 
     response = client.post(
         event.orga_urls.compose_mails_sessions,
         follow=True,
-        data={
-            "submissions": [submission.code],
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
-            "subject_0": "",
-            "text_0": "bar",
-        },
+        data={**COMPOSE_DATA, "submissions": [submission.code], "subject_0": ""},
     )
-
     assert response.status_code == 200
     soup = BeautifulSoup(response.content.decode(), "lxml")
     error_selector = '[aria-invalid="true"], .invalid-feedback'
     content = soup.find("legend", string="Content").find_parent("fieldset")
     recipients = soup.find("legend", string="Recipients").find_parent("fieldset")
-
     assert content.select(error_selector)
     assert recipients.select(error_selector) == []
 
-
-def test_compose_session_mail_skip_queue_no_recipients(client, event, submission):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    djmail.outbox = []
-
     response = client.post(
         event.orga_urls.compose_mails_sessions + "?state=rejected",
         follow=True,
-        data={
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
-            "subject_0": "foo",
-            "text_0": "bar",
-            "skip_queue": "on",
-        },
+        data={**COMPOSE_DATA, "skip_queue": "on"},
     )
-
     assert response.status_code == 200
     assert "no recipients" in response.content.decode()
     assert "about to immediately send" not in response.content.decode()
-    with scopes_disabled():
-        assert QueuedMail.objects.filter(event=event).count() == 0
-    assert len(djmail.outbox) == 0
-
-
-def test_compose_session_mail_preview_no_recipients(client, event, submission):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
 
     response = client.post(
         event.orga_urls.compose_mails_sessions + "?state=rejected",
         follow=True,
-        data={
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
-            "subject_0": "foo",
-            "text_0": "bar",
-            "action": "preview",
-        },
+        data={**COMPOSE_DATA, "action": "preview"},
     )
-
     assert response.status_code == 200
     assert "no recipients" in response.content.decode()
 
-
-def test_compose_session_mail_by_track(client, event):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        track = TrackFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, track=track)
-        submission.speakers.add(speaker)
-
-    response = client.post(
-        f"{event.orga_urls.compose_mails_sessions}?track={track.pk}",
-        follow=True,
-        data={"bcc": "", "cc": "", "reply_to": "", "subject_0": "foo", "text_0": "bar"},
+    response = client.get(
+        event.orga_urls.compose_mails_sessions + f"?template={template.pk}", follow=True
     )
-
     assert response.status_code == 200
-    with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
-            == 1
-        )
+    assert str(template.subject) in response.content.decode()
 
-
-def test_compose_session_mail_by_submission_type(client, event, submission):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        SubmissionTypeFactory(event=event)
-        sub_type_pk = submission.submission_type.pk
-
-    response = client.post(
-        f"{event.orga_urls.compose_mails_sessions}?submission_type={sub_type_pk}",
+    response = client.get(
+        event.orga_urls.compose_mails_sessions + f"?template={template.pk}000",
         follow=True,
-        data={"bcc": "", "cc": "", "reply_to": "", "subject_0": "foo", "text_0": "bar"},
     )
-
     assert response.status_code == 200
-    with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
-            == 1
-        )
+    assert str(template.subject) not in response.content.decode()
+
+    assert _mail_count(event) == 0
+    assert len(djmail.outbox) == 0
 
 
-def test_compose_session_mail_track_and_type_no_duplicates(client, event):
+def test_compose_session_mail_recipients(client, event, submission, other_submission):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
+    djmail.outbox = []
     with scopes_disabled():
-        SubmissionTypeFactory(event=event)
-        track = TrackFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, track=track)
-        submission.speakers.add(speaker)
-
-    response = client.post(
-        f"{event.orga_urls.compose_mails_sessions}?track={track.pk}"
-        f"&submission_type={submission.submission_type.pk}",
-        follow=True,
-        data={"bcc": "", "cc": "", "reply_to": "", "subject_0": "foo", "text_0": "bar"},
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
-            == 1
+        Submission.objects.filter(pk=other_submission.pk).update(
+            state=SubmissionStates.ACCEPTED
         )
-
-
-def test_compose_session_mail_to_specific_speakers(client, event, submission):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
         speaker = submission.speakers.select_related("user", "event").first()
+        other_speaker = other_submission.speakers.select_related(
+            "user", "event"
+        ).first()
+
+    response = client.post(
+        event.orga_urls.compose_mails_sessions + "?state=submitted",
+        follow=True,
+        data={
+            **COMPOSE_DATA,
+            "subject_0": "hey {name}",
+            "text_0": "about {submission_title}",
+        },
+    )
+    assert response.status_code == 200
+    with scopes_disabled():
+        mail = _drafts(event).get()
+        assert mail.subject == f"hey {speaker.user.name}"
+        assert mail.text == f"about {submission.title}"
+        assert list(mail.to_speakers.all()) == [speaker]
+    _delete_drafts(event)
 
     response = client.post(
         event.orga_urls.compose_mails_sessions,
         follow=True,
-        data={
-            "speakers": [speaker.pk],
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
-            "subject_0": "foo",
-            "text_0": "bar",
-        },
+        data={**COMPOSE_DATA, "submissions": [other_submission.code]},
     )
-
     assert response.status_code == 200
     with scopes_disabled():
-        mails = list(QueuedMail.objects.filter(event=event, sent__isnull=True))
-        assert len(mails) == 1
-        assert list(mails[0].to_speakers.all()) == [speaker]
+        assert list(_drafts(event).get().to_speakers.all()) == [other_speaker]
+    _delete_drafts(event)
+
+    response = client.post(
+        event.orga_urls.compose_mails_sessions,
+        follow=True,
+        data={**COMPOSE_DATA, "speakers": [speaker.pk]},
+    )
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert list(_drafts(event).get().to_speakers.all()) == [speaker]
+    _delete_drafts(event)
+
+    response = client.post(
+        event.orga_urls.compose_mails_sessions + "?state=submitted",
+        follow=True,
+        data={**COMPOSE_DATA, "speakers": [other_speaker.pk]},
+    )
+    assert response.status_code == 200
+    with scopes_disabled():
+        recipients = {
+            recipient for mail in _drafts(event) for recipient in mail.to_speakers.all()
+        }
+    assert recipients == {speaker, other_speaker}
+    _delete_drafts(event)
+
+    data = {
+        **COMPOSE_DATA,
+        "submissions": [submission.code, other_submission.code],
+        "subject_0": "hi {name}",
+        "text_0": "talk: {submission_title}",
+        "skip_queue": "on",
+    }
+    # Submitting with skip_queue but without confirmation does not send: it
+    # shows a confirmation that states the number of emails again.
+    response = client.post(
+        event.orga_urls.compose_mails_sessions, follow=True, data=data
+    )
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "about to immediately send 2 emails" in content
+    assert "Send 2 emails now" in content
+    assert _mail_count(event) == 0
+    assert len(djmail.outbox) == 0
+
+    response = client.post(
+        event.orga_urls.compose_mails_sessions,
+        follow=True,
+        data={**data, "action": "send_immediately"},
+    )
+    assert response.status_code == 200
+    assert _drafts(event).count() == 0
+    assert _mail_count(event, state=QueuedMailStates.SENT) == 2
+    assert len(djmail.outbox) == 2
+
+
+def test_compose_session_mail_by_track_and_type(client, event):
+    user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+    with scopes_disabled():
+        SubmissionTypeFactory(event=event)
+        track = TrackFactory(event=event)
+        speaker = SpeakerFactory(event=event)
+        submission = SubmissionFactory(event=event, track=track)
+        submission.speakers.add(speaker)
+        sub_type_pk = submission.submission_type.pk
+
+    for query in (
+        f"?track={track.pk}",
+        f"?submission_type={sub_type_pk}",
+        f"?track={track.pk}&submission_type={sub_type_pk}",
+    ):
+        response = client.post(
+            f"{event.orga_urls.compose_mails_sessions}{query}",
+            follow=True,
+            data=COMPOSE_DATA,
+        )
+
+        assert response.status_code == 200
+        with scopes_disabled():
+            assert list(_drafts(event).get().to_speakers.all()) == [speaker]
+        _delete_drafts(event)
 
 
 def test_compose_session_mail_by_content_locale(client):
@@ -1078,7 +763,7 @@ def test_compose_session_mail_by_content_locale(client):
     response = client.post(
         event.orga_urls.compose_mails_sessions + "?content_locale=en",
         follow=True,
-        data={"bcc": "", "cc": "", "reply_to": "", "subject_0": "foo", "text_0": "bar"},
+        data=COMPOSE_DATA,
     )
 
     assert response.status_code == 200
@@ -1086,111 +771,79 @@ def test_compose_session_mail_by_content_locale(client):
         assert QueuedMail.objects.filter(event=event, sent__isnull=True).count() == 1
 
 
-def test_compose_session_mail_multiple_states_failing_placeholders(
-    client, event, published_talk_slot
+def test_compose_session_mail_with_state_and_specific_submissions(
+    client, event, published_talk_slot, other_submission
 ):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
-        other_sub = SubmissionFactory(event=event)
-        other_speaker = SpeakerFactory(event=event)
-        other_sub.speakers.add(other_speaker)
-        QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).delete()
-
-    response = client.post(
-        event.orga_urls.compose_mails_sessions + "?state=submitted&state=confirmed",
-        follow=True,
-        data={
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
-            "subject_0": "foo {name}",
-            "text_0": "bar {session_room}",
-        },
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        mails = list(
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT)
-        )
-        assert len(mails) == 1
-        assert mails[0].text == f"bar {published_talk_slot.room.name}"
-
-
-def test_compose_session_mail_speakers_with_state_filter(
-    client, event, submission, other_submission
-):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        other_speaker = other_submission.speakers.select_related(
-            "user", "event"
-        ).first()
-        QueuedMail.objects.filter(event=event, sent__isnull=True).delete()
+        confirmed_sub = published_talk_slot.submission
+        room_name = published_talk_slot.room.name
+    _delete_drafts(event)
 
     response = client.post(
         event.orga_urls.compose_mails_sessions + "?state=submitted",
         follow=True,
         data={
-            "speakers": [other_speaker.pk],
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
-            "subject_0": "foo",
-            "text_0": "bar",
+            **COMPOSE_DATA,
+            "submissions": confirmed_sub.code,
+            "subject_0": "foo {name}",
+            "text_0": "bar {submission_title}",
         },
     )
-
     assert response.status_code == 200
     with scopes_disabled():
-        mails = list(QueuedMail.objects.filter(event=event, sent__isnull=True))
-        recipients = set()
-        for mail in mails:
-            recipients.update(mail.to_speakers.all())
-        assert submission.speakers.select_related("user", "event").first() in recipients
-        assert other_speaker in recipients
+        assert sorted(mail.text for mail in _drafts(event)) == sorted(
+            [f"bar {confirmed_sub.title}", f"bar {other_submission.title}"]
+        )
+    _delete_drafts(event)
 
-
-def test_compose_session_mail_from_template(client, event, submission):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        template = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
-
-    response = client.get(
-        event.orga_urls.compose_mails_sessions + f"?template={template.pk}", follow=True
-    )
-
-    assert response.status_code == 200
-    assert str(template.subject) in response.content.decode()
-
-
-def test_compose_session_mail_from_wrong_template(client, event, submission):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        template = mail_template_by_role(event, MailTemplateRoles.NEW_SUBMISSION)
-
-    response = client.get(
-        event.orga_urls.compose_mails_sessions + f"?template={template.pk}000",
+    response = client.post(
+        event.orga_urls.compose_mails_sessions + "?state=submitted&state=confirmed",
         follow=True,
+        data={
+            **COMPOSE_DATA,
+            "subject_0": "foo {name}",
+            "text_0": "bar {session_room}",
+        },
     )
-
     assert response.status_code == 200
-    assert str(template.subject) not in response.content.decode()
+    with scopes_disabled():
+        assert [mail.text for mail in _drafts(event)] == [f"bar {room_name}"]
 
 
-def test_compose_teams_mail_sends_directly(client, event):
+def test_compose_teams_mail(client, event):
     user = make_orga_user(event, can_change_submissions=True, can_change_teams=True)
     client.force_login(user)
     with scopes_disabled():
         reviewer = UserFactory()
+        other_user = UserFactory()
         team = TeamFactory(
             organiser=event.organiser, all_events=True, can_change_submissions=True
         )
+        other_team = TeamFactory(
+            organiser=event.organiser, all_events=True, can_change_submissions=True
+        )
         team.members.add(reviewer)
+        other_team.members.add(other_user)
     djmail.outbox = []
+
+    response = client.get(event.orga_urls.compose_mails_teams)
+    assert response.status_code == 200
+
+    response = client.post(
+        event.orga_urls.compose_mails_teams,
+        data={
+            "recipients": str(team.pk),
+            "subject_0": "hi {name}",
+            "text_0": "hello {name}",
+            "action": "preview",
+        },
+    )
+    assert response.status_code == 200
+    assert "Subject:" in response.content.decode()
+    assert _mail_count(event) == 0
+    assert len(djmail.outbox) == 0
 
     response = client.post(
         event.orga_urls.compose_mails_teams,
@@ -1201,42 +854,24 @@ def test_compose_teams_mail_sends_directly(client, event):
             "text_0": "hello {name}",
         },
     )
-
     assert response.status_code == 200
     assert len(djmail.outbox) == 1
     assert djmail.outbox[0].subject == f"hi {reviewer.name}"
     assert djmail.outbox[0].body == f"hello {reviewer.name}"
 
-
-def test_compose_teams_mail_multiple_teams(client, event):
-    user = make_orga_user(event, can_change_submissions=True, can_change_teams=True)
-    client.force_login(user)
-    with scopes_disabled():
-        user1 = UserFactory()
-        user2 = UserFactory()
-        team1 = TeamFactory(
-            organiser=event.organiser, all_events=True, can_change_submissions=True
-        )
-        team2 = TeamFactory(
-            organiser=event.organiser, all_events=True, can_change_submissions=True
-        )
-        team1.members.add(user1)
-        team2.members.add(user2)
     djmail.outbox = []
-
     response = client.post(
         event.orga_urls.compose_mails_teams,
         follow=True,
         data={
-            "recipients": [str(team1.pk), str(team2.pk)],
+            "recipients": [str(team.pk), str(other_team.pk)],
             "subject_0": "hi {name}",
             "text_0": "mail {email}",
         },
     )
-
     assert response.status_code == 200
     assert len(djmail.outbox) == 2
-    for u in (user1, user2):
+    for u in (reviewer, other_user):
         sent = next(m for m in djmail.outbox if m.subject == f"hi {u.name}")
         assert sent.body == f"mail {u.email}"
 
@@ -1263,72 +898,40 @@ def test_send_draft_reminders(client, event):
     assert draft.title in djmail.outbox[0].body
 
 
-def test_sending_status_no_ids_returns_286(client, event):
+def test_sending_status_and_sidebar_count(client, event, draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
+    status_url = reverse("orga:mails.sending_status", kwargs={"event": event.slug})
 
-    url = reverse("orga:mails.sending_status", kwargs={"event": event.slug})
-    response = client.get(url, {"ids": ""})
-
-    assert response.status_code == 286
-
-
-def test_sending_status_while_sending(client, event, draft_mail):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        draft_mail.state = QueuedMailStates.SENDING
-        draft_mail.save()
-
-    url = reverse("orga:mails.sending_status", kwargs={"event": event.slug})
-    response = client.get(url, {"ids": str(draft_mail.pk)})
-
-    assert response.status_code == 200
-    assert f"mail-status-{draft_mail.pk}" in response.content.decode()
-    assert "HX-Trigger" not in response.headers
-
-
-def test_sending_status_stops_when_done(client, event, sent_mail):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    url = reverse("orga:mails.sending_status", kwargs={"event": event.slug})
-    response = client.get(url, {"ids": str(sent_mail.pk)})
-
-    assert response.status_code == 286
-    assert response.headers.get("HX-Trigger") == "updateSidebarCount"
-
-
-def test_sidebar_count(client, event, draft_mail):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    url = reverse("orga:mails.sidebar_count", kwargs={"event": event.slug})
-    response = client.get(url)
-
+    response = client.get(
+        reverse("orga:mails.sidebar_count", kwargs={"event": event.slug})
+    )
     assert response.status_code == 200
     content = response.content.decode()
     assert "sidebar-notification" in content
     assert ">1<" in content
 
+    response = client.get(status_url, {"ids": ""})
+    assert response.status_code == 286
 
-def test_outbox_shows_failed_count(client, event, draft_mail):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
     with scopes_disabled():
-        draft_mail.error_data = {"error": "SMTP auth failed", "type": "Exception"}
+        draft_mail.state = QueuedMailStates.SENDING
         draft_mail.save()
-
-    response = client.get(event.orga_urls.outbox)
-
+    response = client.get(status_url, {"ids": str(draft_mail.pk)})
     assert response.status_code == 200
-    content = response.content.decode()
-    assert "failed to send" in content
-    assert "Retry all failed" in content
-    assert "Show failed" in content
+    assert f"mail-status-{draft_mail.pk}" in response.content.decode()
+    assert "HX-Trigger" not in response.headers
+
+    with scopes_disabled():
+        draft_mail.state = QueuedMailStates.DRAFT
+        draft_mail.save()
+        send_draft(draft_mail)
+    response = client.get(status_url, {"ids": str(draft_mail.pk)})
+    assert response.status_code == 286
+    assert response.headers.get("HX-Trigger") == "updateSidebarCount"
 
 
-def test_outbox_search_matches_speaker_name(
+def test_outbox_failed_count_search_and_status_filter(
     client, event, draft_mail, second_draft_mail
 ):
     user = make_orga_user(event, can_change_submissions=True)
@@ -1337,22 +940,6 @@ def test_outbox_search_matches_speaker_name(
         speaker = draft_mail.to_speakers.select_related("user", "event").first()
         speaker.name = "Findable Speaker"
         speaker.save()
-        QueuedMail.objects.filter(pk=second_draft_mail.pk).update(
-            subject="Unrelated subject"
-        )
-
-    response = client.get(event.orga_urls.outbox + "?q=Findable")
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert draft_mail.subject in content
-    assert "Unrelated subject" not in content
-
-
-def test_outbox_status_filter(client, event, draft_mail, second_draft_mail):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
         # Both fixtures render the same template, so they need telling apart.
         draft_mail.subject = "Delivery failed here"
         draft_mail.error_data = {"error": "SMTP auth failed", "type": "Exception"}
@@ -1360,85 +947,51 @@ def test_outbox_status_filter(client, event, draft_mail, second_draft_mail):
         second_draft_mail.subject = "Still pending here"
         second_draft_mail.save()
 
+    response = client.get(event.orga_urls.outbox)
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "failed to send" in content
+    assert "Retry all failed" in content
+    assert "Show failed" in content
+    assert "Delivery failed here" in content
+    assert "Still pending here" in content
+
+    response = client.get(event.orga_urls.outbox + "?q=Findable")
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Delivery failed here" in content
+    assert "Still pending here" not in content
+
     response = client.get(event.orga_urls.outbox + "?status=failed")
     assert response.status_code == 200
     content = response.content.decode()
-    assert draft_mail.subject in content
-    assert second_draft_mail.subject not in content
+    assert "Delivery failed here" in content
+    assert "Still pending here" not in content
 
     response = client.get(event.orga_urls.outbox + "?status=draft")
     assert response.status_code == 200
     content = response.content.decode()
-    assert second_draft_mail.subject in content
-    assert draft_mail.subject not in content
+    assert "Still pending here" in content
+    assert "Delivery failed here" not in content
 
 
-def test_send_single_mail_htmx_response(client, event, draft_mail):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.post(draft_mail.urls.send, headers={"HX-Request": "true"})
-
-    assert response.status_code == 200
-    assert response.headers.get("HX-Trigger") == "updateSidebarCount"
-    draft_mail.refresh_from_db()
-    assert draft_mail.state == QueuedMailStates.SENT
-
-
-def test_send_single_mail_blocked_by_exception(
-    client, event, draft_mail, register_signal_handler
-):
-    def block_send(signal, sender, **kwargs):
-        raise SendMailException("Sending blocked")
-
-    register_signal_handler(request_pre_send, block_send)
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.post(draft_mail.urls.send, follow=True)
-
-    assert response.status_code == 200
-    draft_mail.refresh_from_db()
-    assert draft_mail.state == QueuedMailStates.DRAFT
-
-
-def test_bulk_send_blocked_by_exception(
-    client, event, draft_mail, register_signal_handler
-):
-    def block_send(signal, sender, **kwargs):
-        raise SendMailException("Sending blocked")
-
-    register_signal_handler(request_pre_send, block_send)
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.post(event.orga_urls.send_outbox, follow=True)
-
-    assert response.status_code == 200
-    draft_mail.refresh_from_db()
-    assert draft_mail.state == QueuedMailStates.DRAFT
-
-
-def test_delete_post_sent_mail_shows_error(client, event, sent_mail):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.post(sent_mail.urls.delete, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert QueuedMail.objects.filter(event=event).count() == 1
-
-
-def test_mail_detail_send_blocked_by_exception(
-    client, event, draft_mail, register_signal_handler
-):
+def test_send_blocked_by_exception(client, event, draft_mail, register_signal_handler):
     def block_send(signal, sender, **kwargs):
         raise SendMailException("Blocked")
 
     register_signal_handler(request_pre_send, block_send)
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
+
+    response = client.post(draft_mail.urls.send, follow=True)
+    assert response.status_code == 200
+    draft_mail.refresh_from_db()
+    assert draft_mail.state == QueuedMailStates.DRAFT
+
+    response = client.post(event.orga_urls.send_outbox, follow=True)
+    assert response.status_code == 200
+    draft_mail.refresh_from_db()
+    assert draft_mail.state == QueuedMailStates.DRAFT
 
     response = client.post(
         draft_mail.urls.base,
@@ -1453,42 +1006,45 @@ def test_mail_detail_send_blocked_by_exception(
             "form": "send",
         },
     )
-
     assert response.status_code == 200
     draft_mail.refresh_from_db()
     assert draft_mail.state == QueuedMailStates.DRAFT
     assert "Blocked" in response.content.decode()
 
 
-def test_mail_detail_sent_without_template_shows_copy_button(client, event, sent_mail):
+def test_compose_teams_mail_blocked_by_exception(
+    client, event, register_signal_handler
+):
+    def block_send(signal, sender, **kwargs):
+        raise SendMailException("Blocked")
+
+    register_signal_handler(request_pre_send, block_send)
+    user = make_orga_user(event, can_change_submissions=True, can_change_teams=True)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.compose_mails_teams)
+
+    assert response.status_code == 302
+    assert response.url == event.orga_urls.outbox
+
+
+def test_compose_session_mail_preview(client, event, submission, other_submission):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
-        sent_mail.template = None
-        sent_mail.save()
-
-    response = client.get(sent_mail.urls.base)
-
-    assert response.status_code == 200
-    assert "Copy to draft" in response.content.decode()
-
-
-def test_compose_session_mail_preview(client, event, submission):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
+        other_speaker = other_submission.speakers.select_related(
+            "user", "event"
+        ).first()
 
     response = client.post(
         event.orga_urls.compose_mails_sessions + "?state=submitted",
         data={
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
+            **COMPOSE_DATA,
             "subject_0": "Preview {name}",
             "text_0": "Hello {submission_title}, see [{event_name}]({event_url})",
             "action": "preview",
         },
     )
-
     assert response.status_code == 200
     content = response.content.decode()
     assert "Subject:" in content
@@ -1498,11 +1054,21 @@ def test_compose_session_mail_preview(client, event, submission):
         "This Is a Proposal Title</span>"
     ) in content
     assert f'<a href="https://pretalx.com/{event.slug}/"' in content
-    with scopes_disabled():
-        assert (
-            QueuedMail.objects.filter(event=event, state=QueuedMailStates.DRAFT).count()
-            == 0
-        )
+
+    response = client.post(
+        event.orga_urls.compose_mails_sessions,
+        data={
+            **COMPOSE_DATA,
+            "submissions": [submission.code],
+            "speakers": [other_speaker.pk],
+            "subject_0": "Preview",
+            "text_0": "Hello {proposal_title}",
+            "action": "preview",
+        },
+    )
+    assert response.status_code == 200
+    assert "Subject:" in response.content.decode()
+    assert _mail_count(event) == 0
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -1524,9 +1090,7 @@ def test_compose_session_mail_preview_query_count(
         response = client.post(
             event.orga_urls.compose_mails_sessions + "?state=confirmed",
             data={
-                "bcc": "",
-                "cc": "",
-                "reply_to": "",
+                **COMPOSE_DATA,
                 "subject_0": "Preview",
                 "text_0": "Hello {submission_title} in {session_room}",
                 "action": "preview",
@@ -1539,50 +1103,24 @@ def test_compose_session_mail_preview_query_count(
     assert f"{item_count} email" in content
 
 
-def test_compose_session_mail_preview_warns_about_unreachable_speakers(client, event):
+def test_compose_session_mail_preview_warns_about_managed_speakers(client, event):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     with scopes_disabled():
         submission = SubmissionFactory(event=event)
-        managed = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
-        submission.speakers.add(managed)
-
-    response = client.post(
-        event.orga_urls.compose_mails_sessions,
-        data={
-            "submissions": [submission.code],
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
-            "subject_0": "Preview",
-            "text_0": "Hello",
-            "action": "preview",
-        },
-    )
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "cannot receive this email" in content
-    assert "No Mail" in content
-
-
-def test_compose_session_mail_preview_warns_about_account_only_links(client, event):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
+        unreachable = SpeakerFactory(event=event, user=None, email=None, name="No Mail")
+        submission.speakers.add(unreachable)
+        other_submission = SubmissionFactory(event=event)
         managed = SpeakerFactory(
             event=event, user=None, email="managed@example.com", name="Managed"
         )
-        submission.speakers.add(managed)
+        other_submission.speakers.add(managed)
 
     response = client.post(
         event.orga_urls.compose_mails_sessions,
         data={
-            "submissions": [submission.code],
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
+            **COMPOSE_DATA,
+            "submissions": [submission.code, other_submission.code],
             "subject_0": "Preview",
             "text_0": "Please confirm: {confirmation_link}",
             "action": "preview",
@@ -1591,64 +1129,11 @@ def test_compose_session_mail_preview_warns_about_account_only_links(client, eve
 
     assert response.status_code == 200
     content = response.content.decode()
+    assert "cannot receive this email" in content
+    assert "No Mail" in content
     assert "only work with a pretalx account" in content
     assert "confirmation_link" in content
     assert "Managed" in content
-
-
-def test_compose_session_mail_preview_with_submissions_and_speakers(client, event):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event)
-        submission.speakers.add(speaker)
-        other_speaker = SpeakerFactory(event=event)
-        other_submission = SubmissionFactory(event=event)
-        other_submission.speakers.add(other_speaker)
-
-    response = client.post(
-        event.orga_urls.compose_mails_sessions,
-        data={
-            "submissions": [submission.code],
-            "speakers": [other_speaker.pk],
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
-            "subject_0": "Preview",
-            "text_0": "Hello {proposal_title}",
-            "action": "preview",
-        },
-    )
-
-    assert response.status_code == 200
-    assert "Subject:" in response.content.decode()
-
-
-def test_compose_teams_mail_blocked_by_exception(
-    client, event, register_signal_handler
-):
-    def block_send(signal, sender, **kwargs):
-        raise SendMailException("Blocked")
-
-    register_signal_handler(request_pre_send, block_send)
-    user = make_orga_user(event, can_change_submissions=True, can_change_teams=True)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.compose_mails_teams)
-
-    assert response.status_code == 302
-    assert response.url == event.orga_urls.outbox
-
-
-def test_bulk_send_empty_outbox(client, event):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.post(event.orga_urls.send_outbox, follow=True)
-
-    assert response.status_code == 200
-    assert "No emails to send" in response.content.decode()
 
 
 @pytest.mark.parametrize(
@@ -1675,30 +1160,3 @@ def test_async_progress_page(
     content = response.content.decode()
     assert expected_title in content
     assert event.orga_urls.outbox in content
-
-
-def test_compose_teams_mail_preview(client, event):
-    user = make_orga_user(event, can_change_submissions=True, can_change_teams=True)
-    client.force_login(user)
-    with scopes_disabled():
-        reviewer = UserFactory()
-        team = TeamFactory(
-            organiser=event.organiser, all_events=True, can_change_submissions=True
-        )
-        team.members.add(reviewer)
-
-    response = client.post(
-        event.orga_urls.compose_mails_teams,
-        data={
-            "recipients": str(team.pk),
-            "subject_0": "hi {name}",
-            "text_0": "hello {name}",
-            "action": "preview",
-        },
-    )
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "Subject:" in content
-    with scopes_disabled():
-        assert QueuedMail.objects.filter(event=event).count() == 0

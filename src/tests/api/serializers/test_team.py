@@ -115,7 +115,9 @@ def test_team_serializer_validate_requires_permissions():
 
 def test_team_serializer_validate_accepts_all_events_with_permission():
     organiser = OrganiserFactory()
-    team = TeamFactory(organiser=organiser, all_events=True)
+    team = TeamFactory(
+        organiser=organiser, all_events=True, can_change_submissions=True
+    )
 
     serializer = TeamSerializer(
         instance=team, context={"request": make_api_request(organiser=organiser)}
@@ -123,6 +125,7 @@ def test_team_serializer_validate_accepts_all_events_with_permission():
 
     result = serializer.validate({"all_events": True, "can_change_submissions": True})
     assert result["all_events"] is True
+    assert serializer.validate({}) == {}
 
 
 def test_team_serializer_validate_accepts_limit_events_with_permission():
@@ -138,20 +141,6 @@ def test_team_serializer_validate_accepts_limit_events_with_permission():
         {"all_events": False, "limit_events": [event], "is_reviewer": True}
     )
     assert result["limit_events"] == [event]
-
-
-def test_team_serializer_validate_falls_back_to_instance():
-    organiser = OrganiserFactory()
-    team = TeamFactory(
-        organiser=organiser, all_events=True, can_change_submissions=True
-    )
-
-    serializer = TeamSerializer(
-        instance=team, context={"request": make_api_request(organiser=organiser)}
-    )
-
-    result = serializer.validate({})
-    assert result == {}
 
 
 def test_team_serializer_create_sets_organiser_from_request():

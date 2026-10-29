@@ -103,27 +103,47 @@ def test_gate_returns_hx_redirect_for_htmx_requests(event):
 
 
 @pytest.mark.django_db
-def test_gate_stores_destination_for_redirect_after_verification(event):
+@pytest.mark.parametrize(
+    ("method", "path", "stored", "expected"),
+    (
+        ("get", "/{slug}/schedule/?day=2", {}, "/{slug}/schedule/?day=2"),
+        ("post", "/{slug}/me/", {}, None),
+        (
+            "get",
+            "/{slug}/me/",
+            {"verification_next": "/{slug}/me/#section"},
+            "/{slug}/me/#section",
+        ),
+        (
+            "get",
+            "/{slug}/me/",
+            {"verification_next": "/{slug}/schedule/#talk"},
+            "/{slug}/me/",
+        ),
+    ),
+    ids=(
+        "stores_get_destination",
+        "skips_post",
+        "keeps_fragment_stored_at_login",
+        "overwrites_other_page",
+    ),
+)
+def test_gate_stores_destination_for_redirect_after_verification(
+    event, method, path, stored, expected
+):
     request = make_request(
-        event, user=_unverified_user(), path=f"/{event.slug}/schedule/?day=2"
+        event, user=_unverified_user(), method=method, path=path.format(slug=event.slug)
+    )
+    request.session.update(
+        {key: value.format(slug=event.slug) for key, value in stored.items()}
     )
 
     response = _make_middleware()(request)
 
     assert response.status_code == 302
-    assert request.session["verification_next"] == f"/{event.slug}/schedule/?day=2"
-
-
-@pytest.mark.django_db
-def test_gate_does_not_store_destination_for_post_requests(event):
-    request = make_request(
-        event, user=_unverified_user(), method="post", path=f"/{event.slug}/me/"
+    assert request.session.get("verification_next") == (
+        expected and expected.format(slug=event.slug)
     )
-
-    response = _make_middleware()(request)
-
-    assert response.status_code == 302
-    assert "verification_next" not in request.session
 
 
 @pytest.mark.django_db
@@ -138,43 +158,17 @@ def test_gate_does_not_store_unsafe_destination(event):
 
 
 @pytest.mark.django_db
-def test_gate_keeps_fragment_destination_stored_at_login(event):
-    request = make_request(event, user=_unverified_user(), path=f"/{event.slug}/me/")
-    request.session["verification_next"] = f"/{event.slug}/me/#section"
-
-    _make_middleware()(request)
-
-    assert request.session["verification_next"] == f"/{event.slug}/me/#section"
-
-
-@pytest.mark.django_db
-def test_gate_overwrites_destination_stored_for_other_page(event):
-    request = make_request(event, user=_unverified_user(), path=f"/{event.slug}/me/")
-    request.session["verification_next"] = f"/{event.slug}/schedule/#talk"
-
-    _make_middleware()(request)
-
-    assert request.session["verification_next"] == f"/{event.slug}/me/"
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize(
-    "state",
-    (EmailVerificationState.VERIFIED, EmailVerificationState.LEGACY),
-    ids=["verified", "legacy"],
+    "make_user",
+    (
+        lambda: UserFactory(email_verification_state=EmailVerificationState.VERIFIED),
+        lambda: UserFactory(email_verification_state=EmailVerificationState.LEGACY),
+        AnonymousUser,
+    ),
+    ids=["verified", "legacy", "anonymous"],
 )
-def test_gate_passes_proven_and_legacy_accounts(event, state):
-    user = UserFactory(email_verification_state=state)
-    request = make_request(event, user=user, path=f"/{event.slug}/schedule/")
-
-    response = _make_middleware()(request)
-
-    assert response.content == b"ok"
-
-
-@pytest.mark.django_db
-def test_gate_passes_anonymous_users(event):
-    request = make_request(event, user=AnonymousUser(), path=f"/{event.slug}/schedule/")
+def test_gate_passes_proven_legacy_and_anonymous_accounts(event, make_user):
+    request = make_request(event, user=make_user(), path=f"/{event.slug}/schedule/")
 
     response = _make_middleware()(request)
 

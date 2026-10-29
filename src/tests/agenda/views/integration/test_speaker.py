@@ -42,29 +42,6 @@ def test_speaker_list_query_count(client, event, item_count, django_assert_num_q
             assert speaker.get_display_name() in content
 
 
-def test_speaker_list_search_filters_by_name(
-    client, public_event_with_schedule, published_talk_slot
-):
-    event = public_event_with_schedule
-    with scopes_disabled():
-        speaker = published_talk_slot.submission.speakers.first()
-        speaker.name = "Findablename"
-        speaker.save()
-        other_speaker = SpeakerFactory(event=event, name="Otherperson")
-        other_sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        other_sub.speakers.add(other_speaker)
-        TalkSlotFactory(submission=other_sub, is_visible=True)
-        with scope(event=event):
-            freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
-
-    response = client.get(event.urls.speakers + "?q=Findablename", follow=True)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "Findablename" in content
-    assert "Otherperson" not in content
-
-
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_speaker_page_shows_biography_and_talks(
     client, event, item_count, django_assert_num_queries

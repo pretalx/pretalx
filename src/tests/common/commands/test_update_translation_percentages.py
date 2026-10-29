@@ -10,23 +10,11 @@ from pretalx.common.management.commands.update_translation_percentages import (
 pytestmark = pytest.mark.unit
 
 
-@pytest.fixture(scope="module")
-def language_scores():
-    return get_language_scores()
+def test_get_language_scores():
+    scores = get_language_scores()
 
-
-def test_get_language_scores_returns_all_configured_languages(language_scores):
-    assert set(language_scores.keys()) == set(settings.LANGUAGES_INFORMATION.keys())
-
-
-def test_get_language_scores_english_is_always_100(language_scores):
-    assert language_scores["en"] == 100
-
-
-def test_get_language_scores_values_are_valid_percentages(language_scores):
-    for lang, score in language_scores.items():
+    assert set(scores.keys()) == set(settings.LANGUAGES_INFORMATION.keys())
+    assert scores["en"] == 100
+    assert scores["de"] > 0
+    for lang, score in scores.items():
         assert 0 <= score <= 100, f"{lang} has score {score}"
-
-
-def test_get_language_scores_german_is_translated(language_scores):
-    assert language_scores["de"] > 0

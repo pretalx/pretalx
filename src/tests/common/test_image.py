@@ -40,16 +40,18 @@ class _NonSeekableStream:
         return self._data
 
 
-def test_validate_image_none():
-    validate_image(None)
-
-
-def test_validate_image_valid_uploaded_file(make_image):
-    validate_image(make_image())
-
-
-def test_validate_image_dict_content(make_image):
-    validate_image({"content": make_image().read()})
+@pytest.mark.parametrize(
+    "build_value",
+    (
+        lambda make_image: None,
+        lambda make_image: make_image(),
+        lambda make_image: {"content": make_image().read()},
+        lambda make_image: _NonSeekableStream(make_image().read()),
+    ),
+    ids=("none", "uploaded_file", "dict_content", "non_seekable_stream"),
+)
+def test_validate_image_accepts(make_image, build_value):
+    validate_image(build_value(make_image))
 
 
 def test_validate_image_rewinds_seekable_file(make_image):
@@ -129,21 +131,19 @@ def test_load_img_converts_palette_with_transparency():
     assert result.mode == "RGBA"
 
 
-@pytest.mark.parametrize(
-    "data",
-    (b"not an image", b"\x89PNG\r\n\x1a\n" + b"\xff" * 50),
-    ids=("random_bytes", "corrupt_png"),
-)
-def test_load_img_returns_none_for_invalid_data(data):
-    assert load_img(BytesIO(data)) is None
-
-
-def test_load_img_rejects_disallowed_format():
+def _tiff_bytes():
     buf = BytesIO()
     Image.new("RGB", (10, 10)).save(buf, format="TIFF")
-    buf.seek(0)
+    return buf.getvalue()
 
-    assert load_img(buf) is None
+
+@pytest.mark.parametrize(
+    "data",
+    (b"not an image", b"\x89PNG\r\n\x1a\n" + b"\xff" * 50, _tiff_bytes()),
+    ids=("random_bytes", "corrupt_png", "disallowed_format"),
+)
+def test_load_img_returns_none_for_unusable_data(data):
+    assert load_img(BytesIO(data)) is None
 
 
 def test_load_img_raises_for_decompression_bomb(monkeypatch):
@@ -166,19 +166,6 @@ def test_get_thumbnail_field_name(make_image, size):
 
     expected = "avatar_thumbnail" if size == "default" else f"avatar_thumbnail_{size}"
     assert get_thumbnail_field_name(pic.avatar, size) == expected
-
-
-@pytest.mark.django_db
-def test_process_image_converts_to_webp(make_image):
-    user = UserFactory()
-    pic = ProfilePictureFactory(user=user, avatar=make_image())
-    original_path = Path(pic.avatar.path)
-
-    process_image(image=pic.avatar)
-
-    pic.refresh_from_db()
-    assert pic.avatar.path.endswith(".webp")
-    assert not original_path.exists()
 
 
 @pytest.mark.django_db
@@ -229,13 +216,15 @@ def test_create_thumbnail_skips_file_replaced_during_processing(make_image):
 
 
 @pytest.mark.django_db
-def test_process_image_with_thumbnails(make_image):
+def test_process_image_converts_to_webp_with_thumbnails(make_image):
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
+    original_path = Path(pic.avatar.path)
 
     process_image(image=pic.avatar, generate_thumbnail=True)
 
     pic.refresh_from_db()
+    assert not original_path.exists()
     assert pic.avatar.path.endswith(".webp")
     assert pic.avatar_thumbnail.path.endswith(".webp")
     assert pic.avatar_thumbnail_tiny.path.endswith(".webp")
@@ -407,38 +396,44 @@ def test_process_image_keeps_corrupt_image(caplog):
 
 
 @pytest.mark.django_db
-def test_create_thumbnail_invalid_size(make_image):
-    user = UserFactory()
-    pic = ProfilePictureFactory(user=user, avatar=make_image())
-
-    result = create_thumbnail(pic.avatar, "nonexistent_size")
-
-    assert result is None
+@pytest.mark.parametrize(
+    ("build_field", "size"),
+    (
+        (
+            lambda make_image: (
+                ProfilePictureFactory(user=UserFactory(), avatar=make_image()).avatar
+            ),
+            "nonexistent_size",
+        ),
+        (lambda make_image: EventFactory(logo=make_image("logo.png")).logo, "default"),
+        (
+            lambda make_image: (
+                ProfilePictureFactory(
+                    user=UserFactory(),
+                    avatar=SimpleUploadedFile("bad.png", b"not-an-image"),
+                ).avatar
+            ),
+            "default",
+        ),
+    ),
+    ids=("invalid_size", "model_without_thumbnail_field", "invalid_image_on_disk"),
+)
+def test_create_thumbnail_returns_none(make_image, build_field, size):
+    assert create_thumbnail(build_field(make_image), size) is None
 
 
 @pytest.mark.parametrize("size", list(THUMBNAIL_SIZES.keys()))
 @pytest.mark.django_db
-def test_create_thumbnail_from_disk(make_image, size):
-    user = UserFactory()
-    pic = ProfilePictureFactory(user=user, avatar=make_image())
-
-    result = create_thumbnail(pic.avatar, size)
-
-    assert result is not None
-    assert result.path.endswith(".webp")
-
-
-@pytest.mark.parametrize("size", list(THUMBNAIL_SIZES.keys()))
-@pytest.mark.django_db
-def test_create_thumbnail_with_processed_img(make_image, size):
+def test_create_thumbnail_from_disk_or_processed_image(make_image, size):
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
     processed = Image.new("RGB", (100, 100), color="green")
 
-    result = create_thumbnail(pic.avatar, size, processed_img=processed)
+    from_disk = create_thumbnail(pic.avatar, size)
+    from_processed = create_thumbnail(pic.avatar, size, processed_img=processed)
 
-    assert result is not None
-    assert result.path.endswith(".webp")
+    assert from_disk.path.endswith(".webp")
+    assert from_processed.path.endswith(".webp")
 
 
 @pytest.mark.django_db
@@ -471,27 +466,12 @@ def test_get_thumbnail_returns_existing(make_image):
 
 
 @pytest.mark.django_db
-def test_create_thumbnail_returns_none_for_missing_field(make_image):
-    event = EventFactory(logo=make_image("logo.png"))
-
-    result = create_thumbnail(event.logo, "default")
-
-    assert result is None
-
-
-@pytest.mark.django_db
 def test_get_thumbnail_returns_image_for_missing_field(make_image):
     event = EventFactory(logo=make_image("logo.png"))
 
     result = get_thumbnail(event.logo, "default")
 
     assert result == event.logo
-
-
-def test_validate_image_non_seekable_readable(make_image):
-    data = make_image().read()
-
-    validate_image(_NonSeekableStream(data))
 
 
 @pytest.mark.django_db
@@ -506,39 +486,23 @@ def test_process_image_webp_input_skips_unlink(make_image):
 
 
 @pytest.mark.django_db
-def test_queue_thumbnail_regeneration_dispatches_task(make_image, monkeypatch):
+def test_queue_thumbnail_regeneration_dispatches_task_once(make_image, monkeypatch):
     cache.clear()
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
-    captured = {}
+    calls = []
 
     def fake_apply_async(*, kwargs, **_):
-        captured.update(kwargs)
+        calls.append(kwargs)
 
     monkeypatch.setattr(
         "pretalx.common.tasks.task_generate_thumbnails.apply_async", fake_apply_async
     )
 
     queue_thumbnail_regeneration(pic.avatar)
-
-    assert captured == {"field": "avatar", "model": "Profilepicture", "pk": pic.pk}
-
-
-@pytest.mark.django_db
-def test_queue_thumbnail_regeneration_deduplicates_in_flight(make_image, monkeypatch):
-    cache.clear()
-    user = UserFactory()
-    pic = ProfilePictureFactory(user=user, avatar=make_image())
-    calls = []
-    monkeypatch.setattr(
-        "pretalx.common.tasks.task_generate_thumbnails.apply_async",
-        lambda **kw: calls.append(kw),
-    )
-
-    queue_thumbnail_regeneration(pic.avatar)
     queue_thumbnail_regeneration(pic.avatar)
 
-    assert len(calls) == 1
+    assert calls == [{"field": "avatar", "model": "Profilepicture", "pk": pic.pk}]
 
 
 @pytest.mark.django_db
@@ -556,15 +520,3 @@ def test_queue_thumbnail_regeneration_skips_unsaved_instance(monkeypatch):
     queue_thumbnail_regeneration(_Fake())
 
     assert calls == []
-
-
-@pytest.mark.django_db
-def test_create_thumbnail_returns_none_for_invalid_image_on_disk():
-    user = UserFactory()
-    pic = ProfilePictureFactory(
-        user=user, avatar=SimpleUploadedFile("bad.png", b"not-an-image")
-    )
-
-    result = create_thumbnail(pic.avatar, "default")
-
-    assert result is None

@@ -29,112 +29,69 @@ def _build_mail_form_data(**overrides):
     return data
 
 
-def test_mailsettingsform_valid_without_custom_smtp():
-    event = EventFactory()
-    data = _build_mail_form_data()
-    form = MailSettingsForm(data=data, obj=event)
-
-    assert form.is_valid(), form.errors
-
-
-def test_mailsettingsform_custom_smtp_requires_mail_from():
-    event = EventFactory()
-    data = _build_mail_form_data(
-        smtp_use_custom=True, smtp_host="localhost", smtp_port="587"
-    )
-    form = MailSettingsForm(data=data, obj=event)
-
-    assert not form.is_valid()
-    assert "mail_from" in form.errors
-
-
-def test_mailsettingsform_custom_smtp_requires_host():
-    event = EventFactory()
-    data = _build_mail_form_data(
-        smtp_use_custom=True,
-        mail_from="sender@example.com",
-        smtp_host="",
-        smtp_use_tls=True,
-    )
-    form = MailSettingsForm(data=data, obj=event)
-
-    assert not form.is_valid()
-    assert "smtp_host" in form.errors
-
-
-def test_mailsettingsform_custom_smtp_tls_and_ssl_conflict():
-    event = EventFactory()
-    data = _build_mail_form_data(
-        smtp_use_custom=True,
-        mail_from="sender@example.com",
-        smtp_host="mail.example.com",
-        smtp_port="587",
-        smtp_use_tls=True,
-        smtp_use_ssl=True,
-    )
-    form = MailSettingsForm(data=data, obj=event)
-
-    assert not form.is_valid()
-    assert "smtp_use_tls" in form.errors
-
-
-def test_mailsettingsform_custom_smtp_non_local_requires_encryption():
-    event = EventFactory()
-    data = _build_mail_form_data(
-        smtp_use_custom=True,
-        mail_from="sender@example.com",
-        smtp_host="mail.remote.org",
-        smtp_port="587",
-    )
-    form = MailSettingsForm(data=data, obj=event)
-
-    assert not form.is_valid()
-    assert "smtp_host" in form.errors
+_CUSTOM = {"smtp_use_custom": True, "mail_from": "sender@example.com"}
 
 
 @pytest.mark.parametrize(
-    "host",
-    ("localhost", "127.0.0.1", "::1", "[::1]", "localhost.localdomain"),
-    ids=("localhost", "ipv4_loopback", "ipv6_loopback", "ipv6_bracket", "fqdn"),
+    ("overrides", "errors"),
+    (
+        ({}, []),
+        ({"smtp_use_custom": True, "smtp_host": "localhost"}, ["mail_from"]),
+        ({**_CUSTOM, "smtp_host": "", "smtp_use_tls": True}, ["smtp_host"]),
+        (
+            {
+                **_CUSTOM,
+                "smtp_host": "mail.example.com",
+                "smtp_use_tls": True,
+                "smtp_use_ssl": True,
+            },
+            ["smtp_use_tls"],
+        ),
+        ({**_CUSTOM, "smtp_host": "mail.remote.org"}, ["smtp_host"]),
+        ({**_CUSTOM, "smtp_host": "localhost"}, []),
+        ({**_CUSTOM, "smtp_host": "127.0.0.1"}, []),
+        ({**_CUSTOM, "smtp_host": "::1"}, []),
+        ({**_CUSTOM, "smtp_host": "[::1]"}, []),
+        ({**_CUSTOM, "smtp_host": "localhost.localdomain"}, []),
+        ({**_CUSTOM, "smtp_host": "mail.remote.org", "smtp_use_tls": True}, []),
+        (
+            {
+                **_CUSTOM,
+                "smtp_host": "mail.remote.org",
+                "smtp_port": "465",
+                "smtp_use_ssl": True,
+            },
+            [],
+        ),
+    ),
+    ids=(
+        "no_custom_smtp",
+        "custom_requires_mail_from",
+        "custom_requires_host",
+        "tls_and_ssl_conflict",
+        "remote_requires_encryption",
+        "localhost",
+        "ipv4_loopback",
+        "ipv6_loopback",
+        "ipv6_bracket",
+        "fqdn",
+        "remote_tls",
+        "remote_ssl",
+    ),
 )
-def test_mailsettingsform_custom_smtp_localhost_no_encryption_ok(host):
-    event = EventFactory()
-    data = _build_mail_form_data(
-        smtp_use_custom=True,
-        mail_from="sender@example.com",
-        smtp_host=host,
-        smtp_port="587",
-    )
-    form = MailSettingsForm(data=data, obj=event)
+def test_mailsettingsform_validates_custom_smtp(overrides, errors):
+    form = MailSettingsForm(data=_build_mail_form_data(**overrides), obj=EventFactory())
 
-    assert form.is_valid(), form.errors
+    assert form.is_valid() == (not errors), form.errors
+    assert list(form.errors) == errors
 
 
-@pytest.mark.parametrize(
-    ("use_tls", "use_ssl", "port"),
-    ((True, False, "587"), (False, True, "465")),
-    ids=("tls", "ssl"),
-)
-def test_mailsettingsform_custom_smtp_with_encryption_valid(use_tls, use_ssl, port):
-    event = EventFactory()
-    data = _build_mail_form_data(
-        smtp_use_custom=True,
-        mail_from="sender@example.com",
-        smtp_host="mail.remote.org",
-        smtp_port=port,
-        smtp_use_tls=use_tls,
-        smtp_use_ssl=use_ssl,
-    )
-    form = MailSettingsForm(data=data, obj=event)
-
-    assert form.is_valid(), form.errors
-
-
-def test_mailsettingsform_password_placeholder_on_existing():
+def test_mailsettingsform_unbound_shows_password_placeholder_and_read_only_disables():
     event = EventFactory(mail_settings={"smtp_password": "s3cret"})
-    form = MailSettingsForm(obj=event)
+    form = MailSettingsForm(obj=event, read_only=True)
 
     assert form.fields["smtp_password"].initial == ENCRYPTED_PASSWORD_PLACEHOLDER
+    assert all(field.disabled for field in form.fields.values())
 
 
 @pytest.mark.parametrize(
@@ -172,11 +129,3 @@ def test_mailsettingsform_stored_password_handling(
 
     assert form.is_valid(), form.errors
     assert form.cleaned_data["smtp_password"] == expected
-
-
-def test_mailsettingsform_read_only_disables_fields():
-    event = EventFactory()
-    form = MailSettingsForm(obj=event, read_only=True)
-
-    for field in form.fields.values():
-        assert field.disabled is True

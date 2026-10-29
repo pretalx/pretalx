@@ -43,49 +43,27 @@ def test_widget_data_options_returns_cors_headers(client, public_event_with_sche
     assert response["Access-Control-Allow-Headers"] == "authorization,content-type"
 
 
-def test_widget_data_versioned(client, public_event_with_schedule):
+def test_widget_data_version_parameter_selects_schedule(
+    client, public_event_with_schedule
+):
     event = public_event_with_schedule
-    # v1 is the current schedule (1 talk). Add another talk and freeze as v2,
-    # making v2 current with 2 talks. Accessing ?v=v1 must still return 1 talk.
+    # v1 is the current schedule (1 talk). Add another talk and freeze as a
+    # second version with a percent escape in its name, so it has 2 talks.
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.speakers.add(speaker)
         TalkSlotFactory(submission=submission, is_visible=True)
-        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v2%2Fb", notify_speakers=False)
+    url = event.urls.schedule_widget_data
 
-    response = client.get(f"{event.urls.schedule_widget_data}?v=v1")
+    old = client.get(f"{url}?v=v1").json()
+    escaped = client.get(f"{url}?v=v2%252Fb").json()
+    bogus = client.get(f"{url}?v=nonexistent").json()
 
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data["talks"]) == 1
-    assert data["version"] == "v1"
-
-
-def test_widget_data_versioned_with_percent_escape_in_version(
-    client, public_event_with_schedule
-):
-    event = public_event_with_schedule
-    with scopes_disabled():
-        freeze_schedule(event.wip_schedule, "v1%2Fb", notify_speakers=False)
-        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
-
-    response = client.get(f"{event.urls.schedule_widget_data}?v=v1%252Fb")
-
-    assert response.status_code == 200
-    assert response.json()["version"] == "v1%2Fb"
-
-
-def test_widget_data_bogus_version_falls_back_to_current(
-    client, public_event_with_schedule
-):
-    event = public_event_with_schedule
-
-    response = client.get(f"{event.urls.schedule_widget_data}?v=nonexistent")
-
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data["talks"]) == 1
+    assert (old["version"], len(old["talks"])) == ("v1", 1)
+    assert (escaped["version"], len(escaped["talks"])) == ("v2%2Fb", 2)
+    assert (bogus["version"], len(bogus["talks"])) == ("v2%2Fb", 2)
 
 
 def test_widget_data_wip_anonymous_denied(client, public_event_with_schedule):
@@ -145,28 +123,23 @@ def test_widget_script_served_regardless_of_event(client, public_event_with_sche
     assert unknown.content == hidden.content
 
 
-def test_widget_script_returns_javascript(client, public_event_with_schedule):
+def test_widget_script_returns_javascript_and_revalidates_with_etag(
+    client, public_event_with_schedule
+):
     event = public_event_with_schedule
-
-    response = client.get(event.urls.schedule_widget_script)
-
-    assert response.status_code == 200
-    assert response["Content-Type"] == "text/javascript"
-    assert response["Cache-Control"] == "public, max-age=300"
-    assert len(response.content) > 0
-
-
-def test_widget_script_revalidates_with_etag(client, public_event_with_schedule):
-    event = public_event_with_schedule
-    etag = client.get(event.urls.schedule_widget_script)["ETag"]
+    first = client.get(event.urls.schedule_widget_script)
 
     response = client.get(
-        event.urls.schedule_widget_script, headers={"if-none-match": etag}
+        event.urls.schedule_widget_script, headers={"if-none-match": first["ETag"]}
     )
     stale = client.get(
         event.urls.schedule_widget_script, headers={"if-none-match": '"outdated"'}
     )
 
+    assert first.status_code == 200
+    assert first["Content-Type"] == "text/javascript"
+    assert first["Cache-Control"] == "public, max-age=300"
+    assert len(first.content) > 0
     assert response.status_code == 304
     assert response.content == b""
     # The 304 has to carry the cache headers, or clients drop out of the cache
@@ -227,72 +200,36 @@ def test_event_css_orga_target(client, color, expect_dark_text):
         assert "--color-text-on-primary-event" not in content
 
 
-def test_event_css_includes_custom_css(client):
+def test_event_css_custom_css_only_for_agenda_target(client):
     event = EventFactory()
-    with scopes_disabled():
-        event.custom_css.save(
-            "custom.css", ContentFile(b"body { background: #abcdef; }")
-        )
-
-    response = client.get(reverse("agenda:event.css", kwargs={"event": event.slug}))
-
-    assert response.status_code == 200
-    assert response["Content-Type"] == "text/css"
-    assert "background: #abcdef" in response.content.decode()
-
-
-def test_event_css_orga_target_excludes_custom_css(client):
-    event = EventFactory()
-    with scopes_disabled():
-        event.custom_css.save(
-            "custom.css", ContentFile(b"body { background: #abcdef; }")
-        )
-
-    response = client.get(
-        reverse("agenda:event.css", kwargs={"event": event.slug}) + "?target=orga"
-    )
-
-    assert response.status_code == 200
-    assert "background: #abcdef" not in response.content.decode()
-
-
-def test_event_css_etag_changes_with_custom_css(client):
-    event = EventFactory()
-    response1 = client.get(reverse("agenda:event.css", kwargs={"event": event.slug}))
-    etag1 = response1.get("ETag")
-
-    with scopes_disabled():
-        event.custom_css.save(
-            "custom.css", ContentFile(b"body { background: #abcdef; }")
-        )
-
-    response2 = client.get(reverse("agenda:event.css", kwargs={"event": event.slug}))
-    etag2 = response2.get("ETag")
-
-    assert etag1 != etag2
-
-
-def test_event_css_not_served_from_stale_cache(client):
-    event = EventFactory(primary_color="#000000")
     url = reverse("agenda:event.css", kwargs={"event": event.slug})
-    first = client.get(url)
+    before = client.get(url)
 
-    event.primary_color = "#ffffff"
-    event.save()
+    with scopes_disabled():
+        event.custom_css.save(
+            "custom.css", ContentFile(b"body { background: #abcdef; }")
+        )
+    agenda = client.get(url)
+    orga = client.get(url + "?target=orga")
 
-    response = client.get(url)
+    assert agenda.status_code == 200
+    assert agenda["Content-Type"] == "text/css"
+    assert "background: #abcdef" in agenda.content.decode()
+    assert agenda["ETag"] != before["ETag"]
+    assert orga.status_code == 200
+    assert "background: #abcdef" not in orga.content.decode()
 
-    assert "--color-primary: #ffffff" in response.content.decode()
-    assert response["ETag"] != first["ETag"]
 
-
-def test_event_css_revalidates_with_etag(client):
+def test_event_css_revalidates_with_etag_until_event_changes(client):
     event = EventFactory(primary_color="#000000")
     url = reverse("agenda:event.css", kwargs={"event": event.slug})
     first = client.get(url)
 
     response = client.get(url, headers={"if-none-match": first["ETag"]})
     stale = client.get(url, headers={"if-none-match": '"outdated"'})
+    event.primary_color = "#ffffff"
+    event.save()
+    changed = client.get(url, headers={"if-none-match": first["ETag"]})
 
     assert first["Cache-Control"] == "public, max-age=3600"
     assert response.status_code == 304
@@ -300,6 +237,9 @@ def test_event_css_revalidates_with_etag(client):
     assert response["Cache-Control"] == "public, max-age=3600"
     assert stale.status_code == 200
     assert "--color-primary: #000000" in stale.content.decode()
+    assert changed.status_code == 200
+    assert "--color-primary: #ffffff" in changed.content.decode()
+    assert changed["ETag"] != first["ETag"]
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -333,7 +273,23 @@ def test_widget_data_query_count(client, item_count, django_assert_num_queries):
     assert len(data["talks"]) == item_count
 
 
-def test_event_css_with_heading_font(client, register_signal_handler):
+@pytest.mark.parametrize(
+    ("text_font", "expected_root_lines"),
+    (
+        ("", ['--font-family-title: "TestFont", var(--font-fallback);']),
+        (
+            "TestFont",
+            [
+                '--font-family-title: "TestFont", var(--font-fallback);',
+                '--font-family: "TestFont", var(--font-fallback);',
+            ],
+        ),
+    ),
+    ids=["heading_font_only", "both_fonts"],
+)
+def test_event_css_declares_custom_fonts_once(
+    client, register_signal_handler, text_font, expected_root_lines
+):
     event = EventFactory(
         display_settings={
             "schedule": "grid",
@@ -342,7 +298,7 @@ def test_event_css_with_heading_font(client, register_signal_handler):
             "html_export_url": "",
             "meta_noindex": False,
             "heading_font": "TestFont",
-            "text_font": "",
+            "text_font": text_font,
             "texts": {"agenda_session_above": "", "agenda_session_below": ""},
         }
     )
@@ -363,42 +319,6 @@ def test_event_css_with_heading_font(client, register_signal_handler):
     assert response.status_code == 200
     content = response.content.decode()
     assert content.count("@font-face {") == 1
-    assert content.count('font-family: "TestFont"') == 1
-    root_block = content.split(":root {\n")[1].split("\n}")[0].strip()
-    assert root_block == '--font-family-title: "TestFont", var(--font-fallback);'
-
-
-def test_event_css_with_both_fonts(client, register_signal_handler):
-    event = EventFactory(
-        display_settings={
-            "schedule": "grid",
-            "imprint_url": None,
-            "header_pattern": "",
-            "html_export_url": "",
-            "meta_noindex": False,
-            "heading_font": "TestFont",
-            "text_font": "TestFont",
-            "texts": {"agenda_session_above": "", "agenda_session_below": ""},
-        }
-    )
-
-    def handler(signal, sender, **kwargs):
-        return {
-            "TestFont": {
-                "regular": {
-                    "truetype": "fonts/test-regular.ttf",
-                    "woff2": "fonts/test-regular.woff2",
-                }
-            }
-        }
-
-    register_signal_handler(register_fonts, handler)
-    response = client.get(reverse("agenda:event.css", kwargs={"event": event.slug}))
-
-    content = response.content.decode()
     root_block = content.split(":root {\n")[1].split("\n}")[0]
     root_lines = [line.strip() for line in root_block.strip().splitlines()]
-    assert root_lines == [
-        '--font-family-title: "TestFont", var(--font-fallback);',
-        '--font-family: "TestFont", var(--font-fallback);',
-    ]
+    assert root_lines == expected_root_lines

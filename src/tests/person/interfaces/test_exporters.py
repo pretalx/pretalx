@@ -31,68 +31,35 @@ def _parse_csv(csv_text):
     return list(reader)
 
 
-def test_csv_speaker_exporter_get_csv_data_fieldnames(event, exporter):
+def test_csv_speaker_exporter_empty_event(event, exporter):
     with scope(event=event):
-        fieldnames, _ = exporter.get_csv_data(request=None)
+        fieldnames, data = exporter.get_csv_data(request=None)
+        csv_output = exporter.get_data(request=None)
+        filename, content_type, rendered = exporter.render(request=None)
 
     assert fieldnames == ["name", "email", "confirmed"]
-
-
-def test_csv_speaker_exporter_get_csv_data_empty_when_no_submissions(event, exporter):
-    with scope(event=event):
-        _, data = exporter.get_csv_data(request=None)
-
     assert data == []
+    assert _parse_csv(csv_output) == []
+    assert "name,email,confirmed" in csv_output
+    assert filename.startswith(f"{event.slug}-speakers-")
+    assert filename.endswith(".csv")
+    assert content_type == "text/plain"
+    assert "name,email,confirmed" in rendered
 
 
-@pytest.mark.parametrize(
-    ("state", "expected_confirmed"),
-    ((SubmissionStates.ACCEPTED, "False"), (SubmissionStates.CONFIRMED, "True")),
-    ids=("accepted", "confirmed"),
-)
-def test_csv_speaker_exporter_get_csv_data_includes_speaker(
-    event, exporter, state, expected_confirmed
-):
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=state)
-    submission.speakers.add(speaker)
-
-    with scope(event=event):
-        _, data = exporter.get_csv_data(request=None)
-
-    assert len(data) == 1
-    assert data[0]["name"] == speaker.get_display_name()
-    assert data[0]["email"] == speaker.user.email
-    assert data[0]["confirmed"] == expected_confirmed
-
-
-@pytest.mark.parametrize(
-    "state",
-    (
-        SubmissionStates.SUBMITTED,
-        SubmissionStates.REJECTED,
-        SubmissionStates.CANCELED,
-        SubmissionStates.WITHDRAWN,
-        SubmissionStates.DRAFT,
-    ),
-)
-def test_csv_speaker_exporter_get_csv_data_excludes_non_accepted_states(
-    event, exporter, state
-):
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=state)
-    submission.speakers.add(speaker)
-
-    with scope(event=event):
-        _, data = exporter.get_csv_data(request=None)
-
-    assert data == []
-
-
-def test_csv_speaker_exporter_get_csv_data_includes_session_less_orga_speaker(
-    event, exporter
-):
-    standalone = SpeakerFactory(
+def test_csv_speaker_exporter_lists_accepted_and_standalone_speakers(event, exporter):
+    accepted = SpeakerFactory(event=event, user__email="accepted@example.com")
+    SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED).speakers.add(
+        accepted
+    )
+    confirmed = SpeakerFactory(event=event, user__email="confirmed@example.com")
+    SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED).speakers.add(
+        confirmed
+    )
+    mixed = SpeakerFactory(event=event, user__email="mixed@example.com")
+    SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED).speakers.add(mixed)
+    SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED).speakers.add(mixed)
+    SpeakerFactory(
         event=event,
         user=None,
         origin="orga",
@@ -100,91 +67,42 @@ def test_csv_speaker_exporter_get_csv_data_includes_session_less_orga_speaker(
         email="standalone@example.com",
     )
     SpeakerFactory(event=event, origin="cfp")
-
-    with scope(event=event):
-        _, data = exporter.get_csv_data(request=None)
-
-    assert len(data) == 1
-    assert data[0]["name"] == standalone.get_display_name()
-    assert data[0]["email"] == "standalone@example.com"
-    assert data[0]["confirmed"] == "False"
-
-
-def test_csv_speaker_exporter_get_csv_data_confirmed_true_with_mixed_states(
-    event, exporter
-):
-    speaker = SpeakerFactory(event=event)
-    accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    accepted.speakers.add(speaker)
-    confirmed.speakers.add(speaker)
-
-    with scope(event=event):
-        _, data = exporter.get_csv_data(request=None)
-
-    assert len(data) == 1
-    assert data[0]["confirmed"] == "True"
-
-
-def test_csv_speaker_exporter_get_csv_data_multiple_speakers(event, exporter):
-    speaker1 = SpeakerFactory(event=event)
-    speaker2 = SpeakerFactory(event=event)
-    sub1 = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    sub2 = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    sub1.speakers.add(speaker1)
-    sub2.speakers.add(speaker2)
-
-    with scope(event=event):
-        _, data = exporter.get_csv_data(request=None)
-
-    assert len(data) == 2
-    exported_emails = {row["email"] for row in data}
-    assert exported_emails == {speaker1.user.email, speaker2.user.email}
-
-
-def test_csv_speaker_exporter_get_csv_data_excludes_other_event_speakers(
-    event, exporter
-):
+    for state in (
+        SubmissionStates.SUBMITTED,
+        SubmissionStates.REJECTED,
+        SubmissionStates.CANCELED,
+        SubmissionStates.WITHDRAWN,
+        SubmissionStates.DRAFT,
+    ):
+        SubmissionFactory(event=event, state=state).speakers.add(
+            SpeakerFactory(event=event)
+        )
     other_event = EventFactory()
-    other_speaker = SpeakerFactory(event=other_event)
-    other_sub = SubmissionFactory(event=other_event, state=SubmissionStates.ACCEPTED)
-    other_sub.speakers.add(other_speaker)
+    SubmissionFactory(event=other_event, state=SubmissionStates.ACCEPTED).speakers.add(
+        SpeakerFactory(event=other_event)
+    )
 
     with scope(event=event):
         _, data = exporter.get_csv_data(request=None)
+        rows = _parse_csv(exporter.get_data(request=None))
 
-    assert data == []
-
-
-def test_csv_speaker_exporter_get_data_returns_valid_csv(event, exporter):
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    submission.speakers.add(speaker)
-
-    with scope(event=event):
-        csv_output = exporter.get_data(request=None)
-
-    rows = _parse_csv(csv_output)
-    assert len(rows) == 1
-    assert rows[0]["name"] == speaker.get_display_name()
-    assert rows[0]["email"] == speaker.user.email
-    assert rows[0]["confirmed"] == "False"
-
-
-def test_csv_speaker_exporter_get_data_empty_has_header_only(event, exporter):
-    with scope(event=event):
-        csv_output = exporter.get_data(request=None)
-
-    rows = _parse_csv(csv_output)
-    assert rows == []
-    assert "name,email,confirmed" in csv_output
-
-
-def test_csv_speaker_exporter_render_returns_tuple(event, exporter):
-    with scope(event=event):
-        filename, content_type, data = exporter.render(request=None)
-
-    assert filename.startswith(f"{event.slug}-speakers-")
-    assert filename.endswith(".csv")
-    assert content_type == "text/plain"
-    assert "name,email,confirmed" in data
+    expected = [
+        {
+            "name": accepted.get_display_name(),
+            "email": "accepted@example.com",
+            "confirmed": "False",
+        },
+        {
+            "name": confirmed.get_display_name(),
+            "email": "confirmed@example.com",
+            "confirmed": "True",
+        },
+        {
+            "name": mixed.get_display_name(),
+            "email": "mixed@example.com",
+            "confirmed": "True",
+        },
+        {"name": "Standalone", "email": "standalone@example.com", "confirmed": "False"},
+    ]
+    assert sorted(data, key=lambda row: row["email"]) == expected
+    assert sorted(rows, key=lambda row: row["email"]) == expected

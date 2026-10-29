@@ -47,17 +47,6 @@ HANDLERS = pytest.mark.parametrize(
 )
 
 
-@HANDLERS
-@pytest.mark.django_db
-def test_handler_renders_html_template(event, handler, status_code):
-    request = make_request(event, path="/broken/page/")
-
-    response = handler(request)
-
-    assert response.status_code == status_code
-    assert b"<!DOCTYPE html>" in response.content
-
-
 @pytest.mark.parametrize(
     ("handler", "status_code", "expected"),
     ((handle_404, 404, b"Not Found"), (handle_500, 500, b"Server Error")),
@@ -83,7 +72,9 @@ def test_handler_fallback_when_template_missing(event, handler, status_code, exp
 
 @HANDLERS
 @pytest.mark.django_db
-def test_handler_renders_event_button_for_public_event(event, handler, status_code):
+def test_handler_renders_event_button_only_for_public_event(
+    event, handler, status_code
+):
     request = make_request(event, path=f"/{event.slug}/broken")
 
     response = handler(request)
@@ -96,14 +87,8 @@ def test_handler_renders_event_button_for_public_event(event, handler, status_co
     assert event.urls.base in content
     assert "Contact us" in content
 
-
-@HANDLERS
-@pytest.mark.django_db
-def test_handler_hides_event_button_for_nonpublic_event(event, handler, status_code):
     event.is_public = False
     event.save()
-    request = make_request(event, path=f"/{event.slug}/broken")
-
     response = handler(request)
 
     assert response.status_code == status_code
@@ -143,44 +128,29 @@ def test_handler_uses_event_locale_when_middleware_did_not_run(
 
 
 @pytest.mark.django_db
-def test_handle_404_without_event(event):
-    request = make_request(event, path="/totally/missing")
-    request.event = None
-
-    response = handle_404(request)
-
-    assert response.status_code == 404
-    # Even without an event, the page heading still renders.
-    assert "Page not found" in response.content.decode()
-
-
-@pytest.mark.django_db
-def test_handle_404_sanitizes_resolver404_exception(event):
+def test_handle_404_renders_without_event_and_hides_resolver_details(event):
     request = make_request(event, path="/missing/")
+    request.event = None
     exception = Resolver404({"path": "/missing/", "tried": [["some-pattern"]]})
 
     response = handle_404(request, exception=exception)
 
     assert response.status_code == 404
+    assert "Page not found" in response.content.decode()
     assert b"some-pattern" not in response.content
     assert b"tried" not in response.content
 
 
-def test_error_view_500_returns_handle_500():
+def test_error_view_returns_registered_handlers():
     assert error_view(500) is handle_500
+    assert error_view(4031) is get_callable(settings.CSRF_FAILURE_VIEW)
 
 
-def test_error_view_4031_returns_csrf_view():
-    view = error_view(4031)
-
-    assert view is get_callable(settings.CSRF_FAILURE_VIEW)
-
-
-@pytest.mark.parametrize("status_code", (400, 403, 404))
+@pytest.mark.parametrize("status_code", (400, 403, 404, 500))
 @pytest.mark.django_db
 def test_error_view_renders_template_without_raising(event, status_code):
     view = error_view(status_code)
-    request = make_request(event)
+    request = make_request(event, path="/broken/page/")
 
     response = view(request)
 

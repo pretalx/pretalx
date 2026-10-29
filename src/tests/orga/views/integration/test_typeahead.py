@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import datetime as dt
+
 import pytest
 from django_scopes import scopes_disabled
 
@@ -15,398 +17,200 @@ from tests.utils import make_orga_user
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
+URL = "/orga/nav/typeahead/"
 
-def test_nav_typeahead_unauthenticated_returns_empty(client):
-    response = client.get("/orga/nav/typeahead/")
+
+def _results(client, **params):
+    response = client.get(URL, params)
+    assert response.status_code == 200
+    return [(r["type"], r["name"]) for r in response.json()["results"]]
+
+
+def test_nav_typeahead_permission_filters(client, event):
+    with scopes_disabled():
+        SubmissionFactory(event=event, title="Secret submission data")
+
+    response = client.get(URL)
 
     assert response.status_code == 302
 
+    client.force_login(UserFactory())
 
-def test_nav_typeahead_empty_query_returns_events_only(client, event, organiser_user):
-    client.force_login(organiser_user)
+    assert _results(client) == []
 
-    response = client.get("/orga/nav/typeahead/")
+    client.force_login(make_orga_user(event, can_change_submissions=False))
 
-    assert response.status_code == 200
-    data = response.json()
-    results = data["results"]
-    assert len(results) == 1
-    assert results[0]["type"] == "event"
-    assert results[0]["name"] == str(event.name)
-    assert results[0]["color"] == event.visible_primary_color
-    assert data["has_more_events"] is False
+    assert _results(client, query="Secret") == []
 
 
-def test_nav_typeahead_empty_query_caps_events_and_counts_all(client, event):
+def test_nav_typeahead_event_and_organiser_results(client, event):
     with scopes_disabled():
         user = make_orga_user(event)
-        EventFactory.create_batch(6, organiser=event.organiser)
-
-    client.force_login(user)
-
-    response = client.get("/orga/nav/typeahead/")
-
-    data = response.json()
-    assert len(data["results"]) == 5
-    assert data["has_more_events"] is True
-
-
-def test_nav_typeahead_no_permissions_sees_nothing(client, event):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.get("/orga/nav/typeahead/")
-
-    assert response.status_code == 200
-    assert response.json()["results"] == []
-
-
-def test_nav_typeahead_query_filters_events_by_name(client, event, organiser_user):
-    with scopes_disabled():
-        EventFactory(organiser=event.organiser)
-    client.force_login(organiser_user)
-
-    response = client.get(f"/orga/nav/typeahead/?query={event.slug}")
-
-    results = response.json()["results"]
-    event_results = [r for r in results if r["type"] == "event"]
-    assert len(event_results) == 1
-    assert event_results[0]["name"] == str(event.name)
-
-
-@pytest.mark.parametrize(
-    "query", ("my.event.example.org", "https://my.event.example.org")
-)
-def test_nav_typeahead_query_filters_events_by_custom_domain(
-    client, event, organiser_user, query
-):
-    with scopes_disabled():
-        other_event = EventFactory(organiser=event.organiser)
-        other_event.custom_domain = "https://other.example.com"
-        other_event.save()
-        event.custom_domain = "https://my.event.example.org"
-        event.save()
-    client.force_login(organiser_user)
-
-    response = client.get(f"/orga/nav/typeahead/?query={query}")
-
-    results = response.json()["results"]
-    event_results = [r for r in results if r["type"] == "event"]
-    assert len(event_results) == 1
-    assert event_results[0]["url"] == event.orga_urls.base
-
-
-def test_nav_typeahead_query_filters_by_organiser_name(client, event, organiser_user):
-    client.force_login(organiser_user)
-    orga_name = str(event.organiser.name)
-
-    response = client.get(f"/orga/nav/typeahead/?query={orga_name}")
-
-    results = response.json()["results"]
-    orga_results = [r for r in results if r["type"] == "organiser"]
-    assert len(orga_results) == 1
-    assert orga_results[0]["name"] == orga_name
-
-
-def test_nav_typeahead_query_matching_user_shows_user(client, event, organiser_user):
-    client.force_login(organiser_user)
-    query = organiser_user.name[:5]
-
-    response = client.get(f"/orga/nav/typeahead/?query={query}")
-
-    results = response.json()["results"]
-    user_results = [r for r in results if r["type"] == "user"]
-    assert len(user_results) == 1
-    assert user_results[0]["name"] == str(organiser_user)
-
-
-def test_nav_typeahead_query_not_matching_user_hides_user(
-    client, event, organiser_user
-):
-    client.force_login(organiser_user)
-
-    response = client.get("/orga/nav/typeahead/?query=zzznomatchzzz")
-
-    results = response.json()["results"]
-    assert not any(r["type"] == "user" for r in results)
-
-
-def test_nav_typeahead_exact_match_ranks_first(client, event, organiser_user):
-    with scopes_disabled():
+        user.name = "Nav Tester"
+        user.save()
         event.organiser.name = f"{event.slug} organisation"
         event.organiser.save()
-    client.force_login(organiser_user)
-
-    response = client.get(f"/orga/nav/typeahead/?query={event.slug}")
-
-    results = response.json()["results"]
-    assert len(results) > 1
-    assert results[0]["type"] == "event"
-    assert results[0]["name"] == str(event.name)
-    assert "exact" not in results[0]
-
-
-def test_nav_typeahead_submission_code_ranks_first(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        SubmissionFactory(event=event, title=f"About {submission.code} and more")
-    client.force_login(user)
-
-    response = client.get(f"/orga/nav/typeahead/?query={submission.code}")
-
-    results = response.json()["results"]
-    assert len(results) == 2
-    assert submission.title in results[0]["name"]
-
-
-def test_nav_typeahead_short_query_excludes_submissions(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        SubmissionFactory(event=event, title="AB special talk")
-    client.force_login(user)
-
-    response = client.get("/orga/nav/typeahead/?query=AB")
-
-    results = response.json()["results"]
-    assert not any(r["type"] == "submission" for r in results)
-
-
-def test_nav_typeahead_query_searches_submissions(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event, title="Kubernetes deep dive")
-    client.force_login(user)
-
-    response = client.get("/orga/nav/typeahead/?query=Kubernetes")
-
-    results = response.json()["results"]
-    submission_results = [r for r in results if r["type"] == "submission"]
-    assert len(submission_results) == 1
-    assert submission.title in submission_results[0]["name"]
-
-
-def test_nav_typeahead_query_searches_speakers(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        speaker = SpeakerFactory(event=event, name="Guido van Rossum")
-        submission = SubmissionFactory(event=event)
-        submission.speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.get("/orga/nav/typeahead/?query=Guido")
-
-    results = response.json()["results"]
-    speaker_results = [r for r in results if r["type"] == "speaker"]
-    assert len(speaker_results) == 1
-    assert "Guido van Rossum" in speaker_results[0]["name"]
-
-
-@pytest.mark.parametrize(
-    ("query", "found"),
-    (
-        ("Contact@example.com", True),
-        ("account@example.com", False),
-        ("contact person", True),
-        ("account person", False),
-    ),
-)
-def test_nav_typeahead_matches_effective_name_and_email(client, event, query, found):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        speaker = SpeakerFactory(
-            event=event,
-            name="Contact Person",
-            email="contact@example.com",
-            user__name="Account Person",
-            user__email="account@example.com",
+        event.custom_domain = "https://my.event.example.org"
+        event.save()
+        other_event = EventFactory(
+            organiser=event.organiser,
+            name="Other Event",
+            custom_domain="https://other.example.com",
+            date_from=event.date_from - dt.timedelta(days=30),
         )
-        SubmissionFactory(event=event).speakers.add(speaker)
     client.force_login(user)
 
-    results = client.get(f"/orga/nav/typeahead/?query={query}").json()["results"]
+    response = client.get(URL)
 
-    assert any(r["type"] == "speaker" for r in results) is found
+    assert response.status_code == 200
+    data = response.json()
+    assert data["has_more_events"] is False
+    assert data["results"] == [
+        {
+            "type": "event",
+            "name": str(event.name),
+            "url": event.orga_urls.base,
+            "organiser": f"{event.slug} organisation",
+            "date_range": event.get_date_range_display(),
+            "color": event.visible_primary_color,
+        },
+        {
+            "type": "event",
+            "name": "Other Event",
+            "url": other_event.orga_urls.base,
+            "organiser": f"{event.slug} organisation",
+            "date_range": other_event.get_date_range_display(),
+            "color": other_event.visible_primary_color,
+        },
+    ]
+    assert _results(client, query="Other Event") == [("event", "Other Event")]
+    assert _results(client, query=event.slug) == [
+        ("event", str(event.name)),
+        ("organiser", f"{event.slug} organisation"),
+        ("event", "Other Event"),
+    ]
+    assert _results(client, query="my.event.example.org") == [
+        ("event", str(event.name))
+    ]
+    assert _results(client, query="https://my.event.example.org") == [
+        ("event", str(event.name))
+    ]
+    assert _results(client, query="organisation") == [
+        ("organiser", f"{event.slug} organisation"),
+        ("event", str(event.name)),
+        ("event", "Other Event"),
+    ]
+    assert _results(client, query="Nav T") == [("user", "Nav Tester")]
+    assert _results(client, query="zzznomatchzzz") == []
+    assert _results(client, query="Nav T", organiser=event.organiser.pk) == [
+        ("user", "Nav Tester"),
+        ("organiser", f"{event.slug} organisation"),
+    ]
 
 
-def test_nav_typeahead_speaker_without_submission_excluded(client, event):
+def test_nav_typeahead_submission_speaker_and_admin_results(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
+        user.name = "Nav Tester"
+        user.save()
+        plain = SubmissionFactory(event=event, title="Plain talk")
+        SubmissionFactory(event=event, title=f"About {plain.code} and more")
+        k8s = SubmissionFactory(event=event, title="Kubernetes deep dive")
+        k8s.speakers.add(SpeakerFactory(event=event, name="Guido van Rossum"))
+        plain.speakers.add(
+            SpeakerFactory(
+                event=event,
+                name="Contact Person",
+                email="contact@example.com",
+                user__name="Account Person",
+                user__email="account@example.com",
+            )
+        )
         SpeakerFactory(event=event, name="Lonely Speaker")
+        target_user = UserFactory(name="Findable Admin Target")
+        admin = UserFactory(is_administrator=True)
     client.force_login(user)
 
-    response = client.get("/orga/nav/typeahead/?query=Lonely")
+    assert _results(client, query=plain.code) == [
+        ("submission", "Session Plain talk"),
+        ("submission", f"Session About {plain.code} and more"),
+    ]
+    assert _results(client, query="AB") == []
+    assert _results(client, query="Kubernetes") == [
+        ("submission", "Session Kubernetes deep dive")
+    ]
+    assert _results(client, query="Guido") == [("speaker", "Speaker Guido van Rossum")]
+    assert _results(client, query="Contact@example.com") == [
+        ("speaker", "Speaker Contact Person")
+    ]
+    assert _results(client, query="contact person") == [
+        ("speaker", "Speaker Contact Person")
+    ]
+    assert _results(client, query="account@example.com") == []
+    assert _results(client, query="account person") == []
+    assert _results(client, query="Lonely") == []
+    assert _results(client, query="Findable") == []
 
-    results = response.json()["results"]
-    assert not any(r["type"] == "speaker" for r in results)
-
-
-def test_nav_typeahead_admin_user_sees_admin_results(client, event):
-    with scopes_disabled():
-        admin = UserFactory(is_administrator=True)
-        team = TeamFactory(organiser=event.organiser, all_events=True)
-        team.members.add(admin)
-        target_user = UserFactory(name="Findable Admin Target")
     client.force_login(admin)
 
-    response = client.get("/orga/nav/typeahead/?query=Findable")
-
-    results = response.json()["results"]
-    admin_results = [r for r in results if r["type"] == "user.admin"]
-    assert len(admin_results) == 1
-    assert admin_results[0]["email"] == target_user.email
-
-
-def test_nav_typeahead_non_admin_no_admin_results(client, event, organiser_user):
-    UserFactory(name="Some Admin Target")
-    client.force_login(organiser_user)
-
-    response = client.get("/orga/nav/typeahead/?query=Admin+Target")
-
-    results = response.json()["results"]
-    assert not any(r["type"] == "user.admin" for r in results)
+    response = client.get(URL, {"query": "Findable"})
+    assert response.json()["results"] == [
+        {
+            "type": "user.admin",
+            "name": "User Findable Admin Target",
+            "email": target_user.email,
+            "url": target_user.orga_urls.admin,
+        }
+    ]
 
 
-def test_nav_typeahead_organiser_param_pins_organiser(client, event, organiser_user):
-    client.force_login(organiser_user)
-    query = organiser_user.name[:5]
-
-    response = client.get(
-        f"/orga/nav/typeahead/?organiser={event.organiser.pk}&query={query}"
-    )
-
-    results = response.json()["results"]
-    assert results[0]["type"] == "user"
-    assert results[1]["type"] == "organiser"
-    assert results[1]["name"] == str(event.organiser.name)
-
-
-def test_nav_typeahead_pinned_organiser_added_when_missing_from_page(
-    client, event, organiser_user
-):
-    client.force_login(organiser_user)
-    query = organiser_user.name[:5]
-
-    response = client.get(
-        f"/orga/nav/typeahead/?organiser={event.organiser.pk}&query={query}&page=2"
-    )
-
-    results = response.json()["results"]
-    assert [r["type"] for r in results] == ["user", "organiser"]
-    assert results[1]["name"] == str(event.organiser.name)
-
-
-def test_nav_typeahead_pagination_more_flag(client, event):
+def test_nav_typeahead_pagination(client, event):
     with scopes_disabled():
         user = make_orga_user(event)
         for i in range(21):
             EventFactory(organiser=event.organiser, slug=f"evt{i:03d}")
     client.force_login(user)
 
-    response = client.get("/orga/nav/typeahead/?query=evt")
+    response = client.get(URL)
 
     data = response.json()
-    assert data["pagination"]["more"] is True
+    assert len(data["results"]) == 5
+    assert data["has_more_events"] is True
 
+    page_one = client.get(URL, {"query": "evt", "page": "1"}).json()
+    page_two = client.get(URL, {"query": "evt", "page": "2"}).json()
 
-def test_nav_typeahead_page_param(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event)
-        for i in range(21):
-            EventFactory(organiser=event.organiser, slug=f"pg{i:03d}")
-    client.force_login(user)
-
-    response_p1 = client.get("/orga/nav/typeahead/?query=pg&page=1")
-    response_p2 = client.get("/orga/nav/typeahead/?query=pg&page=2")
-
-    results_p1 = response_p1.json()["results"]
-    results_p2 = response_p2.json()["results"]
-    names_p1 = {r["name"] for r in results_p1}
-    names_p2 = {r["name"] for r in results_p2}
-    assert names_p1.isdisjoint(names_p2)
-
-
-def test_nav_typeahead_invalid_page_defaults_to_one(client, event, organiser_user):
-    client.force_login(organiser_user)
-
-    response_invalid = client.get("/orga/nav/typeahead/?page=notanumber")
-    response_default = client.get("/orga/nav/typeahead/")
-
-    assert response_invalid.json() == response_default.json()
-
-
-def test_nav_typeahead_submissions_not_searched_without_permission(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=False)
-        SubmissionFactory(event=event, title="Secret submission data")
-    client.force_login(user)
-
-    response = client.get("/orga/nav/typeahead/?query=Secret")
-
-    results = response.json()["results"]
-    assert not any(r["type"] == "submission" for r in results)
-
-
-def test_nav_typeahead_query_with_organiser_and_matching_user(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event)
-    client.force_login(user)
-    query = user.name[:5]
-
-    response = client.get(
-        f"/orga/nav/typeahead/?query={query}&organiser={event.organiser.pk}"
-    )
-
-    results = response.json()["results"]
-    user_results = [r for r in results if r["type"] == "user"]
-    assert len(user_results) == 1
-    orga_results = [r for r in results if r["type"] == "organiser"]
-    assert len(orga_results) == 1
-    assert orga_results[0]["name"] == str(event.organiser.name)
+    assert page_one["pagination"] == {"more": True}
+    assert page_two["pagination"] == {"more": False}
+    names_one = {r["name"] for r in page_one["results"]}
+    names_two = {r["name"] for r in page_two["results"]}
+    assert len(names_one) == 20
+    assert len(names_two) == 1
+    assert names_one.isdisjoint(names_two)
+    assert client.get(URL, {"query": "evt", "page": "notanumber"}).json() == page_one
 
 
 def test_nav_typeahead_organiser_not_in_initial_slice_still_pinned(client):
     with scopes_disabled():
-        user = UserFactory()
-        # Create 6 organisers, each with a team for this user.
-        # Give the first 5 more events so they rank higher.
-        organisers = []
+        user = UserFactory(name="Nav Tester")
+        # Six organisers with a team for this user; the first five get events
+        # so they rank higher and the sixth falls out of the initial slice.
         for i in range(6):
             orga = OrganiserFactory()
-            team = TeamFactory(organiser=orga, all_events=True)
-            team.members.add(user)
-            # Create events to boost ranking for the first 5
+            TeamFactory(organiser=orga, all_events=True).members.add(user)
             if i < 5:
-                for _ in range(3):
-                    EventFactory(organiser=orga)
-            organisers.append(orga)
-        # The 6th organiser (index 5) has 0 events, so it's ranked last
-        target_orga = organisers[5]
-    client.force_login(user)
-    query = user.name[:5]
-
-    response = client.get(
-        f"/orga/nav/typeahead/?organiser={target_orga.pk}&query={query}"
-    )
-
-    results = response.json()["results"]
-    assert results[0]["type"] == "user"
-    assert results[1]["type"] == "organiser"
-    assert results[1]["name"] == str(target_orga.name)
-
-
-def test_nav_typeahead_submission_by_code(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
+                EventFactory.create_batch(3, organiser=orga)
+        target_orga = orga
     client.force_login(user)
 
-    response = client.get(f"/orga/nav/typeahead/?query={submission.code}")
-
-    results = response.json()["results"]
-    submission_results = [r for r in results if r["type"] == "submission"]
-    assert len(submission_results) == 1
-    assert submission.title in submission_results[0]["name"]
+    assert _results(client, query="Nav T", organiser=target_orga.pk) == [
+        ("user", "Nav Tester"),
+        ("organiser", str(target_orga.name)),
+    ]
+    assert _results(client, query="Nav T", organiser=target_orga.pk, page=2) == [
+        ("user", "Nav Tester"),
+        ("organiser", str(target_orga.name)),
+    ]
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -419,7 +223,7 @@ def test_nav_typeahead_query_count_no_query(
     client.force_login(user)
 
     with django_assert_num_queries(2):
-        response = client.get("/orga/nav/typeahead/")
+        response = client.get(URL)
 
     assert response.status_code == 200
     results = response.json()["results"]
@@ -440,7 +244,7 @@ def test_nav_typeahead_query_count_with_submissions(
     client.force_login(user)
 
     with django_assert_num_queries(10):
-        response = client.get("/orga/nav/typeahead/?query=Kubernetes")
+        response = client.get(URL, {"query": "Kubernetes"})
 
     assert response.status_code == 200
     results = response.json()["results"]

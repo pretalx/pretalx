@@ -16,7 +16,6 @@ from pretalx.common.language import LANGUAGE_NAMES
 from pretalx.common.signals import register_locales
 from pretalx.event.models import Event
 from pretalx.event.models.event import (
-    default_display_settings,
     default_feature_flags,
     event_css_path,
     event_header_path,
@@ -52,6 +51,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
         "_global",
         "__debug__",
         "api",
+        "API",
         "csp_report",
         "events",
         "download",
@@ -60,6 +60,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
         "locale",
         "metrics",
         "orga",
+        "Orga",
         "redirect",
         "relay",
         "widget",
@@ -74,12 +75,6 @@ def test_validate_event_slug_permitted_rejects_reserved_slugs(slug):
     with pytest.raises(ValidationError) as exc_info:
         validate_event_slug_permitted(slug)
     assert exc_info.value.code == "invalid"
-
-
-@pytest.mark.parametrize("slug", ("_global", "API", "Orga"))
-def test_validate_event_slug_permitted_is_case_insensitive(slug):
-    with pytest.raises(ValidationError):
-        validate_event_slug_permitted(slug)
 
 
 def test_validate_event_slug_permitted_accepts_valid_slug():
@@ -129,24 +124,15 @@ def test_event_slug_regex_rejects_invalid_formats(slug):
         event.clean_fields(exclude=["organiser"])
 
 
-def test_event_slug_uniqueness():
+@pytest.mark.parametrize(
+    "slug", ("unique-slug", "Unique-Slug"), ids=("same_case", "other_case")
+)
+def test_event_slug_uniqueness_is_case_insensitive(slug):
     EventFactory(slug="unique-slug")
     with pytest.raises(IntegrityError):
         Event.objects.create(
             name="Duplicate",
-            slug="unique-slug",
-            email="test@example.com",
-            date_from=dt.date.today(),
-            date_to=dt.date.today(),
-        )
-
-
-def test_event_slug_uniqueness_is_case_insensitive():
-    EventFactory(slug="unique-slug")
-    with pytest.raises(IntegrityError):
-        Event.objects.create(
-            name="Duplicate",
-            slug="Unique-Slug",
+            slug=slug,
             email="test@example.com",
             date_from=dt.date.today(),
             date_to=dt.date.today(),
@@ -163,20 +149,17 @@ def test_event_clean_rejects_end_before_start():
     assert "date_from" in exc_info.value.error_dict
 
 
-def test_event_clean_accepts_end_equal_to_start():
-    event = EventFactory.build(
-        date_from=dt.date(2025, 6, 10), date_to=dt.date(2025, 6, 10)
-    )
-    event.clean()  # no error
-
-
-def test_event_clean_skips_date_check_when_dates_missing():
-    event = EventFactory.build(date_from=None, date_to=None)
-    event.clean()  # no error
-
-
-def test_event_clean_lowercases_slug():
-    event = EventFactory.build(slug="MyConf")
+@pytest.mark.parametrize(
+    "kwargs",
+    (
+        {"date_from": dt.date(2025, 6, 10), "date_to": dt.date(2025, 6, 10)},
+        {"date_from": None, "date_to": None},
+        {"locale": "", "locales": ["en", "de"]},
+    ),
+    ids=("end_equal_to_start", "dates_missing", "locale_empty"),
+)
+def test_event_clean_accepts_and_lowercases_slug(kwargs):
+    event = EventFactory.build(slug="MyConf", **kwargs)
 
     event.clean()
 
@@ -193,33 +176,24 @@ def test_event_clean_defers_empty_slug_to_field_validation():
 
 
 @pytest.mark.parametrize(
-    ("path_func", "filename", "expected_dir", "expected_target"),
+    ("path_func", "filename", "expected_dir", "expected_target", "expected_ext"),
     (
-        (event_css_path, "style.css", "myconf/css/", "custom"),
-        (event_logo_path, "logo.png", "myconf/img/", "logo"),
-        (event_header_path, "banner.jpg", "myconf/img/", "header"),
-        (event_og_path, "preview.png", "myconf/img/", "og"),
+        (event_css_path, "style.css", "myconf/css/", "custom", ".css"),
+        (event_css_path, "pwn.html", "myconf/css/", "custom", ".css"),
+        (event_logo_path, "logo.png", "myconf/img/", "logo", ".png"),
+        (event_header_path, "banner.jpg", "myconf/img/", "header", ".jpg"),
+        (event_og_path, "preview.png", "myconf/img/", "og", ".png"),
     ),
-    ids=("css", "logo", "header", "og"),
+    ids=("css", "css_forced_extension", "logo", "header", "og"),
 )
 def test_event_upload_path_contains_slug_and_target(
-    path_func, filename, expected_dir, expected_target
+    path_func, filename, expected_dir, expected_target, expected_ext
 ):
     instance = type("FakeEvent", (), {"slug": "myconf"})()
     result = path_func(instance, filename)
 
-    assert expected_dir in result
-    assert expected_target in result
-    ext = filename.rsplit(".", 1)[1]
-    assert result.endswith(f".{ext}")
-
-
-def test_event_css_path_forces_css_extension():
-    instance = type("FakeEvent", (), {"slug": "myconf"})()
-
-    result = event_css_path(instance, "pwn.html")
-
-    assert result.endswith(".css")
+    assert result.startswith(f"{expected_dir}{expected_target}")
+    assert result.endswith(expected_ext)
     assert ".html" not in result
 
 
@@ -232,8 +206,12 @@ def test_default_feature_flags_returns_independent_copies():
 
 def test_event_locales_default_to_default_language():
     event = EventFactory()
+
     assert event.locales == ["en"]
     assert event.content_locales == ["en"]
+    assert event.named_locales == [("en", "English")]
+    assert event.named_content_locales == [("en", "English")]
+    assert event.available_content_locales == sorted(LANGUAGE_NAMES.items())
 
 
 @pytest.mark.parametrize(
@@ -244,21 +222,14 @@ def test_event_is_multilingual(content_locales, expected):
     assert event.is_multilingual is expected
 
 
-def test_event_named_locales_returns_code_and_name():
-    event = EventFactory(locales=["en"])
-
-    assert event.named_locales == [("en", "English")]
-
-
-@pytest.mark.parametrize("plugins", (None, ""))
-def test_event_plugin_list_empty_when_no_plugins(event, plugins):
+@pytest.mark.parametrize(
+    ("plugins", "expected"),
+    ((None, []), ("", []), ("plugin_a,plugin_b", ["plugin_a", "plugin_b"])),
+    ids=("null", "empty", "comma_separated"),
+)
+def test_event_plugin_list(event, plugins, expected):
     event.plugins = plugins
-    assert event.plugin_list == []
-
-
-def test_event_plugin_list_splits_comma_separated(event):
-    event.plugins = "plugin_a,plugin_b"
-    assert event.plugin_list == ["plugin_a", "plugin_b"]
+    assert event.plugin_list == expected
 
 
 @pytest.mark.parametrize(
@@ -328,34 +299,40 @@ def test_event_pending_mails_counts_drafts(event, draft_count, sent_count, expec
     assert event.pending_mails == expected
 
 
-def test_event_wip_schedule_returns_unreleased(event):
+def test_event_wip_schedule_returns_recreates_and_deduplicates_unreleased(event):
     with scope(event=event):
         wip = event.wip_schedule
         assert wip.version is None
         assert wip.event == event
 
-
-def test_event_wip_schedule_creates_if_missing(event):
-    with scope(event=event):
         event.schedules.filter(version__isnull=True).delete()
 
     event = refresh(event)
     with scope(event=event):
-        wip = event.wip_schedule
-        assert wip.version is None
-        assert wip.event == event
+        assert event.wip_schedule.version is None
+        assert event.wip_schedule.pk != wip.pk
+
+        ScheduleFactory(event=event, version=None)
+        assert event.schedules.filter(version__isnull=True).count() == 2
+
+    event = refresh(event)
+    with scope(event=event):
+        assert event.wip_schedule.version is None
+        assert event.schedules.filter(version__isnull=True).count() == 1
 
 
-def test_event_current_schedule_none_when_no_published(event):
+def test_event_current_schedule_returns_latest_published_or_prefetched(event):
     with scope(event=event):
         assert event.current_schedule is None
 
-
-def test_event_current_schedule_returns_latest_published(event):
-    with scope(event=event):
         schedule = ScheduleFactory(event=event, version="v1")
 
     event = refresh(event)
+    with scope(event=event):
+        assert event.current_schedule == schedule
+
+    event = refresh(event)
+    event._current_schedule_pk = schedule.pk
     with scope(event=event):
         assert event.current_schedule == schedule
 
@@ -374,108 +351,54 @@ def test_event_duration_days(date_from, date_to, expected_duration):
     assert event.duration == expected_duration
 
 
-def test_event_property_returns_self(event):
-    assert event.event is event
-
-
-def test_event_tz_returns_zoneinfo():
+def test_event_accessor_properties():
     event = EventFactory(timezone="Europe/Berlin")
+
+    assert event.event is event
     assert event.tz == zoneinfo.ZoneInfo("Europe/Berlin")
+    assert isinstance(event.cache, ObjectRelatedCache)
+    with scope(event=event):
+        assert isinstance(event.cfp_flow, CfPFlow)
 
 
-def test_event_datetime_from_is_midnight_in_event_tz():
+def test_event_datetime_bounds_in_event_tz():
     event = EventFactory(
         date_from=dt.date(2025, 7, 1),
         date_to=dt.date(2025, 7, 3),
         timezone="Europe/Berlin",
     )
     tz = zoneinfo.ZoneInfo("Europe/Berlin")
-    result = event.datetime_from
 
-    assert result.year == 2025
-    assert result.month == 7
-    assert result.day == 1
-    assert result.hour == 0
-    assert result.minute == 0
-    assert result.tzinfo is not None
-    assert result == dt.datetime(2025, 7, 1, 0, 0, 0, tzinfo=tz)
+    assert event.datetime_from == dt.datetime(2025, 7, 1, 0, 0, 0, tzinfo=tz)
+    assert event.datetime_to == dt.datetime(2025, 7, 3, 23, 59, 59, tzinfo=tz)
 
 
-def test_event_datetime_to_is_end_of_day_in_event_tz():
-    event = EventFactory(
-        date_from=dt.date(2025, 7, 1),
-        date_to=dt.date(2025, 7, 3),
-        timezone="Europe/Berlin",
-    )
-    tz = zoneinfo.ZoneInfo("Europe/Berlin")
-    result = event.datetime_to
-
-    assert result.hour == 23
-    assert result.minute == 59
-    assert result.second == 59
-    assert result == dt.datetime(2025, 7, 3, 23, 59, 59, tzinfo=tz)
-
-
-def test_event_teams_includes_all_events_teams(event):
-    team = TeamFactory(organiser=event.organiser, all_events=True)
-
-    assert list(event.teams) == [team]
-
-
-def test_event_teams_includes_limited_teams(event):
-    team = TeamFactory(organiser=event.organiser, all_events=False)
-    team.limit_events.add(event)
-
-    assert list(event.teams) == [team]
-
-
-def test_event_teams_excludes_other_organiser_teams(event):
+def test_event_teams_includes_all_events_and_limited_teams_only(event):
+    all_events_team = TeamFactory(organiser=event.organiser, all_events=True)
+    limited_team = TeamFactory(organiser=event.organiser, all_events=False)
+    limited_team.limit_events.add(event)
+    other_event_team = TeamFactory(organiser=event.organiser, all_events=False)
+    other_event_team.limit_events.add(EventFactory(organiser=event.organiser))
     TeamFactory()
 
-    assert list(event.teams) == []
+    assert set(event.teams) == {all_events_team, limited_team}
 
 
-def test_event_teams_excludes_limited_teams_without_this_event(event):
-    team = TeamFactory(organiser=event.organiser, all_events=False)
-    other_event = EventFactory(organiser=event.organiser)
-    team.limit_events.add(other_event)
-
-    assert list(event.teams) == []
-
-
-def test_event_reviewers_returns_reviewer_team_members(event):
-    user = UserFactory()
-    team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
-    team.members.add(user)
-
-    assert list(event.reviewers) == [user]
-
-
-def test_event_reviewers_excludes_non_reviewer_teams(event):
-    user = UserFactory()
-    team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=False)
-    team.members.add(user)
-
-    assert list(event.reviewers) == []
-
-
-def test_event_reviewers_deduplicates_across_multiple_reviewer_teams(event):
+def test_event_reviewers_returns_distinct_reviewer_team_members(event):
     user = UserFactory()
     first = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
     second = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
     first.members.add(user)
     second.members.add(user)
-
-    assert list(event.reviewers) == [user]
-
-
-def test_event_reviewers_excludes_other_events_reviewers(event):
-    other_event = EventFactory(organiser=event.organiser)
+    non_reviewer = TeamFactory(
+        organiser=event.organiser, all_events=True, is_reviewer=False
+    )
+    non_reviewer.members.add(UserFactory())
     other_team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    other_team.limit_events.add(other_event)
+    other_team.limit_events.add(EventFactory(organiser=event.organiser))
     other_team.members.add(UserFactory())
 
-    assert not event.reviewers.exists()
+    assert list(event.reviewers) == [user]
 
 
 def test_event_reviews_queryset_filters_by_event(event):
@@ -483,12 +406,6 @@ def test_event_reviews_queryset_filters_by_event(event):
     ReviewFactory()
 
     assert list(event.reviews) == [review]
-
-
-@pytest.mark.parametrize("attr", ("talks", "speakers"))
-def test_event_talks_and_speakers_empty_without_published_schedule(event, attr):
-    with scope(event=event):
-        assert list(getattr(event, attr)) == []
 
 
 def test_event_submitters_returns_speakers_with_submissions(event):
@@ -541,19 +458,21 @@ def test_event_urls_base(event, url_attr, expected_pattern):
     assert getattr(event, url_attr).base == expected_pattern.format(slug=event.slug)
 
 
-def test_event_urls_custom_domain(event):
-    custom = "https://myevent.example.org"
-    event.custom_domain = custom
+@pytest.mark.parametrize(
+    ("custom_domain", "public_host"),
+    (("https://myevent.example.org", "https://myevent.example.org"), (None, None)),
+    ids=("custom_domain", "site_url"),
+)
+def test_event_urls_full_uses_custom_domain_for_public_urls_only(
+    event, custom_domain, public_host
+):
+    event.custom_domain = custom_domain
+    public_host = public_host or settings.SITE_URL
 
-    assert custom in event.urls.submit.full()
-    assert custom not in event.orga_urls.cfp.full()
-
-
-def test_event_urls_uses_site_url_without_custom_domain(event):
-    event.custom_domain = None
-
-    full_url = event.urls.submit.full()
-    assert settings.SITE_URL in full_url
+    assert event.urls.submit.full() == f"{public_host}/{event.slug}/submit/"
+    assert event.orga_urls.cfp.full() == (
+        f"{settings.SITE_URL}/orga/event/{event.slug}/cfp/"
+    )
 
 
 def test_event_valid_availabilities_filters_by_event_dates():
@@ -571,22 +490,6 @@ def test_event_valid_availabilities_filters_by_event_dates():
     assert avails == [valid]
 
 
-def test_event_cache_returns_object_related_cache(event):
-    assert isinstance(event.cache, ObjectRelatedCache)
-
-
-def test_event_available_content_locales_returns_sorted_known_languages(event):
-    result = event.available_content_locales
-    expected = sorted(LANGUAGE_NAMES.items())
-    assert result == expected
-
-
-def test_event_named_content_locales_maps_active_locales():
-    event = EventFactory(content_locales=["en"])
-
-    assert event.named_content_locales == [("en", "English")]
-
-
 @pytest.mark.parametrize(
     ("locale_input", "expected_code", "expected_name"),
     (([("xx", "Custom Language")], "xx", "Custom Language"), (["en"], "en", "English")),
@@ -601,73 +504,11 @@ def test_event_named_plugin_locales(
     register_signal_handler(register_locales, provide_locales)
 
     event = refresh(event)
-    result = event.named_plugin_locales
-    assert result[expected_code] == expected_name
+    assert event.named_plugin_locales == {expected_code: expected_name}
+    assert event.plugin_locales == [expected_code]
 
 
-def test_event_plugin_locales_returns_sorted_keys(event):
-    result = event.plugin_locales
-    assert isinstance(result, list)
-    assert result == sorted(result)
-
-
-def test_event_wip_schedule_handles_multiple_unreleased(event):
-    with scope(event=event):
-        ScheduleFactory(event=event, version=None)
-        assert event.schedules.filter(version__isnull=True).count() == 2
-
-    event = refresh(event)
-    with scope(event=event):
-        wip = event.wip_schedule
-
-        assert wip.version is None
-        assert wip.event == event
-        assert event.schedules.filter(version__isnull=True).count() == 1
-
-
-def test_event_current_schedule_uses_prefetched_pk(event):
-    with scope(event=event):
-        schedule = ScheduleFactory(event=event, version="v1")
-
-    event = refresh(event)
-    event._current_schedule_pk = schedule.pk
-    with scope(event=event):
-        assert event.current_schedule == schedule
-
-
-def test_event_talks_returns_submissions_in_published_schedule(event):
-    with scope(event=event):
-        sub = SubmissionFactory(event=event, state="confirmed")
-        speaker = SpeakerFactory(event=event)
-        sub.speakers.add(speaker)
-
-        room = RoomFactory(event=event, name="Room A")
-        TalkSlotFactory(submission=sub, room=room)
-
-    freeze_schedule(event.wip_schedule, name="v1")
-
-    event = refresh(event)
-    with scope(event=event):
-        talks = list(event.talks)
-        assert talks == [sub]
-
-
-def test_event_cfp_flow_returns_cfp_flow_instance(event):
-    with scope(event=event):
-        flow = event.cfp_flow
-        assert isinstance(flow, CfPFlow)
-
-
-def test_event_meta_ordering():
-    later = EventFactory(date_from=dt.date(2025, 6, 1), date_to=dt.date(2025, 6, 2))
-    earlier = EventFactory(date_from=dt.date(2025, 1, 1), date_to=dt.date(2025, 1, 2))
-
-    events = list(Event.objects.filter(pk__in=[earlier.pk, later.pk]))
-
-    assert events == [earlier, later]
-
-
-def test_event_talks_deduplicates_shared_speakers(event):
+def test_event_talks_and_speakers_follow_published_schedule_and_deduplicate(event):
     with scope(event=event):
         speaker = SpeakerFactory(event=event)
         sub1 = SubmissionFactory(event=event, state="confirmed")
@@ -683,66 +524,31 @@ def test_event_talks_deduplicates_shared_speakers(event):
             start=event.datetime_from + dt.timedelta(hours=2),
             end=event.datetime_from + dt.timedelta(hours=3),
         )
+        assert list(event.talks) == []
+        assert list(event.speakers) == []
 
     freeze_schedule(event.wip_schedule, name="v1")
 
     event = refresh(event)
     with scope(event=event):
-        talks = list(event.talks)
-        speakers = list(event.speakers)
-
-        assert set(talks) == {sub1, sub2}
-        assert len(speakers) == len(set(speakers))
-        assert speakers == [speaker]
+        assert set(event.talks) == {sub1, sub2}
+        assert list(event.speakers) == [speaker]
 
 
-def test_has_custom_styles_false_by_default():
-    event = EventFactory()
+def test_event_meta_ordering():
+    later = EventFactory(date_from=dt.date(2025, 6, 1), date_to=dt.date(2025, 6, 2))
+    earlier = EventFactory(date_from=dt.date(2025, 1, 1), date_to=dt.date(2025, 1, 2))
 
-    assert event.has_custom_styles is False
+    events = list(Event.objects.filter(pk__in=[earlier.pk, later.pk]))
 
-
-def test_has_custom_styles_true_with_primary_color():
-    event = EventFactory(primary_color="#ff0000")
-
-    assert event.has_custom_styles is True
-
-
-def test_has_custom_styles_true_with_heading_font():
-    settings = default_display_settings()
-    settings["heading_font"] = "SomeFont"
-    event = EventFactory(display_settings=settings)
-
-    assert event.has_custom_styles is True
-
-
-def test_has_custom_styles_true_with_text_font():
-    settings = default_display_settings()
-    settings["text_font"] = "SomeFont"
-    event = EventFactory(display_settings=settings)
-
-    assert event.has_custom_styles is True
-
-
-def test_has_custom_styles_true_with_custom_css():
-    event = EventFactory()
-    event.custom_css.save(
-        "custom.css", ContentFile(b"body { color: red; }"), save=False
-    )
-
-    assert event.has_custom_styles is True
+    assert events == [earlier, later]
 
 
 def test_style_version_stable_without_style_settings():
     event = EventFactory()
-
-    assert event.style_version == EventFactory().style_version
-
-
-def test_style_version_with_null_fonts():
-    event = EventFactory()
     event.display_settings.update({"heading_font": None, "text_font": None})
 
+    assert event.has_custom_styles is False
     assert event.style_version == EventFactory().style_version
 
 
@@ -758,13 +564,16 @@ def test_style_version_with_null_fonts():
     ),
     ids=("color", "heading_font", "text_font", "custom_css"),
 )
-def test_style_version_changes_with_style_settings(change):
+def test_style_settings_mark_custom_styles_and_change_style_version(change):
     event = EventFactory()
     before = event.style_version
+    assert event.has_custom_styles is False
 
     change(event)
     del event.style_version
+    del event.has_custom_styles
 
+    assert event.has_custom_styles is True
     assert event.style_version != before
 
 
@@ -777,39 +586,16 @@ def test_settings_css_url_carries_style_version():
     assert event.urls.settings_css_orga == f"{event.urls.settings_css}&target=orga"
 
 
-def test_event_active_review_phase_returns_active_phase(event):
+def test_event_active_review_phase_follows_phase_state(event):
     with scope(event=event):
         phase = event.active_review_phase
         assert phase.is_active is True
         assert phase.event == event
 
-
-def test_event_active_review_phase_none_when_no_active_phase(event):
-    with scope(event=event):
         event.review_phases.update(is_active=False)
-        event.__dict__.pop("active_review_phase", None)
+        del event.active_review_phase
         assert event.active_review_phase is None
 
-
-def test_event_active_review_phase_none_when_no_phases(event):
-    with scope(event=event):
         event.review_phases.all().delete()
-        event.__dict__.pop("active_review_phase", None)
+        del event.active_review_phase
         assert event.active_review_phase is None
-
-
-def test_event_talks_slot_with_submission(event):
-    with scope(event=event):
-        sub = SubmissionFactory(event=event, state="confirmed")
-        sub.speakers.add(SpeakerFactory(event=event))
-        TalkSlotFactory(submission=sub, room=RoomFactory(event=event))
-
-    freeze_schedule(event.wip_schedule, name="v1")
-    event = refresh(event)
-    with scope(event=event):
-        assert list(event.talks) == [sub]
-
-
-def test_event_clean_skips_locale_check_when_locale_empty():
-    event = EventFactory.build(locale="", locales=["en", "de"])
-    event.clean()  # no error

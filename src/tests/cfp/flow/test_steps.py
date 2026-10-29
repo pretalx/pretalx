@@ -44,150 +44,70 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.django_db
-def test_info_step_get_form_initial_populates_submission_type_from_url():
+def test_info_step_get_form_initial_reads_type_and_track_from_url():
     event = EventFactory()
     sub_type = event.cfp.default_type
-    step = InfoStep(event=event)
-    request = make_request(
-        event,
-        path=f"/?submission_type={sub_type.pk}",
-        resolver_match=make_resolver(),
-        session=make_cfp_session(),
-    )
-    step.request = request
-
-    result = step.get_form_initial()
-
-    assert result["submission_type"] == sub_type
-
-
-@pytest.mark.django_db
-def test_info_step_get_form_initial_populates_track_from_url():
-    event = EventFactory()
     track = TrackFactory(event=event)
-    step = InfoStep(event=event)
-    request = make_request(
-        event,
-        path=f"/?track={track.pk}",
-        resolver_match=make_resolver(),
-        session=make_cfp_session(),
-    )
-    step.request = request
 
-    result = step.get_form_initial()
+    def initial(query):
+        step = InfoStep(event=event)
+        step.request = make_request(
+            event,
+            path=f"/?{query}",
+            resolver_match=make_resolver(),
+            session=make_cfp_session(),
+        )
+        return step.get_form_initial()
 
-    assert result["track"] == track
+    assert initial(f"submission_type={sub_type.pk}") == {"submission_type": sub_type}
+    assert initial(f"submission_type={sub_type.pk}-talk") == {
+        "submission_type": sub_type
+    }
+    assert initial(f"track={track.pk}") == {"track": track}
+    assert initial("submission_type=invalid") == {}
+    assert initial("submission_type=99999") == {}
 
 
 @pytest.mark.django_db
-def test_info_step_get_form_initial_handles_slug_style_id():
-    event = EventFactory()
-    sub_type = event.cfp.default_type
-    step = InfoStep(event=event)
-    request = make_request(
-        event,
-        path=f"/?submission_type={sub_type.pk}-talk",
-        resolver_match=make_resolver(),
-        session=make_cfp_session(),
-    )
-    step.request = request
-
-    result = step.get_form_initial()
-
-    assert result["submission_type"] == sub_type
-
-
 @pytest.mark.parametrize(
-    "query_value", ("invalid", "99999"), ids=("non_numeric", "nonexistent_pk")
+    ("stored", "expected"),
+    (
+        (["a@example.com", "b@example.com"], "a@example.com,b@example.com"),
+        ("a@example.com", "a@example.com"),
+    ),
+    ids=["list", "string"],
 )
-@pytest.mark.django_db
-def test_info_step_get_form_initial_ignores_bad_submission_type(query_value):
+def test_info_step_get_form_data_joins_additional_speaker_list(stored, expected):
     event = EventFactory()
     step = InfoStep(event=event)
-    request = make_request(
-        event,
-        path=f"/?submission_type={query_value}",
-        resolver_match=make_resolver(),
-        session=make_cfp_session(),
-    )
-    step.request = request
-
-    result = step.get_form_initial()
-
-    assert "submission_type" not in result
-
-
-@pytest.mark.django_db
-def test_info_step_get_form_data_joins_additional_speaker_list():
-    event = EventFactory()
-    step = InfoStep(event=event)
-    request = make_request(
+    step.request = make_request(
         event,
         resolver_match=make_resolver(),
         session=make_cfp_session(
-            data={
-                "info": {
-                    "additional_speaker": ["a@example.com", "b@example.com"],
-                    "title": "Test",
-                }
-            }
+            data={"info": {"additional_speaker": stored, "title": "Test"}}
         ),
     )
-    step.request = request
 
-    result = step.get_form_data()
-
-    assert result["additional_speaker"] == "a@example.com,b@example.com"
+    assert step.get_form_data() == {"additional_speaker": expected, "title": "Test"}
 
 
 @pytest.mark.django_db
-def test_info_step_get_form_data_preserves_string_additional_speaker():
+def test_info_step_get_form_kwargs_passes_request_access_code():
     event = EventFactory()
-    step = InfoStep(event=event)
-    request = make_request(
-        event,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(
-            data={"info": {"additional_speaker": "a@example.com"}}
-        ),
-    )
-    step.request = request
-
-    result = step.get_form_data()
-
-    assert result["additional_speaker"] == "a@example.com"
-
-
-@pytest.mark.django_db
-def test_info_step_get_form_kwargs_includes_access_code():
-    event = EventFactory()
-    step = InfoStep(event=event)
-    request = make_request(
+    with_code = InfoStep(event=event)
+    with_code.request = make_request(
         event,
         resolver_match=make_resolver(),
         session=make_cfp_session(),
         access_code="test_code",
     )
-    step.request = request
-
-    result = step.get_form_kwargs()
-
-    assert result["access_code"] == "test_code"
-
-
-@pytest.mark.django_db
-def test_info_step_get_form_kwargs_access_code_none_when_absent():
-    event = EventFactory()
-    step = InfoStep(event=event)
-    request = make_request(
+    without_code = InfoStep(event=event)
+    without_code.request = make_request(
         event, resolver_match=make_resolver(), session=make_cfp_session()
     )
-    # make_request doesn't set access_code, so getattr returns None
-    step.request = request
 
-    result = step.get_form_kwargs()
-
-    assert result["access_code"] is None
+    assert with_code.get_form_kwargs()["access_code"] == "test_code"
+    assert without_code.get_form_kwargs()["access_code"] is None
 
 
 @pytest.mark.parametrize(
@@ -209,84 +129,38 @@ def test_info_step_resources_visibility(
     assert step._resources_required is expected_required
 
 
-def test_info_step_formset_has_resources_true_when_non_deleted():
+def test_info_step_formset_has_resources_ignores_deleted_rows():
     step = InfoStep(event=None)
-    form = SimpleNamespace(cleaned_data={"description": "Slides", "DELETE": False})
-    formset = SimpleNamespace(forms=[form])
+    kept = SimpleNamespace(cleaned_data={"description": "Slides", "DELETE": False})
+    deleted = SimpleNamespace(cleaned_data={"description": "Slides", "DELETE": True})
 
-    assert step._formset_has_resources(formset) is True
-
-
-def test_info_step_formset_has_resources_false_when_all_deleted():
-    step = InfoStep(event=None)
-    form = SimpleNamespace(cleaned_data={"description": "Slides", "DELETE": True})
-    formset = SimpleNamespace(forms=[form])
-
-    assert step._formset_has_resources(formset) is False
+    assert step._formset_has_resources(SimpleNamespace(forms=[kept, deleted])) is True
+    assert step._formset_has_resources(SimpleNamespace(forms=[deleted])) is False
 
 
 @pytest.mark.django_db
-def test_info_step_get_resource_formset_returns_none_when_disabled():
-    event = EventFactory()
-    step = InfoStep(event=event)
-    request = make_request(
-        event, resolver_match=make_resolver(), session=make_cfp_session()
+def test_info_step_get_resource_formset_only_when_enabled():
+    disabled = InfoStep(event=EventFactory())
+    enabled = InfoStep(
+        event=EventFactory(cfp__fields={"resources": {"visibility": "optional"}})
     )
-    step.request = request
+    for step in (disabled, enabled):
+        step.request = make_request(
+            step.event, resolver_match=make_resolver(), session=make_cfp_session()
+        )
 
-    assert step.get_resource_formset(submission=None) is None
-
-
-@pytest.mark.django_db
-def test_info_step_get_resource_formset_returns_formset_when_enabled():
-    event = EventFactory(cfp__fields={"resources": {"visibility": "optional"}})
-    step = InfoStep(event=event)
-    request = make_request(
-        event, resolver_match=make_resolver(), session=make_cfp_session()
-    )
-    step.request = request
-
-    formset = step.get_resource_formset(submission=None)
-    assert formset.prefix == "resource"
+    assert disabled.get_resource_formset(submission=None) is None
+    assert enabled.get_resource_formset(submission=None).prefix == "resource"
 
 
 @pytest.mark.django_db
-def test_info_step_get_resource_formset_post_merges_stored_files():
+def test_info_step_get_resource_formset_post_prefers_reupload_over_stored_file():
     event = EventFactory(cfp__fields={"resources": {"visibility": "optional"}})
     session = make_cfp_session()
-
-    # Phase 1: store a resource file via set_files on a GET request
-    step = InfoStep(event=event)
-    step.request = make_request(event, resolver_match=make_resolver(), session=session)
-    step.set_files(
-        {
-            "resource-0-resource": SimpleUploadedFile(
-                "slides.pdf", b"%PDF", content_type="application/pdf"
-            )
-        }
-    )
-
-    # Phase 2: fresh step (clears cached_property), POST request reusing same session
-    step = InfoStep(event=event)
-    request = make_request(
-        event, method="post", resolver_match=make_resolver(), session=session
-    )
-    request.POST = QueryDict(
+    management = (
         "resource-TOTAL_FORMS=1&resource-INITIAL_FORMS=0"
         "&resource-MIN_NUM_FORMS=0&resource-MAX_NUM_FORMS=1000"
-        "&resource-0-link=https://example.com"
     )
-    step.request = request
-
-    formset = step.get_resource_formset(submission=None)
-
-    assert formset.files["resource-0-resource"].name == "slides.pdf"
-
-
-@pytest.mark.django_db
-def test_info_step_get_resource_formset_post_keeps_reuploaded_file():
-    event = EventFactory(cfp__fields={"resources": {"visibility": "optional"}})
-    session = make_cfp_session()
 
     step = InfoStep(event=event)
     step.request = make_request(event, resolver_match=make_resolver(), session=session)
@@ -298,28 +172,26 @@ def test_info_step_get_resource_formset_post_keeps_reuploaded_file():
         }
     )
 
-    step = InfoStep(event=event)
-    request = make_request(
-        event, method="post", resolver_match=make_resolver(), session=session
-    )
-    request.POST = QueryDict(
-        "resource-TOTAL_FORMS=1&resource-INITIAL_FORMS=0"
-        "&resource-MIN_NUM_FORMS=0&resource-MAX_NUM_FORMS=1000"
-    )
-    request._files = MultiValueDict(
-        {
-            "resource-0-resource": [
-                SimpleUploadedFile(
-                    "new.pdf", b"%PDF-new", content_type="application/pdf"
-                )
-            ]
-        }
-    )
-    step.request = request
+    def post_formset(files):
+        step = InfoStep(event=event)
+        request = make_request(
+            event, method="post", resolver_match=make_resolver(), session=session
+        )
+        request.POST = QueryDict(management + "&resource-0-link=https://example.com")
+        request._files = MultiValueDict(files)
+        step.request = request
+        return step.get_resource_formset(submission=None)
 
-    formset = step.get_resource_formset(submission=None)
-
-    assert formset.files["resource-0-resource"].name == "new.pdf"
+    assert post_formset({}).files["resource-0-resource"].name == "old.pdf"
+    new_upload = SimpleUploadedFile(
+        "new.pdf", b"%PDF-new", content_type="application/pdf"
+    )
+    assert (
+        post_formset({"resource-0-resource": [new_upload]})
+        .files["resource-0-resource"]
+        .name
+        == "new.pdf"
+    )
 
 
 @pytest.mark.django_db
@@ -487,11 +359,42 @@ def test_info_step_keeps_held_resource_when_replacement_rejected():
     )
 
 
+RESOURCE_MANAGEMENT = {
+    "resource-TOTAL_FORMS": "1",
+    "resource-INITIAL_FORMS": "0",
+    "resource-MIN_NUM_FORMS": "0",
+    "resource-MAX_NUM_FORMS": "1000",
+}
+
+
 @pytest.mark.django_db
-def test_info_step_is_completed_false_when_resources_required_and_formset_invalid():
+@pytest.mark.parametrize(
+    ("resources", "expected"),
+    (
+        ({}, False),
+        (
+            {
+                "info__resources": RESOURCE_MANAGEMENT
+                | {"resource-0-link": "https://example.com", "resource-0-DELETE": "on"}
+            },
+            False,
+        ),
+        (
+            {
+                "info__resources": RESOURCE_MANAGEMENT
+                | {
+                    "resource-0-description": "Slides",
+                    "resource-0-link": "https://example.com/slides",
+                }
+            },
+            True,
+        ),
+    ),
+    ids=["no_formset", "all_deleted", "present"],
+)
+def test_info_step_is_completed_needs_required_resources(resources, expected):
     event = EventFactory(cfp__fields={"resources": {"visibility": "required"}})
     step = InfoStep(event=event)
-    # Valid info data so the main form passes, but no resource formset data
     request = make_request(
         event,
         resolver_match=make_resolver(),
@@ -504,73 +407,12 @@ def test_info_step_is_completed_false_when_resources_required_and_formset_invali
                     "content_locale": "en",
                 }
             }
+            | resources
         ),
     )
     step.request = request
 
-    assert step.is_completed(request) is False
-
-
-@pytest.mark.django_db
-def test_info_step_is_completed_false_when_resources_required_but_all_deleted():
-    event = EventFactory(cfp__fields={"resources": {"visibility": "required"}})
-    step = InfoStep(event=event)
-    request = make_request(
-        event,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(
-            data={
-                "info": {
-                    "title": "Test",
-                    "abstract": "An abstract",
-                    "submission_type": event.cfp.default_type.pk,
-                    "content_locale": "en",
-                },
-                "info__resources": {
-                    "resource-TOTAL_FORMS": "1",
-                    "resource-INITIAL_FORMS": "0",
-                    "resource-MIN_NUM_FORMS": "0",
-                    "resource-MAX_NUM_FORMS": "1000",
-                    "resource-0-link": "https://example.com",
-                    "resource-0-DELETE": "on",
-                },
-            }
-        ),
-    )
-    step.request = request
-
-    assert step.is_completed(request) is False
-
-
-@pytest.mark.django_db
-def test_info_step_is_completed_true_when_resources_required_and_present():
-    event = EventFactory(cfp__fields={"resources": {"visibility": "required"}})
-    step = InfoStep(event=event)
-    request = make_request(
-        event,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(
-            data={
-                "info": {
-                    "title": "Test",
-                    "abstract": "An abstract",
-                    "submission_type": event.cfp.default_type.pk,
-                    "content_locale": "en",
-                },
-                "info__resources": {
-                    "resource-TOTAL_FORMS": "1",
-                    "resource-INITIAL_FORMS": "0",
-                    "resource-MIN_NUM_FORMS": "0",
-                    "resource-MAX_NUM_FORMS": "1000",
-                    "resource-0-description": "Slides",
-                    "resource-0-link": "https://example.com/slides",
-                },
-            }
-        ),
-    )
-    step.request = request
-
-    assert step.is_completed(request) is True
+    assert step.is_completed(request) is expected
 
 
 @pytest.mark.django_db
@@ -653,19 +495,24 @@ def test_info_step_done_skips_resources_when_formset_invalid():
 
 
 @pytest.mark.django_db
-def test_info_step_done_catches_send_mail_exception(monkeypatch):
-    event = EventFactory()
-    user = UserFactory()
+def test_info_step_done_creates_submission_despite_invitation_mail_failure(
+    monkeypatch, register_signal_handler
+):
+    received = []
+
+    def handler(signal, sender, submission, **kwargs):
+        received.append(submission)
 
     def _raise(*_, **__):
         raise SendMailException("SMTP error")
 
+    register_signal_handler(submission_state_change, handler)
     monkeypatch.setattr("pretalx.submission.domain.invitation.render_to_mail", _raise)
-
+    event = EventFactory()
     step = InfoStep(event=event)
     request = make_request(
         event,
-        user=user,
+        user=UserFactory(),
         resolver_match=make_resolver(),
         session=make_cfp_session(
             data={
@@ -685,50 +532,15 @@ def test_info_step_done_catches_send_mail_exception(monkeypatch):
 
     step.done(request, draft=False)
 
-    # The submission was still created despite the mail failure
-    assert Submission.objects.filter(pk=request.submission.pk).exists()
-    # The invitation was created in the DB before rendering raised
-    assert SubmissionInvitation.objects.filter(
-        submission=request.submission, email="cospeaker@example.com"
-    ).exists()
-
-
-@pytest.mark.django_db
-def test_info_step_done_fires_submission_state_change_signal(register_signal_handler):
-    received = []
-
-    def handler(signal, sender, submission, **kwargs):
-        received.append(submission)
-
-    register_signal_handler(submission_state_change, handler)
-
-    event = EventFactory()
-    user = UserFactory()
-    step = InfoStep(event=event)
-    request = make_request(
-        event,
-        user=user,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(
-            data={
-                "info": {
-                    "title": "Signal Test Talk",
-                    "abstract": "Testing signals",
-                    "submission_type": event.cfp.default_type.pk,
-                    "content_locale": "en",
-                }
-            }
-        ),
-        access_code=None,
-    )
-    request._messages = FallbackStorage(request)
-    step.request = request
-
-    step.done(request, draft=False)
-
-    assert len(received) == 1
-    assert received[0].title == "Signal Test Talk"
-    assert received[0].state == SubmissionStates.SUBMITTED
+    submission = Submission.objects.get(pk=request.submission.pk)
+    assert submission.title == "Talk with Co-Speaker"
+    assert submission.state == SubmissionStates.SUBMITTED
+    assert received == [submission]
+    assert list(
+        SubmissionInvitation.objects.filter(submission=submission).values_list(
+            "email", flat=True
+        )
+    ) == ["cospeaker@example.com"]
 
 
 # ---------------------------------------------------------------------------
@@ -737,199 +549,71 @@ def test_info_step_done_fires_submission_state_change_signal(register_signal_han
 
 
 @pytest.mark.django_db
-def test_questions_step_is_applicable_with_submission_questions():
-    event = EventFactory()
-    QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    step = QuestionsStep(event=event)
-    request = make_request(
-        event,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(
-            data={"info": {"submission_type": event.cfp.default_type.pk}}
-        ),
-    )
-    step.request = request
-
-    assert step.is_applicable(request) is True
-
-
-@pytest.mark.django_db
-def test_questions_step_is_applicable_with_speaker_questions():
-    event = EventFactory()
-    QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
-    step = QuestionsStep(event=event)
-    request = make_request(
-        event,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(
-            data={"info": {"submission_type": event.cfp.default_type.pk}}
-        ),
-    )
-    step.request = request
-
-    assert step.is_applicable(request) is True
-
-
-@pytest.mark.django_db
-def test_questions_step_not_applicable_without_questions():
-    event = EventFactory()
-    step = QuestionsStep(event=event)
-    request = make_request(
-        event,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(
-            data={"info": {"submission_type": event.cfp.default_type.pk}}
-        ),
-    )
-    step.request = request
-
-    assert step.is_applicable(request) is False
-
-
-@pytest.mark.django_db
-def test_questions_step_not_applicable_when_question_filtered_by_type():
-    event = EventFactory()
-    other_type = SubmissionTypeFactory(event=event)
-    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    question.submission_types.add(other_type)
-    step = QuestionsStep(event=event)
-    request = make_request(
-        event,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(
-            data={"info": {"submission_type": event.cfp.default_type.pk}}
-        ),
-    )
-    step.request = request
-
-    assert step.is_applicable(request) is False
-
-
-@pytest.mark.django_db
-def test_questions_step_applicable_when_question_matches_type():
+def test_questions_step_is_applicable_when_a_question_matches_type_and_track():
     event = EventFactory()
     default_type = event.cfp.default_type
-    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    question.submission_types.add(default_type)
-    step = QuestionsStep(event=event)
-    request = make_request(
-        event,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(data={"info": {"submission_type": default_type.pk}}),
-    )
-    step.request = request
-
-    assert step.is_applicable(request) is True
-
-
-@pytest.mark.django_db
-def test_questions_step_applicable_with_track_filtering():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    question.tracks.add(track)
-    step = QuestionsStep(event=event)
-    request = make_request(
-        event,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(
-            data={
-                "info": {
-                    "submission_type": event.cfp.default_type.pk,
-                    "track": track.pk,
-                }
-            }
-        ),
-    )
-    step.request = request
-
-    assert step.is_applicable(request) is True
-
-
-@pytest.mark.django_db
-def test_questions_step_not_applicable_with_wrong_track():
-    event = EventFactory()
+    other_type = SubmissionTypeFactory(event=event)
     track_a = TrackFactory(event=event)
     track_b = TrackFactory(event=event)
+
+    def applicable(**info):
+        step = QuestionsStep(event=event)
+        request = make_request(
+            event,
+            resolver_match=make_resolver(),
+            session=make_cfp_session(
+                data={"info": {"submission_type": default_type.pk, **info}}
+            ),
+        )
+        step.request = request
+        return step.is_applicable(request)
+
+    assert applicable() is False
+
     question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
+    assert applicable() is True
+
+    question.submission_types.add(other_type)
+    assert applicable() is False
+    question.submission_types.set([default_type])
+    assert applicable() is True
+
     question.tracks.add(track_a)
-    step = QuestionsStep(event=event)
-    request = make_request(
-        event,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(
-            data={
-                "info": {
-                    "submission_type": event.cfp.default_type.pk,
-                    "track": track_b.pk,
-                }
-            }
-        ),
-    )
-    step.request = request
+    assert applicable(track=track_a.pk) is True
+    assert applicable(track=track_b.pk) is False
 
-    assert step.is_applicable(request) is False
+    QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+    assert applicable(track=track_b.pk) is True
 
 
 @pytest.mark.django_db
-def test_questions_step_get_form_kwargs_includes_track_and_type():
-    event = EventFactory()
-    step = QuestionsStep(event=event)
-    request = make_request(
-        event,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(data={"info": {"track": 5, "submission_type": 3}}),
-    )
-    step.request = request
-
-    result = step.get_form_kwargs()
-
-    assert result["track"] == 5
-    assert result["submission_type"] == 3
-    assert result["target"] == ""
-
-
-@pytest.mark.django_db
-def test_questions_step_get_form_kwargs_uses_access_code_type():
-    event = EventFactory()
-    access_type = SubmissionTypeFactory(event=event)
-    access_code = SubmitterAccessCodeFactory(event=event)
-    access_code.submission_types.add(access_type)
-    step = QuestionsStep(event=event)
-    request = make_request(
-        event,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(
-            data={"info": {"track": None, "submission_type": event.cfp.default_type.pk}}
-        ),
-        access_code=access_code,
-    )
-    step.request = request
-
-    result = step.get_form_kwargs()
-
-    assert result["submission_type"] == access_type
-
-
-@pytest.mark.django_db
-def test_questions_step_get_form_kwargs_includes_speaker_for_authenticated():
+def test_questions_step_get_form_kwargs_resolves_type_track_and_speaker():
     event = EventFactory()
     user = UserFactory()
     speaker = SpeakerFactory(user=user, event=event)
-    step = QuestionsStep(event=event)
-    request = make_request(
-        event,
-        user=user,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(
-            data={"info": {"track": None, "submission_type": event.cfp.default_type.pk}}
-        ),
-    )
-    step.request = request
+    access_type = SubmissionTypeFactory(event=event)
+    access_code = SubmitterAccessCodeFactory(event=event)
+    access_code.submission_types.add(access_type)
 
-    result = step.get_form_kwargs()
+    def form_kwargs(info, **request_attrs):
+        step = QuestionsStep(event=event)
+        step.request = make_request(
+            event,
+            resolver_match=make_resolver(),
+            session=make_cfp_session(data={"info": info}),
+            **request_attrs,
+        )
+        return step.get_form_kwargs()
 
-    assert result["speaker"] == speaker
+    plain = form_kwargs({"track": 5, "submission_type": 3})
+    assert plain["track"] == 5
+    assert plain["submission_type"] == 3
+    assert plain["target"] == ""
+    assert "speaker" not in plain
+
+    info = {"track": None, "submission_type": event.cfp.default_type.pk}
+    assert form_kwargs(info, access_code=access_code)["submission_type"] == access_type
+    assert form_kwargs(info, user=user)["speaker"] == speaker
 
 
 # ---------------------------------------------------------------------------
@@ -1010,99 +694,57 @@ def test_profile_step_keeps_avatar_upload_when_name_missing(make_image):
 
 
 @pytest.mark.django_db
-def test_profile_step_set_data_stores_avatar_action():
+def test_profile_step_set_data_stores_posted_avatar_action_unless_keep():
     event = EventFactory()
-    step = ProfileStep(event=event)
-    request = make_request(
-        event, method="post", resolver_match=make_resolver(), session=make_cfp_session()
-    )
-    request.POST = QueryDict("avatar_action=remove")
-    step.request = request
 
-    step.set_data({"name": "Alice"})
+    def stored_data(method, post):
+        step = ProfileStep(event=event)
+        step.request = make_request(
+            event,
+            method=method,
+            resolver_match=make_resolver(),
+            session=make_cfp_session(),
+        )
+        step.request.POST = QueryDict(post)
+        step.set_data({"name": "Alice"})
+        return step.cfp_session["data"]["profile"]
 
-    assert step.cfp_session["data"]["profile"]["avatar_action"] == "remove"
+    assert stored_data("post", "avatar_action=remove") == {
+        "name": "Alice",
+        "avatar_action": "remove",
+    }
+    assert stored_data("post", "avatar_action=keep") == {"name": "Alice"}
+    assert stored_data("get", "avatar_action=remove") == {"name": "Alice"}
 
 
 @pytest.mark.django_db
-def test_profile_step_set_data_ignores_keep_avatar_action():
-    event = EventFactory()
-    step = ProfileStep(event=event)
-    request = make_request(
-        event, method="post", resolver_match=make_resolver(), session=make_cfp_session()
-    )
-    request.POST = QueryDict("avatar_action=keep")
-    step.request = request
-
-    step.set_data({"name": "Alice"})
-
-    assert "avatar_action" not in step.cfp_session["data"]["profile"]
-
-
-@pytest.mark.django_db
-def test_profile_step_set_data_ignores_avatar_action_on_get():
-    event = EventFactory()
-    step = ProfileStep(event=event)
-    request = make_request(
-        event, resolver_match=make_resolver(), session=make_cfp_session()
-    )
-    step.request = request
-
-    step.set_data({"name": "Alice"})
-
-    assert "avatar_action" not in step.cfp_session["data"]["profile"]
-
-
-@pytest.mark.django_db
-def test_profile_step_get_form_kwargs_uses_authenticated_user():
+def test_profile_step_get_form_kwargs_resolves_user_from_request_or_session():
     event = EventFactory()
     user = UserFactory()
-    step = ProfileStep(event=event)
-    request = make_request(
-        event, user=user, resolver_match=make_resolver(), session=make_cfp_session()
-    )
-    step.request = request
 
-    result = step.get_form_kwargs()
+    def form_kwargs(**request_attrs):
+        step = ProfileStep(event=event)
+        step.request = make_request(
+            event, resolver_match=make_resolver(), **request_attrs
+        )
+        return step.get_form_kwargs()
 
-    assert result["instance"] == user.get_speaker(event)
-    assert result["name"] == user.name
-    assert result["read_only"] is False
-    assert result["essential_only"] is True
+    authenticated = form_kwargs(user=user, session=make_cfp_session())
+    assert authenticated["instance"] == user.get_speaker(event)
+    assert authenticated["name"] == user.name
+    assert authenticated["read_only"] is False
+    assert authenticated["essential_only"] is True
 
-
-@pytest.mark.django_db
-def test_profile_step_get_form_kwargs_uses_session_user_data():
-    event = EventFactory()
-    user = UserFactory()
-    step = ProfileStep(event=event)
-    request = make_request(
-        event,
-        resolver_match=make_resolver(),
+    from_session = form_kwargs(
         session=make_cfp_session(
             data={"user": {"user_id": user.pk, "register_name": "From Session"}}
-        ),
+        )
     )
-    step.request = request
+    assert from_session["instance"] == user.get_speaker(event)
+    assert from_session["name"] == user.name
 
-    result = step.get_form_kwargs()
-
-    assert result["instance"] == user.get_speaker(event)
-    assert result["name"] == user.name
-
-
-@pytest.mark.django_db
-def test_profile_step_get_form_kwargs_uses_register_name_without_user():
-    event = EventFactory()
-    step = ProfileStep(event=event)
-    request = make_request(
-        event,
-        resolver_match=make_resolver(),
-        session=make_cfp_session(data={"user": {"register_name": "New Person"}}),
+    registering = form_kwargs(
+        session=make_cfp_session(data={"user": {"register_name": "New Person"}})
     )
-    step.request = request
-
-    result = step.get_form_kwargs()
-
-    assert result["instance"] is None
-    assert result["name"] == "New Person"
+    assert registering["instance"] is None
+    assert registering["name"] == "New Person"

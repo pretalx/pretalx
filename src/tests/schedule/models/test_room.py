@@ -22,82 +22,49 @@ def test_room_log_parent_is_event():
     assert room.log_parent == room.event
 
 
-def test_room_get_order_queryset_includes_hidden_rooms(event):
-    room2 = RoomFactory(event=event, position=1, hidden=True)
-    room1 = RoomFactory(event=event, position=0)
-
-    result = list(Room.get_order_queryset(event))
-
-    assert result == [room1, room2]
-
-
-def test_room_visible_excludes_hidden_rooms(event):
+def test_room_ordering_and_visibility(event):
+    hidden = RoomFactory(event=event, position=1, hidden=True)
     visible = RoomFactory(event=event, position=0)
-    RoomFactory(event=event, position=1, hidden=True)
 
+    assert list(event.rooms.all()) == [visible, hidden]
+    assert list(Room.get_order_queryset(event)) == [visible, hidden]
     assert list(event.rooms.visible()) == [visible]
     assert list(Room.objects.visible()) == [visible]
 
 
-def test_room_is_deletable_without_annotation(event):
+def test_room_usage_predicates(event):
     unused_room = RoomFactory(event=event)
-    used_room = TalkSlotFactory(submission__event=event).room
-
-    with scope(event=event):
-        assert unused_room.is_deletable is True
-        assert used_room.is_deletable is False
-
-
-def test_room_is_in_use_without_annotation(event):
     historic_room = RoomFactory(event=event)
     historic_schedule = ScheduleFactory(event=event, version="v0", published=None)
     TalkSlotFactory(submission=None, room=historic_room, schedule=historic_schedule)
     current_room = TalkSlotFactory(submission__event=event).room
+    annotated = RoomFactory(event=event)
+    annotated.has_slots = True
+    annotated.has_scheduled_slots = False
 
     with scope(event=event):
-        assert historic_room.is_in_use is False
-        assert current_room.is_in_use is True
+        predicates = [
+            (room.is_deletable, room.is_in_use)
+            for room in (unused_room, historic_room, current_room, annotated)
+        ]
+
+    assert predicates == [(True, False), (False, False), (False, True), (False, False)]
 
 
-def test_room_predicates_prefer_annotated_values(event):
-    room = RoomFactory(event=event)
-    room.has_slots = True
-    room.has_scheduled_slots = False
-
-    assert room.is_deletable is False
-    assert room.is_in_use is False
-
-
-def test_room_uuid_with_guid():
+def test_room_uuid():
     guid = uuid.uuid4()
-    room = RoomFactory(guid=guid)
+    custom = RoomFactory(guid=guid)
+    generated = RoomFactory(guid=None)
+    unsaved = Room(name="Unsaved", guid=None)
 
-    assert room.uuid == guid
+    first = generated.uuid
+    del generated.__dict__["uuid"]  # clear cached_property
 
-
-def test_room_uuid_without_guid():
-    room = RoomFactory(guid=None)
-
-    result = room.uuid
-
-    assert isinstance(result, uuid.UUID)
-    assert result.version == 5
-
-
-def test_room_uuid_without_pk():
-    room = Room(name="Unsaved", guid=None)
-
-    assert room.uuid == ""
-
-
-def test_room_uuid_is_stable():
-    room = RoomFactory(guid=None)
-
-    uuid1 = room.uuid
-    del room.__dict__["uuid"]  # clear cached_property
-    uuid2 = room.uuid
-
-    assert uuid1 == uuid2
+    assert custom.uuid == guid
+    assert isinstance(first, uuid.UUID)
+    assert first.version == 5
+    assert generated.uuid == first
+    assert unsaved.uuid == ""
 
 
 def test_room_slug():
@@ -106,59 +73,27 @@ def test_room_slug():
     assert room.slug == f"{room.id}-main-hall"
 
 
-def test_room_full_availability_empty(event):
+def test_room_full_availability(event):
     room = RoomFactory(event=event)
 
     with scope(event=event):
+        empty = room.full_availability
+        avail = AvailabilityFactory(event=event, room=room)
+        del room.__dict__["full_availability"]
         result = room.full_availability
 
-    assert result == []
+    assert empty == []
+    assert [(a.start, a.end) for a in result] == [(avail.start, avail.end)]
 
 
-def test_room_full_availability_with_data(event):
-    room = RoomFactory(event=event)
-    avail = AvailabilityFactory(event=event, room=room)
+def test_room_move_swaps_positions_and_stops_at_boundaries(event):
+    first, second = (RoomFactory(event=event, position=i) for i in range(2))
 
-    with scope(event=event):
-        result = room.full_availability
+    positions = []
+    for room, up in ((first, True), (second, False), (first, False), (first, True)):
+        room.move(up=up)
+        first.refresh_from_db(fields=["position"])
+        second.refresh_from_db(fields=["position"])
+        positions.append((first.position, second.position))
 
-    assert len(result) == 1
-    assert result[0].start == avail.start
-    assert result[0].end == avail.end
-
-
-def test_room_ordering_by_position(event):
-    room_b = RoomFactory(event=event, position=2)
-    room_a = RoomFactory(event=event, position=1)
-
-    rooms = list(event.rooms.all())
-
-    assert rooms == [room_a, room_b]
-
-
-@pytest.mark.parametrize(
-    ("move_index", "up"), ((0, False), (1, True)), ids=["down", "up"]
-)
-def test_room_move_swaps_positions(event, move_index, up):
-    rooms = [RoomFactory(event=event, position=i) for i in range(2)]
-
-    rooms[move_index].move(up=up)
-
-    for room in rooms:
-        room.refresh_from_db()
-    assert rooms[0].position == 1
-    assert rooms[1].position == 0
-
-
-@pytest.mark.parametrize(
-    ("move_index", "up"), ((0, True), (1, False)), ids=["up_at_top", "down_at_bottom"]
-)
-def test_room_move_noop_at_boundary(event, move_index, up):
-    rooms = [RoomFactory(event=event, position=i) for i in range(2)]
-
-    rooms[move_index].move(up=up)
-
-    for room in rooms:
-        room.refresh_from_db()
-    assert rooms[0].position == 0
-    assert rooms[1].position == 1
+    assert positions == [(0, 1), (0, 1), (1, 0), (0, 1)]

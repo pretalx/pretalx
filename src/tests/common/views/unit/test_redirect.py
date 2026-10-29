@@ -62,84 +62,45 @@ def test_safelink_produces_signed_url():
         ("", None, None),
         ("next=/dashboard/", None, "/dashboard/"),
         ("next=http://evil.com/", None, None),
+        ("next=/dashboard/&page=2&sort=name", None, "/dashboard/?page=2&sort=name"),
+        ("next=/dashboard/&page=2&secret=yes", ["secret"], "/dashboard/?page=2"),
     ),
-    ids=("no_next_param", "valid_next", "rejects_external_url"),
+    ids=(
+        "no_next_param",
+        "valid_next",
+        "rejects_external_url",
+        "preserves_extra_params",
+        "omits_specified_params",
+    ),
 )
 def test_get_next_url(query_string, omit_params, expected):
     request = rf.get("/", QUERY_STRING=query_string)
     assert get_next_url(request, omit_params=omit_params) == expected
 
 
-def test_get_next_url_preserves_extra_params():
-    request = rf.get("/", QUERY_STRING="next=/dashboard/&page=2&sort=name")
-    result = get_next_url(request)
-    assert result.startswith("/dashboard/?")
-    assert "page=2" in result
-    assert "sort=name" in result
-
-
-def test_get_next_url_omits_specified_params():
-    request = rf.get("/", QUERY_STRING="next=/dashboard/&page=2&secret=yes")
-    result = get_next_url(request, omit_params=["secret"])
-    assert "secret" not in result
-    assert "page=2" in result
-
-
-def test_get_next_url_returns_plain_url_when_no_extra_params():
-    request = rf.get("/", QUERY_STRING="next=/dashboard/")
-    result = get_next_url(request)
-    assert result == "/dashboard/"
-    assert "?" not in result
-
-
-def test_get_login_redirect_with_event_on_orga_path(event):
-    request = rf.get(f"/orga/event/{event.slug}/")
-    request.event = event
+@pytest.mark.parametrize(
+    ("path", "query", "with_event", "expected"),
+    (
+        ("/orga/event/{slug}/", {}, True, "{orga_login}?next=/orga/event/{slug}/"),
+        ("/{slug}/cfp", {}, True, "{login}?next=/{slug}/cfp"),
+        ("/orga/", {}, False, "/orga/login/?next=/orga/"),
+        ("/orga/", {"foo": "bar"}, False, "/orga/login/?next=/orga/&foo=bar"),
+        ("/orga/", {"next": "/some/path/"}, False, "/orga/login/?next=/some/path/"),
+    ),
+    ids=("orga_path", "cfp_path", "without_event", "preserves_query", "explicit_next"),
+)
+def test_get_login_redirect(event, path, query, with_event, expected):
+    request = rf.get(path.format(slug=event.slug), query)
+    request.event = event if with_event else None
 
     response = get_login_redirect(request)
 
     assert response.status_code == 302
-    assert response.url.startswith(event.orga_urls.login.full())
-    assert f"next=/orga/event/{event.slug}/" in response.url
-
-
-def test_get_login_redirect_with_event_on_cfp_path(event):
-    request = rf.get(f"/{event.slug}/cfp")
-    request.event = event
-
-    response = get_login_redirect(request)
-
-    assert response.status_code == 302
-    assert response.url.startswith(event.urls.login.full())
-    assert f"next=/{event.slug}/cfp" in response.url
-
-
-def test_get_login_redirect_without_event():
-    request = rf.get("/orga/")
-
-    response = get_login_redirect(request)
-
-    assert response.status_code == 302
-    assert response.url.startswith("/orga/login/")
-    assert "next=/orga/" in response.url
-
-
-def test_get_login_redirect_preserves_query_params():
-    request = rf.get("/orga/", {"foo": "bar"})
-
-    response = get_login_redirect(request)
-
-    assert response.status_code == 302
-    assert "foo=bar" in response.url
-
-
-def test_get_login_redirect_uses_explicit_next_param():
-    request = rf.get("/orga/", {"next": "/some/path/"})
-
-    response = get_login_redirect(request)
-
-    assert response.status_code == 302
-    assert "next=/some/path/" in response.url
+    assert response.url == expected.format(
+        slug=event.slug,
+        orga_login=event.orga_urls.login.full(),
+        login=event.urls.login.full(),
+    )
 
 
 def test_get_login_redirect_uses_hx_redirect_header_for_htmx_requests(event):

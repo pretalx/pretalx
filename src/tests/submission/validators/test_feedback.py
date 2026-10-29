@@ -9,25 +9,17 @@ from tests.factories import SpeakerFactory, SubmissionFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_validate_speaker_on_talk_accepts_speaker_of_talk():
+def test_validate_speaker_on_talk_rejects_only_unrelated_speakers():
     submission = SubmissionFactory()
     speaker = SpeakerFactory(event=submission.event)
+    other_speaker = SpeakerFactory(event=submission.event)
     submission.speakers.add(speaker)
 
     validate_speaker_on_talk(submission, speaker)
-
-
-def test_validate_speaker_on_talk_rejects_unrelated_speaker():
-    submission = SubmissionFactory()
-    other_speaker = SpeakerFactory(event=submission.event)
-
+    validate_speaker_on_talk(submission, None)
     with pytest.raises(ValidationError) as exc_info:
         validate_speaker_on_talk(submission, other_speaker)
 
-    assert "speaker" in exc_info.value.message_dict
-
-
-def test_validate_speaker_on_talk_allows_no_speaker():
-    submission = SubmissionFactory()
-
-    validate_speaker_on_talk(submission, None)
+    assert exc_info.value.message_dict == {
+        "speaker": ["This speaker is not a speaker of the given submission."]
+    }

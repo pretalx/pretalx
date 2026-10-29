@@ -33,54 +33,6 @@ def make_resource_formset(submission, data):
     )
 
 
-def test_save_related_formset_saves_new_with_fk():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    formset = make_resource_formset(
-        submission,
-        data={
-            "resource-TOTAL_FORMS": "1",
-            "resource-INITIAL_FORMS": "0",
-            "resource-MIN_NUM_FORMS": "0",
-            "resource-MAX_NUM_FORMS": "1000",
-            "resource-0-description": "Slides",
-            "resource-0-link": "https://example.com/slides",
-            "resource-0-resource": "",
-        },
-    )
-
-    with scope(event=event):
-        assert formset.is_valid()
-        save_related_formset(formset, parent=submission, fk_field="submission")
-
-        assert submission.resources.count() == 1
-        assert submission.resources.first().description == "Slides"
-
-
-def test_save_related_formset_handles_deleted_unsaved_form():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    formset = make_resource_formset(
-        submission,
-        data={
-            "resource-TOTAL_FORMS": "1",
-            "resource-INITIAL_FORMS": "0",
-            "resource-MIN_NUM_FORMS": "0",
-            "resource-MAX_NUM_FORMS": "1000",
-            "resource-0-description": "",
-            "resource-0-link": "",
-            "resource-0-resource": "",
-            "resource-0-DELETE": "on",
-        },
-    )
-
-    with scope(event=event):
-        assert formset.is_valid()
-        save_related_formset(formset, parent=submission, fk_field="submission")
-
-        assert submission.resources.count() == 0
-
-
 def test_save_related_formset_deletes_marked_forms():
     event = EventFactory()
     submission = SubmissionFactory(event=event)
@@ -168,13 +120,13 @@ def test_i18n_formsets_pass_event_to_child_forms(formset_class, expects_event):
         assert formset.forms[0].locale_names == expected
 
 
-def test_save_related_formset_skips_unchanged_extra_form():
+def test_save_related_formset_saves_only_filled_new_forms():
     event = EventFactory()
     submission = SubmissionFactory(event=event)
     formset = make_resource_formset(
         submission,
         data={
-            "resource-TOTAL_FORMS": "2",
+            "resource-TOTAL_FORMS": "3",
             "resource-INITIAL_FORMS": "0",
             "resource-MIN_NUM_FORMS": "0",
             "resource-MAX_NUM_FORMS": "1000",
@@ -185,6 +137,10 @@ def test_save_related_formset_skips_unchanged_extra_form():
             "resource-1-link": "",
             "resource-1-resource": "",
             "resource-1-is_public": "on",
+            "resource-2-description": "",
+            "resource-2-link": "",
+            "resource-2-resource": "",
+            "resource-2-DELETE": "on",
         },
     )
 
@@ -192,4 +148,6 @@ def test_save_related_formset_skips_unchanged_extra_form():
         assert formset.is_valid()
         save_related_formset(formset, parent=submission, fk_field="submission")
 
-        assert submission.resources.count() == 1
+        assert [(r.description, r.link) for r in submission.resources.all()] == [
+            ("Filled", "https://example.com/filled")
+        ]

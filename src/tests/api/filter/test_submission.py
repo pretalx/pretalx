@@ -9,28 +9,25 @@ from tests.factories import SubmissionFactory, TrackFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_submission_filter_filters_by_state(event):
-    sub_submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+@pytest.mark.parametrize(
+    "states",
+    (
+        [SubmissionStates.SUBMITTED],
+        [SubmissionStates.SUBMITTED, SubmissionStates.ACCEPTED],
+    ),
+    ids=["single", "multiple"],
+)
+def test_submission_filter_filters_by_state(event, states):
+    for state in (
+        SubmissionStates.SUBMITTED,
+        SubmissionStates.ACCEPTED,
+        SubmissionStates.REJECTED,
+    ):
+        SubmissionFactory(event=event, state=state)
 
-    fs = SubmissionFilter(
-        data={"state": [SubmissionStates.SUBMITTED]}, queryset=event.submissions.all()
-    )
+    fs = SubmissionFilter(data={"state": states}, queryset=event.submissions.all())
 
-    assert list(fs.qs) == [sub_submitted]
-
-
-def test_submission_filter_filters_by_multiple_states(event):
-    sub1 = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    sub2 = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    SubmissionFactory(event=event, state=SubmissionStates.REJECTED)
-
-    fs = SubmissionFilter(
-        data={"state": [SubmissionStates.SUBMITTED, SubmissionStates.ACCEPTED]},
-        queryset=event.submissions.all(),
-    )
-
-    assert set(fs.qs) == {sub1, sub2}
+    assert sorted(sub.state for sub in fs.qs) == sorted(states)
 
 
 def test_submission_filter_filters_by_track(event):

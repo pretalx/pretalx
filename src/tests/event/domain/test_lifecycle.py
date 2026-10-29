@@ -24,10 +24,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 ORGA_MAIL_SUBJECT = "News from your content system"
 
 
-def test_send_lifecycle_notifications_sends_cfp_closed_mail():
+def test_send_lifecycle_notifications_sends_cfp_closed_mail_once():
     djmail.outbox = []
     event = EventFactory(cfp__deadline=now() - dt.timedelta(hours=1))
-
     assert not event.settings.sent_mail_cfp_closed
 
     send_lifecycle_notifications(event)
@@ -38,23 +37,19 @@ def test_send_lifecycle_notifications_sends_cfp_closed_mail():
     assert djmail.outbox[0].subject == ORGA_MAIL_SUBJECT
     assert event.settings.sent_mail_cfp_closed
 
-
-def test_send_lifecycle_notifications_cfp_closed_mail_sent_only_once():
-    djmail.outbox = []
-    event = EventFactory(cfp__deadline=now() - dt.timedelta(hours=1))
-
     send_lifecycle_notifications(event)
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == [event.email]
-    assert djmail.outbox[0].subject == ORGA_MAIL_SUBJECT
 
-    send_lifecycle_notifications(event)
     assert len(djmail.outbox) == 1
 
 
-def test_send_lifecycle_notifications_no_cfp_closed_mail_before_deadline():
+@pytest.mark.parametrize(
+    "deadline_delta",
+    (dt.timedelta(days=1), -dt.timedelta(days=2)),
+    ids=("before_deadline", "more_than_one_day_after"),
+)
+def test_send_lifecycle_notifications_no_cfp_closed_mail_outside_window(deadline_delta):
     djmail.outbox = []
-    event = EventFactory(cfp__deadline=now() + dt.timedelta(days=1))
+    event = EventFactory(cfp__deadline=now() + deadline_delta)
 
     send_lifecycle_notifications(event)
 
@@ -63,18 +58,7 @@ def test_send_lifecycle_notifications_no_cfp_closed_mail_before_deadline():
     assert not event.settings.sent_mail_cfp_closed
 
 
-def test_send_lifecycle_notifications_no_cfp_closed_mail_after_one_day():
-    djmail.outbox = []
-    event = EventFactory(cfp__deadline=now() - dt.timedelta(days=2))
-
-    send_lifecycle_notifications(event)
-
-    assert len(djmail.outbox) == 0
-    event = refresh(event)
-    assert not event.settings.sent_mail_cfp_closed
-
-
-def test_send_lifecycle_notifications_sends_event_over_mail():
+def test_send_lifecycle_notifications_sends_event_over_mail_once():
     djmail.outbox = []
     event = EventFactory(
         date_from=(now() - dt.timedelta(days=3)).date(),
@@ -94,59 +78,32 @@ def test_send_lifecycle_notifications_sends_event_over_mail():
     assert djmail.outbox[0].subject == ORGA_MAIL_SUBJECT
     assert event.settings.sent_mail_event_over
 
-
-def test_send_lifecycle_notifications_event_over_mail_sent_only_once():
-    djmail.outbox = []
-    event = EventFactory(
-        date_from=(now() - dt.timedelta(days=3)).date(),
-        date_to=(now() - dt.timedelta(days=1)).date(),
-    )
-    submission = SubmissionFactory(event=event)
-    schedule = ScheduleFactory(
-        event=event, version="v1", published=now() - dt.timedelta(days=5)
-    )
-    TalkSlotFactory(submission=submission, schedule=schedule)
-
     send_lifecycle_notifications(event)
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == [event.email]
-    assert djmail.outbox[0].subject == ORGA_MAIL_SUBJECT
 
-    send_lifecycle_notifications(event)
     assert len(djmail.outbox) == 1
 
 
-def test_send_lifecycle_notifications_no_event_over_mail_without_visible_talks():
+def test_send_lifecycle_notifications_no_event_over_mail_without_talks_or_too_old():
     djmail.outbox = []
-    event = EventFactory(
+    recent_without_talks = EventFactory(
         date_from=(now() - dt.timedelta(days=3)).date(),
         date_to=(now() - dt.timedelta(days=1)).date(),
     )
-
-    send_lifecycle_notifications(event)
-
-    assert len(djmail.outbox) == 0
-    event = refresh(event)
-    assert not event.settings.sent_mail_event_over
-
-
-def test_send_lifecycle_notifications_no_event_over_mail_when_event_too_old():
-    djmail.outbox = []
-    event = EventFactory(
+    too_old = EventFactory(
         date_from=(now() - dt.timedelta(days=10)).date(),
         date_to=(now() - dt.timedelta(days=5)).date(),
     )
-    submission = SubmissionFactory(event=event)
     schedule = ScheduleFactory(
-        event=event, version="v1", published=now() - dt.timedelta(days=10)
+        event=too_old, version="v1", published=now() - dt.timedelta(days=10)
     )
-    TalkSlotFactory(submission=submission, schedule=schedule)
+    TalkSlotFactory(submission=SubmissionFactory(event=too_old), schedule=schedule)
 
-    send_lifecycle_notifications(event)
+    send_lifecycle_notifications(recent_without_talks)
+    send_lifecycle_notifications(too_old)
 
     assert len(djmail.outbox) == 0
-    event = refresh(event)
-    assert not event.settings.sent_mail_event_over
+    assert not refresh(recent_without_talks).settings.sent_mail_event_over
+    assert not refresh(too_old).settings.sent_mail_event_over
 
 
 @pytest.mark.parametrize(

@@ -35,6 +35,26 @@ def admin_user():
     return UserFactory(is_administrator=True)
 
 
+def make_token_update_log(user):
+    with scopes_disabled():
+        token = UserApiTokenFactory(user=user, all_events=True)
+        old_data = token.get_instance_data()
+        token.all_events = False
+        token.save()
+        token.limit_events.set(
+            [
+                EventFactory(name="Alpha Conference"),
+                EventFactory(name="Beta Conference"),
+            ]
+        )
+        return token.log_action(
+            "pretalx.user.token.update",
+            person=user,
+            old_data=old_data,
+            new_data=token.get_instance_data(),
+        )
+
+
 def test_admin_dashboard_shows_admin_info(client, admin_user):
     client.force_login(admin_user)
 
@@ -44,38 +64,40 @@ def test_admin_dashboard_shows_admin_info(client, admin_user):
     assert "Administrator information" in response.content.decode()
 
 
-@pytest.mark.parametrize(
-    "url_name", ("admin.dashboard", "admin.update", "admin.user.list")
-)
-def test_admin_views_deny_anonymous(client, url_name):
-    response = client.get(reverse(f"orga:{url_name}"))
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
-@pytest.mark.parametrize(
-    "url_name", ("admin.dashboard", "admin.update", "admin.user.list")
-)
-def test_admin_views_deny_non_administrators(client, event, url_name):
-    user = make_orga_user(event, can_change_event_settings=True, can_change_teams=True)
-    client.force_login(user)
-
-    response = client.get(reverse(f"orga:{url_name}"))
-
-    assert response.status_code == 404
-
-
-def test_admin_user_detail_denies_non_administrators(client, event):
-    user = make_orga_user(event, can_change_teams=True)
-    target = UserFactory(name="Secret Person")
-    client.force_login(user)
-
-    response = client.get(
-        reverse("orga:admin.user.detail", kwargs={"code": target.code})
+def test_admin_views_deny_anonymous_and_non_administrators(client, event):
+    orga_user = make_orga_user(
+        event, can_change_event_settings=True, can_change_teams=True
     )
+    target = UserFactory(
+        name="Secret Person", email_verification_state=EmailVerificationState.VERIFIED
+    )
+    log = make_token_update_log(target)
+    verification_url = reverse(
+        "orga:admin.user.verification", kwargs={"code": target.code}
+    )
+    urls = [
+        reverse("orga:admin.dashboard"),
+        reverse("orga:admin.update"),
+        reverse("orga:admin.user.list"),
+        reverse("orga:admin.user.detail", kwargs={"code": target.code}),
+        reverse("orga:admin.log.detail", kwargs={"pk": log.pk}),
+    ]
 
+    for url in urls:
+        response = client.get(url)
+        assert response.status_code == 302, url
+        assert response.url == f"/orga/login/?next={url}", url
+    response = client.post(verification_url, {"state": "unverified"})
+    assert response.status_code == 302
+    assert response.url == f"/orga/login/?next={verification_url}"
+
+    client.force_login(orga_user)
+    for url in urls:
+        assert client.get(url).status_code == 404, url
+    response = client.post(verification_url, {"state": "unverified"})
     assert response.status_code == 404
+    target.refresh_from_db()
+    assert target.email_verification_state == EmailVerificationState.VERIFIED
 
 
 @override_settings(ADMINS=[])
@@ -90,7 +112,7 @@ def test_test_mail_no_admins_configured(client, admin_user):
 
 
 @override_settings(ADMINS=["admin@example.com"])
-def test_test_mail_sends_email(client, admin_user):
+def test_test_mail_reports_success_and_failure(client, admin_user):
     client.force_login(admin_user)
     djmail.outbox = []
 
@@ -101,15 +123,8 @@ def test_test_mail_sends_email(client, admin_user):
     assert len(djmail.outbox) == 1
     assert djmail.outbox[0].to == ["admin@example.com"]
     assert "test email" in djmail.outbox[0].subject.lower()
-
-    # Follow redirect to verify success message
     response = client.get(response.url)
     assert "Test email sent successfully" in response.content.decode()
-
-
-@override_settings(ADMINS=["admin@example.com"])
-def test_test_mail_smtp_error_shows_failure(client, admin_user):
-    client.force_login(admin_user)
 
     # Mocking task_send_transient.apply: need to simulate SMTP failure,
     # which is impossible with the locmem backend (system boundary).
@@ -120,55 +135,42 @@ def test_test_mail_smtp_error_shows_failure(client, admin_user):
         response = client.post(reverse("orga:admin.test_mail"), follow=True)
 
     assert "Failed to send test email" in response.content.decode()
+    assert len(djmail.outbox) == 1
 
 
-def test_update_check_view_sets_ack(client, admin_user):
+def test_update_check_settings_round_trip(client, admin_user):
     client.force_login(admin_user)
+    url = reverse("orga:admin.update")
     gs = GlobalSettings()
     assert not gs.settings.update_check_ack
 
-    client.get(reverse("orga:admin.update"))
+    response = client.get(url)
 
+    assert response.status_code == 200
     gs.settings.flush()
     assert gs.settings.update_check_ack
-
-
-def test_update_check_form_invalid_shows_error(client, admin_user):
-    client.force_login(admin_user)
-    url = reverse("orga:admin.update")
 
     response = client.post(
         url, {"update_check_email": "not-an-email", "update_check_enabled": "on"}
     )
 
     assert response.status_code == 200
-    assert response.context["form"].errors
+    assert response.context["form"].errors == {
+        "update_check_email": ["Enter a valid email address."]
+    }
+    gs.settings.flush()
+    assert gs.settings.update_check_email == ""
 
-
-def test_update_check_settings_save(client, admin_user):
-    client.force_login(admin_user)
-    url = reverse("orga:admin.update")
-
-    client.post(
+    response = client.post(
         url, {"update_check_email": "test@example.com", "update_check_enabled": "on"}
     )
 
-    gs = GlobalSettings()
+    assert response.status_code == 302
+    assert response.url == url
     gs.settings.flush()
     assert gs.settings.update_check_enabled
     assert gs.settings.update_check_email == "test@example.com"
 
-
-def test_update_check_settings_disable(client, admin_user):
-    client.force_login(admin_user)
-    url = reverse("orga:admin.update")
-
-    # First enable
-    gs = GlobalSettings()
-    gs.settings.update_check_enabled = True
-    gs.settings.update_check_email = "old@example.com"
-
-    # Then disable
     client.post(url, {"update_check_email": "", "update_check_enabled": ""})
 
     gs.settings.flush()
@@ -211,28 +213,35 @@ def test_update_check_trigger(mock_urllib3_request, client, admin_user):
     assert gs.settings.update_check_last
 
 
-@pytest.mark.parametrize(
-    ("updatable", "expected_icon"),
-    ((False, "fa-check-circle"), (True, "fa-arrow-circle-up")),
-)
-def test_update_check_view_renders_status_badges(
-    client, admin_user, updatable, expected_icon
-):
+def test_update_check_view_renders_status_badges(client, admin_user):
     client.force_login(admin_user)
     gs = GlobalSettings()
     gs.settings.update_check_enabled = True
     gs.settings.update_check_last = now()
-    gs.settings.update_check_result = {
+    result = {
         "status": "ok",
-        "version": {"latest": "1000.0.0", "yours": "1.0.0", "updatable": updatable},
+        "version": {"latest": "1000.0.0", "yours": "1.0.0", "updatable": False},
         "plugins": {},
+    }
+    gs.settings.update_check_result = result
+
+    response = client.get(reverse("orga:admin.update"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "fa-check-circle" in content
+    assert "fa-arrow-circle-up" not in content
+
+    gs.settings.update_check_result = {
+        **result,
+        "version": {**result["version"], "updatable": True},
     }
 
     response = client.get(reverse("orga:admin.update"))
-    content = response.content.decode()
 
-    assert response.status_code == 200
-    assert expected_icon in content
+    content = response.content.decode()
+    assert "fa-arrow-circle-up" in content
+    assert "fa-check-circle" not in content
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -249,127 +258,134 @@ def test_admin_user_list_search_finds_users(
     assert "SearchUser" in response.content.decode()
 
 
-@pytest.mark.parametrize("page", ("0", "9999", "99999999999999999999"))
-def test_admin_user_list_out_of_range_page(client, admin_user, page):
-    client.force_login(admin_user)
-    UserFactory(name="SearchUser")
-
-    response = client.get(
-        reverse("orga:admin.user.list"), {"q": "SearchUser", "page": page}
-    )
-
-    assert response.status_code == 404
-
-
-def test_admin_user_list_empty_without_search(client, admin_user):
-    client.force_login(admin_user)
-    UserFactory(name="Some User")
-
-    response = client.get(reverse("orga:admin.user.list"))
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "Some User" not in content
-    assert "Show per page" not in content
-    assert 'class="pagination' not in content
-
-
-def test_admin_user_list_short_search_returns_empty(client, admin_user):
+def test_admin_user_list_without_search_and_out_of_range_pages(client, admin_user):
     client.force_login(admin_user)
     UserFactory(name="Ab User")
+    url = reverse("orga:admin.user.list")
 
-    response = client.get(reverse("orga:admin.user.list"), {"q": "Ab"})
+    response = client.get(url)
 
     assert response.status_code == 200
     content = response.content.decode()
     assert "Ab User" not in content
+    assert "Show per page" not in content
+    assert 'class="pagination' not in content
 
-
-def test_admin_user_detail_shows_user_data(client, admin_user):
-    target = UserFactory(name="Detail User", email="detail@example.com")
-    client.force_login(admin_user)
-
-    response = client.get(
-        reverse("orga:admin.user.detail", kwargs={"code": target.code})
-    )
+    response = client.get(url, {"q": "Ab"})
 
     assert response.status_code == 200
-    content = response.content.decode()
-    assert target.name in content
-    assert set(response.context["tablist"].keys()) == {"teams", "submissions"}
+    assert "Ab User" not in response.content.decode()
+
+    for page in ("0", "9999", "99999999999999999999"):
+        response = client.get(url, {"q": "Ab User", "page": page})
+        assert response.status_code == 404, page
 
 
-def test_admin_user_detail_shows_profile_picture(client, admin_user, make_image):
-    target = UserFactory(name="Picture User")
+def test_admin_user_detail_shows_user_data_and_resets_password(
+    client, admin_user, make_image
+):
+    event = EventFactory()
+    target = make_orga_user(event)
     picture = ProfilePictureFactory(user=target, avatar=make_image())
+    target.name = "Detail User"
+    target.email_verification_state = EmailVerificationState.LEGACY
     target.profile_picture = picture
-    target.save(update_fields=["profile_picture"])
-    client.force_login(admin_user)
-
-    response = client.get(
-        reverse("orga:admin.user.detail", kwargs={"code": target.code})
-    )
-
-    assert response.status_code == 200
-    assert picture.avatar.url in response.content.decode()
-
-
-def test_admin_user_detail_shows_history_tab(client, admin_user):
-    event = EventFactory()
-    target = UserFactory()
-    log = ActivityLogFactory(event=event, person=target, content_object=event)
-    client.force_login(admin_user)
-
-    response = client.get(
-        reverse("orga:admin.user.detail", kwargs={"code": target.code})
-    )
-
-    assert response.status_code == 200
-    assert response.context["history_log_entries"] == [log]
-    assert "history" in response.context["tablist"]
-    assert response.context["history_with_objects"] is True
-    assert response.context["history_show_event"] is True
-
-
-def test_admin_user_detail_shows_submissions(client, admin_user):
-    event = EventFactory()
-    target = UserFactory()
+    target.save()
     speaker = SpeakerFactory(user=target, event=event)
     with scopes_disabled():
         submission = SubmissionFactory(event=event)
         submission.speakers.add(speaker)
+    event_log = ActivityLogFactory(event=event, person=target, content_object=event)
+    token_log = make_token_update_log(target)
     client.force_login(admin_user)
+    url = reverse("orga:admin.user.detail", kwargs={"code": target.code})
 
-    response = client.get(
-        reverse("orga:admin.user.detail", kwargs={"code": target.code})
-    )
+    response = client.get(url)
 
     assert response.status_code == 200
-    assert submission.title in response.content.decode()
-
-
-def test_admin_user_detail_shows_teams(client, admin_user):
-    event = EventFactory()
-    target = make_orga_user(event)
-    client.force_login(admin_user)
-
-    response = client.get(
-        reverse("orga:admin.user.detail", kwargs={"code": target.code})
+    content = response.content.decode()
+    assert "Detail User" in content
+    assert picture.avatar.url in content
+    assert submission.title in content
+    assert set(response.context["tablist"].keys()) == {
+        "teams",
+        "submissions",
+        "history",
+    }
+    assert list(response.context["teams"]) == [target.teams.get()]
+    assert response.context["history_log_entries"] == [token_log, event_log]
+    assert response.context["history_with_objects"] is True
+    assert response.context["history_show_event"] is True
+    assert reverse("orga:admin.log.detail", kwargs={"pk": token_log.pk}) in content
+    assert "Unverified" in content
+    assert "Legacy" not in content
+    assert (
+        reverse("orga:admin.user.verification", kwargs={"code": target.code}) in content
     )
 
+    response = client.post(url)
+
+    assert response.status_code == 302
+    assert response.url == reverse("orga:admin.user.list")
+    target.refresh_from_db()
+    assert target.pw_reset_token is not None
+
+
+def test_admin_user_detail_renders_pending_email_without_writes(client, admin_user):
+    sent = now()
+    target = UserFactory(
+        email_verification_state=EmailVerificationState.VERIFIED,
+        pending_email="pending@example.com",
+        pending_email_sent=sent,
+    )
+    client.force_login(admin_user)
+    url = reverse("orga:admin.user.detail", kwargs={"code": target.code})
+
+    response = client.get(url)
+
     assert response.status_code == 200
-    assert "teams" in response.context
-    assert len(response.context["teams"]) == 1
+    content = response.content.decode()
+    assert "pending@example.com" in content
+    assert "awaiting confirmation" in content
+    assert "expired" not in content
+
+    expired = sent - dt.timedelta(hours=25)
+    User.objects.filter(pk=target.pk).update(pending_email_sent=expired)
+
+    response = client.get(url)
+
+    content = response.content.decode()
+    assert "pending@example.com" in content
+    assert "expired" in content
+    assert "awaiting confirmation" not in content
+    target.refresh_from_db()
+    assert target.pending_email == "pending@example.com"
+    assert target.pending_email_sent == expired
+    with scopes_disabled():
+        assert list(target.logged_actions()) == []
 
 
-def test_admin_user_verification_demotion_gates_next_request(client, admin_user):
+def test_admin_user_verification_state_changes_gate_next_request(client, admin_user):
     target = UserFactory(email_verification_state=EmailVerificationState.VERIFIED)
+    target_client = Client()
+    target_client.force_login(target)
     client.force_login(admin_user)
+    url = reverse("orga:admin.user.verification", kwargs={"code": target.code})
 
-    response = client.post(
-        reverse("orga:admin.user.verification", kwargs={"code": target.code}),
-        {"state": "unverified"},
-    )
+    for state in ("legacy", "nonsense", ""):
+        response = client.post(url, {"state": state}, follow=True)
+        assert response.status_code == 200, state
+        assert "We had trouble saving your input" in response.content.decode(), state
+
+    target.refresh_from_db()
+    assert target.email_verification_state == EmailVerificationState.VERIFIED
+    with scopes_disabled():
+        logs = target.logged_actions().filter(
+            action_type="pretalx.user.email.verification.set"
+        )
+        assert list(logs) == []
+
+    response = client.post(url, {"state": "unverified"})
 
     assert response.status_code == 302
     assert response.url == reverse(
@@ -378,245 +394,69 @@ def test_admin_user_verification_demotion_gates_next_request(client, admin_user)
     target.refresh_from_db()
     assert target.email_verification_state == EmailVerificationState.UNVERIFIED
     with scopes_disabled():
-        log = target.logged_actions().get(
-            action_type="pretalx.user.email.verification.set"
-        )
+        log = logs.get()
     assert log.person == admin_user
     assert log.data == {"state": "unverified"}
-
-    client.force_login(target)
-    response = client.get(reverse("orga:user.view"))
+    response = target_client.get(reverse("orga:user.view"))
     assert response.status_code == 302
     assert response.url == reverse("orga:auth.verification")
 
-
-def test_admin_user_verification_promotion_passes_gate(client, admin_user):
-    target = UserFactory(email_verification_state=EmailVerificationState.UNVERIFIED)
-    client.force_login(admin_user)
-
-    response = client.post(
-        reverse("orga:admin.user.verification", kwargs={"code": target.code}),
-        {"state": "verified"},
-    )
+    response = client.post(url, {"state": "verified"})
 
     assert response.status_code == 302
     target.refresh_from_db()
     assert target.email_verification_state == EmailVerificationState.VERIFIED
     with scopes_disabled():
-        log = target.logged_actions().get(
-            action_type="pretalx.user.email.verification.set"
-        )
-    assert log.person == admin_user
-
-    client.force_login(target)
-    response = client.get(reverse("orga:user.view"))
-    assert response.status_code == 200
-
-
-@pytest.mark.parametrize("state", ("legacy", "nonsense", ""))
-def test_admin_user_verification_rejects_invalid_state(client, admin_user, state):
-    target = UserFactory(email_verification_state=EmailVerificationState.VERIFIED)
-    client.force_login(admin_user)
-
-    response = client.post(
-        reverse("orga:admin.user.verification", kwargs={"code": target.code}),
-        {"state": state},
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    assert "We had trouble saving your input" in response.content.decode()
-    target.refresh_from_db()
-    assert target.email_verification_state == EmailVerificationState.VERIFIED
-    with scopes_disabled():
-        assert (
-            list(
-                target.logged_actions().filter(
-                    action_type="pretalx.user.email.verification.set"
-                )
-            )
-            == []
-        )
-
-
-def test_admin_user_verification_denies_non_administrators(client, event):
-    user = make_orga_user(event, can_change_teams=True)
-    target = UserFactory(email_verification_state=EmailVerificationState.VERIFIED)
-    client.force_login(user)
-
-    response = client.post(
-        reverse("orga:admin.user.verification", kwargs={"code": target.code}),
-        {"state": "unverified"},
-    )
-
-    assert response.status_code == 404
-    target.refresh_from_db()
-    assert target.email_verification_state == EmailVerificationState.VERIFIED
-
-
-def test_admin_user_detail_shows_legacy_state_as_unverified(client, admin_user):
-    target = UserFactory(email_verification_state=EmailVerificationState.LEGACY)
-    client.force_login(admin_user)
-
-    response = client.get(
-        reverse("orga:admin.user.detail", kwargs={"code": target.code})
-    )
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "Unverified" in content
-    assert "Legacy" not in content
-    assert (
-        reverse("orga:admin.user.verification", kwargs={"code": target.code}) in content
-    )
-
-
-@pytest.mark.parametrize(
-    ("age_hours", "expected_phrase"),
-    ((0, "awaiting confirmation"), (25, "expired")),
-    ids=["awaiting", "expired"],
-)
-def test_admin_user_detail_renders_pending_email_without_writes(
-    client, admin_user, age_hours, expected_phrase
-):
-    sent = now() - dt.timedelta(hours=age_hours)
-    target = UserFactory(
-        email_verification_state=EmailVerificationState.VERIFIED,
-        pending_email="pending@example.com",
-        pending_email_sent=sent,
-    )
-    client.force_login(admin_user)
-
-    response = client.get(
-        reverse("orga:admin.user.detail", kwargs={"code": target.code})
-    )
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "pending@example.com" in content
-    assert expected_phrase in content
-    target.refresh_from_db()
-    assert target.pending_email == "pending@example.com"
-    assert target.pending_email_sent == sent
-    with scopes_disabled():
-        assert list(target.logged_actions()) == []
-
-
-def test_admin_user_reset_password(client, admin_user):
-    target = UserFactory()
-    client.force_login(admin_user)
-
-    response = client.post(
-        reverse("orga:admin.user.detail", kwargs={"code": target.code})
-    )
-
-    assert response.status_code == 302
-    assert response.url == reverse("orga:admin.user.list")
-    target.refresh_from_db()
-    assert target.pw_reset_token is not None
-
-
-def test_admin_user_delete_shreds_user(client, admin_user):
-    target = UserFactory()
-    target_pk = target.pk
-    client.force_login(admin_user)
-
-    response = client.post(
-        reverse("orga:admin.user.delete", kwargs={"code": target.code})
-    )
-
-    assert response.status_code == 302
-    assert response.url == reverse("orga:admin.user.list")
-    assert not User.objects.filter(pk=target_pk).exists()
-
-
-def test_admin_user_delete_deactivates_when_shred_fails(client, admin_user):
-    event = EventFactory()
-    target = make_orga_user(event)
-    client.force_login(admin_user)
-
-    response = client.post(
-        reverse("orga:admin.user.delete", kwargs={"code": target.code})
-    )
-
-    assert response.status_code == 302
-    target.refresh_from_db()
-    assert not target.is_active
-
-
-def test_admin_user_delete_invalidates_deactivated_user_session(client, admin_user):
-    event = EventFactory()
-    target = make_orga_user(event)
-    target_client = Client()
-    target_client.force_login(target)
+        assert [log.data for log in logs.order_by("timestamp")] == [
+            {"state": "unverified"},
+            {"state": "verified"},
+        ]
     assert target_client.get(reverse("orga:user.view")).status_code == 200
+
+
+def test_admin_user_delete_shreds_or_deactivates(client, admin_user):
+    plain = UserFactory()
+    plain_pk = plain.pk
+    event = EventFactory()
+    orga_user = make_orga_user(event)
+    orga_client = Client()
+    orga_client.force_login(orga_user)
+    assert orga_client.get(reverse("orga:user.view")).status_code == 200
     client.force_login(admin_user)
 
-    client.post(reverse("orga:admin.user.delete", kwargs={"code": target.code}))
+    response = client.post(
+        reverse("orga:admin.user.delete", kwargs={"code": plain.code})
+    )
 
-    response = target_client.get(reverse("orga:user.view"))
+    assert response.status_code == 302
+    assert response.url == reverse("orga:admin.user.list")
+    assert not User.objects.filter(pk=plain_pk).exists()
+
+    response = client.post(
+        reverse("orga:admin.user.delete", kwargs={"code": orga_user.code})
+    )
+
+    assert response.status_code == 302
+    orga_user.refresh_from_db()
+    assert not orga_user.is_active
+    response = orga_client.get(reverse("orga:user.view"))
     assert response.status_code == 302
     assert response.url.startswith(settings.LOGIN_URL)
 
 
-def make_token_update_log(user):
-    with scopes_disabled():
-        token = UserApiTokenFactory(user=user, all_events=True)
-        old_data = token.get_instance_data()
-        token.all_events = False
-        token.save()
-        token.limit_events.set(
-            [
-                EventFactory(name="Alpha Conference"),
-                EventFactory(name="Beta Conference"),
-            ]
-        )
-        return token.log_action(
-            "pretalx.user.token.update",
-            person=user,
-            old_data=old_data,
-            new_data=token.get_instance_data(),
-        )
-
-
-def test_admin_user_detail_links_to_log_detail_for_entries_without_event(
-    client, admin_user
-):
+def test_admin_log_detail_shows_changes_and_skips_event_entries(client, admin_user):
     target = UserFactory()
     log = make_token_update_log(target)
+    with scopes_disabled():
+        alpha, beta = log.content_object.limit_events.order_by("name")
+    event_log = EventFactory().log_action(
+        "pretalx.event.update",
+        person=admin_user,
+        old_data={"name": "Old event name"},
+        new_data={"name": "New event name"},
+    )
     client.force_login(admin_user)
 
-    response = client.get(
-        reverse("orga:admin.user.detail", kwargs={"code": target.code})
-    )
-
-    assert response.status_code == 200
-    assert (
-        reverse("orga:admin.log.detail", kwargs={"pk": log.pk})
-        in response.content.decode()
-    )
-
-
-def test_admin_log_detail_shows_changes(client):
-    event = EventFactory(name="Alpha Conference")
-    second_event = EventFactory(name="Beta Conference", organiser=event.organiser)
-    target = make_orga_user(event)
-    token = UserApiTokenFactory(
-        user=target, all_events=True, endpoints={"events": ["list"]}
-    )
-    client.force_login(target)
-
-    response = client.post(
-        reverse("orga:user.token.edit", kwargs={"pk": token.pk}),
-        {"limit_events": [event.pk, second_event.pk]},
-        follow=True,
-    )
-    assert response.status_code == 200
-    with scopes_disabled():
-        log = token.logged_actions().get(action_type="pretalx.user.token.update")
-
-    admin = UserFactory(is_administrator=True)
-    client.force_login(admin)
     response = client.get(reverse("orga:admin.log.detail", kwargs={"pk": log.pk}))
 
     assert response.status_code == 200
@@ -626,35 +466,14 @@ def test_admin_log_detail_shows_changes(client):
         field = UserApiToken._meta.get_field(field_name)
         assert changes[field_name]["field"] == field
         assert changes[field_name]["label"] == field.verbose_name
-
     content = response.content.decode()
     assert str(UserApiToken._meta.get_field("all_events").verbose_name) in content
     assert str(UserApiToken._meta.get_field("limit_events").verbose_name) in content
     assert "Alpha Conference, Beta Conference" in content
     assert "All_events" not in content
-    assert f"[{event.pk}, {second_event.pk}]" not in content
+    assert f"[{alpha.pk}, {beta.pk}]" not in content
 
-
-def test_admin_log_detail_denied_for_non_administrators(client):
-    log = make_token_update_log(UserFactory())
-    client.force_login(UserFactory())
-
-    response = client.get(reverse("orga:admin.log.detail", kwargs={"pk": log.pk}))
-
-    assert response.status_code == 404
-
-
-def test_admin_log_detail_does_not_serve_event_entries(client, admin_user):
-    event = EventFactory()
-    log = event.log_action(
-        "pretalx.event.update",
-        person=admin_user,
-        old_data={"name": "Old event name"},
-        new_data={"name": "New event name"},
-    )
-    client.force_login(admin_user)
-
-    response = client.get(reverse("orga:admin.log.detail", kwargs={"pk": log.pk}))
+    response = client.get(reverse("orga:admin.log.detail", kwargs={"pk": event_log.pk}))
 
     assert response.status_code == 404
 

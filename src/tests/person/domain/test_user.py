@@ -47,35 +47,21 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
     ),
     ids=["lowercases", "strips_and_lowercases"],
 )
-def test_create_user_normalizes_email(input_email, expected_email):
+def test_create_user_minimal_account(input_email, expected_email):
     user = create_user(email=input_email)
 
     assert isinstance(user, User)
     assert user.email == expected_email
-
-
-def test_create_user_empty_name_defaults_to_empty_string():
-    user = create_user(email="test@example.com")
-
     assert user.name == ""
-
-
-def test_create_user_without_password_sets_unusable_password():
-    user = create_user(email="test@example.com")
-
     assert user.pw_reset_token is None
     assert not user.has_usable_password()
+    assert not SpeakerProfile.objects.filter(user=user).exists()
+    assert user.email_verification_state == EmailVerificationState.UNVERIFIED
+    assert user.pending_email is None
+    assert user.pending_email_sent is None
 
 
-def test_create_user_with_password_skips_pw_reset_token():
-    user = create_user(email="test@example.com", password="hunter2hunter2")
-
-    assert user.pw_reset_token is None
-    assert user.pw_reset_time is None
-    assert user.check_password("hunter2hunter2")
-
-
-def test_create_user_passes_locale_and_timezone():
+def test_create_user_with_password_locale_and_timezone():
     user = create_user(
         email="test@example.com",
         password="hunter2hunter2",
@@ -83,26 +69,26 @@ def test_create_user_passes_locale_and_timezone():
         timezone="Europe/Berlin",
     )
 
+    assert user.pw_reset_token is None
+    assert user.pw_reset_time is None
+    assert user.check_password("hunter2hunter2")
     assert user.locale == "de"
     assert user.timezone == "Europe/Berlin"
 
 
-def test_create_user_creates_no_speaker_profile():
-    user = create_user(email="test@example.com")
-
-    assert not SpeakerProfile.objects.filter(user=user).exists()
-
-
-def test_create_user_starts_unverified():
-    user = create_user(email="test@example.com")
-
-    assert user.email_verification_state == EmailVerificationState.UNVERIFIED
-    assert user.pending_email is None
-    assert user.pending_email_sent is None
-
-
 def test_deactivate_user_clears_personal_data():
-    user = UserFactory(name="Real Name", email="real@example.com")
+    user = UserFactory(
+        name="Real Name",
+        email="real@example.com",
+        email_verification_state=EmailVerificationState.VERIFIED,
+        pending_email="pending@example.com",
+        pending_email_sent=timezone.now(),
+    )
+    picture = ProfilePictureFactory(user=user)
+    user.profile_picture = picture
+    user.save()
+    team = TeamFactory()
+    team.members.add(user)
 
     deactivate_user(user)
     user.refresh_from_db()
@@ -117,21 +103,12 @@ def test_deactivate_user_clears_personal_data():
     assert user.pw_reset_token is None
     assert user.pw_reset_time is None
     assert "deleted_user_" in user.email
-
-
-def test_deactivate_user_clears_verification_state_and_pending_change():
-    user = UserFactory()
-    user.email_verification_state = EmailVerificationState.VERIFIED
-    user.pending_email = "pending@example.com"
-    user.pending_email_sent = timezone.now()
-    user.save()
-
-    deactivate_user(user)
-    user.refresh_from_db()
-
     assert user.email_verification_state == EmailVerificationState.UNVERIFIED
     assert user.pending_email is None
     assert user.pending_email_sent is None
+    assert user.profile_picture_id is None
+    assert not ProfilePicture.objects.filter(pk=picture.pk).exists()
+    assert team.members.count() == 0
 
 
 def test_deactivate_user_clears_speaker_profile_personal_data():
@@ -163,20 +140,6 @@ def test_deactivate_user_clears_speaker_profile_personal_data():
         speaker.has_arrived,
     ) == (None, None, None, None, None, None, None, True)
     assert (speaker.code, speaker.guid, speaker.event_id) == (code, guid, event_id)
-
-
-def test_deactivate_user_with_profile_picture_clears_fk():
-    user = UserFactory()
-    picture = ProfilePictureFactory(user=user)
-    user.profile_picture = picture
-    user.save()
-    picture_pk = picture.pk
-
-    deactivate_user(user)
-
-    user.refresh_from_db()
-    assert user.profile_picture_id is None
-    assert not ProfilePicture.objects.filter(pk=picture_pk).exists()
 
 
 def test_deactivate_user_deletes_personal_answers():
@@ -216,17 +179,6 @@ def test_deactivate_user_retries_on_email_collision(monkeypatch):
     assert user.email != existing.email
 
 
-def test_deactivate_user_removes_from_teams():
-    user = UserFactory()
-    team = TeamFactory()
-    team.members.add(user)
-    assert team.members.count() == 1
-
-    deactivate_user(user)
-
-    assert team.members.count() == 0
-
-
 def test_deactivate_user_sends_signal():
     user = UserFactory()
     received = []
@@ -243,11 +195,31 @@ def test_deactivate_user_sends_signal():
     assert received == [user]
 
 
-def test_shred_user_deletes_user():
+def test_shred_user_deletes_user_and_anonymises_its_traces():
     user = UserFactory()
-    pk = user.pk
+    user.log_action("pretalx.user.test")
+    other_user = UserFactory()
+    other_action = other_user.log_action("pretalx.user.test", person=user)
+    token = UserApiTokenFactory(user=user)
+    token.log_action("pretalx.user.token.create", person=user, data=token.serialize())
+    assert user.logged_actions().count() == 1
+    assert token.logged_actions().count() == 1
+    token_content_type = ContentType.objects.get_for_model(UserApiToken)
+    user_pk, token_pk = user.pk, token.pk
+
     shred_user(user)
-    assert not User.objects.filter(pk=pk).exists()
+
+    assert not User.objects.filter(pk=user_pk).exists()
+    other_action.refresh_from_db()
+    assert other_action.person is None
+    assert not ActivityLog.objects.filter(
+        content_type=ContentType.objects.get_for_model(User), object_id=user_pk
+    ).exists()
+    token_action = ActivityLog.objects.get(
+        content_type=token_content_type, object_id=token_pk
+    )
+    assert token_action.person is None
+    assert token_action.data["token"].endswith("…")
 
 
 def test_shred_user_raises_with_submissions():
@@ -293,42 +265,6 @@ def test_shred_user_sends_signal():
     assert received == [user]
 
 
-def test_shred_user_cleans_own_actions():
-    user = UserFactory()
-    other_user = UserFactory()
-    other_user.log_action("pretalx.user.test", person=user)
-
-    action_pk = ActivityLog.objects.filter(person=user).first().pk
-
-    shred_user(user)
-
-    action = ActivityLog.objects.get(pk=action_pk)
-    assert action.person is None
-
-
-def test_shred_user_deletes_own_logged_actions_but_keeps_token_actions():
-    user = UserFactory()
-    user.log_action("pretalx.user.test")
-    token = UserApiTokenFactory(user=user)
-    token.log_action("pretalx.user.token.create", person=user, data=token.serialize())
-
-    assert user.logged_actions().count() == 1
-    assert token.logged_actions().count() == 1
-    token_content_type = ContentType.objects.get_for_model(UserApiToken)
-    token_pk = token.pk
-
-    shred_user(user)
-
-    assert not ActivityLog.objects.filter(
-        content_type=ContentType.objects.get_for_model(User), object_id=user.pk
-    ).exists()
-    token_action = ActivityLog.objects.get(
-        content_type=token_content_type, object_id=token_pk
-    )
-    assert token_action.person is None
-    assert token_action.data["token"].endswith("…")
-
-
 @pytest.mark.parametrize(
     ("use_event", "orga", "expected_urlname"),
     (
@@ -365,16 +301,11 @@ def test_reset_password(event):
     actions = list(actions_by(user).filter(action_type="pretalx.user.password.reset"))
     assert len(actions) == 1
 
-
-def test_reset_password_custom_text(event):
-    user = UserFactory()
-    djmail.outbox = []
-
     reset_password(user, event=event, mail_text="Custom {name} {url}")
 
-    assert len(djmail.outbox) == 1
+    assert len(djmail.outbox) == 2
     expected_url = get_password_reset_url(user, event=event)
-    assert djmail.outbox[0].body == f"Custom {user.name} {expected_url}"
+    assert djmail.outbox[1].body == f"Custom {user.name} {expected_url}"
 
 
 def test_change_password():
@@ -393,7 +324,7 @@ def test_change_password():
     assert len(actions) == 1
 
 
-def test_change_password_after_reset():
+def test_change_password_after_reset_consumes_token_once():
     user = UserFactory(
         password="oldpassword123!",
         pw_reset_token="validtoken123",
@@ -407,19 +338,10 @@ def test_change_password_after_reset():
     assert user.pw_reset_token is None
     assert user.pw_reset_time is None
 
-
-def test_change_password_after_reset_only_consumed_once():
-    user = UserFactory(
-        password="oldpassword123!",
-        pw_reset_token="validtoken123",
-        pw_reset_time=timezone.now(),
-    )
-    change_password_after_reset("validtoken123", "firstpassword123!")
-
     assert change_password_after_reset("validtoken123", "secondpassword123!") is False
 
     user.refresh_from_db()
-    assert user.check_password("firstpassword123!")
+    assert user.check_password("newpassword123!")
 
 
 @pytest.mark.parametrize(

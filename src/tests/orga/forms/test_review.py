@@ -25,597 +25,253 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_review_assignment_form_init_with_provided_data():
-    event = EventFactory()
-    reviewer = UserFactory()
+def make_reviewer(event, *, tracks=(), **user_kwargs):
+    reviewer = UserFactory(**user_kwargs)
     team = TeamFactory(organiser=event.organiser, is_reviewer=True)
     team.members.add(reviewer)
     team.limit_events.add(event)
+    team.limit_tracks.add(*tracks)
+    return reviewer
+
+
+def upload(payload):
+    return SimpleUploadedFile(
+        "assignments.json",
+        payload if isinstance(payload, bytes) else json.dumps(payload).encode(),
+        content_type="application/json",
+    )
+
+
+def test_review_assignment_form_init():
+    event = EventFactory()
+    track = TrackFactory(event=event)
+    reviewer_limited = make_reviewer(event, tracks=[track])
+    reviewer_all = make_reviewer(event)
     submission = SubmissionFactory(event=event)
 
     form = ReviewAssignmentForm(
         event=event, reviewers=event.reviewers, submissions=event.submissions.all()
     )
 
-    assert reviewer in form.reviewers
-    assert submission in form.submissions
+    assert set(form.reviewers) == {reviewer_limited, reviewer_all}
+    assert list(form.submissions) == [submission]
+    assert form.reviewers_by_track == {track: {reviewer_limited}, None: {reviewer_all}}
 
 
-def test_review_assignment_form_reviewers_by_track():
+def test_reviewer_for_proposal_form_fields_and_save():
     event = EventFactory()
-    track = TrackFactory(event=event)
-    reviewer_limited = UserFactory()
-    reviewer_all = UserFactory()
-
-    team_limited = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team_limited.members.add(reviewer_limited)
-    team_limited.limit_events.add(event)
-    team_limited.limit_tracks.add(track)
-
-    team_all = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team_all.members.add(reviewer_all)
-    team_all.limit_events.add(event)
-
-    form = ReviewAssignmentForm(event=event)
-
-    assert reviewer_limited in form.reviewers_by_track[track]
-    assert reviewer_all in form.reviewers_by_track[None]
-    assert reviewer_limited not in form.reviewers_by_track[None]
-
-
-def test_reviewer_for_proposal_form_creates_fields_per_submission():
-    event = EventFactory()
-    reviewer = UserFactory()
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer)
-    team.limit_events.add(event)
-    sub1 = SubmissionFactory(event=event)
-    sub2 = SubmissionFactory(event=event)
+    reviewer = make_reviewer(event, name="Reviewer")
+    sub1 = SubmissionFactory(event=event, title="A talk")
+    sub2 = SubmissionFactory(event=event, title="B talk")
 
     form = ReviewerForProposalForm(
-        event=event, review_mapping={"submission_to_assigned_reviewers": {}}
+        event=event,
+        review_mapping={"submission_to_assigned_reviewers": {sub1.id: [reviewer.id]}},
+        data={sub1.code: [str(reviewer.id)]},
     )
 
-    assert sub1.code in form.fields
-    assert sub2.code in form.fields
+    assert list(form.fields) == [sub1.code, sub2.code]
     assert isinstance(form.fields[sub1.code], forms.MultipleChoiceField)
-
-
-def test_reviewer_for_proposal_form_initial_assignments():
-    event = EventFactory()
-    reviewer = UserFactory()
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer)
-    team.limit_events.add(event)
-    sub = SubmissionFactory(event=event)
-
-    form = ReviewerForProposalForm(
-        event=event,
-        review_mapping={"submission_to_assigned_reviewers": {sub.id: [reviewer.id]}},
+    assert form.fields[sub1.code].initial == [reviewer.id]
+    assert form.fields[sub2.code].initial == []
+    assert form.fields[sub1.code].choices == [(reviewer.id, "Reviewer")]
+    assert form.get_review_choices_by_track(None) is form.get_review_choices_by_track(
+        None
     )
 
-    assert form.fields[sub.code].initial == [reviewer.id]
-
-
-def test_reviewer_for_proposal_form_get_review_choices_by_track_caches():
-    event = EventFactory()
-    reviewer = UserFactory()
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer)
-    team.limit_events.add(event)
-    SubmissionFactory(event=event)
-
-    form = ReviewerForProposalForm(
-        event=event, review_mapping={"submission_to_assigned_reviewers": {}}
-    )
-
-    # Second call should return cached result (same object)
-    result1 = form.get_review_choices_by_track(None)
-    result2 = form.get_review_choices_by_track(None)
-    assert result1 is result2
-
-
-def test_reviewer_for_proposal_form_save():
-    event = EventFactory()
-    reviewer = UserFactory()
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer)
-    team.limit_events.add(event)
-    sub = SubmissionFactory(event=event)
-
-    form = ReviewerForProposalForm(
-        event=event,
-        review_mapping={"submission_to_assigned_reviewers": {}},
-        data={sub.code: [str(reviewer.id)]},
-    )
     assert form.is_valid(), form.errors
     form.save()
 
-    assert list(sub.assigned_reviewers.all()) == [reviewer]
+    assert list(sub1.assigned_reviewers.all()) == [reviewer]
+    assert list(sub2.assigned_reviewers.all()) == []
 
 
-def test_proposal_for_reviewer_form_creates_fields_per_reviewer():
-    event = EventFactory()
-    reviewer1 = UserFactory()
-    reviewer2 = UserFactory()
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer1, reviewer2)
-    team.limit_events.add(event)
-    SubmissionFactory(event=event)
-
-    form = ProposalForReviewerForm(
-        event=event, review_mapping={"reviewer_to_assigned_submissions": {}}
-    )
-
-    assert reviewer1.code in form.fields
-    assert reviewer2.code in form.fields
-
-
-def test_proposal_for_reviewer_form_track_limited_choices():
+def test_proposal_for_reviewer_form_fields_and_save():
     event = EventFactory()
     track = TrackFactory(event=event)
     other_track = TrackFactory(event=event)
-    reviewer = UserFactory()
-
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer)
-    team.limit_events.add(event)
-    team.limit_tracks.add(track)
-
-    sub_in_track = SubmissionFactory(event=event, track=track)
-    sub_other = SubmissionFactory(event=event, track=other_track)
-
-    form = ProposalForReviewerForm(
-        event=event, review_mapping={"reviewer_to_assigned_submissions": {}}
-    )
-
-    field = form.fields[reviewer.code]
-    choice_ids = {int(c[0]) for c in field.choices}
-    assert sub_in_track.id in choice_ids
-    assert sub_other.id not in choice_ids
-
-
-def test_proposal_for_reviewer_form_unlimited_reviewer_sees_all():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    reviewer = UserFactory()
-
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer)
-    team.limit_events.add(event)
-    # No limit_tracks set
-
-    sub1 = SubmissionFactory(event=event, track=track)
-    sub2 = SubmissionFactory(event=event)
-
-    form = ProposalForReviewerForm(
-        event=event, review_mapping={"reviewer_to_assigned_submissions": {}}
-    )
-
-    field = form.fields[reviewer.code]
-    choice_ids = {int(c[0]) for c in field.choices}
-    assert sub1.id in choice_ids
-    assert sub2.id in choice_ids
-
-
-def test_proposal_for_reviewer_form_get_submission_choices_no_limit():
-    event = EventFactory()
-    reviewer = UserFactory()
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer)
-    team.limit_events.add(event)
-    sub = SubmissionFactory(event=event)
-
-    form = ProposalForReviewerForm(
-        event=event, review_mapping={"reviewer_to_assigned_submissions": {}}
-    )
-
-    result = form.get_submission_choices_by_tracks([])
-    assert result is form.all_submission_choices
-    assert any(c[0] == sub.id for c in result)
-
-
-def test_proposal_for_reviewer_form_get_submission_choices_caches_by_tracks():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    reviewer = UserFactory()
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer)
-    team.limit_events.add(event)
-    team.limit_tracks.add(track)
-    SubmissionFactory(event=event, track=track)
-
-    form = ProposalForReviewerForm(
-        event=event, review_mapping={"reviewer_to_assigned_submissions": {}}
-    )
-
-    result1 = form.get_submission_choices_by_tracks([track.id])
-    result2 = form.get_submission_choices_by_tracks([track.id])
-    assert result1 is result2
-
-
-def test_proposal_for_reviewer_form_save():
-    event = EventFactory()
-    reviewer = UserFactory()
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer)
-    team.limit_events.add(event)
-    sub = SubmissionFactory(event=event)
+    reviewer_limited = make_reviewer(event, tracks=[track], name="Alice")
+    reviewer_all = make_reviewer(event, name="Bob")
+    sub_in_track = SubmissionFactory(event=event, track=track, title="In track")
+    sub_other = SubmissionFactory(event=event, track=other_track, title="Other")
 
     form = ProposalForReviewerForm(
         event=event,
-        review_mapping={"reviewer_to_assigned_submissions": {}},
-        data={reviewer.code: [str(sub.id)]},
+        review_mapping={
+            "reviewer_to_assigned_submissions": {reviewer_all.id: [sub_other.id]}
+        },
+        data={
+            reviewer_limited.code: [str(sub_in_track.id)],
+            reviewer_all.code: [str(sub_other.id)],
+        },
     )
+
+    assert list(form.fields) == [reviewer_limited.code, reviewer_all.code]
+    assert form.fields[reviewer_limited.code].choices == [(sub_in_track.id, "In track")]
+    assert form.fields[reviewer_all.code].choices == [
+        (sub_in_track.id, "In track"),
+        (sub_other.id, "Other"),
+    ]
+    assert form.fields[reviewer_all.code].initial == [sub_other.id]
+    assert form.get_submission_choices_by_tracks([]) is form.all_submission_choices
+    assert form.get_submission_choices_by_tracks(
+        [track.id]
+    ) is form.get_submission_choices_by_tracks([track.id])
+
     assert form.is_valid(), form.errors
     form.save()
 
-    assert list(reviewer.assigned_reviews.all()) == [sub]
+    assert list(reviewer_limited.assigned_reviews.all()) == [sub_in_track]
+    assert list(reviewer_all.assigned_reviews.all()) == [sub_other]
 
 
-def test_bulk_tag_form_init():
+def test_bulk_tag_form_limits_tags_to_event():
     event = EventFactory()
     tag1 = TagFactory(event=event)
     tag2 = TagFactory(event=event)
-    TagFactory()  # different event
+    TagFactory()
 
-    form = BulkTagForm(event=event)
+    form = BulkTagForm(event=event, data={"tags": [tag1.pk], "action": "add"})
 
     assert set(form.fields["tags"].queryset) == {tag1, tag2}
-
-
-def test_bulk_tag_form_valid():
-    event = EventFactory()
-    tag = TagFactory(event=event)
-
-    form = BulkTagForm(event=event, data={"tags": [tag.pk], "action": "add"})
-
-    assert form.is_valid()
-    assert list(form.cleaned_data["tags"]) == [tag]
+    assert form.is_valid(), form.errors
+    assert list(form.cleaned_data["tags"]) == [tag1]
     assert form.cleaned_data["action"] == "add"
 
 
-def test_review_assign_import_form_rejects_missing_direction():
+def test_review_assign_import_form_get_user():
     event = EventFactory()
-    uploaded = SimpleUploadedFile(
-        "assignments.json", json.dumps({}).encode(), content_type="application/json"
-    )
+    reviewer = make_reviewer(event)
+
+    form = ReviewAssignImportForm(event=event)
+
+    assert form._get_user(reviewer.email) == reviewer
+    assert form._get_user(reviewer.code) == reviewer
+    assert form._get_user(reviewer.email) is form._get_user(reviewer.email)
+    with pytest.raises(forms.ValidationError) as excinfo:
+        form._get_user("nonexistent@example.com")
+    assert excinfo.value.messages == ["Unknown user: nonexistent@example.com"]
+
+
+def test_review_assign_import_form_get_submission():
+    event = EventFactory()
+    sub = SubmissionFactory(event=event)
+
+    form = ReviewAssignImportForm(event=event)
+
+    assert form._get_submission(sub.code) == sub
+    assert form._get_submission(sub.code.lower()) == sub
+    assert form._get_submission(sub.code) is form._get_submission(sub.code)
+    with pytest.raises(forms.ValidationError) as excinfo:
+        form._get_submission("ZZZZZ")
+    assert excinfo.value.messages == ["Unknown proposal: ZZZZZ"]
+
+
+@pytest.mark.parametrize(
+    ("data", "payload", "errors"),
+    (
+        (
+            {"replace_assignments": "0"},
+            {},
+            {
+                "direction": ["This field is required."],
+                "__all__": ["Cannot parse JSON file."],
+            },
+        ),
+        (
+            {"direction": "reviewer", "replace_assignments": "0"},
+            b"not json at all",
+            {
+                "import_file": ["Cannot parse JSON file."],
+                "__all__": ["Cannot parse JSON file."],
+            },
+        ),
+        (
+            {"direction": "reviewer", "replace_assignments": "0"},
+            b"\xff\xfe\x00\x01",
+            {
+                "import_file": ["Cannot parse JSON file."],
+                "__all__": ["Cannot parse JSON file."],
+            },
+        ),
+        *(
+            (
+                {"direction": "reviewer", "replace_assignments": "0"},
+                payload,
+                {
+                    "__all__": [
+                        "The uploaded file must contain a JSON object mapping reviewers to lists of proposals, or proposals to lists of reviewers."
+                    ]
+                },
+            )
+            for payload in (
+                123,
+                "hello",
+                True,
+                [1, 2, 3],
+                {"reviewer@example.com": "not-a-list"},
+            )
+        ),
+        (
+            {"direction": "reviewer", "replace_assignments": "0"},
+            {"unknown@example.com": ["ABCDE"]},
+            {"__all__": ["Unknown user: unknown@example.com"]},
+        ),
+        (
+            {"direction": "reviewer", "replace_assignments": "0"},
+            {"reviewer@example.com": ["ZZZZZ"]},
+            {"__all__": ["Unknown proposal: ZZZZZ"]},
+        ),
+    ),
+    ids=[
+        "missing-direction",
+        "invalid-json",
+        "binary",
+        "int",
+        "str",
+        "bool",
+        "list",
+        "non-list-values",
+        "unknown-user",
+        "unknown-submission",
+    ],
+)
+def test_review_assign_import_form_clean_rejects(data, payload, errors):
+    event = EventFactory()
+    make_reviewer(event, email="reviewer@example.com")
+    SubmissionFactory(event=event, code="ABCDE")
 
     form = ReviewAssignImportForm(
-        event=event, data={"replace_assignments": "0"}, files={"import_file": uploaded}
+        event=event, data=data, files={"import_file": upload(payload)}
     )
 
     assert not form.is_valid()
-    assert "direction" in form.errors
+    assert form.errors == errors
 
 
-@pytest.mark.parametrize("lookup_attr", ("email", "code"))
-def test_review_assign_import_form_get_user(lookup_attr):
+@pytest.mark.parametrize(
+    ("direction", "payload", "replace", "reviewer1_after"),
+    (
+        ("reviewer", {"reviewer2@example.com": ["ABCDE"]}, "0", ["ABCDE"]),
+        ("submission", {"ABCDE": ["reviewer2@example.com"]}, "0", ["ABCDE"]),
+        ("reviewer", {"reviewer2@example.com": ["ABCDE"]}, "1", []),
+    ),
+    ids=["reviewer-direction", "submission-direction", "replace"],
+)
+def test_review_assign_import_form_save(direction, payload, replace, reviewer1_after):
     event = EventFactory()
-    reviewer = UserFactory()
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer)
-    team.limit_events.add(event)
-
-    form = ReviewAssignImportForm(event=event)
-    result = form._get_user(getattr(reviewer, lookup_attr))
-
-    assert result == reviewer
-
-
-def test_review_assign_import_form_get_user_cached():
-    event = EventFactory()
-    reviewer = UserFactory()
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer)
-    team.limit_events.add(event)
-
-    form = ReviewAssignImportForm(event=event)
-    result1 = form._get_user(reviewer.email)
-    result2 = form._get_user(reviewer.email)
-
-    assert result1 is result2
-
-
-def test_review_assign_import_form_get_user_not_found():
-    event = EventFactory()
-
-    form = ReviewAssignImportForm(event=event)
-
-    with pytest.raises(forms.ValidationError):
-        form._get_user("nonexistent@example.com")
-
-
-def test_review_assign_import_form_get_submission_found():
-    event = EventFactory()
-    sub = SubmissionFactory(event=event)
-
-    form = ReviewAssignImportForm(event=event)
-    result = form._get_submission(sub.code)
-
-    assert result == sub
-
-
-def test_review_assign_import_form_get_submission_case_insensitive():
-    event = EventFactory()
-    sub = SubmissionFactory(event=event)
-
-    form = ReviewAssignImportForm(event=event)
-    result = form._get_submission(sub.code.lower())
-
-    assert result == sub
-
-
-def test_review_assign_import_form_get_submission_not_found():
-    event = EventFactory()
-
-    form = ReviewAssignImportForm(event=event)
-
-    with pytest.raises(forms.ValidationError):
-        form._get_submission("ZZZZZ")
-
-
-def test_review_assign_import_form_get_submission_cached():
-    event = EventFactory()
-    sub = SubmissionFactory(event=event)
-
-    form = ReviewAssignImportForm(event=event)
-    result1 = form._get_submission(sub.code)
-    result2 = form._get_submission(sub.code)
-
-    assert result1 == sub
-    assert result1 is result2
-
-
-def test_review_assign_import_form_clean_import_file_valid_json():
-    event = EventFactory()
-    data = {"key": ["val1", "val2"]}
-    uploaded = SimpleUploadedFile(
-        "assignments.json", json.dumps(data).encode(), content_type="application/json"
-    )
-
-    form = ReviewAssignImportForm(
-        event=event,
-        data={"direction": "reviewer", "replace_assignments": "0"},
-        files={"import_file": uploaded},
-    )
-    form.is_valid()
-
-    # clean() may fail resolving users, but the JSON parsing itself succeeded
-    assert "import_file" not in form.errors
-
-
-def test_review_assign_import_form_clean_import_file_invalid_json():
-    event = EventFactory()
-    uploaded = SimpleUploadedFile(
-        "bad.json", b"not json at all", content_type="application/json"
-    )
-
-    form = ReviewAssignImportForm(
-        event=event,
-        data={"direction": "reviewer", "replace_assignments": "0"},
-        files={"import_file": uploaded},
-    )
-    form.is_valid()
-
-    assert "import_file" in form.errors
-
-
-def test_review_assign_import_form_clean_import_file_binary():
-    event = EventFactory()
-    uploaded = SimpleUploadedFile(
-        "bad.bin", b"\xff\xfe\x00\x01", content_type="application/json"
-    )
-
-    form = ReviewAssignImportForm(
-        event=event,
-        data={"direction": "reviewer", "replace_assignments": "0"},
-        files={"import_file": uploaded},
-    )
-    form.is_valid()
-
-    assert "import_file" in form.errors
-
-
-def test_review_assign_import_form_clean_reviewer_direction():
-    event = EventFactory()
-    reviewer = UserFactory()
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer)
-    team.limit_events.add(event)
-    sub = SubmissionFactory(event=event)
-    data = {reviewer.email: [sub.code]}
-    uploaded = SimpleUploadedFile(
-        "assignments.json", json.dumps(data).encode(), content_type="application/json"
-    )
-
-    form = ReviewAssignImportForm(
-        event=event,
-        data={"direction": "reviewer", "replace_assignments": "0"},
-        files={"import_file": uploaded},
-    )
-    valid = form.is_valid()
-
-    assert valid, form.errors
-    # Keys are User objects, values are lists of Submission objects
-    resolved = form.cleaned_data["import_file"]
-    assert reviewer in resolved
-    assert resolved[reviewer] == [sub]
-
-
-def test_review_assign_import_form_clean_submission_direction():
-    event = EventFactory()
-    reviewer = UserFactory()
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer)
-    team.limit_events.add(event)
-    sub = SubmissionFactory(event=event)
-    data = {sub.code: [reviewer.email]}
-    uploaded = SimpleUploadedFile(
-        "assignments.json", json.dumps(data).encode(), content_type="application/json"
-    )
-
-    form = ReviewAssignImportForm(
-        event=event,
-        data={"direction": "submission", "replace_assignments": "0"},
-        files={"import_file": uploaded},
-    )
-    valid = form.is_valid()
-
-    assert valid, form.errors
-    resolved = form.cleaned_data["import_file"]
-    assert sub in resolved
-    assert resolved[sub] == [reviewer]
-
-
-def test_review_assign_import_form_save_reviewer_direction():
-    event = EventFactory()
-    reviewer = UserFactory()
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer)
-    team.limit_events.add(event)
-    sub = SubmissionFactory(event=event)
-    data = {reviewer.email: [sub.code]}
-    uploaded = SimpleUploadedFile(
-        "assignments.json", json.dumps(data).encode(), content_type="application/json"
-    )
-
-    form = ReviewAssignImportForm(
-        event=event,
-        data={"direction": "reviewer", "replace_assignments": "0"},
-        files={"import_file": uploaded},
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    assert list(reviewer.assigned_reviews.all()) == [sub]
-
-
-def test_review_assign_import_form_save_submission_direction():
-    event = EventFactory()
-    reviewer = UserFactory()
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer)
-    team.limit_events.add(event)
-    sub = SubmissionFactory(event=event)
-    data = {sub.code: [reviewer.email]}
-    uploaded = SimpleUploadedFile(
-        "assignments.json", json.dumps(data).encode(), content_type="application/json"
-    )
-
-    form = ReviewAssignImportForm(
-        event=event,
-        data={"direction": "submission", "replace_assignments": "0"},
-        files={"import_file": uploaded},
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    assert list(sub.assigned_reviewers.all()) == [reviewer]
-
-
-def test_review_assign_import_form_save_replace_assignments():
-    event = EventFactory()
-    reviewer1 = UserFactory()
-    reviewer2 = UserFactory()
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer1, reviewer2)
-    team.limit_events.add(event)
-    sub = SubmissionFactory(event=event)
-    # Pre-existing assignment
+    reviewer1 = make_reviewer(event, email="reviewer1@example.com")
+    reviewer2 = make_reviewer(event, email="reviewer2@example.com")
+    sub = SubmissionFactory(event=event, code="ABCDE")
     reviewer1.assigned_reviews.add(sub)
 
-    data = {reviewer2.email: [sub.code]}
-    uploaded = SimpleUploadedFile(
-        "assignments.json", json.dumps(data).encode(), content_type="application/json"
-    )
-
     form = ReviewAssignImportForm(
         event=event,
-        data={"direction": "reviewer", "replace_assignments": "1"},
-        files={"import_file": uploaded},
+        data={"direction": direction, "replace_assignments": replace},
+        files={"import_file": upload(payload)},
     )
     assert form.is_valid(), form.errors
     form.save()
 
-    # reviewer1's assignment was cleared
-    assert list(reviewer1.assigned_reviews.all()) == []
-    # reviewer2 got the new assignment
+    assert [s.code for s in reviewer1.assigned_reviews.all()] == reviewer1_after
     assert list(reviewer2.assigned_reviews.all()) == [sub]
-
-
-def test_review_assign_import_form_clean_unknown_user():
-    event = EventFactory()
-    sub = SubmissionFactory(event=event)
-    data = {"unknown@example.com": [sub.code]}
-    uploaded = SimpleUploadedFile(
-        "assignments.json", json.dumps(data).encode(), content_type="application/json"
-    )
-
-    form = ReviewAssignImportForm(
-        event=event,
-        data={"direction": "reviewer", "replace_assignments": "0"},
-        files={"import_file": uploaded},
-    )
-    valid = form.is_valid()
-
-    assert valid is False
-
-
-def test_review_assign_import_form_clean_unknown_submission():
-    event = EventFactory()
-    reviewer = UserFactory()
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer)
-    team.limit_events.add(event)
-    data = {reviewer.email: ["ZZZZZ"]}
-    uploaded = SimpleUploadedFile(
-        "assignments.json", json.dumps(data).encode(), content_type="application/json"
-    )
-
-    form = ReviewAssignImportForm(
-        event=event,
-        data={"direction": "reviewer", "replace_assignments": "0"},
-        files={"import_file": uploaded},
-    )
-    valid = form.is_valid()
-
-    assert valid is False
-
-
-@pytest.mark.parametrize("payload", (123, "hello", True, [1, 2, 3]))
-def test_review_assign_import_form_clean_non_object_toplevel(payload):
-    event = EventFactory()
-    uploaded = SimpleUploadedFile(
-        "assignments.json",
-        json.dumps(payload).encode(),
-        content_type="application/json",
-    )
-
-    form = ReviewAssignImportForm(
-        event=event,
-        data={"direction": "reviewer", "replace_assignments": "0"},
-        files={"import_file": uploaded},
-    )
-
-    assert form.is_valid() is False
-
-
-def test_review_assign_import_form_clean_non_list_values():
-    event = EventFactory()
-    reviewer = UserFactory()
-    team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    team.members.add(reviewer)
-    team.limit_events.add(event)
-    data = {reviewer.email: "not-a-list"}
-    uploaded = SimpleUploadedFile(
-        "assignments.json", json.dumps(data).encode(), content_type="application/json"
-    )
-
-    form = ReviewAssignImportForm(
-        event=event,
-        data={"direction": "reviewer", "replace_assignments": "0"},
-        files={"import_file": uploaded},
-    )
-
-    assert form.is_valid() is False

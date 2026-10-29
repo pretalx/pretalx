@@ -20,9 +20,10 @@ def _unverified_user(**kwargs):
     )
 
 
-def test_orga_verification_page_shows_address_needing_confirmation(client):
+def test_orga_verification_page_shows_address_and_resends_mail(client):
     user = _unverified_user(email="pending-orga@example.com")
     client.force_login(user)
+    djmail.outbox = []
 
     response = client.get(PAGE_URL)
 
@@ -31,43 +32,44 @@ def test_orga_verification_page_shows_address_needing_confirmation(client):
     assert "pending-orga@example.com" in content
     assert "password" in response.context["form"].fields
 
-
-def test_orga_verification_page_redirects_anonymous_to_login(client):
-    response = client.get(PAGE_URL)
-
-    assert response.status_code == 302
-    assert "/orga/login/" in response.url
-
-
-def test_orga_verification_page_redirects_verified_user_away(client):
-    user = UserFactory(email_verification_state=EmailVerificationState.VERIFIED)
-    client.force_login(user)
-
-    response = client.get(PAGE_URL)
-
-    assert response.status_code == 302
-    assert response.url == reverse("orga:event.list")
-
-
-def test_orga_verification_page_resend_sends_mail_with_orga_link(client):
-    user = _unverified_user()
-    client.force_login(user)
-    djmail.outbox = []
-
     response = client.post(PAGE_URL, {"action": "resend"})
 
     assert response.status_code == 302
     assert response.url == PAGE_URL
     assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == [user.email]
+    assert djmail.outbox[0].to == ["pending-orga@example.com"]
     assert "/orga/verify/" in djmail.outbox[0].body
 
 
-def test_orga_verify_link_get_reachable_anonymously_without_verifying(client):
+def test_orga_verification_page_redirects_anonymous_and_verified_users(client):
+    response = client.get(PAGE_URL)
+
+    assert response.status_code == 302
+    assert response.url == f"/orga/login/?next={PAGE_URL}"
+
+    user = UserFactory(email_verification_state=EmailVerificationState.VERIFIED)
+    client.force_login(user)
+    response = client.get(PAGE_URL)
+
+    assert response.status_code == 302
+    assert response.url == reverse("orga:event.list")
+
+    session = client.session
+    session["verification_next"] = "/orga/admin/"
+    session.save()
+    response = client.get(PAGE_URL)
+
+    assert response.status_code == 302
+    assert response.url == "/orga/admin/"
+    assert "verification_next" not in client.session
+
+
+def test_orga_verify_link_verifies_anonymous_user_on_post_only(client):
     user = _unverified_user(email="orga-prefetch@example.com")
     token = make_verification_token(user, KIND_VERIFY)
+    url = reverse("orga:auth.verify", kwargs={"token": token})
 
-    response = client.get(reverse("orga:auth.verify", kwargs={"token": token}))
+    response = client.get(url)
 
     user.refresh_from_db()
     assert response.status_code == 200
@@ -75,12 +77,7 @@ def test_orga_verify_link_get_reachable_anonymously_without_verifying(client):
     assert response.context["target_email"] == "orga-prefetch@example.com"
     assert user.email_verification_state == EmailVerificationState.UNVERIFIED
 
-
-def test_orga_verify_link_post_verifies_anonymous_and_redirects_to_login(client):
-    user = _unverified_user()
-    token = make_verification_token(user, KIND_VERIFY)
-
-    response = client.post(reverse("orga:auth.verify", kwargs={"token": token}))
+    response = client.post(url)
 
     user.refresh_from_db()
     assert response.status_code == 302
@@ -88,7 +85,7 @@ def test_orga_verify_link_post_verifies_anonymous_and_redirects_to_login(client)
     assert user.email_verification_state == EmailVerificationState.VERIFIED
 
 
-def test_orga_verify_link_post_verifies_logged_in_user_and_redirects_to_events(client):
+def test_orga_verify_link_post_redirects_logged_in_user_to_stored_destination(client):
     user = _unverified_user()
     token = make_verification_token(user, KIND_VERIFY)
     client.force_login(user)
@@ -100,36 +97,20 @@ def test_orga_verify_link_post_verifies_logged_in_user_and_redirects_to_events(c
     assert response.url == reverse("orga:event.list")
     assert user.email_verification_state == EmailVerificationState.VERIFIED
 
-
-def test_orga_verification_page_redirects_verified_user_to_stored_destination(client):
-    user = UserFactory(email_verification_state=EmailVerificationState.VERIFIED)
-    client.force_login(user)
-    session = client.session
-    session["verification_next"] = "/orga/admin/"
-    session.save()
-
-    response = client.get(PAGE_URL)
-
-    assert response.status_code == 302
-    assert response.url == "/orga/admin/"
-    assert "verification_next" not in client.session
-
-
-def test_orga_verify_link_post_redirects_to_stored_destination(client):
-    user = _unverified_user()
-    token = make_verification_token(user, KIND_VERIFY)
-    client.force_login(user)
+    other_user = _unverified_user()
+    token = make_verification_token(other_user, KIND_VERIFY)
+    client.force_login(other_user)
     session = client.session
     session["verification_next"] = "/orga/admin/"
     session.save()
 
     response = client.post(reverse("orga:auth.verify", kwargs={"token": token}))
 
-    user.refresh_from_db()
+    other_user.refresh_from_db()
     assert response.status_code == 302
     assert response.url == "/orga/admin/"
     assert "verification_next" not in client.session
-    assert user.email_verification_state == EmailVerificationState.VERIFIED
+    assert other_user.email_verification_state == EmailVerificationState.VERIFIED
 
 
 def test_orga_event_scoped_verify_link_verifies_on_post(client, event):

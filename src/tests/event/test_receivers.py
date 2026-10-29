@@ -15,7 +15,9 @@ from tests.utils import refresh
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_periodic_event_services_updates_review_phases(event):
+def test_periodic_event_services_updates_phases_and_notifies_current_events_only():
+    djmail.outbox = []
+    event = EventFactory(cfp__deadline=now() - dt.timedelta(hours=1))
     with scope(event=event):
         event.review_phases.all().delete()
         expired_phase = ReviewPhaseFactory(
@@ -25,27 +27,7 @@ def test_periodic_event_services_updates_review_phases(event):
             end=now() - dt.timedelta(days=3),
             is_active=True,
         )
-
-    periodic_event_services(sender=None)
-
-    expired_phase.refresh_from_db()
-    assert not expired_phase.is_active
-
-
-def test_periodic_event_services_dispatches_lifecycle_notifications():
-    djmail.outbox = []
-    event = EventFactory(cfp__deadline=now() - dt.timedelta(hours=1))
-
-    periodic_event_services(sender=None)
-
-    event = refresh(event)
-    assert len(djmail.outbox) == 1
-    assert event.settings.sent_mail_cfp_closed
-
-
-def test_periodic_event_services_skips_old_events():
-    djmail.outbox = []
-    EventFactory(
+    old_event = EventFactory(
         date_from=(now() - dt.timedelta(days=10)).date(),
         date_to=(now() - dt.timedelta(days=5)).date(),
         cfp__deadline=now() - dt.timedelta(hours=1),
@@ -53,7 +35,11 @@ def test_periodic_event_services_skips_old_events():
 
     periodic_event_services(sender=None)
 
-    assert len(djmail.outbox) == 0
+    expired_phase.refresh_from_db()
+    assert not expired_phase.is_active
+    assert [sent.to for sent in djmail.outbox] == [[event.email]]
+    assert refresh(event).settings.sent_mail_cfp_closed
+    assert not refresh(old_event).settings.sent_mail_cfp_closed
 
 
 def test_clean_cached_files_deletes_only_expired():

@@ -22,58 +22,27 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_user_teams_in_organiser_returns_user_teams_only_for_that_organiser():
+def test_user_teams_in_organiser_returns_user_teams_of_that_organiser_filtered():
     organiser = OrganiserFactory()
     other = OrganiserFactory()
-    user = UserFactory()
-    in_team = TeamFactory(organiser=organiser)
-    in_team.members.add(user)
-    other_team = TeamFactory(organiser=other)
-    other_team.members.add(user)
-
-    result = list(user_teams_in_organiser(user, organiser))
-
-    assert result == [in_team]
-
-
-def test_user_teams_in_organiser_filters_by_extra_kwargs():
-    organiser = OrganiserFactory()
     user = UserFactory()
     matching = TeamFactory(organiser=organiser, can_change_teams=True)
     matching.members.add(user)
     non_matching = TeamFactory(organiser=organiser, can_change_teams=False)
     non_matching.members.add(user)
+    TeamFactory(organiser=other).members.add(user)
+    TeamFactory(organiser=organiser, can_change_teams=True)
 
-    result = list(user_teams_in_organiser(user, organiser, can_change_teams=True))
-
-    assert result == [matching]
-
-
-def test_user_teams_in_organiser_returns_empty_when_user_has_no_team_there():
-    organiser = OrganiserFactory()
-    user = UserFactory()
-
-    assert not user_teams_in_organiser(user, organiser)
+    assert set(user_teams_in_organiser(user, organiser)) == {matching, non_matching}
+    assert list(user_teams_in_organiser(user, organiser, can_change_teams=True)) == [
+        matching
+    ]
+    assert not user_teams_in_organiser(UserFactory(), organiser)
 
 
-def test_event_reviewer_teams_returns_reviewer_teams_of_the_event():
+def test_reviewer_team_queries_return_reviewer_teams_of_the_event_only():
     event = EventFactory()
-    reviewer_team = TeamFactory(
-        organiser=event.organiser, all_events=True, is_reviewer=True
-    )
-    TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=False)
-
     other_event = EventFactory(organiser=event.organiser)
-    other_team = TeamFactory(organiser=event.organiser, is_reviewer=True)
-    other_team.limit_events.add(other_event)
-
-    result = list(event_reviewer_teams(event))
-
-    assert result == [reviewer_team]
-
-
-def test_user_reviewer_teams_in_event_returns_only_user_reviewer_teams():
-    event = EventFactory()
     user = UserFactory()
     reviewer_team = TeamFactory(
         organiser=event.organiser, all_events=True, is_reviewer=True
@@ -87,201 +56,111 @@ def test_user_reviewer_teams_in_event_returns_only_user_reviewer_teams():
         organiser=event.organiser, all_events=True, is_reviewer=True
     )
     other_member_team.members.add(UserFactory())
-
-    result = list(user_reviewer_teams_in_event(user, event))
-
-    assert result == [reviewer_team]
-
-
-def test_user_reviewer_teams_in_event_excludes_other_events():
-    organiser = OrganiserFactory()
-    event = EventFactory(organiser=organiser)
-    other_event = EventFactory(organiser=organiser)
-    user = UserFactory()
-    other_event_team = TeamFactory(organiser=organiser, is_reviewer=True)
+    other_event_team = TeamFactory(organiser=event.organiser, is_reviewer=True)
     other_event_team.limit_events.add(other_event)
     other_event_team.members.add(user)
 
-    assert not user_reviewer_teams_in_event(user, event)
+    assert set(event_reviewer_teams(event)) == {reviewer_team, other_member_team}
+    assert list(user_reviewer_teams_in_event(user, event)) == [reviewer_team]
+    assert not user_reviewer_teams_in_event(UserFactory(), event)
 
 
-def test_speaker_access_administrator_filtered_to_organiser(event):
+def test_speaker_access_administrator_sees_all_events_and_can_filter(event):
     user = UserFactory(is_administrator=True)
     same_org_event = EventFactory(organiser=event.organiser)
-    foreign_event = EventFactory()  # different organiser
-
-    result = speaker_access_events_for_user(user=user).filter(organiser=event.organiser)
-
-    assert set(result) == {event, same_org_event}
-    assert foreign_event not in result
-
-
-def test_speaker_access_for_user_administrator_sees_events_without_team(event):
-    user = UserFactory(is_administrator=True)
-    foreign_event = EventFactory()  # admin has no team here
+    foreign_event = EventFactory()
 
     result = speaker_access_events_for_user(user=user)
 
-    assert {event, foreign_event}.issubset(set(result))
+    assert set(result) == {event, same_org_event, foreign_event}
+    assert set(result.filter(organiser=event.organiser)) == {event, same_org_event}
 
 
-def test_speaker_access_can_change_submissions_all_events(event):
+@pytest.mark.parametrize(
+    ("team_kwargs", "limit", "expected"),
+    (
+        ({"can_change_submissions": True, "all_events": True}, None, "both"),
+        ({"can_change_submissions": True, "all_events": False}, "event", "event"),
+        ({"is_reviewer": True, "can_change_submissions": False}, None, "both"),
+        (
+            {"is_reviewer": True, "can_change_submissions": False, "all_events": False},
+            None,
+            "none",
+        ),
+        (
+            {
+                "is_reviewer": True,
+                "can_change_submissions": False,
+                "force_hide_speaker_names": True,
+            },
+            None,
+            "none",
+        ),
+        ({"is_reviewer": True, "can_change_submissions": False}, "track", "none"),
+    ),
+    ids=(
+        "submissions_all_events",
+        "submissions_limited",
+        "reviewer_all_events",
+        "reviewer_no_events",
+        "reviewer_names_hidden",
+        "reviewer_track_limited",
+    ),
+)
+def test_speaker_access_follows_team_permissions(event, team_kwargs, limit, expected):
     other_event = EventFactory(organiser=event.organiser)
-    team = TeamFactory(
-        organiser=event.organiser, can_change_submissions=True, all_events=True
-    )
+    EventFactory()
+    team = TeamFactory(organiser=event.organiser, **{"all_events": True, **team_kwargs})
     user = UserFactory()
     team.members.add(user)
+    if limit == "event":
+        team.limit_events.add(event)
+    if limit == "track":
+        team.limit_tracks.add(TrackFactory(event=event))
+    expected_events = {"both": {event, other_event}, "event": {event}, "none": set()}
 
     result = speaker_access_events_for_user(user=user)
 
-    assert set(result) == {event, other_event}
+    assert set(result) == expected_events[expected]
 
 
-def test_speaker_access_can_change_submissions_limited(event):
+def test_speaker_access_direct_access_and_permitted_reviewer_win_over_denied(event):
     other_event = EventFactory(organiser=event.organiser)
-    team = TeamFactory(
+    third_event = EventFactory(organiser=event.organiser)
+    submission_team = TeamFactory(
         organiser=event.organiser, can_change_submissions=True, all_events=False
     )
-    team.limit_events.add(event)
-    user = UserFactory()
-    team.members.add(user)
-
-    result = speaker_access_events_for_user(user=user)
-
-    assert set(result) == {event}
-    assert other_event not in result
-
-
-def test_speaker_access_reviewer_team_grants_when_perm_holds(event):
-    other_event = EventFactory(organiser=event.organiser)
-    team_with_perm = TeamFactory(
+    submission_team.limit_events.add(event)
+    denied_reviewer_team = TeamFactory(
+        organiser=event.organiser,
+        is_reviewer=True,
+        can_change_submissions=False,
+        all_events=True,
+        force_hide_speaker_names=True,
+    )
+    permitted_reviewer_team = TeamFactory(
         organiser=event.organiser,
         is_reviewer=True,
         can_change_submissions=False,
         all_events=False,
         force_hide_speaker_names=False,
     )
-    team_with_perm.limit_events.add(event)
-    team_no_perm = TeamFactory(
-        organiser=event.organiser,
-        is_reviewer=True,
-        can_change_submissions=False,
-        all_events=False,
-        force_hide_speaker_names=True,
-    )
-    team_no_perm.limit_events.add(other_event)
-    user = UserFactory()
-    team_with_perm.members.add(user)
-    team_no_perm.members.add(user)
-
-    result = speaker_access_events_for_user(user=user)
-
-    assert set(result) == {event}
-
-
-def test_speaker_access_reviewer_no_events(event):
-    team = TeamFactory(
-        organiser=event.organiser,
-        is_reviewer=True,
-        can_change_submissions=False,
-        all_events=False,
-    )
-    user = UserFactory()
-    team.members.add(user)
-
-    result = speaker_access_events_for_user(user=user)
-
-    assert set(result) == set()
-
-
-def test_speaker_access_direct_access_wins_over_denied_reviewer(event):
-    submission_team = TeamFactory(
-        organiser=event.organiser, can_change_submissions=True, all_events=False
-    )
-    submission_team.limit_events.add(event)
-    reviewer_team = TeamFactory(
-        organiser=event.organiser,
-        is_reviewer=True,
-        can_change_submissions=False,
-        all_events=True,
-        force_hide_speaker_names=True,
-    )
+    permitted_reviewer_team.limit_events.add(third_event)
     user = UserFactory()
     submission_team.members.add(user)
-    reviewer_team.members.add(user)
+    denied_reviewer_team.members.add(user)
+    permitted_reviewer_team.members.add(user)
 
     result = speaker_access_events_for_user(user=user)
 
-    assert set(result) == {event}
+    assert set(result) == {event, third_event}
+    assert other_event not in result
 
 
-def test_speaker_access_reviewer_denied_excluded(event):
-    team = TeamFactory(
-        organiser=event.organiser,
-        is_reviewer=True,
-        can_change_submissions=False,
-        all_events=True,
-        force_hide_speaker_names=True,
-    )
-    user = UserFactory()
-    team.members.add(user)
-
-    result = speaker_access_events_for_user(user=user)
-
-    assert set(result) == set()
-
-
-def test_speaker_access_track_limited_reviewer_skipped(event):
-    track = TrackFactory(event=event)
-    team = TeamFactory(
-        organiser=event.organiser,
-        is_reviewer=True,
-        can_change_submissions=False,
-        all_events=True,
-    )
-    team.limit_tracks.add(track)
-    user = UserFactory()
-    team.members.add(user)
-
-    result = speaker_access_events_for_user(user=user)
-
-    assert set(result) == set()
-
-
-def test_speaker_access_reviewer_all_events_with_permission(event):
-    other_event = EventFactory(organiser=event.organiser)
-    team = TeamFactory(
-        organiser=event.organiser,
-        is_reviewer=True,
-        can_change_submissions=False,
-        all_events=True,
-    )
-    user = UserFactory()
-    team.members.add(user)
-
-    result = speaker_access_events_for_user(user=user)
-
-    assert set(result) == {event, other_event}
-
-
-def test_speaker_access_organiser_filter_excludes_foreign_organiser_team(event):
-    other_organiser = OrganiserFactory()
-    EventFactory(organiser=other_organiser)
-    foreign_team = TeamFactory(
-        organiser=other_organiser, can_change_submissions=True, all_events=True
-    )
-    user = UserFactory()
-    foreign_team.members.add(user)
-
-    result = speaker_access_events_for_user(user=user).filter(organiser=event.organiser)
-
-    assert set(result) == set()
-
-
-def test_speaker_access_for_user_spans_multiple_organisers(event):
+def test_speaker_access_spans_organisers_with_membership_only(event):
     other_organiser = OrganiserFactory()
     other_event = EventFactory(organiser=other_organiser)
+    EventFactory()
     here = TeamFactory(
         organiser=event.organiser, can_change_submissions=True, all_events=True
     )
@@ -295,67 +174,23 @@ def test_speaker_access_for_user_spans_multiple_organisers(event):
     result = speaker_access_events_for_user(user=user)
 
     assert set(result) == {event, other_event}
+    assert set(result.filter(organiser=event.organiser)) == {event}
+    assert set(speaker_access_events_for_user(user=UserFactory())) == set()
 
 
-def test_speaker_access_for_user_excludes_organisers_without_membership(event):
-    foreign_event = EventFactory()  # different organiser, no membership
-    sibling_event = EventFactory(organiser=event.organiser)  # same organiser, but…
-    team = TeamFactory(
-        organiser=event.organiser, can_change_submissions=True, all_events=False
-    )
-    team.limit_events.add(event)  # …team only grants `event`
-    user = UserFactory()
-    team.members.add(user)
-
-    result = speaker_access_events_for_user(user=user)
-
-    assert set(result) == {event}
-    assert foreign_event not in result
-    assert sibling_event not in result
-
-
-def test_speaker_access_for_user_no_membership_returns_nothing():
-    EventFactory()
-    EventFactory()
-    user = UserFactory()
-
-    result = speaker_access_events_for_user(user=user)
-
-    assert set(result) == set()
-
-
-def test_active_reviewers_for_event_returns_only_reviewers_with_reviews():
+def test_active_reviewers_for_event_returns_distinct_reviewers_with_reviews():
     event = EventFactory()
-    submission = SubmissionFactory(event=event)
+    other_event = EventFactory(organiser=event.organiser)
     active = UserFactory()
     inactive = UserFactory()
+    other_reviewer = UserFactory()
     team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
-    team.members.add(active)
-    team.members.add(inactive)
-    ReviewFactory(submission=submission, user=active)
+    team.members.add(active, inactive)
+    for _ in range(3):
+        ReviewFactory(submission=SubmissionFactory(event=event), user=active)
+    other_team = TeamFactory(organiser=event.organiser, is_reviewer=True)
+    other_team.limit_events.add(other_event)
+    other_team.members.add(other_reviewer)
+    ReviewFactory(submission=SubmissionFactory(event=other_event), user=other_reviewer)
 
     assert list(active_reviewers_for_event(event)) == [active]
-
-
-def test_active_reviewers_for_event_deduplicates_across_multiple_reviews():
-    event = EventFactory()
-    user = UserFactory()
-    team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
-    team.members.add(user)
-    for _ in range(3):
-        ReviewFactory(submission=SubmissionFactory(event=event), user=user)
-
-    assert list(active_reviewers_for_event(event)) == [user]
-
-
-def test_active_reviewers_for_event_excludes_reviewers_of_other_events():
-    organiser = OrganiserFactory()
-    event = EventFactory(organiser=organiser)
-    other_event = EventFactory(organiser=organiser)
-    user = UserFactory()
-    other_team = TeamFactory(organiser=organiser, is_reviewer=True)
-    other_team.limit_events.add(other_event)
-    other_team.members.add(user)
-    ReviewFactory(submission=SubmissionFactory(event=other_event), user=user)
-
-    assert list(active_reviewers_for_event(event)) == []

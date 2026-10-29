@@ -287,20 +287,6 @@ def test_e2e_logged_in_user_skips_user_step(
     assert len(djmail.outbox) == 1
 
 
-def test_e2e_logged_in_user_no_questions(cfp_event, client, cfp_user):
-    client.force_login(cfp_user)
-
-    _, info_url = start_wizard(client, cfp_event)
-    _, profile_url = _post_info(client, info_url, cfp_event)
-    assert "/profile/" in profile_url
-
-    _, final_url = _post_profile(client, profile_url)
-    assert "/me/submissions/" in final_url
-
-    sub = _assert_submission(cfp_event)
-    _assert_speaker(sub, email=cfp_user.email)
-
-
 def test_e2e_single_non_english_content_locale_do_not_ask(client):
     event = EventFactory(
         cfp__deadline=now() + dt.timedelta(days=30),
@@ -367,23 +353,6 @@ def test_e2e_tracks_with_access_code_and_questions(client):
     _assert_submission(event, track=track, question=submission_question, abstract=None)
 
 
-def test_e2e_access_code_bypasses_deadline(client):
-    event = EventFactory(cfp__deadline=now() - dt.timedelta(days=1))
-    access_code = SubmitterAccessCodeFactory(event=event)
-
-    _, info_url = start_wizard(client, event, access_code=access_code)
-    assert "/info/" in info_url
-
-    _, user_url = _post_info(client, info_url, event)
-    _, profile_url = _register_user(client, user_url)
-    _, final_url = _post_profile(client, profile_url)
-
-    assert final_url == f"/{event.slug}/verify/"
-    with scope(event=event):
-        sub = Submission.objects.select_related("submission_type", "track").last()
-        assert sub.access_code_id == access_code.pk
-
-
 def test_e2e_additional_speakers_send_invitations(
     cfp_event, client, cfp_user, django_capture_on_commit_callbacks
 ):
@@ -400,16 +369,27 @@ def test_e2e_additional_speakers_send_invitations(
         _, final_url = _post_profile(client, profile_url)
 
     assert "/me/submissions/" in final_url
+    sub = _assert_submission(cfp_event)
+    _assert_speaker(sub, email=cfp_user.email)
     # 1 confirmation + 2 invitation emails
-    assert len(djmail.outbox) == 3
-    all_recipients = {mail.to[0] for mail in djmail.outbox}
-    assert "speaker2@example.com" in all_recipients
-    assert "speaker3@example.com" in all_recipients
+    assert sorted(mail.to[0] for mail in djmail.outbox) == [
+        "speaker2@example.com",
+        "speaker3@example.com",
+        cfp_user.email,
+    ]
 
 
 def test_e2e_draft_save_and_resume(cfp_event, client, cfp_user):
     client.force_login(cfp_user)
     _, info_url = start_wizard(client, cfp_event)
+
+    _, url = get_response_and_url(
+        client, info_url, data=info_data(cfp_event, title="", action="draft")
+    )
+    assert "/info/" in url
+    with scope(event=cfp_event):
+        assert not Submission.all_objects.exists()
+
     data = info_data(
         cfp_event,
         title="My Draft Talk",
@@ -442,18 +422,6 @@ def test_e2e_draft_save_and_resume(cfp_event, client, cfp_user):
     with scope(event=cfp_event):
         draft.refresh_from_db()
         assert draft.state == SubmissionStates.SUBMITTED
-
-
-def test_e2e_draft_invalid_info_stays_on_step(cfp_event, client, cfp_user):
-    client.force_login(cfp_user)
-    _, info_url = start_wizard(client, cfp_event)
-
-    data = info_data(cfp_event, title="", action="draft")
-    _, url = get_response_and_url(client, info_url, data=data)
-
-    assert "/info/" in url
-    with scope(event=cfp_event):
-        assert Submission.all_objects.filter(state=SubmissionStates.DRAFT).count() == 0
 
 
 def test_e2e_draft_anonymous_login_then_save(cfp_event, client, cfp_user):
@@ -495,60 +463,34 @@ def test_e2e_draft_anonymous_register_lands_on_verification_page_with_ack(
 
 
 @pytest.mark.parametrize(
-    ("resource_data", "expect_link"),
+    ("resource_data", "expected_link", "has_file"),
     (
         (
             {
-                "description": "My slides",
-                "link": "https://example.com/slides.pdf",
-                "is_public": "on",
+                "resource-0-description": "My slides",
+                "resource-0-link": "https://example.com/slides.pdf",
+                "resource-0-is_public": "on",
             },
+            "https://example.com/slides.pdf",
+            False,
+        ),
+        (
+            {
+                "resource-0-description": "My slides",
+                "resource-0-is_public": "on",
+                "resource-0-resource": SimpleUploadedFile(
+                    "slides.pdf", b"fake pdf content", content_type="application/pdf"
+                ),
+            },
+            None,
             True,
         ),
-        ({"description": "My slides", "is_public": "on"}, False),
     ),
     ids=["link", "file_upload"],
 )
-def test_e2e_wizard_with_resource(client, resource_data, expect_link):
-    event = EventFactory(
-        cfp__deadline=now() + dt.timedelta(days=30),
-        cfp__fields={"resources": {"visibility": "optional"}},
-    )
-    user = UserFactory()
-    sub_type = event.cfp.default_type_id
-
-    if not expect_link:
-        resource_data["resource"] = SimpleUploadedFile(
-            "slides.pdf", b"fake pdf content", content_type="application/pdf"
-        )
-
-    client.force_login(user)
-    _, info_url = start_wizard(client, event)
-    data = info_data(event, title="Talk with resources", submission_type=sub_type)
-    data["resource-TOTAL_FORMS"] = "1"
-    for key, value in resource_data.items():
-        data[f"resource-0-{key}"] = value
-    _, profile_url = get_response_and_url(client, info_url, data=data)
-    assert "/profile/" in profile_url
-
-    _, final_url = _post_profile(client, profile_url)
-    assert "/me/submissions/" in final_url
-
-    with scope(event=event):
-        sub = Submission.objects.select_related("submission_type", "track").last()
-        assert sub.title == "Talk with resources"
-        assert sub.resources.count() == 1
-        resource = sub.resources.first()
-        assert resource.description == "My slides"
-        assert resource.is_public is True
-        if expect_link:
-            assert resource.link == "https://example.com/slides.pdf"
-        else:
-            assert resource.resource
-            assert not resource.link
-
-
-def test_e2e_wizard_resource_deleted_unsaved_form_ignored(client):
+def test_e2e_wizard_with_resource_ignores_deleted_unsaved_form(
+    client, resource_data, expected_link, has_file
+):
     event = EventFactory(
         cfp__deadline=now() + dt.timedelta(days=30),
         cfp__fields={"resources": {"visibility": "optional"}},
@@ -556,14 +498,11 @@ def test_e2e_wizard_resource_deleted_unsaved_form_ignored(client):
     user = UserFactory()
     client.force_login(user)
     _, info_url = start_wizard(client, event)
-    data = info_data(event, title="Talk with deleted unsaved resource")
+    data = info_data(event, title="Talk with resources")
+    data.update(resource_data)
     data.update(
         {
             "resource-TOTAL_FORMS": "2",
-            # Form 0: valid resource
-            "resource-0-description": "Real resource",
-            "resource-0-link": "https://example.com/real",
-            "resource-0-is_public": "on",
             # Form 1: filled but marked for deletion, never saved (no pk)
             "resource-1-description": "Discarded resource",
             "resource-1-link": "https://example.com/discard",
@@ -578,11 +517,12 @@ def test_e2e_wizard_resource_deleted_unsaved_form_ignored(client):
 
     with scope(event=event):
         sub = Submission.objects.select_related("submission_type", "track").last()
-        assert sub.title == "Talk with deleted unsaved resource"
-        assert sub.resources.count() == 1
-        resource = sub.resources.first()
-        assert resource.description == "Real resource"
-        assert resource.link == "https://example.com/real"
+        assert sub.title == "Talk with resources"
+        resource = sub.resources.get()
+        assert resource.description == "My slides"
+        assert resource.is_public is True
+        assert resource.link == expected_link
+        assert bool(resource.resource) is has_file
 
 
 def test_e2e_draft_with_resources_then_resume_and_submit(client):
@@ -644,8 +584,12 @@ def test_e2e_draft_with_resources_then_resume_and_submit(client):
         assert resource.link == "https://example.com/draft-slides"
 
 
-def test_e2e_submission_type_access_code(cfp_event, client, cfp_access_code):
+def test_e2e_submission_type_access_code_bypasses_deadline(
+    cfp_event, client, cfp_access_code
+):
     with scopes_disabled():
+        cfp_event.cfp.deadline = now() - dt.timedelta(days=1)
+        cfp_event.cfp.save()
         sub_type = cfp_event.cfp.default_type
         sub_type.requires_access_code = True
         sub_type.save(update_fields=["requires_access_code"])
@@ -663,7 +607,8 @@ def test_e2e_submission_type_access_code(cfp_event, client, cfp_access_code):
     _, final_url = _post_profile(client, profile_url)
     assert final_url == f"/{cfp_event.slug}/verify/"
 
-    _assert_submission(cfp_event)
+    sub = _assert_submission(cfp_event)
+    assert sub.access_code_id == cfp_access_code.pk
 
 
 def test_e2e_wizard_with_tags(client):

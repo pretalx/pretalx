@@ -19,31 +19,38 @@ def _data(**overrides):
     return {**base, **overrides}
 
 
-def test_tag_form_save_creates_tag():
+def test_tag_form_creates_and_rejects_duplicates_and_read_only_changes():
     event = EventFactory()
 
     form = TagForm(data=_data(tag="python"), event=event)
     assert form.is_valid(), form.errors
     tag = form.save()
 
-    assert tag.pk is not None
     assert tag.event == event
     assert tag.tag == "python"
 
+    for tag_input in ("python", "  python  ", "Python"):
+        form = TagForm(data=_data(tag=tag_input), event=event)
+        assert not form.is_valid(), tag_input
+        assert list(form.errors) == ["tag"]
+        assert "already have a tag by this name" in str(form.errors["tag"])
 
-@pytest.mark.parametrize(
-    "tag_input",
-    ("python", "  python  ", "Python"),
-    ids=("exact", "with_whitespace", "different_case"),
-)
-def test_tag_form_rejects_duplicate(tag_input):
-    tag = TagFactory(tag="python")
+    assert TagForm(data=_data(tag="python"), event=event, instance=tag).is_valid()
 
-    form = TagForm(data=_data(tag=tag_input), event=tag.event)
+    other = TagFactory(event=event, tag="django")
+    form = TagForm(data=_data(tag="python"), event=event, instance=other)
 
     assert not form.is_valid()
-    assert "tag" in form.errors
-    assert "already have a tag by this name" in str(form.errors["tag"])
+    assert list(form.errors) == ["tag"]
+
+    form = TagForm(data=_data(tag="changed"), event=event, instance=tag, read_only=True)
+
+    assert not form.is_valid()
+    assert list(form.errors) == ["__all__"]
+
+    form = TagForm(event=event, instance=tag, read_only=True)
+
+    assert all(field.disabled for field in form.fields.values())
 
 
 @pytest.mark.parametrize(
@@ -61,60 +68,7 @@ def test_tag_form_folds_unicode_case_like_the_database(existing_tag, tag_input):
     assert form.errors.keys() == ({"tag"} if collides else set())
 
 
-def test_tag_form_allows_editing_own_tag():
-    tag = TagFactory(tag="python")
-
-    form = TagForm(data=_data(tag="python"), event=tag.event, instance=tag)
-
-    assert form.is_valid(), form.errors
-
-
-def test_tag_form_rejects_renaming_to_existing_tag():
-    event = EventFactory()
-    TagFactory(event=event, tag="python")
-    other = TagFactory(event=event, tag="django")
-
-    form = TagForm(data=_data(tag="python"), event=event, instance=other)
-
-    assert not form.is_valid()
-    assert "tag" in form.errors
-
-
-def test_tag_form_read_only_rejects_changes():
-    tag = TagFactory(tag="python")
-
-    form = TagForm(
-        data=_data(tag="changed"), event=tag.event, instance=tag, read_only=True
-    )
-
-    assert not form.is_valid()
-    assert "__all__" in form.errors
-
-
-def test_tag_form_read_only_disables_all_fields():
-    tag = TagFactory(tag="python")
-
-    form = TagForm(event=tag.event, instance=tag, read_only=True)
-
-    for field in form.fields.values():
-        assert field.disabled is True
-
-
-def test_tags_form_init_with_tags():
-    event = EventFactory()
-    tag1 = TagFactory(event=event)
-    tag2 = TagFactory(event=event)
-    TagFactory()  # different event, should not appear
-
-    submission = SubmissionFactory(event=event)
-    form = TagsForm(event=event, instance=submission)
-
-    assert "tags" in form.fields
-    assert set(form.fields["tags"].queryset) == {tag1, tag2}
-    assert form.fields["tags"].required is False
-
-
-def test_tags_form_init_without_tags():
+def test_tags_form_offers_event_tags_and_saves():
     event = EventFactory()
     submission = SubmissionFactory(event=event)
 
@@ -122,23 +76,20 @@ def test_tags_form_init_without_tags():
 
     assert "tags" not in form.fields
 
+    tag1 = TagFactory(event=event)
+    tag2 = TagFactory(event=event)
+    TagFactory()
 
-def test_tags_form_save():
-    event = EventFactory()
-    tag = TagFactory(event=event)
-    submission = SubmissionFactory(event=event)
+    form = TagsForm(event=event, instance=submission)
 
-    form = TagsForm(event=event, instance=submission, data={"tags": [tag.pk]})
+    assert set(form.fields["tags"].queryset) == {tag1, tag2}
+    assert form.fields["tags"].required is False
+
+    form = TagsForm(event=event, instance=submission, data={"tags": [tag1.pk]})
 
     assert form.is_valid()
     form.save()
-    assert list(submission.tags.all()) == [tag]
-
-
-def test_tags_form_read_only():
-    event = EventFactory()
-    TagFactory(event=event)
-    submission = SubmissionFactory(event=event)
+    assert list(submission.tags.all()) == [tag1]
 
     form = TagsForm(event=event, instance=submission, read_only=True, data={})
 

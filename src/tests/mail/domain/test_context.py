@@ -1,11 +1,12 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+from contextlib import nullcontext
 from decimal import Decimal
 
 import pytest
 from django.core.exceptions import FieldFetchBlocked
 from django.db import DatabaseError
-from django.utils.safestring import mark_safe
+from django.utils.safestring import SafeString, mark_safe
 from django_scopes import scope
 from i18nfield.strings import LazyI18nString
 
@@ -42,103 +43,51 @@ from tests.factories import (
 pytestmark = pytest.mark.unit
 
 
-def test_placeholder_aliases_first_is_visible_rest_hidden():
+def test_placeholder_aliases_share_render_func_and_hide_all_but_first():
     result = placeholder_aliases(
-        ["primary", "alias1", "alias2"],
+        ["event_name", "event", "evt"],
         ["event"],
-        lambda event: event,
-        "sample",
-        cls=TrustedPlainMailTextPlaceholder,
-    )
-    assert result[0].is_visible is True
-    assert result[1].is_visible is False
-    assert result[2].is_visible is False
-
-
-def test_placeholder_aliases_identifiers_match():
-    identifiers = ["event_name", "event"]
-    result = placeholder_aliases(
-        identifiers,
-        ["event"],
-        lambda event: event,
+        lambda event: f"rendered-{event}",
         "sample",
         explanation="The event name",
         cls=TrustedPlainMailTextPlaceholder,
     )
-    assert [p.identifier for p in result] == identifiers
+
+    assert [p.identifier for p in result] == ["event_name", "event", "evt"]
+    assert [p.is_visible for p in result] == [True, False, False]
+    assert [p.render({"event": "test"}) for p in result] == ["rendered-test"] * 3
 
 
-def test_placeholder_aliases_render_uses_same_func():
-    result = placeholder_aliases(
-        ["a", "b"],
-        ["event"],
-        lambda event: f"rendered-{event}",
-        "sample",
-        cls=TrustedPlainMailTextPlaceholder,
-    )
-    context = {"event": "test"}
-    assert result[0].render(context) == "rendered-test"
-    assert result[1].render(context) == "rendered-test"
-
-
+@pytest.mark.parametrize(
+    ("texts", "expected"),
+    (
+        ([], ""),
+        (["Great talk", "Needs work"], "Great talk\n\n--------------\n\nNeeds work"),
+        ([None, "Good one"], "Good one"),
+        (["   ", "Good one"], "Good one"),
+        (["  ", ""], ""),
+        (["  trimmed  "], "trimmed"),
+    ),
+    ids=("none", "two", "skips_null", "skips_blank", "all_blank", "strips"),
+)
 @pytest.mark.django_db
-def test_get_all_reviews_with_texts(event):
+def test_get_all_reviews_joins_usable_texts(event, texts, expected):
     submission = SubmissionFactory(event=event)
     with scope(event=event):
-        ReviewFactory(submission=submission, text="Great talk")
-        ReviewFactory(submission=submission, text="Needs work")
+        for text in texts:
+            ReviewFactory(submission=submission, text=text)
 
-        result = get_all_reviews(submission)
-
-    assert result == "Great talk\n\n--------------\n\nNeeds work"
+        assert get_all_reviews(submission) == expected
 
 
 @pytest.mark.django_db
-def test_get_all_reviews_no_reviews(event):
-    submission = SubmissionFactory(event=event)
-    with scope(event=event):
-        assert get_all_reviews(submission) == ""
-
-
-@pytest.mark.parametrize("unusable_text", (None, "   "))
-@pytest.mark.django_db
-def test_get_all_reviews_skips_unusable_text(event, unusable_text):
-    submission = SubmissionFactory(event=event)
-    with scope(event=event):
-        ReviewFactory(submission=submission, text=unusable_text)
-        ReviewFactory(submission=submission, text="Good one")
-
-        result = get_all_reviews(submission)
-
-    assert result == "Good one"
-
-
-@pytest.mark.django_db
-def test_get_all_reviews_all_empty_returns_empty(event):
-    submission = SubmissionFactory(event=event)
-    with scope(event=event):
-        ReviewFactory(submission=submission, text="  ")
-        ReviewFactory(submission=submission, text="")
-
-        assert get_all_reviews(submission) == ""
-
-
-@pytest.mark.django_db
-def test_get_all_reviews_strips_text(event):
-    submission = SubmissionFactory(event=event)
-    with scope(event=event):
-        ReviewFactory(submission=submission, text="  trimmed  ")
-
-        assert get_all_reviews(submission) == "trimmed"
-
-
-@pytest.mark.django_db
-def test_get_mail_context_includes_event_placeholders(event):
+def test_get_mail_context_includes_only_event_placeholders_without_user(event):
     with scope(event=event):
         context = get_mail_context(event=event)
 
     assert context["event_name"] == event.name
     assert context["event_slug"] == event.slug
+    assert "name" not in context
 
 
 @pytest.mark.django_db
@@ -158,33 +107,24 @@ def test_get_mail_context_includes_user_placeholders(event):
     assert context["email"].html == "<span>jane@example.org</span>"
 
 
+@pytest.mark.parametrize(
+    ("profile_name", "expected_name"), (("Jane Doe", "Jane Doe"), (None, "j-doe"))
+)
 @pytest.mark.django_db
-def test_get_mail_context_name_uses_event_speaker_profile(event):
+def test_get_mail_context_name_prefers_event_speaker_profile(
+    event, profile_name, expected_name
+):
     user = UserFactory(name="j-doe")
 
     with scope(event=event):
         profile = user.get_speaker(event)
-        profile.name = "Jane Doe"
+        profile.name = profile_name
         profile.save()
 
         context = get_mail_context(event=event, user=user)
 
-    assert context["name"].plain == "Jane Doe"
-    assert context["name"].html == "<span>Jane Doe</span>"
-
-
-@pytest.mark.django_db
-def test_get_mail_context_name_falls_back_to_user_name_without_profile_name(event):
-    user = UserFactory(name="j-doe")
-
-    with scope(event=event):
-        profile = user.get_speaker(event)
-        profile.name = None
-        profile.save()
-
-        context = get_mail_context(event=event, user=user)
-
-    assert context["name"].plain == "j-doe"
+    assert context["name"].plain == expected_name
+    assert context["name"].html == f"<span>{expected_name}</span>"
 
 
 @pytest.mark.django_db
@@ -232,15 +172,7 @@ def test_get_mail_context_renders_account_only_placeholders_for_account_backed(e
 
 
 @pytest.mark.django_db
-def test_get_mail_context_excludes_placeholders_without_required_context(event):
-    with scope(event=event):
-        context = get_mail_context(event=event)
-
-    assert "name" not in context
-
-
-@pytest.mark.django_db
-def test_get_mail_context_includes_submission_placeholders(event):
+def test_get_mail_context_includes_submission_placeholders_without_slot(event):
     submission = SubmissionFactory(event=event, title="My Great Talk")
 
     with scope(event=event):
@@ -251,65 +183,39 @@ def test_get_mail_context_includes_submission_placeholders(event):
     assert context["proposal_title"].plain == "My Great Talk"
     assert context["proposal_title"].html == "<span>My Great Talk</span>"
     assert context["proposal_code"] == submission.code
-
-
-@pytest.mark.django_db
-def test_get_mail_context_auto_adds_slot_from_submission(event):
-    submission = SubmissionFactory(event=event)
-    schedule = ScheduleFactory(event=event, version="v1")
-    room = RoomFactory(event=event, name="Room 101")
-    TalkSlotFactory(submission=submission, schedule=schedule, room=room)
-
-    with scope(event=event):
-        context = get_mail_context(event=event, submission=submission)
-
-    assert context["session_room"] == "Room 101"
-
-
-@pytest.mark.django_db
-def test_get_mail_context_no_slot_omits_slot_placeholders(event):
-    submission = SubmissionFactory(event=event)
-
-    with scope(event=event):
-        context = get_mail_context(event=event, submission=submission)
-
     assert "session_room" not in context
 
 
+@pytest.mark.parametrize(
+    ("slot_kwargs", "expected_room"),
+    (({}, "Room 101"), ({"start": None, "end": None}, None), ({"room": None}, None)),
+    ids=("scheduled", "unscheduled", "no_room"),
+)
 @pytest.mark.django_db
-def test_get_mail_context_slot_without_start_omits_slot_placeholders(event):
+def test_get_mail_context_auto_adds_placed_slot_from_submission(
+    event, slot_kwargs, expected_room
+):
     submission = SubmissionFactory(event=event)
     schedule = ScheduleFactory(event=event, version="v1")
     room = RoomFactory(event=event, name="Room 101")
     TalkSlotFactory(
-        submission=submission, schedule=schedule, room=room, start=None, end=None
+        **{"submission": submission, "schedule": schedule, "room": room, **slot_kwargs}
     )
 
     with scope(event=event):
         context = get_mail_context(event=event, submission=submission)
 
-    assert "session_room" not in context
+    assert ("session_room" in context) == (expected_room is not None)
+    assert expected_room is None or context["session_room"] == expected_room
 
 
 @pytest.mark.django_db
-def test_get_mail_context_slot_without_room_omits_slot_placeholders(event):
-    submission = SubmissionFactory(event=event)
-    schedule = ScheduleFactory(event=event, version="v1")
-    TalkSlotFactory(submission=submission, schedule=schedule, room=None)
-
-    with scope(event=event):
-        context = get_mail_context(event=event, submission=submission)
-
-    assert "session_room" not in context
-
-
-@pytest.mark.django_db
-def test_base_placeholders_contains_expected_identifiers(event):
+def test_base_placeholders_identifiers_and_alias_rendering(event):
     result = base_placeholders(sender=event)
     assert all(isinstance(p, BaseMailTextPlaceholder) for p in result)
-    identifiers = {p.identifier for p in result}
+    by_id = {p.identifier: p for p in result}
 
-    expected_identifiers = {
+    assert set(by_id) == {
         "event_name",
         "event",
         "event_slug",
@@ -347,26 +253,8 @@ def test_base_placeholders_contains_expected_identifiers(event):
         "speaker_schedule_new",
         "speaker_schedule_full",
     }
-    assert expected_identifiers == identifiers
-
-
-@pytest.mark.django_db
-def test_base_placeholders_event_name_renders_correctly(event):
-    result = base_placeholders(sender=event)
-    event_name_placeholder = next(p for p in result if p.identifier == "event_name")
-
-    rendered = event_name_placeholder.render({"event": event})
-    assert rendered == event.name
-
-
-@pytest.mark.django_db
-def test_base_placeholders_aliases_share_render_output(event):
-    result = base_placeholders(sender=event)
-    by_id = {p.identifier: p for p in result}
-
-    context = {"event": event}
-    assert by_id["event_name"].render(context) == by_id["event"].render(context)
-    assert by_id["event_name"].render(context) == event.name
+    assert by_id["event_name"].render({"event": event}) == event.name
+    assert by_id["event"].render({"event": event}) == event.name
 
 
 @pytest.mark.parametrize("value", (None, {}))
@@ -375,55 +263,46 @@ def test_validate_safe_extra_context_accepts_empty(value):
 
 
 @pytest.mark.parametrize(
-    "value",
+    ("value", "expectation"),
     (
-        mark_safe("https://example.com"),
-        EmailAlternativeString("plain", "<b>html</b>"),
-        42,
-        3.14,
-        Decimal("19.95"),
+        (mark_safe("https://example.com"), nullcontext()),
+        (EmailAlternativeString("plain", "<b>html</b>"), nullcontext()),
+        (42, nullcontext()),
+        (3.14, nullcontext()),
+        (Decimal("19.95"), nullcontext()),
+        (
+            "a plain string",
+            pytest.raises(TypeError, match="safe_extra_context\\['key'\\]"),
+        ),
+        (LazyI18nString("hello"), pytest.raises(TypeError, match="safe_extra_context")),
     ),
-    ids=("SafeString", "EmailAlternativeString", "int", "float", "Decimal"),
+    ids=(
+        "SafeString",
+        "EmailAlternativeString",
+        "int",
+        "float",
+        "Decimal",
+        "str",
+        "LazyI18nString",
+    ),
 )
-def test_validate_safe_extra_context_accepts_allowed_types(value):
-    _validate_safe_extra_context({"key": value})
-
-
-def test_validate_safe_extra_context_rejects_plain_string():
-    with pytest.raises(TypeError, match="safe_extra_context\\['key'\\]"):
-        _validate_safe_extra_context({"key": "a plain string"})
-
-
-def test_validate_safe_extra_context_rejects_lazy_i18n_string():
-    with pytest.raises(TypeError, match="safe_extra_context"):
-        _validate_safe_extra_context({"key": LazyI18nString("hello")})
+def test_validate_safe_extra_context_accepts_only_safe_types(value, expectation):
+    with expectation:
+        _validate_safe_extra_context({"key": value})
 
 
 @pytest.mark.django_db
-def test_validate_safe_extra_context_accepts_urlman_urls(event):
-    # Regression for the boilerplate-reduction escape hatch: organiser
-    # call sites can pass ``obj.urls.foo`` directly instead of spelling
-    # out ``mark_safe(obj.urls.foo.full())``. The validator must accept
-    # the raw ``urlman.Urls`` attribute.
-    _validate_safe_extra_context({"url": event.urls.base})
-
-
-@pytest.mark.django_db
-def test_get_mail_context_auto_wraps_urlman_urls(event):
-    from django.utils.safestring import SafeString  # noqa: PLC0415
-
-    context = get_mail_context(event=event, safe_extra_context={"url": event.urls.base})
-
-    assert isinstance(context["url"], SafeString)
-    assert context["url"] == event.urls.base.full()
-
-
-@pytest.mark.django_db
-def test_get_mail_context_leaves_non_urlman_safe_string_alone(event):
+def test_get_mail_context_wraps_urlman_urls_and_keeps_safe_strings(event):
+    # Organiser call sites can pass ``obj.urls.foo`` directly instead of
+    # spelling out ``mark_safe(obj.urls.foo.full())``.
     url = mark_safe("https://foo.test/?x=1&y=2")
 
-    context = get_mail_context(event=event, safe_extra_context={"url": url})
+    context = get_mail_context(
+        event=event, safe_extra_context={"base": event.urls.base, "url": url}
+    )
 
+    assert isinstance(context["base"], SafeString)
+    assert context["base"] == event.urls.base.full()
     assert context["url"] is url
 
 

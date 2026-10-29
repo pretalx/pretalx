@@ -7,11 +7,8 @@ from tests.factories import TagFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_tag_str():
+def test_tag_str_and_log_parent():
     tag = TagFactory(tag="keynote")
+
     assert str(tag) == "keynote"
-
-
-def test_tag_log_parent_is_event():
-    tag = TagFactory()
     assert tag.log_parent == tag.event

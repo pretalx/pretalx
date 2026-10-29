@@ -9,16 +9,16 @@ from tests.factories import EventFactory, SubmissionTypeFactory, TrackFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_speaker_information_form_init_limit_types_queryset():
+def test_speaker_information_form_init_limits_tracks_and_types_to_event():
     event = EventFactory()
-    own_type = SubmissionTypeFactory(event=event)
+    track = TrackFactory(event=event)
+    TrackFactory()  # different event's track
     SubmissionTypeFactory()  # different event's type
 
     form = SpeakerInformationForm(event=event)
 
-    queryset = list(form.fields["limit_types"].queryset)
-    assert own_type in queryset
-    assert set(queryset) == set(event.submission_types.all())
+    assert list(form.fields["limit_tracks"].queryset) == [track]
+    assert set(form.fields["limit_types"].queryset) == set(event.submission_types.all())
 
 
 def test_speaker_information_form_init_hides_tracks_when_feature_disabled():
@@ -30,36 +30,12 @@ def test_speaker_information_form_init_hides_tracks_when_feature_disabled():
     assert "limit_tracks" not in form.fields
 
 
-def test_speaker_information_form_init_shows_tracks_when_feature_enabled():
-    event = EventFactory()
-    track = TrackFactory(event=event)
-    TrackFactory()  # different event's track
-
-    form = SpeakerInformationForm(event=event)
-
-    assert "limit_tracks" in form.fields
-    assert list(form.fields["limit_tracks"].queryset) == [track]
-
-
-def test_speaker_information_form_save_sets_event():
-    event = EventFactory()
-    data = {"title_0": "Info Title", "text_0": "Some text", "target_group": "accepted"}
-
-    form = SpeakerInformationForm(data=data, event=event)
-    assert form.is_valid(), form.errors
-    info = form.save()
-
-    assert info.event == event
-    assert str(info.title) == "Info Title"
-    assert info.pk is not None
-
-
-def test_speaker_information_form_save_with_tracks_and_types():
+def test_speaker_information_form_save_sets_event_tracks_and_types():
     event = EventFactory()
     track = TrackFactory(event=event)
     sub_type = SubmissionTypeFactory(event=event)
     data = {
-        "title_0": "Info",
+        "title_0": "Info Title",
         "text_0": "Text",
         "target_group": "submitters",
         "limit_tracks": [track.pk],
@@ -70,6 +46,9 @@ def test_speaker_information_form_save_with_tracks_and_types():
     assert form.is_valid(), form.errors
     info = form.save()
 
+    assert info.pk is not None
+    assert info.event == event
+    assert str(info.title) == "Info Title"
     assert list(info.limit_tracks.all()) == [track]
     assert list(info.limit_types.all()) == [sub_type]
 
@@ -85,11 +64,15 @@ def test_speaker_information_form_accepts_all_target_groups(target_group):
 
 
 @pytest.mark.parametrize(
-    ("filename", "content_type"),
-    (("evil.html", "text/html"), ("evil.svg", "image/svg+xml")),
+    ("filename", "content_type", "errors"),
+    (
+        ("evil.html", "text/html", ["resource"]),
+        ("evil.svg", "image/svg+xml", ["resource"]),
+        ("slides.pdf", "application/pdf", []),
+    ),
 )
 def test_speaker_information_form_rejects_active_content_resource(
-    filename, content_type
+    filename, content_type, errors
 ):
     event = EventFactory()
     upload = SimpleUploadedFile(filename, b"<script>alert(1)</script>", content_type)
@@ -97,15 +80,5 @@ def test_speaker_information_form_rejects_active_content_resource(
 
     form = SpeakerInformationForm(data=data, files={"resource": upload}, event=event)
 
-    assert not form.is_valid()
-    assert "resource" in form.errors
-
-
-def test_speaker_information_form_accepts_pdf_resource():
-    event = EventFactory()
-    upload = SimpleUploadedFile("slides.pdf", b"%PDF-1.4", "application/pdf")
-    data = {"title_0": "Info", "text_0": "Text", "target_group": "accepted"}
-
-    form = SpeakerInformationForm(data=data, files={"resource": upload}, event=event)
-
-    assert form.is_valid(), form.errors
+    assert form.is_valid() == (not errors), form.errors
+    assert list(form.errors) == errors

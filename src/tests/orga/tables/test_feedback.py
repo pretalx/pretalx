@@ -16,57 +16,27 @@ def event():
     return EventFactory()
 
 
-def test_feedback_table_excludes_talk_column_when_not_included(event):
+def test_feedback_table_talk_column_follows_include_talk(event):
     feedback = FeedbackFactory(talk__event=event)
-    table = FeedbackTable(
-        [feedback], event=event, user=UserFactory.build(), include_talk=False
-    )
+    user = UserFactory.build()
 
-    assert "talk" in table.exclude
+    default = FeedbackTable([feedback], event=event, user=user)
+    without_talk = FeedbackTable([feedback], event=event, user=user, include_talk=False)
 
-
-def test_feedback_table_includes_talk_column_by_default(event):
-    feedback = FeedbackFactory(talk__event=event)
-    table = FeedbackTable([feedback], event=event, user=UserFactory.build())
-
-    assert "talk" not in table.exclude
+    assert "talk" not in default.exclude
+    assert "talk" in without_talk.exclude
 
 
-def test_feedback_table_render_review_with_markdown(event):
-    feedback = FeedbackFactory(talk__event=event, review="**bold text**")
-    table = FeedbackTable([feedback], event=event, user=UserFactory.build())
+def test_feedback_table_render_review_as_markdown(event):
+    markdown = FeedbackFactory(talk__event=event, review="**bold text**")
+    empty = FeedbackFactory(talk__event=event, review="")
+    table = FeedbackTable([markdown, empty], event=event, user=UserFactory.build())
 
-    result = table.render_review(feedback)
-
-    assert "<strong>bold text</strong>" in result
-
-
-def test_feedback_table_render_review_empty(event):
-    feedback = FeedbackFactory(talk__event=event, review="")
-    table = FeedbackTable([feedback], event=event, user=UserFactory.build())
-
-    result = table.render_review(feedback)
-
-    assert result == ""
+    assert table.render_review(markdown) == "<p><strong>bold text</strong></p>"
+    assert table.render_review(empty) == ""
 
 
-def test_feedback_table_render_speaker_managed(event):
-    speaker = SpeakerFactory(event=event, user=None, name="Managed Speaker")
-    feedback = FeedbackFactory(talk__event=event, speaker=speaker)
-    table = FeedbackTable([feedback], event=event, user=UserFactory.build())
-
-    assert table.render_speaker(speaker) == "Managed Speaker"
-
-
-def test_feedback_table_render_speaker_with_user(event):
-    speaker = SpeakerFactory(event=event, user__name="User Speaker")
-    feedback = FeedbackFactory(talk__event=event, speaker=speaker)
-    table = FeedbackTable([feedback], event=event, user=UserFactory.build())
-
-    assert table.render_speaker(speaker) == "User Speaker"
-
-
-def test_feedback_table_speaker_ordering_uses_display_name(event):
+def test_feedback_table_speaker_column_uses_display_name(event):
     managed = SpeakerFactory(event=event, user=None, name="Anna")
     account = SpeakerFactory(event=event, user__name="Mia")
     override = SpeakerFactory(event=event, user__name="Bea", name="Zoe")
@@ -74,6 +44,13 @@ def test_feedback_table_speaker_ordering_uses_display_name(event):
         speaker: FeedbackFactory(talk__event=event, speaker=speaker)
         for speaker in (managed, account, override)
     }
+    table = FeedbackTable(
+        list(feedbacks.values()), event=event, user=UserFactory.build()
+    )
+
+    assert table.render_speaker(managed) == "Anna"
+    assert table.render_speaker(account) == "Mia"
+    assert table.render_speaker(override) == "Zoe"
 
     column = FeedbackTable.base_columns["speaker"]
     with scopes_disabled():

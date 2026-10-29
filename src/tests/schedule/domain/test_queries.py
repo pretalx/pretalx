@@ -32,34 +32,18 @@ def make_slot(event, room, *, hours, duration=1, is_visible=True):
     )
 
 
-def test_published_schedules_excludes_wip(event):
+def test_published_schedules_newest_first_with_event_preloaded(
+    event, django_assert_num_queries
+):
     assert list(published_schedules(event)) == []
 
-
-def test_published_schedules_includes_only_versioned(event):
-    ScheduleFactory(event=event, version="v1")
-
-    result = list(published_schedules(event))
-
-    assert [s.version for s in result] == ["v1"]
-
-
-def test_published_schedules_orders_newest_first(event):
     ScheduleFactory(event=event, version="v1", published=now() - dt.timedelta(hours=2))
     ScheduleFactory(event=event, version="v2", published=now() - dt.timedelta(hours=1))
-
     result = list(published_schedules(event))
 
     assert [s.version for s in result] == ["v2", "v1"]
-
-
-def test_published_schedules_preloads_event(event, django_assert_num_queries):
-    ScheduleFactory(event=event, version="v1")
-
-    result = list(published_schedules(event))
-
     with django_assert_num_queries(0):
-        _ = result[0].event.slug
+        assert [s.event.slug for s in result] == [event.slug, event.slug]
 
 
 @pytest.mark.parametrize(

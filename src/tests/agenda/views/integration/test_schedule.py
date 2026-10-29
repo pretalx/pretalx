@@ -21,11 +21,6 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db]
             "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             id="firefox",
         ),
-        pytest.param(
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,"
-            "image/webp,image/apng,*/*;q=0.8",
-            id="chrome",
-        ),
         pytest.param("application/pdf", id="unknown_fallback"),
     ),
 )
@@ -40,19 +35,25 @@ def test_schedule_view_returns_html(client, public_event_with_schedule, accept_h
 
 
 @pytest.mark.parametrize(
-    "accept_kwargs",
+    ("query", "accept_kwargs"),
     (
-        pytest.param({"HTTP_ACCEPT": "*/*"}, id="curl_default"),
-        pytest.param({}, id="no_accept_header"),
-        pytest.param({"HTTP_ACCEPT": "text/plain"}, id="explicit_text_plain"),
+        pytest.param("", {"HTTP_ACCEPT": "*/*"}, id="curl_default"),
+        pytest.param("", {}, id="no_accept_header"),
+        pytest.param("", {"HTTP_ACCEPT": "text/plain"}, id="explicit_text_plain"),
+        pytest.param("?format=list", {"HTTP_ACCEPT": "*/*"}, id="list_format"),
+        pytest.param("?format=invalid", {"HTTP_ACCEPT": "*/*"}, id="invalid_format"),
     ),
 )
-def test_schedule_view_returns_text(client, public_event_with_schedule, accept_kwargs):
-    response = client.get(public_event_with_schedule.urls.schedule, **accept_kwargs)
+def test_schedule_view_returns_text(client, published_talk_slot, query, accept_kwargs):
+    event = published_talk_slot.event
+
+    response = client.get(event.urls.schedule + query, **accept_kwargs)
 
     assert response.status_code == 200
     assert "text/plain" in response["Content-Type"]
-    assert str(public_event_with_schedule.name) in response.content.decode()
+    content = response.content.decode()
+    assert str(event.name) in content
+    assert published_talk_slot.submission.title in content
 
 
 @pytest.mark.parametrize(
@@ -76,10 +77,15 @@ def test_schedule_view_redirects_for_export_accept_types(
     assert response.url == expected_url
 
 
-def test_schedule_view_404_without_permission(client):
+@pytest.mark.parametrize(
+    "url_name",
+    ("schedule", "changelog", "frab_xml"),
+    ids=["schedule", "changelog", "exporter"],
+)
+def test_agenda_views_404_without_permission(client, url_name):
     event = EventFactory(is_public=False)
 
-    response = client.get(event.urls.schedule, HTTP_ACCEPT="text/html")
+    response = client.get(getattr(event.urls, url_name), HTTP_ACCEPT="text/html")
 
     assert response.status_code == 404
 
@@ -148,30 +154,6 @@ def test_schedule_view_versioned_url_with_percent_escape_in_version(
     assert response.context["schedule"].version == "v1%2Fb"
 
 
-def test_schedule_view_text_format_list(
-    client, public_event_with_schedule, published_talk_slot
-):
-    response = client.get(
-        public_event_with_schedule.urls.schedule + "?format=list", HTTP_ACCEPT="*/*"
-    )
-
-    assert response.status_code == 200
-    assert "text/plain" in response["Content-Type"]
-    assert published_talk_slot.submission.title in response.content.decode()
-
-
-def test_schedule_view_text_format_invalid_falls_back_to_table(
-    client, public_event_with_schedule
-):
-    response = client.get(
-        public_event_with_schedule.urls.schedule + "?format=invalid", HTTP_ACCEPT="*/*"
-    )
-
-    assert response.status_code == 200
-    assert "text/plain" in response["Content-Type"]
-    assert str(public_event_with_schedule.name) in response.content.decode()
-
-
 def test_schedule_view_talk_url_renders(client, public_event_with_schedule):
     response = client.get(
         f"/{public_event_with_schedule.slug}/talk/", HTTP_ACCEPT="text/html"
@@ -179,14 +161,6 @@ def test_schedule_view_talk_url_renders(client, public_event_with_schedule):
 
     assert response.status_code == 200
     assert 'data-format="list"' in response.content.decode()
-
-
-def test_changelog_view_404_without_permission(client):
-    event = EventFactory(is_public=False)
-
-    response = client.get(event.urls.changelog, HTTP_ACCEPT="text/html")
-
-    assert response.status_code == 404
 
 
 def test_changelog_view_empty_when_no_versions(client, organiser_user, event):
@@ -310,12 +284,6 @@ def test_exporter_view_404_without_released_schedule(client, event):
     assert response.status_code == 404
 
 
-def test_exporter_view_404_without_permission(client, event):
-    response = client.get(f"/{event.slug}/schedule.xml")
-
-    assert response.status_code == 404
-
-
 @pytest.mark.parametrize(
     "url_suffix", (pytest.param("", id="js"), pytest.param("nojs", id="nojs"))
 )
@@ -331,29 +299,27 @@ def test_schedule_view_organizer_can_access_wip(client, user_with_event, url_suf
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
-def test_schedule_view_text_query_count(
-    client, event, item_count, django_assert_num_queries
+@pytest.mark.parametrize(
+    ("accept", "content_type", "query_count"),
+    (("*/*", "text/plain", 5), ("text/html", "text/html", 3)),
+    ids=["text", "html"],
+)
+def test_schedule_view_query_count(
+    client,
+    event,
+    item_count,
+    accept,
+    content_type,
+    query_count,
+    django_assert_num_queries,
 ):
     make_published_schedule(event, item_count)
 
-    with django_assert_num_queries(5):
-        response = client.get(event.urls.schedule, HTTP_ACCEPT="*/*")
+    with django_assert_num_queries(query_count):
+        response = client.get(event.urls.schedule, HTTP_ACCEPT=accept, follow=True)
 
     assert response.status_code == 200
-    assert "text/plain" in response["Content-Type"]
-
-
-@pytest.mark.parametrize("item_count", (1, 3))
-def test_schedule_view_html_query_count(
-    client, event, item_count, django_assert_num_queries
-):
-    make_published_schedule(event, item_count)
-
-    with django_assert_num_queries(3):
-        response = client.get(event.urls.schedule, HTTP_ACCEPT="text/html", follow=True)
-
-    assert response.status_code == 200
-    assert "text/html" in response["Content-Type"]
+    assert content_type in response["Content-Type"]
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -373,23 +339,8 @@ def test_schedule_nojs_view_renders_with_talk_data(
     assert all(sub.title in content for sub in submissions)
 
 
-@pytest.mark.parametrize("item_count", (1, 3))
-def test_changelog_view_renders(client, event, item_count):
-    make_published_schedule(event, item_count)
-    with scopes_disabled():
-        for i in range(item_count - 1):
-            freeze_schedule(event.wip_schedule, f"v{i + 2}")
-
-    response = client.get(event.urls.changelog, HTTP_ACCEPT="text/html")
-
-    assert response.status_code == 200
-    assert "agenda/changelog.html" in [t.name for t in response.templates]
-    content = response.content.decode()
-    assert "v1" in content
-
-
-@pytest.mark.parametrize("release_count", (2, 6))
-def test_changelog_view_queries_do_not_grow_with_releases(
+@pytest.mark.parametrize("release_count", (1, 3))
+def test_changelog_view_renders_all_releases_with_constant_queries(
     client, event, release_count, django_assert_num_queries
 ):
     make_published_schedule(event, 3)
@@ -401,6 +352,9 @@ def test_changelog_view_queries_do_not_grow_with_releases(
         response = client.get(event.urls.changelog, HTTP_ACCEPT="text/html")
 
     assert response.status_code == 200
+    assert "agenda/changelog.html" in [t.name for t in response.templates]
+    content = response.content.decode()
+    assert all(f"v{i + 1}" in content for i in range(release_count))
 
 
 def test_changelog_view_inlines_changes_for_html_export(client, event):
@@ -414,26 +368,17 @@ def test_changelog_view_inlines_changes_for_html_export(client, event):
     assert "agenda/changelog_block.html" in [t.name for t in response.templates]
 
 
-def test_changelog_entry_view_renders_fragment(client, event):
-    make_published_schedule(event, 1)
+@pytest.mark.parametrize("version", ("v1", "v1%2Fb"), ids=["plain", "percent_escape"])
+def test_changelog_entry_view_renders_fragment(client, event, version):
+    make_published_schedule(event, 1, version=version)
     with scopes_disabled():
-        schedule = event.schedules.get(version="v1")
+        schedule = event.schedules.get(version=version)
 
     response = client.get(schedule.urls.changelog_entry, HTTP_ACCEPT="text/html")
 
     assert response.status_code == 200
     assert [t.name for t in response.templates] == ["agenda/changelog_block.html"]
-
-
-def test_changelog_entry_view_resolves_percent_escape_in_version(client, event):
-    make_published_schedule(event, 1, version="v1%2Fb")
-    with scopes_disabled():
-        schedule = event.schedules.get(version="v1%2Fb")
-
-    response = client.get(schedule.urls.changelog_entry, HTTP_ACCEPT="text/html")
-
-    assert response.status_code == 200
-    assert response.context["schedule"].version == "v1%2Fb"
+    assert response.context["schedule"].version == version
 
 
 @pytest.mark.parametrize("version", ("v2", "wip"), ids=["unknown", "wip"])

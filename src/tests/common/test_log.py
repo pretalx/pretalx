@@ -60,39 +60,31 @@ from tests.factories import (
 pytestmark = pytest.mark.unit
 
 
-def test_default_activitylog_display_known_action_type():
-    log = ActivityLog(action_type="pretalx.submission.create")
+@pytest.mark.parametrize(
+    ("action_type", "data", "expected"),
+    (
+        ("pretalx.submission.create", None, LOG_NAMES["pretalx.submission.create"]),
+        (
+            "pretalx.event.delete",
+            {"name": "Test Event", "slug": "test", "organiser": "Org"},
+            "The event Test Event (test) by Org was deleted.",
+        ),
+        (
+            "pretalx.event.delete",
+            {"name": "Test Event"},
+            LOG_NAMES["pretalx.event.delete"],
+        ),
+        ("pretalx.event.delete", None, LOG_NAMES["pretalx.event.delete"]),
+        ("pretalx.totally.unknown.action", None, None),
+    ),
+    ids=("known", "template", "template_missing_data", "template_no_data", "unknown"),
+)
+def test_default_activitylog_display(action_type, data, expected):
+    log = ActivityLog(action_type=action_type, data=data)
 
     result = default_activitylog_display(sender=None, activitylog=log)
 
-    assert result == LOG_NAMES["pretalx.submission.create"]
-
-
-def test_default_activitylog_display_template_with_valid_data():
-    log = ActivityLog(
-        action_type="pretalx.event.delete",
-        data={"name": "Test Event", "slug": "test", "organiser": "Org"},
-    )
-
-    result = default_activitylog_display(sender=None, activitylog=log)
-
-    assert result == "The event Test Event (test) by Org was deleted."
-
-
-def test_default_activitylog_display_template_with_missing_data():
-    log = ActivityLog(action_type="pretalx.event.delete", data={"name": "Test Event"})
-
-    result = default_activitylog_display(sender=None, activitylog=log)
-
-    assert result == LOG_NAMES["pretalx.event.delete"]
-
-
-def test_default_activitylog_display_template_with_non_dict_data():
-    log = ActivityLog(action_type="pretalx.event.delete", data=None)
-
-    result = default_activitylog_display(sender=None, activitylog=log)
-
-    assert result == LOG_NAMES["pretalx.event.delete"]
+    assert result == expected
 
 
 @pytest.mark.parametrize(("alias", "resolved"), tuple(LOG_ALIASES.items()))
@@ -118,14 +110,6 @@ def _log_prefixes_with_parent():
 @pytest.mark.parametrize("prefix", _log_prefixes_with_parent())
 def test_delete_actions_have_display_names(prefix):
     assert f"{prefix}.delete" in LOG_NAMES
-
-
-def test_default_activitylog_display_unknown_action_type_returns_none():
-    log = ActivityLog(action_type="pretalx.totally.unknown.action")
-
-    result = default_activitylog_display(sender=None, activitylog=log)
-
-    assert result is None
 
 
 @pytest.mark.parametrize(
@@ -226,59 +210,30 @@ def test_default_activitylog_object_link_review():
 
 
 @pytest.mark.django_db
-def test_default_activitylog_object_link_question():
-    question = QuestionFactory()
-    log = ActivityLog(content_object=question)
-
-    result = default_activitylog_object_link(sender=question.event, activitylog=log)
-
-    assert result == (
+def test_default_activitylog_object_link_question_option_and_answers():
+    option = AnswerOptionFactory()
+    question = option.question
+    event = question.event
+    answer = AnswerFactory(question=question)
+    orphan_answer = AnswerFactory(question=question, submission=None)
+    question_link = (
         f'Custom field <a href="{question.urls.base}">{escape(question.question)}</a>'
     )
 
+    def link(obj):
+        return default_activitylog_object_link(
+            sender=event, activitylog=ActivityLog(content_object=obj)
+        )
 
-@pytest.mark.django_db
-def test_default_activitylog_object_link_answer_option():
-    option = AnswerOptionFactory()
-    log = ActivityLog(content_object=option)
-
-    result = default_activitylog_object_link(
-        sender=option.question.event, activitylog=log
-    )
-
-    assert result == (
-        f'Custom field <a href="{option.question.urls.base}">'
-        f"{escape(option.question.question)}</a>"
-    )
-
-
-@pytest.mark.django_db
-def test_default_activitylog_object_link_answer_with_submission():
-    answer = AnswerFactory()
-    log = ActivityLog(content_object=answer)
-
-    result = default_activitylog_object_link(
-        sender=answer.question.event, activitylog=log
-    )
-
-    assert result == (
+    assert link(question) == question_link
+    assert link(option) == question_link
+    assert link(answer) == (
         f'Response to custom field <a href="{answer.submission.orga_urls.base}">'
-        f"{escape(answer.question.question)}</a>"
+        f"{escape(question.question)}</a>"
     )
-
-
-@pytest.mark.django_db
-def test_default_activitylog_object_link_answer_without_submission():
-    answer = AnswerFactory(submission=None)
-    log = ActivityLog(content_object=answer)
-
-    result = default_activitylog_object_link(
-        sender=answer.question.event, activitylog=log
-    )
-
-    assert result == (
-        f'Response to custom field <a href="{answer.question.urls.base}">'
-        f"{escape(answer.question.question)}</a>"
+    assert link(orphan_answer) == (
+        f'Response to custom field <a href="{question.urls.base}">'
+        f"{escape(question.question)}</a>"
     )
 
 
@@ -318,24 +273,20 @@ def test_default_activitylog_object_link_queued_mail():
 @pytest.mark.django_db
 def test_default_activitylog_object_link_speaker_profile():
     speaker = SpeakerFactory()
-    log = ActivityLog(content_object=speaker)
+    managed = SpeakerFactory(event=speaker.event, user=None, name="Managed Alice")
 
-    result = default_activitylog_object_link(sender=speaker.event, activitylog=log)
+    def link(obj):
+        return default_activitylog_object_link(
+            sender=speaker.event, activitylog=ActivityLog(content_object=obj)
+        )
 
-    assert result == (
+    assert link(speaker) == (
         f'Speaker <a href="{speaker.orga_urls.base}">'
         f"{escape(speaker.user.get_display_name())}</a>"
     )
-
-
-@pytest.mark.django_db
-def test_default_activitylog_object_link_managed_speaker_profile():
-    speaker = SpeakerFactory(user=None, name="Managed Alice")
-    log = ActivityLog(content_object=speaker)
-
-    result = default_activitylog_object_link(sender=speaker.event, activitylog=log)
-
-    assert result == f'Speaker <a href="{speaker.orga_urls.base}">Managed Alice</a>'
+    assert (
+        link(managed) == f'Speaker <a href="{managed.orga_urls.base}">Managed Alice</a>'
+    )
 
 
 @pytest.mark.django_db
@@ -351,16 +302,6 @@ def test_default_activitylog_object_link_event():
 
 
 @pytest.mark.django_db
-def test_default_activitylog_object_link_generic_fallback():
-    track = TrackFactory()
-    log = ActivityLog(content_object=track)
-
-    result = default_activitylog_object_link(sender=track.event, activitylog=log)
-
-    assert result == f'<a href="{track.urls.base}">{escape(str(track))}</a>'
-
-
-@pytest.mark.django_db
 def test_default_activitylog_object_link_generic_fallback_escapes_link_text():
     track = TrackFactory(name="<script>alert(1)</script>")
     log = ActivityLog(content_object=track)
@@ -373,41 +314,26 @@ def test_default_activitylog_object_link_generic_fallback_escapes_link_text():
 
 
 @pytest.mark.django_db
-def test_default_activitylog_object_link_without_string_representation():
+def test_default_activitylog_object_link_without_urls_or_string_representation():
     information = SpeakerInformationFactory()
-    log = ActivityLog(content_object=information)
+    availability = AvailabilityFactory(event=information.event)
 
-    result = default_activitylog_object_link(sender=information.event, activitylog=log)
-
-    assert result is None
-
-
-@pytest.mark.django_db
-def test_default_activitylog_object_link_without_urls():
-    availability = AvailabilityFactory()
-    log = ActivityLog(content_object=availability)
-
-    result = default_activitylog_object_link(sender=availability.event, activitylog=log)
-
-    assert result is None
-
-
-def test_generic_object_url_of_none_is_empty():
-    assert generic_object_url(None) == ""
+    for obj in (information, availability):
+        log = ActivityLog(content_object=obj)
+        assert (
+            default_activitylog_object_link(sender=information.event, activitylog=log)
+            is None
+        )
 
 
 @pytest.mark.django_db
 def test_generic_object_url_prefers_the_organiser_url():
     event = EventFactory()
+    room = RoomFactory(event=event)
 
+    assert generic_object_url(None) == ""
     assert generic_object_url(event) == event.orga_urls.base
     assert event.orga_urls.base != event.urls.base
-
-
-@pytest.mark.django_db
-def test_generic_object_url_falls_back_to_the_public_url():
-    room = RoomFactory()
-
     assert not hasattr(room, "orga_urls")
     assert generic_object_url(room) == room.urls.base
 
@@ -435,49 +361,57 @@ def test_action_labels_reuse_submission_state_labels(state):
     action = SubmissionStates.log_actions[state].removeprefix(".")
 
     assert ACTION_LABELS[action] is SubmissionStates(state).label
+    assert isinstance(action_type_label(f"pretalx.submission.{action}"), Promise)
 
 
-def test_action_type_label_stays_lazy():
-    label = action_type_label("pretalx.submission.accept")
-
-    assert isinstance(label, Promise)
-
-
-def test_compute_log_changes_both_none():
-    assert compute_log_changes(None, None) == {}
-
-
-def test_compute_log_changes_identical_truthy_values():
-    data = {"title": "Same Title", "state": "submitted"}
-
-    assert compute_log_changes(data, data) == {}
-
-
-def test_compute_log_changes_ignores_both_falsy():
-    assert compute_log_changes({"key": ""}, {"key": None}) == {}
-
-
-def test_compute_log_changes_mixed_keys():
-    old_data = {"title": "Old Title", "state": "submitted", "track": None}
-    new_data = {"title": "New Title", "state": "submitted", "track": 1}
-
-    changes = compute_log_changes(old_data, new_data)
-
-    assert changes["title"] == {"old": "Old Title", "new": "New Title"}
-    assert "state" not in changes
-    assert changes["track"] == {"old": None, "new": 1}
-
-
-def test_compute_log_changes_tracks_additions():
-    assert compute_log_changes({}, {"title": "New"}) == {
-        "title": {"old": None, "new": "New"}
-    }
-
-
-def test_compute_log_changes_tracks_removals():
-    assert compute_log_changes({"title": "Old"}, {}) == {
-        "title": {"old": "Old", "new": None}
-    }
+@pytest.mark.parametrize(
+    ("old", "new", "expected"),
+    (
+        (None, None, {}),
+        (
+            {"title": "Same Title", "state": "submitted"},
+            {"title": "Same Title", "state": "submitted"},
+            {},
+        ),
+        ({"key": ""}, {"key": None}, {}),
+        (
+            {"title": "Old Title", "state": "submitted", "track": None},
+            {"title": "New Title", "state": "submitted", "track": 1},
+            {
+                "title": {"old": "Old Title", "new": "New Title"},
+                "track": {"old": None, "new": 1},
+            },
+        ),
+        ({}, {"title": "New"}, {"title": {"old": None, "new": "New"}}),
+        ({"title": "Old"}, {}, {"title": {"old": "Old", "new": None}}),
+        ({"name": "DemoCon"}, {"name": {"en": "DemoCon"}}, {}),
+        ({"name": {"de": "DemoCon"}}, {"name": "DemoCon"}, {}),
+        (
+            {"name": "DemoCon"},
+            {"name": {"en": "DemoCon", "de": "DemoCon"}},
+            {"name": {"old": "DemoCon", "new": {"en": "DemoCon", "de": "DemoCon"}}},
+        ),
+        (
+            {"name": "DemoCon"},
+            {"name": {"en": "Other"}},
+            {"name": {"old": "DemoCon", "new": {"en": "Other"}}},
+        ),
+    ),
+    ids=(
+        "both_none",
+        "identical",
+        "both_falsy",
+        "mixed_keys",
+        "addition",
+        "removal",
+        "locale-dict-new",
+        "locale-dict-old",
+        "two-locales",
+        "different-text",
+    ),
+)
+def test_compute_log_changes(old, new, expected):
+    assert compute_log_changes(old, new) == expected
 
 
 def test_compute_log_changes_orders_new_data_first():
@@ -489,25 +423,10 @@ def test_compute_log_changes_orders_new_data_first():
     assert list(changes) == ["delta", "bravo", "charlie", "alpha", "echo", "foxtrot"]
 
 
-@pytest.mark.parametrize(
-    ("old", "new", "changed"),
-    (
-        ("DemoCon", {"en": "DemoCon"}, False),
-        ({"de": "DemoCon"}, "DemoCon", False),
-        ("DemoCon", {"en": "DemoCon", "de": "DemoCon"}, True),
-        ("DemoCon", {"en": "Other"}, True),
-    ),
-    ids=("dict-new", "dict-old", "two-locales", "different-text"),
-)
-def test_compute_log_changes_plain_string_vs_locale_dict(old, new, changed):
-    changes = compute_log_changes({"name": old}, {"name": new})
-
-    assert ("name" in changes) is changed
-
-
 @pytest.mark.django_db
-def test_resolve_log_changes_returns_none_without_data():
-    log = ActivityLogFactory(data=None)
+@pytest.mark.parametrize("data", (None, {"some_key": "some_value"}))
+def test_resolve_log_changes_returns_none_without_changes(data):
+    log = ActivityLogFactory(data=data)
 
     assert resolve_log_changes(log) is None
 
@@ -565,13 +484,6 @@ def test_resolve_log_changes_resolves_foreign_key_displays():
 
 
 @pytest.mark.django_db
-def test_resolve_log_changes_returns_none_without_changes_key():
-    log = ActivityLogFactory(data={"some_key": "some_value"})
-
-    assert resolve_log_changes(log) is None
-
-
-@pytest.mark.django_db
 def test_resolve_log_changes_labels_user_email():
     speaker = SpeakerFactory()
     log = ActivityLogFactory(
@@ -604,13 +516,22 @@ def test_resolve_log_changes_returns_none_when_content_object_deleted():
 @pytest.mark.django_db
 def test_group_activity_log_uses_event_speaker_name(django_assert_num_queries):
     user = UserFactory(name="Account Name")
+    unnamed = UserFactory(name="Other Account")
     event = EventFactory()
     SpeakerFactory(user=user, event=event, name="Event Name")
+    SpeakerFactory(user=unnamed, event=event, name=None)
     logs = list(
         ActivityLogFactory.create_batch(
             3, event=event, person=user, action_type="pretalx.event.update"
         )
-    )
+    ) + [
+        ActivityLogFactory(
+            event=event, person=unnamed, action_type="pretalx.event.update"
+        ),
+        ActivityLogFactory(
+            event=event, person=None, action_type="pretalx.event.update"
+        ),
+    ]
 
     with django_assert_num_queries(1):
         groups = group_activity_log(logs, with_objects=False)
@@ -619,21 +540,7 @@ def test_group_activity_log_uses_event_speaker_name(django_assert_num_queries):
         entry["log"].person_display_name
         for group in groups
         for entry in group["entries"]
-    ] == ["Event Name"] * 3
-
-
-@pytest.mark.django_db
-def test_group_activity_log_falls_back_to_account_name():
-    user = UserFactory(name="Account Name")
-    event = EventFactory()
-    SpeakerFactory(user=user, event=event, name=None)
-    log = ActivityLogFactory(
-        event=event, person=user, action_type="pretalx.event.update"
-    )
-
-    group_activity_log([log], with_objects=False)
-
-    assert log.person_display_name == "Account Name"
+    ] == ["Event Name"] * 3 + ["Other Account", ""]
 
 
 @pytest.mark.django_db
@@ -646,11 +553,6 @@ def test_activity_log_person_display_name_without_priming():
     )
 
     assert log.person_display_name == "Event Name"
-
-
-@pytest.mark.django_db
-def test_activity_log_person_display_name_without_person():
-    assert ActivityLogFactory(person=None).person_display_name == ""
 
 
 def test_settings_fields_maps_json_columns_and_hierarkey_settings():
@@ -676,6 +578,7 @@ def test_serialize_setting_value_of_file():
 def test_settings_snapshot_expands_settings_into_dotted_keys():
     event = EventFactory()
     event.feature_flags["use_submission_comments"] = True
+    event.custom_css.save("custom.css", ContentFile(b"body { color: red }"))
     event.save()
     event.settings.set("review_help_text", LazyI18nString({"en": "Be nice"}))
 
@@ -687,15 +590,6 @@ def test_settings_snapshot_expands_settings_into_dotted_keys():
     assert "use_submission_comments" not in data["feature_flags"]
     assert data["feature_flags"]["use_tracks"] is True
     assert data["review_settings"] == {}
-
-
-@pytest.mark.django_db
-def test_settings_snapshot_keeps_custom_css_name():
-    event = EventFactory()
-    event.custom_css.save("custom.css", ContentFile(b"body { color: red }"))
-
-    data = settings_snapshot(event, ReviewSettingsForm)
-
     assert data["custom_css"] == event.custom_css.name
 
 
@@ -744,9 +638,16 @@ def test_settings_snapshot_falls_back_to_effective_defaults():
 
 
 @pytest.mark.django_db
-def test_log_settings_changes_logs_changed_settings():
+def test_log_settings_changes_logs_only_changed_settings():
     event = EventFactory()
     user = UserFactory()
+
+    with log_settings_changes(
+        event, "pretalx.event.update", person=user, forms=(MailSettingsForm,)
+    ):
+        event.save()
+
+    assert not event.logged_actions().exists()
 
     with log_settings_changes(
         event, "pretalx.event.update", person=user, forms=(MailSettingsForm,)
@@ -759,18 +660,6 @@ def test_log_settings_changes_logs_changed_settings():
     assert log.data["changes"] == {
         "mail_settings.reply_to": {"old": "", "new": "chair@example.org"}
     }
-
-
-@pytest.mark.django_db
-def test_log_settings_changes_without_changes_logs_nothing():
-    event = EventFactory()
-
-    with log_settings_changes(
-        event, "pretalx.event.update", person=UserFactory(), forms=(MailSettingsForm,)
-    ):
-        event.save()
-
-    assert not event.logged_actions().exists()
 
 
 @pytest.mark.django_db

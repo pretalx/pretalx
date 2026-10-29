@@ -15,95 +15,42 @@ from tests.factories import EventFactory, TeamFactory, UserApiTokenFactory, User
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_update_token_events_removes_inaccessible():
-    user = UserFactory()
-    event1 = EventFactory()
-    event2 = EventFactory()
-    team = TeamFactory(organiser=event1.organiser, all_events=True)
-    team.members.add(user)
-    # event2 is on a different organiser, so user has no access
-    token = UserApiTokenFactory(user=user)
-    token.limit_events.add(event1, event2)
-
-    update_token_events(token)
-
-    assert list(token.limit_events.all()) == [event1]
-
-
-def test_update_token_events_expires_when_all_removed():
-    user = UserFactory()
-    event = EventFactory()
-    # User has no team membership, so no access to any events
-    token = UserApiTokenFactory(user=user, expires=None)
-    token.limit_events.add(event)
-
-    update_token_events(token)
-
-    token.refresh_from_db()
-    assert not token.limit_events.exists()
-    assert token.expires is not None
-    assert token.expires <= tz_now()
-
-
-def test_update_token_events_expires_all_events_token_without_access():
-    user = UserFactory()
-    token = UserApiTokenFactory(user=user, all_events=True, expires=None)
-
-    update_token_events(token)
-
-    token.refresh_from_db()
-    assert token.expires is not None
-    assert token.expires <= tz_now()
-
-
-def test_update_token_events_keeps_administrator_all_events_token():
-    user = UserFactory(is_administrator=True)
-    token = UserApiTokenFactory(user=user, all_events=True, expires=None)
+@pytest.mark.parametrize(
+    ("is_admin", "in_team", "all_events", "limit", "expected_limit", "expired"),
+    (
+        (False, True, False, [0, 1], [0], False),
+        (False, False, False, [0], [], True),
+        (False, False, True, [], [], True),
+        (True, False, True, [], [], False),
+        (True, False, False, [0], [0], False),
+        (False, True, True, [], [], False),
+        (False, True, False, [0], [0], False),
+    ),
+    ids=[
+        "removes_inaccessible",
+        "expires_when_all_removed",
+        "expires_all_events_without_access",
+        "keeps_administrator_all_events",
+        "keeps_administrator_limit_events",
+        "keeps_all_events_with_access",
+        "noop_when_all_accessible",
+    ],
+)
+def test_update_token_events(
+    is_admin, in_team, all_events, limit, expected_limit, expired
+):
+    user = UserFactory(is_administrator=is_admin)
+    events = [EventFactory(), EventFactory()]
+    team = TeamFactory(organiser=events[0].organiser, all_events=True)
+    team.members.set([user] if in_team else [])
+    token = UserApiTokenFactory(user=user, all_events=all_events, expires=None)
+    token.limit_events.add(*[events[index] for index in limit])
 
     update_token_events(token)
 
     token.refresh_from_db()
-    assert token.expires is None
-
-
-def test_update_token_events_keeps_administrator_limit_events():
-    user = UserFactory(is_administrator=True)
-    event = EventFactory()
-    token = UserApiTokenFactory(user=user, expires=None)
-    token.limit_events.add(event)
-
-    update_token_events(token)
-
-    token.refresh_from_db()
-    assert list(token.limit_events.all()) == [event]
-    assert token.expires is None
-
-
-def test_update_token_events_keeps_all_events_token_with_access():
-    user = UserFactory()
-    event = EventFactory()
-    TeamFactory(organiser=event.organiser, all_events=True).members.add(user)
-    token = UserApiTokenFactory(user=user, all_events=True, expires=None)
-
-    update_token_events(token)
-
-    token.refresh_from_db()
-    assert token.expires is None
-
-
-def test_update_token_events_noop_when_all_accessible():
-    user = UserFactory()
-    event = EventFactory()
-    team = TeamFactory(organiser=event.organiser, all_events=True)
-    team.members.add(user)
-    token = UserApiTokenFactory(user=user)
-    token.limit_events.add(event)
-
-    update_token_events(token)
-
-    assert list(token.limit_events.all()) == [event]
-    token.refresh_from_db()
-    assert token.expires is None
+    assert list(token.limit_events.all()) == [events[index] for index in expected_limit]
+    assert (token.expires is not None and token.expires <= tz_now()) is expired
 
 
 def test_upgrade_token_sets_current_version_and_logs():

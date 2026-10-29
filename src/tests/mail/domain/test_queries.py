@@ -10,35 +10,16 @@ from tests.factories import QueuedMailFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_outbox_mails_returns_drafts_only(event):
-    draft = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-    QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
-    QueuedMailFactory(event=event, state=QueuedMailStates.SENDING)
-
-    assert list(outbox_mails(event)) == [draft]
-
-
-def test_outbox_mails_orders_newest_first(event):
-    older = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-    newer = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-
-    assert list(outbox_mails(event)) == [newer, older]
-
-
-def test_outbox_mails_annotates_computed_state(event):
-    mail = QueuedMailFactory(
+def test_outbox_and_sent_mails_split_by_state_newest_first(event):
+    older = QueuedMailFactory(
         event=event, state=QueuedMailStates.DRAFT, error_data={"error": "boom"}
     )
-
-    result = list(outbox_mails(event))
-
-    assert result == [mail]
-    assert result[0].computed_state == "failed"
-
-
-def test_sent_mails_returns_sent_and_sending(event):
-    QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
+    newer = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
     sent = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
     sending = QueuedMailFactory(event=event, state=QueuedMailStates.SENDING)
 
+    outbox = list(outbox_mails(event))
+
+    assert outbox == [newer, older]
+    assert [mail.computed_state for mail in outbox] == ["draft", "failed"]
     assert set(sent_mails(event)) == {sent, sending}

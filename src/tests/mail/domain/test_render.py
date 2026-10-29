@@ -24,7 +24,7 @@ from pretalx.mail.domain.render import (
 )
 from pretalx.mail.domain.send import send_draft, send_transient
 from pretalx.mail.enums import QueuedMailStates
-from pretalx.mail.models import QueuedMail
+from pretalx.mail.models import MailTemplate, QueuedMail
 from tests.factories import (
     MailTemplateFactory,
     QueuedMailFactory,
@@ -54,72 +54,60 @@ def test_get_prefixed_subject_adds_brackets(event, prefix, subject, expected):
     assert get_prefixed_subject(event, subject) == expected
 
 
-def test_render_returns_unsaved_mail_with_no_recipient(event):
-    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
-    mail = render_template_to_mail(template)
-
-    assert mail.to is None
-    assert mail.subject == "Hi"
-    assert mail.text == "Body"
-    assert mail.pk is None
-
-
-def test_save_draft_sets_to_address(event):
-    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
-    mail = render_template_to_mail(template)
-    save_draft(mail, to="a@example.com")
-
-    assert mail.pk is not None
-    assert mail.to == "a@example.com"
-
-
-def test_save_draft_attaches_to_speakers_and_submissions(event):
-    submission = SubmissionFactory(event=event)
-    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
-
-    with scope(event=event):
-        speaker = SpeakerFactory(event=event)
-        mail = render_template_to_mail(template)
-        save_draft(mail, to_speakers=[speaker], submissions=[submission])
-
-        assert mail.pk is not None
-        assert list(mail.to_speakers.all()) == [speaker]
-        assert list(mail.submissions.all()) == [submission]
-
-
-def test_render_uses_explicit_locale(event):
-    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
-    mail = render_template_to_mail(template, locale="de")
-    assert mail.locale == "de"
-
-
-@pytest.mark.parametrize(
-    ("subject_length", "expected_length", "truncated"),
-    ((200, 200, False), (250, 199, True)),
-)
-def test_render_subject_truncation_at_200_chars(
-    event, subject_length, expected_length, truncated
-):
-    subject = "A" * subject_length
-    template = MailTemplateFactory(event=event, subject=subject, text="Body")
-    mail = render_template_to_mail(template)
-
-    assert len(mail.subject) == expected_length
-    if truncated:
-        assert mail.subject.endswith("…")
-    else:
-        assert mail.subject == subject
-
-
-def test_render_substitutes_context_placeholders(event):
+def test_render_template_to_mail_returns_unsaved_rendered_mail(event):
     template = MailTemplateFactory(
         event=event,
         subject="Welcome to {event_name}",
         text="Hi, {event_name} is great!",
+        reply_to="reply@example.com",
+        bcc="bcc@example.com",
     )
-    mail = render_template_to_mail(template)
+
+    mail = render_template_to_mail(template, locale="de")
+
+    assert mail.pk is None
+    assert mail.to is None
     assert mail.subject == f"Welcome to {event.name}"
     assert mail.text == f"Hi, {event.name} is great!"
+    assert mail.locale == "de"
+    assert mail.reply_to == "reply@example.com"
+    assert mail.bcc == "bcc@example.com"
+    assert mail.template == template
+    assert mail.event == event
+
+
+def test_render_then_save_draft_then_send_draft(event):
+    djmail.outbox = []
+    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
+
+    mail = render_template_to_mail(template)
+    save_draft(mail, to="test@pretalx.org")
+
+    assert mail.pk is not None
+    assert mail.to == "test@pretalx.org"
+    with scope(event=event):
+        assert list(mail.to_speakers.all()) == []
+        assert list(mail.submissions.all()) == []
+
+    send_draft(mail)
+
+    mail = QueuedMail.objects.get(pk=mail.pk)
+    assert mail.state == QueuedMailStates.SENT
+    assert mail.sent is not None
+    assert len(djmail.outbox) == 1
+    sent_email = djmail.outbox[0]
+    assert sent_email.to == ["test@pretalx.org"]
+    assert sent_email.subject == "Hi"
+
+
+@pytest.mark.parametrize(
+    ("subject", "expected"), (("A" * 200, "A" * 200), ("A" * 250, "A" * 198 + "…"))
+)
+def test_render_subject_truncation_at_200_chars(event, subject, expected):
+    template = MailTemplateFactory(event=event, subject=subject, text="Body")
+    mail = render_template_to_mail(template)
+
+    assert mail.subject == expected
 
 
 def test_render_missing_placeholder_raises(event):
@@ -130,59 +118,16 @@ def test_render_missing_placeholder_raises(event):
         render_template_to_mail(template)
 
 
-def test_render_preserves_reply_to_and_bcc(event):
-    template = MailTemplateFactory(
-        event=event,
-        subject="Hi",
-        text="Body",
-        reply_to="reply@example.com",
-        bcc="bcc@example.com",
-    )
-    mail = render_template_to_mail(template)
-    assert mail.reply_to == "reply@example.com"
-    assert mail.bcc == "bcc@example.com"
-
-
-def test_render_sets_template_reference(event):
-    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
-    mail = render_template_to_mail(template)
-    assert mail.template == template
-
-
-def test_render_uses_template_event(event):
-    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
-    mail = render_template_to_mail(template)
-    assert mail.event == event
-
-
-def test_render_then_save_draft_send_draft_sends_immediately(event):
-    djmail.outbox = []
-    template = MailTemplateFactory(event=event, subject="Hi", text="Body")
-
-    mail = render_template_to_mail(template)
-    save_draft(mail, to="test@pretalx.org")
-    send_draft(mail)
-
-    mail.refresh_from_db()
-    assert mail.state == QueuedMailStates.SENT
-    assert mail.sent is not None
-    assert len(djmail.outbox) == 1
-    sent_email = djmail.outbox[0]
-    assert sent_email.to == ["test@pretalx.org"]
-    assert sent_email.subject == "Hi"
-
-
 def test_render_template_to_mail_rejects_unsaved_template(event):
-    from pretalx.mail.models import MailTemplate as MailTemplateModel  # noqa: PLC0415
-
-    template = MailTemplateModel(event=event, subject="Hi", text="Body")
+    template = MailTemplate(event=event, subject="Hi", text="Body")
     with pytest.raises(ValueError, match="requires a saved MailTemplate"):
         render_template_to_mail(template)
 
 
-def test_render_to_mail_renders_raw_strings(event):
+def test_render_to_mail_renders_raw_strings_and_sends_transient(event):
     # The reset_password / invitation shape: ad-hoc subject/text,
     # bound to an event for placeholder context.
+    djmail.outbox = []
     user = UserFactory(name="Jane Doe")
     mail = render_to_mail(
         subject_template="Welcome to {event_name}",
@@ -193,20 +138,17 @@ def test_render_to_mail_renders_raw_strings(event):
     )
 
     assert mail.subject == f"Welcome to {event.name}"
-    assert "Jane Doe" in mail.text
+    assert mail.text == f"Hi Jane Doe, welcome to {event.name}!"
     assert mail.text_html is not None
     assert mail.template is None
     assert mail.event == event
 
-
-def test_render_to_mail_send_transient_sends_immediately(event):
-    djmail.outbox = []
-    mail = render_to_mail(subject_template="Test", text_template="Body", event=event)
     mail.to = "test@example.com"
     send_transient(mail)
 
     assert mail.pk is None
     assert len(djmail.outbox) == 1
+    assert djmail.outbox[0].to == ["test@example.com"]
 
 
 def test_render_to_mail_without_event():
@@ -218,7 +160,7 @@ def test_render_to_mail_without_event():
         context_kwargs={"user": user},
     )
 
-    assert "Admin" in mail.text
+    assert mail.text == "Hi Admin"
     assert mail.event is None
 
 
@@ -242,11 +184,16 @@ def test_delivery_text_appends_signature(event, signature, text, expected):
     assert delivery_text(mail) == expected
 
 
-def test_delivery_html_renders_markdown(event):
-    mail = QueuedMailFactory(event=event, text="Hello **world**")
+def test_delivery_html_renders_markdown_text_with_signature_when_text_html_is_none(
+    event,
+):
+    event.mail_settings["signature"] = "-- \nBest regards"
+    mail = QueuedMailFactory(event=event, text="Hello **world**", text_html=None)
+
     html = delivery_html(mail)
 
     assert "<strong>world</strong>" in html
+    assert "Best regards" in html
 
 
 def test_delivery_html_without_event():
@@ -266,21 +213,6 @@ def test_delivery_html_prefers_text_html_when_set(event):
 
     assert "&lt;br&gt;" in html
     assert "plain form raw" not in html
-
-
-def test_delivery_html_legacy_fallback_when_text_html_is_none(event):
-    mail = QueuedMailFactory(event=event, text="hello", text_html=None)
-    html = delivery_html(mail)
-    assert "hello" in html
-
-
-def test_delivery_html_strips_signature_delimiter(event):
-    event.mail_settings["signature"] = "-- \nBest regards"
-    mail = QueuedMailFactory(event=event, text="Hello")
-
-    html = delivery_html(mail)
-
-    assert "Best regards" in html
 
 
 def test_render_escapes_malicious_user_name_in_html_body(event):
@@ -450,48 +382,7 @@ def test_assert_rendered_accepts_formatted_and_safe_strings():
         FormattedString("subject"), FormattedString("text"), SafeString("html")
     )
     assert_rendered(mark_safe("subject"), mark_safe("text"), mark_safe("html"))
-
-
-def test_assert_rendered_accepts_none_text_html():
     assert_rendered(FormattedString("subject"), FormattedString("text"), None)
-
-
-def test_assert_rendered_rejects_raw_str_text_html():
-    with pytest.raises(TypeError, match="Mail text_html must be"):
-        assert_rendered(FormattedString("subject"), FormattedString("text"), "raw str")
-
-
-def test_build_trusted_mail_marks_content_safe_and_constructs_unsaved(event):
-    mail = build_trusted_mail(
-        event=event, to="a@example.com", subject="Subject", text="Body"
-    )
-    assert mail.pk is None
-    assert mail.event == event
-    assert mail.to == "a@example.com"
-    assert mail.subject == "Subject"
-    assert mail.text == "Body"
-    assert mail.text_html is None
-    assert isinstance(mail.subject, SafeString)
-    assert isinstance(mail.text, SafeString)
-
-
-def test_build_trusted_mail_truncates_long_subject(event):
-    mail = build_trusted_mail(
-        event=event, to="a@example.com", subject="A" * 250, text="Body"
-    )
-    assert mail.subject == "A" * 198 + "…"
-    assert isinstance(mail.subject, SafeString)
-
-
-def test_build_trusted_mail_does_not_render_placeholders(event):
-    mail = build_trusted_mail(
-        event=event,
-        to="a@example.com",
-        subject="Hi {event_name}",
-        text="Welcome to {event_name}, {user_name}!",
-    )
-    assert mail.subject == "Hi {event_name}"
-    assert mail.text == "Welcome to {event_name}, {user_name}!"
 
 
 @pytest.mark.parametrize(
@@ -502,6 +393,31 @@ def test_assert_rendered_rejects_raw_str(position, field):
     values[position] = "raw str"
     with pytest.raises(TypeError, match=f"Mail {field} must be"):
         assert_rendered(*values)
+
+
+@pytest.mark.parametrize(
+    ("subject", "expected_subject"),
+    (("Hi {event_name}", "Hi {event_name}"), ("A" * 250, "A" * 198 + "…")),
+    ids=("placeholders_untouched", "truncated"),
+)
+def test_build_trusted_mail_marks_content_safe_without_rendering(
+    event, subject, expected_subject
+):
+    mail = build_trusted_mail(
+        event=event,
+        to="a@example.com",
+        subject=subject,
+        text="Welcome to {event_name}, {user_name}!",
+    )
+
+    assert mail.pk is None
+    assert mail.event == event
+    assert mail.to == "a@example.com"
+    assert mail.subject == expected_subject
+    assert mail.text == "Welcome to {event_name}, {user_name}!"
+    assert mail.text_html is None
+    assert isinstance(mail.subject, SafeString)
+    assert isinstance(mail.text, SafeString)
 
 
 @pytest.mark.parametrize(

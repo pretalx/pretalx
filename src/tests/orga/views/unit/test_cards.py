@@ -19,14 +19,11 @@ pytestmark = pytest.mark.unit
         ("hello", None, "hello"),
         ("", None, ""),
         (None, None, ""),
+        ("foo-bar", None, "foo-&hairsp;bar"),
     ),
 )
 def test_text_truncation_and_passthrough(text, max_length, expected):
     assert _text(text, max_length) == expected
-
-
-def test_text_inserts_hair_space_after_hyphens():
-    assert _text("foo-bar") == "foo-&hairsp;bar"
 
 
 @pytest.mark.django_db

@@ -65,30 +65,27 @@ def test_i18n_str_json_encoder_falls_back_to_parent(event):
     assert result == {"id": event.pk, "type": "Event"}
 
 
-def test_json_roundtrip_preserves_data():
-    data = {"key": "value", "number": 42, "nested": {"a": [1, 2, 3]}}
+def test_json_roundtrip_serializes_i18n_strings():
+    data = {
+        "key": "value",
+        "number": 42,
+        "nested": {"a": [1, 2, 3]},
+        "title": LazyI18nString({"en": "Talk", "de": "Vortrag"}),
+    }
 
     result = json_roundtrip(data)
 
-    assert result == data
+    assert result == {**data, "title": {"en": "Talk", "de": "Vortrag"}}
 
 
-def test_json_roundtrip_with_i18n_string():
-    data = {"title": LazyI18nString({"en": "Talk", "de": "Vortrag"})}
-
-    result = json_roundtrip(data)
-
-    assert result == {"title": {"en": "Talk", "de": "Vortrag"}}
-
-
-def test_serialize_i18n_with_data_attribute():
-    i18n_str = LazyI18nString({"en": "hello"})
-
-    result = serialize_i18n(i18n_str)
-
-    assert result == {"en": "hello"}
-
-
-@pytest.mark.parametrize("value", ("plain string", 42, None))
-def test_serialize_i18n_without_data_attribute(value):
-    assert serialize_i18n(value) == value
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    (
+        (LazyI18nString({"en": "hello"}), {"en": "hello"}),
+        ("plain string", "plain string"),
+        (42, 42),
+        (None, None),
+    ),
+)
+def test_serialize_i18n(value, expected):
+    assert serialize_i18n(value) == expected

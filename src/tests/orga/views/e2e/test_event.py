@@ -1,15 +1,12 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
-from io import BytesIO
 from zoneinfo import ZoneInfo
 
 import pytest
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
-from PIL import Image
 
 from pretalx.event.models import Event
 from pretalx.orga.views.event import EventWizard
@@ -35,6 +32,22 @@ def _reset_timezone_state():
     tests reading ``timezone.get_current_timezone_name()`` see the default."""
     yield
     timezone.deactivate()
+
+
+def _make_creator(organiser, **team_kwargs):
+    with scopes_disabled():
+        user = UserFactory()
+        team = TeamFactory(
+            organiser=organiser,
+            name="Orga",
+            can_create_events=True,
+            can_change_event_settings=True,
+            can_change_submissions=True,
+            all_events=True,
+            **team_kwargs,
+        )
+        team.members.add(user)
+    return user
 
 
 def _wizard_post(client, step, data, goto_step=None):
@@ -113,6 +126,7 @@ def _full_wizard(
     deadline=None,
     locales=("en", "de"),
     locale="en",
+    plugins=None,
     **display_kwargs,
 ):
     if organiser:
@@ -120,27 +134,12 @@ def _full_wizard(
     _submit_localisation(client, locales=locales, locale=locale)
     _submit_basics(client, slug=slug, deadline=deadline)
     _submit_display(client, **display_kwargs)
-    _submit_plugins(client)
+    _submit_plugins(client, plugins=plugins)
 
 
-@pytest.mark.parametrize(
-    ("deadline", "locales", "locale"),
-    (("2035-06-01 12:00:00", ("en", "de"), "en"), (None, ("de",), "de")),
-    ids=("multilingual", "german_only"),
-)
-def test_event_wizard_creates_event(client, deadline, locales, locale):
-    with scopes_disabled():
-        organiser = OrganiserFactory()
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=organiser,
-            name="Orga",
-            can_create_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-            all_events=True,
-        )
-        team.members.add(user)
+def test_event_wizard_creates_event(client, make_image):
+    organiser = OrganiserFactory()
+    user = _make_creator(organiser)
     client.force_login(user)
     count = Event.objects.count()
     slug = f"newevent{now().year}"
@@ -148,19 +147,42 @@ def test_event_wizard_creates_event(client, deadline, locales, locale):
     _full_wizard(
         client,
         slug=slug,
-        deadline=deadline,
-        locales=locales,
-        locale=locale,
+        deadline="2035-06-01 12:00:00",
         header_pattern="topo",
+        primary_color="#00ff00",
+        logo=make_image(),
+        plugins=["tests.dummy_app"],
     )
 
     assert Event.objects.count() == count + 1
+    assert organiser.teams.count() == 1
     event = Event.objects.get(slug=slug)
     assert str(event.name) == "New event!"
-    assert event.locales == list(locales)
-    assert event.content_locales == list(locales)
-    assert event.locale == locale
+    assert event.locales == ["en", "de"]
+    assert event.content_locales == ["en", "de"]
+    assert event.locale == "en"
     assert event.display_settings["header_pattern"] == "topo"
+    assert event.primary_color == "#00ff00"
+    assert event.logo
+    assert event.plugin_list == ["tests.dummy_app"]
+
+    _full_wizard(
+        client,
+        organiser,
+        slug="germanevent",
+        locales=("de",),
+        locale="de",
+        header_pattern="",
+    )
+
+    event = Event.objects.get(slug="germanevent")
+    assert event.locales == ["de"]
+    assert event.content_locales == ["de"]
+    assert event.locale == "de"
+    assert event.display_settings["header_pattern"] == ""
+    assert event.primary_color == ""
+    assert not event.logo
+    assert event.plugin_list == []
 
 
 def test_event_wizard_creates_new_team_for_limited_access(client):
@@ -177,153 +199,104 @@ def test_event_wizard_creates_new_team_for_limited_access(client):
         )
         team.members.add(user)
     client.force_login(user)
-    initial_team_count = organiser.teams.count()
 
     _full_wizard(client, slug="newteamevent")
 
-    assert organiser.teams.count() == initial_team_count + 1
-
-
-def test_event_wizard_no_new_team_when_all_events(client):
     with scopes_disabled():
-        organiser = OrganiserFactory()
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=organiser,
-            name="Full Access",
-            can_create_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-            all_events=True,
-        )
-        team.members.add(user)
-    client.force_login(user)
-    initial_team_count = organiser.teams.count()
-
-    _full_wizard(client, slug="noteamevent")
-
-    assert organiser.teams.count() == initial_team_count
+        new_team = organiser.teams.exclude(pk=team.pk).get()
+        assert list(new_team.limit_events.all()) == [
+            Event.objects.get(slug="newteamevent")
+        ]
+        assert list(new_team.members.all()) == [user]
 
 
-def test_event_wizard_duplicate_slug_rejected(client, event):
-    with scopes_disabled():
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=event.organiser,
-            name="Orga",
-            can_create_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-            all_events=True,
-        )
-        team.members.add(user)
+def test_event_wizard_rejects_duplicate_slug_and_warns_about_past_dates(client, event):
+    user = _make_creator(event.organiser)
     client.force_login(user)
     count = Event.objects.count()
+    past_date = (now() - dt.timedelta(days=365)).strftime("%Y-%m-%d")
 
-    _full_wizard(client, event.organiser, slug=event.slug)
+    _submit_organiser(client, event.organiser)
+    _submit_localisation(client)
+    response = _submit_basics(client, slug=event.slug)
 
+    assert response.context["wizard"]["steps"].current == "basics"
+    assert list(response.context["form"].errors) == ["slug"]
+
+    response = _submit_basics(
+        client, slug="pastevent", date_from=past_date, date_to=past_date
+    )
+
+    assert response.context["wizard"]["steps"].current == "display"
+    assert [str(message) for message in response.context["messages"]] == [
+        f"Please consider including your event’s year in the slug, e.g. myevent{now().year % 100}.",
+        "Did you really mean to make your event take place in the past?",
+    ]
     assert Event.objects.count() == count
 
 
 def test_event_wizard_with_copy(client):
-    with scopes_disabled():
-        event = EventFactory(cfp__fields={"title": {"min_length": 50}})
-        QuestionFactory(event=event)
-        TrackFactory(event=event)
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=event.organiser,
-            name="Orga",
-            can_create_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-            all_events=True,
-        )
-        team.members.add(user)
-    client.force_login(user)
-
-    _submit_organiser(client, event.organiser, copy_from_event=event.pk)
-    _submit_localisation(client)
-    _submit_basics(client, slug="copyevent")
-    _submit_display(client)
-    _submit_plugins(client)
-
-    new_event = Event.objects.get(slug="copyevent")
-    with scopes_disabled():
-        assert new_event.questions.count() >= 1
-        assert new_event.tracks.count() >= 1
-        assert new_event.cfp.fields["title"]["min_length"] == 50
-        assert new_event.locales == ["en", "de"]
-        assert new_event.content_locales == ["en", "de"]
-
-
-def test_event_wizard_with_copy_fires_plugin_copy_signal(client):
     from tests.dummy_app.signals import copied_events  # noqa: PLC0415
 
     with scopes_disabled():
-        event = EventFactory()
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=event.organiser,
-            name="Orga",
-            can_create_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-            all_events=True,
+        source = EventFactory(
+            cfp__fields={"title": {"min_length": 50}},
+            timezone="Pacific/Auckland",
+            locales=["de"],
+            locale="de",
+            primary_color="#ff0000",
+            display_settings={"header_pattern": "topo"},
         )
-        team.members.add(user)
-    client.force_login(user)
-
-    _submit_organiser(client, event.organiser, copy_from_event=event.pk)
-    _submit_localisation(client)
-    _submit_basics(client, slug="copyplugins")
-    _submit_display(client)
-    _submit_plugins(client, plugins=["tests.dummy_app"])
-
-    assert ("copyplugins", event.slug) in copied_events
-
-
-@pytest.mark.parametrize("add_to_teams", (True, False))
-def test_event_wizard_with_copy_adds_event_to_teams_of_copy_source(
-    client, add_to_teams
-):
-    with scopes_disabled():
-        source = EventFactory()
+        QuestionFactory(event=source)
         track = TrackFactory(event=source, name="Security")
         reviewers = TeamFactory(
             organiser=source.organiser, all_events=False, is_reviewer=True
         )
         reviewers.limit_events.add(source)
         reviewers.limit_tracks.add(track)
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=source.organiser,
-            can_create_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-            can_change_teams=True,
-            all_events=True,
-        )
-        team.members.add(user)
+    user = _make_creator(source.organiser, can_change_teams=True)
     client.force_login(user)
+
+    response = _submit_organiser(client, source.organiser, copy_from_event=source.pk)
+
+    fields = response.context["form"].fields
+    assert fields["timezone"].initial == "Pacific/Auckland"
+    assert fields["locale"].initial == "de"
+    assert fields["locales"].initial == ["de"]
+    assert "data-autofill" not in fields["timezone"].widget.attrs
+
+    _submit_localisation(client)
+    response = _submit_basics(client, slug="copyevent", add_to_teams="on")
+
+    assert response.context["form"]["primary_color"].value() == "#ff0000"
+    assert response.context["form"]["header_pattern"].value() == "topo"
+
+    _submit_display(client, primary_color="#ff0000", header_pattern="topo")
+    _submit_plugins(client, plugins=["tests.dummy_app"])
+
+    new_event = Event.objects.get(slug="copyevent")
+    assert ("copyevent", source.slug) in copied_events
+    assert new_event.primary_color == "#ff0000"
+    assert new_event.display_settings["header_pattern"] == "topo"
+    assert new_event.locales == ["en", "de"]
+    assert new_event.content_locales == ["en", "de"]
+    with scopes_disabled():
+        assert new_event.questions.count() == 1
+        new_track = new_event.tracks.get()
+        assert new_event.cfp.fields["title"]["min_length"] == 50
+        assert set(reviewers.limit_events.all()) == {source, new_event}
+        assert set(reviewers.limit_tracks.all()) == {track, new_track}
 
     _submit_organiser(client, source.organiser, copy_from_event=source.pk)
     _submit_localisation(client)
-    _submit_basics(
-        client, slug="copyteams", **({"add_to_teams": "on"} if add_to_teams else {})
-    )
+    _submit_basics(client, slug="copyeventnoteams")
     _submit_display(client)
     _submit_plugins(client)
 
-    new_event = Event.objects.get(slug="copyteams")
     with scopes_disabled():
-        new_track = new_event.tracks.get()
-        if add_to_teams:
-            assert set(reviewers.limit_events.all()) == {source, new_event}
-            assert set(reviewers.limit_tracks.all()) == {track, new_track}
-        else:
-            assert list(reviewers.limit_events.all()) == [source]
-            assert list(reviewers.limit_tracks.all()) == [track]
+        assert set(reviewers.limit_events.all()) == {source, new_event}
+        assert set(reviewers.limit_tracks.all()) == {track, new_track}
+        assert Event.objects.get(slug="copyeventnoteams").tracks.count() == 1
 
 
 def test_event_wizard_changing_copy_source_reseeds_copied_steps(client, make_image):
@@ -341,18 +314,15 @@ def test_event_wizard_changing_copy_source_reseeds_copied_steps(client, make_ima
             locale="en",
             primary_color="#222222",
         )
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=first.organiser,
-            name="Orga",
-            can_create_events=True,
-            can_change_event_settings=True,
-            all_events=True,
-        )
-        team.members.add(user)
+    user = _make_creator(first.organiser)
     client.force_login(user)
 
     _submit_organiser(client, first.organiser, copy_from_event=first.pk)
+    _submit_localisation(client, timezone_name="Europe/Amsterdam")
+    response = _submit_organiser(client, first.organiser, copy_from_event=first.pk)
+
+    assert response.context["form"]["timezone"].value() == "Europe/Amsterdam"
+
     _submit_localisation(client)
     _submit_basics(client)
     _submit_display(client, primary_color="#111111", logo=make_image())
@@ -370,40 +340,11 @@ def test_event_wizard_changing_copy_source_reseeds_copied_steps(client, make_ima
     assert response.context["form"]["primary_color"].value() == "#222222"
 
 
-def test_event_wizard_unchanged_copy_source_keeps_localisation(client):
-    with scopes_disabled():
-        event = EventFactory(timezone="Pacific/Auckland")
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=event.organiser,
-            name="Orga",
-            can_create_events=True,
-            can_change_event_settings=True,
-            all_events=True,
-        )
-        team.members.add(user)
-    client.force_login(user)
-
-    _submit_organiser(client, event.organiser, copy_from_event=event.pk)
-    _submit_localisation(client, timezone_name="Europe/Amsterdam")
-    response = _submit_organiser(client, event.organiser, copy_from_event=event.pk)
-
-    assert response.context["form"]["timezone"].value() == "Europe/Amsterdam"
-
-
 def test_event_wizard_keeps_organiser_step_after_losing_access(client):
     with scopes_disabled():
         event = EventFactory()
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=event.organiser,
-            name="Orga",
-            can_create_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-            all_events=True,
-        )
-        team.members.add(user)
+        user = _make_creator(event.organiser)
+        team = user.teams.get()
         fallback = OrganiserFactory()
         fallback_team = TeamFactory(
             organiser=fallback, name="Fallback", can_create_events=True, all_events=True
@@ -423,87 +364,9 @@ def test_event_wizard_keeps_organiser_step_after_losing_access(client):
     assert Event.objects.count() == count
 
 
-def test_event_wizard_copy_seeds_localisation(client):
-    with scopes_disabled():
-        event = EventFactory(timezone="Pacific/Auckland", locales=["de"], locale="de")
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=event.organiser,
-            name="Orga",
-            can_create_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-            all_events=True,
-        )
-        team.members.add(user)
-    client.force_login(user)
-
-    response = _submit_organiser(client, event.organiser, copy_from_event=event.pk)
-
-    fields = response.context["form"].fields
-    assert fields["timezone"].initial == "Pacific/Auckland"
-    assert fields["locale"].initial == event.locale
-    assert fields["locales"].initial == event.locales
-    assert "data-autofill" not in fields["timezone"].widget.attrs
-
-
-def test_event_wizard_with_plugins(client):
-    with scopes_disabled():
-        organiser = OrganiserFactory()
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=organiser,
-            name="Orga",
-            can_create_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-            all_events=True,
-        )
-        team.members.add(user)
-    client.force_login(user)
-
-    _submit_localisation(client)
-    _submit_basics(client, slug="pluginevent")
-    _submit_display(client)
-    _submit_plugins(client, plugins=["tests.dummy_app"])
-
-    event = Event.objects.get(slug="pluginevent")
-    assert "tests.dummy_app" in event.plugin_list
-
-
-def test_event_wizard_with_primary_color(client):
-    with scopes_disabled():
-        organiser = OrganiserFactory()
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=organiser,
-            name="Orga",
-            can_create_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-            all_events=True,
-        )
-        team.members.add(user)
-    client.force_login(user)
-
-    _full_wizard(client, slug="colorevent", primary_color="#00ff00")
-
-    assert Event.objects.filter(slug="colorevent", primary_color="#00ff00").exists()
-
-
 def test_event_wizard_with_deadline_sets_cfp_deadline(client):
-    with scopes_disabled():
-        organiser = OrganiserFactory()
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=organiser,
-            name="Orga",
-            can_create_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-            all_events=True,
-        )
-        team.members.add(user)
+    organiser = OrganiserFactory()
+    user = _make_creator(organiser)
     client.force_login(user)
 
     _submit_organiser(client, organiser)
@@ -525,163 +388,24 @@ def test_event_wizard_with_deadline_sets_cfp_deadline(client):
         )
 
 
-def test_event_wizard_copy_prefills_display(client):
-    event = EventFactory(
-        primary_color="#ff0000", display_settings={"header_pattern": "topo"}
-    )
-    with scopes_disabled():
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=event.organiser,
-            name="Orga",
-            can_create_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-            all_events=True,
-        )
-        team.members.add(user)
-    client.force_login(user)
-
-    _submit_organiser(client, event.organiser, copy_from_event=event.pk)
-    _submit_localisation(client)
-    _submit_basics(client, slug="copydisplay")
-    _submit_display(client, primary_color="#ff0000", header_pattern="topo")
-    _submit_plugins(client)
-
-    new_event = Event.objects.get(slug="copydisplay")
-    assert new_event.primary_color == "#ff0000"
-    assert new_event.display_settings["header_pattern"] == "topo"
-
-
-def test_event_wizard_past_date_shows_warning(client):
-    with scopes_disabled():
-        organiser = OrganiserFactory()
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=organiser,
-            name="Orga",
-            can_create_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-            all_events=True,
-        )
-        team.members.add(user)
-    client.force_login(user)
-
-    _submit_localisation(client)
-
-    past_date = (now() - dt.timedelta(days=365)).strftime("%Y-%m-%d")
-    _submit_basics(client, slug="pastevent", date_from=past_date, date_to=past_date)
-
-    # Verify the event wasn't created (we stopped at the display step)
-    # and the display step renders (which triggers the past-date warning)
-    assert not Event.objects.filter(slug="pastevent").exists()
-
-
-def test_event_wizard_without_header_pattern(client):
-    with scopes_disabled():
-        organiser = OrganiserFactory()
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=organiser,
-            name="Orga",
-            can_create_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-            all_events=True,
-        )
-        team.members.add(user)
-    client.force_login(user)
-
-    _full_wizard(client, slug="noheader", header_pattern="")
-
-    event = Event.objects.get(slug="noheader")
-    assert event.display_settings.get("header_pattern", "") != "topo"
-
-
-def test_event_wizard_with_logo(client):
-    with scopes_disabled():
-        organiser = OrganiserFactory()
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=organiser,
-            name="Orga",
-            can_create_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-            all_events=True,
-        )
-        team.members.add(user)
-    client.force_login(user)
-
-    _submit_localisation(client)
-    _submit_basics(client, slug="logoevent")
-
-    buf = BytesIO()
-    Image.new("RGB", (10, 10), color="red").save(buf, format="PNG")
-    logo = SimpleUploadedFile("logo.png", buf.getvalue(), content_type="image/png")
-
-    data = {
-        "display-header_pattern": "plain",
-        "display-primary_color": "",
-        "display-logo": logo,
-    }
-    data["event_wizard-current_step"] = "display"
-    response = client.post(WIZARD_URL, data=data, follow=True)
-    assert response.status_code == 200
-
-    _submit_plugins(client)
-
-    event = Event.objects.get(slug="logoevent")
-    assert event.logo
-
-
 def test_event_wizard_restarts_when_step_data_is_lost(client):
-    with scopes_disabled():
-        organiser = OrganiserFactory()
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=organiser,
-            name="Orga",
-            can_create_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-            all_events=True,
-        )
-        team.members.add(user)
-    client.force_login(user)
-
-    _submit_localisation(client)
-    client.get(WIZARD_URL)
-
-    response = _submit_basics(client, slug="lostevent")
-
-    assert not Event.objects.filter(slug="lostevent").exists()
-    assert response.context["wizard"]["steps"].current == "localisation"
-    assert not response.context["wizard"]["form"].is_bound
-
-
-def test_event_wizard_basics_without_wizard_storage_renders_first_step(client):
-    with scopes_disabled():
-        organiser = OrganiserFactory()
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=organiser,
-            name="Orga",
-            can_create_events=True,
-            can_change_event_settings=True,
-            can_change_submissions=True,
-            all_events=True,
-        )
-        team.members.add(user)
+    organiser = OrganiserFactory()
+    user = _make_creator(organiser)
     client.force_login(user)
 
     response = _submit_basics(client, slug="nostorageevent")
 
-    assert not Event.objects.filter(slug="nostorageevent").exists()
     assert response.context["wizard"]["steps"].current == "localisation"
     assert set(response.context["wizard"]["form"].errors) == {
         "locales",
         "locale",
         "timezone",
     }
+
+    _submit_localisation(client)
+    client.get(WIZARD_URL)
+    response = _submit_basics(client, slug="lostevent")
+
+    assert response.context["wizard"]["steps"].current == "localisation"
+    assert not response.context["wizard"]["form"].is_bound
+    assert not Event.objects.filter(slug__in=["nostorageevent", "lostevent"]).exists()

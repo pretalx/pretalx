@@ -8,11 +8,11 @@ from pretalx.submission.icons import PLATFORM_ICONS
 pytestmark = pytest.mark.unit
 
 
-@pytest.mark.parametrize("icon_name", list(PLATFORM_ICONS.keys()))
-def test_platform_icon_returns_svg_for_known_icons(icon_name):
-    result = platform_icon(icon_name)
-    assert "<svg" in result
-    assert hasattr(result, "__html__")
+def test_platform_icon_returns_svg_for_known_icons():
+    for icon_name in PLATFORM_ICONS:
+        result = platform_icon(icon_name)
+        assert "<svg" in result, icon_name
+        assert hasattr(result, "__html__"), icon_name
 
 
 @pytest.mark.parametrize("icon_name", (None, "", "nonexistent"))

@@ -7,17 +7,11 @@ from tests.factories import FeedbackFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_feedback_str():
+def test_feedback_str_and_event():
     feedback = FeedbackFactory(rating=4)
 
-    result = str(feedback)
-
     assert (
-        result
+        str(feedback)
         == f"Feedback(event={feedback.talk.event.slug}, talk={feedback.talk.title}, rating=4)"
     )
-
-
-def test_feedback_event():
-    feedback = FeedbackFactory()
     assert feedback.event == feedback.talk.event

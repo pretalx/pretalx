@@ -18,6 +18,7 @@ from pretalx.person.domain.verification import (
     make_verification_token,
     parse_verification_token,
 )
+from pretalx.person.models import User
 from pretalx.person.models.auth_token import UserApiToken
 from tests.factories import EventFactory, UserApiTokenFactory, UserFactory
 from tests.utils import make_orga_user
@@ -25,19 +26,18 @@ from tests.utils import make_orga_user
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-def test_user_settings_get_requires_login(client):
-    response = client.get(reverse("orga:user.view"))
-
-    assert response.status_code == 302
-    assert "/login" in response.url
-
-
-def test_user_settings_get_renders_for_authenticated_user(client, event):
+def test_user_settings_profile_and_password_forms(client, event):
+    url = reverse("orga:user.view")
     user = make_orga_user(event)
-    client.force_login(user)
     token = UserApiTokenFactory(user=user, name="Prod token")
 
-    response = client.get(reverse("orga:user.view"))
+    response = client.get(url)
+
+    assert response.status_code == 302
+    assert response.url == f"/orga/login/?next={url}"
+
+    client.force_login(user)
+    response = client.get(url)
 
     assert response.status_code == 200
     content = response.content.decode()
@@ -45,50 +45,49 @@ def test_user_settings_get_renders_for_authenticated_user(client, event):
     assert f'value="{user.email}"' in content
     assert token.name in content
 
+    response = client.post(url, {"form": "nonexistent"}, follow=True)
 
-def test_user_settings_post_profile_updates_name(client):
-    user = UserFactory()
-    client.force_login(user)
+    assert response.status_code == 200
+    assert "trouble saving your input" in response.content.decode()
 
     response = client.post(
-        reverse("orga:user.view"),
-        {"form": "profile", "name": "Updated Name", "locale": "en"},
+        url, {"form": "profile", "name": "Updated Name", "locale": "en"}
     )
 
     assert response.status_code == 302
-    assert response.url == reverse("orga:user.view")
+    assert response.url == url
     user.refresh_from_db()
     assert user.name == "Updated Name"
 
+    login_data = {
+        "form": "login",
+        "old_password": "wrongpassword1!",
+        "password": "newpassword1!",
+        "password_repeat": "newpassword1!",
+        "email": user.email,
+    }
+    response = client.post(url, login_data, follow=True)
 
-def test_user_settings_post_login_changes_password(client):
-    user = UserFactory(password="oldpassword1!")
-    client.force_login(user)
+    assert response.status_code == 200
+    user.refresh_from_db()
+    assert user.check_password("testpassword!")
 
-    response = client.post(
-        reverse("orga:user.view"),
-        {
-            "form": "login",
-            "old_password": "oldpassword1!",
-            "password": "newpassword1!",
-            "password_repeat": "newpassword1!",
-            "email": user.email,
-        },
-    )
+    response = client.post(url, {**login_data, "old_password": "testpassword!"})
 
     assert response.status_code == 302
-    assert response.url == reverse("orga:user.view")
+    assert response.url == url
     user.refresh_from_db()
     assert user.check_password("newpassword1!")
 
 
-def test_user_settings_post_login_email_change_is_deferred(client):
+def test_user_settings_email_change_is_deferred_until_confirmed_or_cancelled(client):
+    url = reverse("orga:user.view")
     user = UserFactory(email="old@example.com")
     client.force_login(user)
     djmail.outbox = []
 
     response = client.post(
-        reverse("orga:user.view"),
+        url,
         {
             "form": "login",
             "old_password": "testpassword!",
@@ -105,47 +104,30 @@ def test_user_settings_post_login_email_change_is_deferred(client):
     assert len(djmail.outbox) == 2
     assert djmail.outbox[0].to == ["new@example.com"]
     assert djmail.outbox[1].to == ["old@example.com"]
-    assert "new@example.com" in response.content.decode()
-    assert "confirmation link" in response.content.decode()
-
-
-@pytest.mark.parametrize(
-    ("sent_offset_hours", "expected_notice"),
-    ((0, "awaiting confirmation"), (25, "expired")),
-    ids=("pending", "expired"),
-)
-def test_user_settings_get_shows_pending_email_with_cancel_without_writes(
-    client, sent_offset_hours, expected_notice
-):
-    user = UserFactory()
-    user.pending_email = "pending@example.com"
-    user.pending_email_sent = tz_now() - dt.timedelta(hours=sent_offset_hours)
-    user.save()
-    client.force_login(user)
-
-    response = client.get(reverse("orga:user.view"))
-
-    user.refresh_from_db()
     content = response.content.decode()
-    assert "pending@example.com" in content
-    assert expected_notice in content
+    assert "new@example.com" in content
+    assert "confirmation link" in content
+    assert "awaiting confirmation" in content
     assert 'value="cancel_email_change"' in content
-    assert user.pending_email == "pending@example.com"
+
+    User.objects.filter(pk=user.pk).update(
+        pending_email_sent=tz_now() - dt.timedelta(hours=25)
+    )
+    response = client.get(url)
+
+    content = response.content.decode()
+    assert "new@example.com" in content
+    assert "expired" in content
+    assert 'value="cancel_email_change"' in content
+    user.refresh_from_db()
+    assert user.pending_email == "new@example.com"
     assert user.pending_email_sent is not None
 
-
-def test_user_settings_post_cancel_email_change_kills_links(client):
-    user = UserFactory()
-    user.pending_email = "pending@example.com"
-    user.pending_email_sent = tz_now()
-    user.save()
     token = make_verification_token(user, KIND_CHANGE)
-    client.force_login(user)
+    response = client.post(url, {"form": "cancel_email_change"})
 
-    response = client.post(reverse("orga:user.view"), {"form": "cancel_email_change"})
-
-    user.refresh_from_db()
     assert response.status_code == 302
+    user.refresh_from_db()
     assert user.pending_email is None
     assert user.pending_email_sent is None
     with scopes_disabled():
@@ -154,38 +136,18 @@ def test_user_settings_post_cancel_email_change_kills_links(client):
             .filter(action_type="pretalx.user.email.change.cancel")
             .get()
         )
-    assert action.data == {"pending_email": "pending@example.com"}
+    assert action.data == {"pending_email": "new@example.com"}
     with pytest.raises(InvalidVerificationTokenError):
         parse_verification_token(token)
 
 
-def test_user_settings_post_login_wrong_old_password_fails(client):
-    user = UserFactory(password="correctpassword1!")
-    client.force_login(user)
-
-    response = client.post(
-        reverse("orga:user.view"),
-        {
-            "form": "login",
-            "old_password": "wrongpassword1!",
-            "password": "newpassword1!",
-            "password_repeat": "newpassword1!",
-            "email": user.email,
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    user.refresh_from_db()
-    assert user.check_password("correctpassword1!")
-
-
-def test_user_settings_post_token_creates_api_token(client, event):
+def test_user_settings_token_create_revoke_and_upgrade(client, event):
+    url = reverse("orga:user.view")
     user = make_orga_user(event)
     client.force_login(user)
 
     response = client.post(
-        reverse("orga:user.view"),
+        url,
         {
             "form": "token",
             "name": "My Token",
@@ -198,25 +160,19 @@ def test_user_settings_post_token_creates_api_token(client, event):
     assert response.status_code == 200
     with scopes_disabled():
         token = UserApiToken.objects.get(user=user)
-    assert token.name == "My Token"
-    assert set(token.limit_events.all()) == {event}
-    assert token.all_events is False
-    with scopes_disabled():
+        assert token.name == "My Token"
+        assert set(token.limit_events.all()) == {event}
+        assert token.all_events is False
         log_entry = (
             token.logged_actions().filter(action_type="pretalx.user.token.create").get()
         )
     assert log_entry.person == user
 
-
-def test_user_settings_post_token_creates_all_events_token(client, event):
-    user = make_orga_user(event)
-    client.force_login(user)
-
     response = client.post(
-        reverse("orga:user.view"),
+        url,
         {
             "form": "token",
-            "name": "My Token",
+            "name": "All Events Token",
             "all_events": "on",
             "permission_preset": "read",
         },
@@ -225,12 +181,30 @@ def test_user_settings_post_token_creates_all_events_token(client, event):
 
     assert response.status_code == 200
     with scopes_disabled():
-        token = UserApiToken.objects.get(user=user)
-    assert token.all_events is True
-    assert not token.limit_events.exists()
+        all_events_token = UserApiToken.objects.get(user=user, name="All Events Token")
+        assert all_events_token.all_events is True
+        assert not all_events_token.limit_events.exists()
+
+    response = client.post(url, {"revoke": token.pk})
+
+    assert response.status_code == 302
+    token.refresh_from_db()
+    assert not token.is_active
+
+    old_token = UserApiTokenFactory(user=user, version="v1")
+    response = client.post(url, {"tokenupgrade": old_token.pk})
+
+    assert response.status_code == 302
+    old_token.refresh_from_db()
+    assert old_token.version == CURRENT_VERSION
+
+    for data in ({"tokenupgrade": 99999}, {"revoke": 99999}):
+        response = client.post(url, data)
+        assert response.status_code == 302, data
+        assert response.url == url, data
 
 
-def test_user_settings_token_edit_adds_event(client, event):
+def test_user_settings_token_edit_logs_event_changes(client, event):
     user = make_orga_user(event)
     client.force_login(user)
     with scopes_disabled():
@@ -240,8 +214,21 @@ def test_user_settings_token_edit_adds_event(client, event):
     )
     url = reverse("orga:user.token.edit", kwargs={"pk": token.pk})
 
+    def update_logs():
+        with scopes_disabled():
+            return list(
+                token.logged_actions()
+                .filter(action_type="pretalx.user.token.update")
+                .order_by("pk")
+            )
+
     response = client.get(url)
     assert response.status_code == 200
+
+    response = client.post(url, {"limit_events": [event.pk]}, follow=True)
+
+    assert response.status_code == 200
+    assert update_logs() == []
 
     response = client.post(
         url, {"limit_events": [event.pk, second_event.pk]}, follow=True
@@ -250,331 +237,122 @@ def test_user_settings_token_edit_adds_event(client, event):
     assert response.status_code == 200
     with scopes_disabled():
         assert set(token.limit_events.all()) == {event, second_event}
-        log_entry = (
-            token.logged_actions()
-            .filter(action_type="pretalx.user.token.update")
-            .first()
-        )
-        assert log_entry
-        changes = log_entry.data["changes"]
-        assert changes["limit_events"]["old"] == [event.pk]
-        assert set(changes["limit_events"]["new"]) == {event.pk, second_event.pk}
+    (log_entry,) = update_logs()
+    changes = log_entry.data["changes"]
+    assert changes["limit_events"]["old"] == [event.pk]
+    assert set(changes["limit_events"]["new"]) == {event.pk, second_event.pk}
 
-
-def test_user_settings_token_edit_switches_to_all_events(client, event):
-    user = make_orga_user(event)
-    client.force_login(user)
-    token = UserApiTokenFactory(
-        user=user, limit_events=[event], endpoints={"events": ["list"]}
-    )
-
-    response = client.post(
-        reverse("orga:user.token.edit", kwargs={"pk": token.pk}),
-        {"all_events": "on"},
-        follow=True,
-    )
+    response = client.post(url, {"all_events": "on"}, follow=True)
 
     assert response.status_code == 200
     token.refresh_from_db()
     assert token.all_events is True
-    with scopes_disabled():
-        log_entry = (
-            token.logged_actions()
-            .filter(action_type="pretalx.user.token.update")
-            .first()
-        )
-        assert log_entry
-        changes = log_entry.data["changes"]
-        assert changes["all_events"] == {"old": False, "new": True}
-        assert changes["limit_events"] == {"old": [event.pk], "new": []}
+    _, log_entry = update_logs()
+    changes = log_entry.data["changes"]
+    assert changes["all_events"] == {"old": False, "new": True}
+    assert changes["limit_events"]["old"] == [event.pk, second_event.pk]
+    assert changes["limit_events"]["new"] == []
 
 
-def test_user_settings_token_edit_without_changes_does_not_log(client, event):
-    user = make_orga_user(event)
-    client.force_login(user)
-    token = UserApiTokenFactory(
-        user=user, limit_events=[event], endpoints={"events": ["list"]}
-    )
-
-    response = client.post(
-        reverse("orga:user.token.edit", kwargs={"pk": token.pk}),
-        {"limit_events": [event.pk]},
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert (
-            not token.logged_actions()
-            .filter(action_type="pretalx.user.token.update")
-            .exists()
-        )
-
-
-def test_user_settings_token_edit_denied_for_other_users_token(client, event):
+def test_user_settings_token_edit_denied_for_foreign_or_expired_token(client, event):
     user = make_orga_user(event)
     client.force_login(user)
     other_token = UserApiTokenFactory(endpoints={"events": ["list"]})
-
-    response = client.get(
-        reverse("orga:user.token.edit", kwargs={"pk": other_token.pk})
-    )
-
-    assert response.status_code == 404
-
-
-def test_user_settings_token_edit_denied_for_expired_token(client, event):
-    user = make_orga_user(event)
-    client.force_login(user)
-    token = UserApiTokenFactory(
+    expired_token = UserApiTokenFactory(
         user=user,
         limit_events=[event],
         endpoints={"events": ["list"]},
         expires=tz_now() - dt.timedelta(days=1),
     )
 
-    response = client.get(reverse("orga:user.token.edit", kwargs={"pk": token.pk}))
-
-    assert response.status_code == 404
-
-
-def test_user_settings_post_token_revoke(client):
-    user = UserFactory()
-    client.force_login(user)
-    token = UserApiTokenFactory(user=user)
-
-    response = client.post(reverse("orga:user.view"), {"revoke": token.pk})
-
-    assert response.status_code == 302
-    token.refresh_from_db()
-    assert not token.is_active
+    for token in (other_token, expired_token):
+        response = client.get(reverse("orga:user.token.edit", kwargs={"pk": token.pk}))
+        assert response.status_code == 404, token
 
 
-def test_user_settings_post_token_upgrade(client):
-    user = UserFactory()
-    client.force_login(user)
-    token = UserApiTokenFactory(user=user, version="v1")
-
-    response = client.post(reverse("orga:user.view"), {"tokenupgrade": token.pk})
-
-    assert response.status_code == 302
-    token.refresh_from_db()
-    assert token.version == CURRENT_VERSION
-
-
-def test_user_settings_post_upgrade_nonexistent_token_redirects(client):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.post(reverse("orga:user.view"), {"tokenupgrade": 99999})
-
-    assert response.status_code == 302
-    assert response.url == reverse("orga:user.view")
-
-
-def test_user_settings_post_invalid_form_shows_error(client):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.post(
-        reverse("orga:user.view"), {"form": "nonexistent"}, follow=True
-    )
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "trouble saving your input" in content
-
-
-def test_user_settings_post_revoke_nonexistent_token_redirects(client):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.post(reverse("orga:user.view"), {"revoke": 99999})
-
-    assert response.status_code == 302
-    assert response.url == reverse("orga:user.view")
-
-
-def test_subuser_view_demotes_superuser(client):
+def test_subuser_view_demotes_superuser_and_respects_next_url(client):
     user = UserFactory(is_superuser=True)
     client.force_login(user)
 
-    response = client.post(reverse("orga:user.subuser"))
+    response = client.post(reverse("orga:user.subuser") + "?next=/orga/")
 
     assert response.status_code == 302
+    assert response.url == "/orga/"
     user.refresh_from_db()
     assert not user.is_superuser
     assert user.is_administrator
 
-
-@pytest.mark.parametrize(
-    ("next_url", "expected_redirect"),
-    (("/orga/", "/orga/"), ("https://evil.com", "/orga/event/")),
-    ids=["valid_next", "external_next_rejected"],
-)
-def test_subuser_view_respects_next_url(client, next_url, expected_redirect):
-    user = UserFactory(is_superuser=True)
-    client.force_login(user)
-
-    response = client.post(reverse("orga:user.subuser") + f"?next={next_url}")
+    response = client.post(reverse("orga:user.subuser") + "?next=https://evil.com")
 
     assert response.status_code == 302
-    assert response.url == expected_redirect
+    assert response.url == "/orga/event/"
 
-
-def test_subuser_view_non_superuser_still_works(client):
-    user = UserFactory()
-    client.force_login(user)
-
+    plain_user = UserFactory()
+    client.force_login(plain_user)
     response = client.post(reverse("orga:user.subuser"))
 
     assert response.status_code == 302
-    user.refresh_from_db()
-    assert not user.is_superuser
-    assert not user.is_administrator
+    plain_user.refresh_from_db()
+    assert not plain_user.is_superuser
+    assert not plain_user.is_administrator
 
 
-@pytest.fixture
-def preferences_url(event):
-    return reverse("orga:preferences", kwargs={"event": event.slug})
+def test_preferences_view_stores_table_preferences(client, event):
+    url = reverse("orga:preferences", kwargs={"event": event.slug})
 
-
-def test_preferences_view_requires_event_permission(client, event, preferences_url):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.post(
-        preferences_url,
-        data=json.dumps({"table_name": "submissions"}),
-        content_type="application/json",
-    )
-
-    assert response.status_code == 404
-
-
-def test_preferences_view_set_columns(client, event, preferences_url):
     user = make_orga_user(event)
+
+    def post(payload):
+        return client.post(url, data=payload, content_type="application/json")
+
+    def preferences():
+        return User.objects.get(pk=user.pk).get_event_preferences(event)
+
+    client.force_login(UserFactory())
+
+    assert post(json.dumps({"table_name": "submissions"})).status_code == 404
+
     client.force_login(user)
 
-    response = client.post(
-        preferences_url,
-        data=json.dumps({"table_name": "submissions", "columns": ["title", "state"]}),
-        content_type="application/json",
+    response = post(
+        json.dumps({"table_name": "submissions", "columns": ["title", "state"]})
     )
 
     assert response.status_code == 200
     assert response.json() == {"success": True}
-    preferences = user.get_event_preferences(event)
-    assert preferences.get("tables.submissions.columns") == ["title", "state"]
+    assert preferences().get("tables.submissions.columns") == ["title", "state"]
 
-
-def test_preferences_view_set_ordering(client, event, preferences_url):
-    user = make_orga_user(event)
-    client.force_login(user)
-
-    response = client.post(
-        preferences_url,
-        data=json.dumps({"table_name": "submissions", "ordering": ["-created"]}),
-        content_type="application/json",
-    )
+    response = post(json.dumps({"table_name": "submissions", "ordering": ["-created"]}))
 
     assert response.status_code == 200
     assert response.json() == {"success": True}
-    preferences = user.get_event_preferences(event)
-    assert preferences.get("tables.submissions.ordering") == ["-created"]
+    assert preferences().get("tables.submissions.ordering") == ["-created"]
 
-
-def test_preferences_view_clear_ordering_with_empty_list(
-    client, event, preferences_url
-):
-    user = make_orga_user(event)
-    client.force_login(user)
-
-    client.post(
-        preferences_url,
-        data=json.dumps({"table_name": "submissions", "ordering": ["-created"]}),
-        content_type="application/json",
-    )
-
-    response = client.post(
-        preferences_url,
-        data=json.dumps({"table_name": "submissions", "ordering": []}),
-        content_type="application/json",
-    )
+    response = post(json.dumps({"table_name": "submissions", "ordering": []}))
 
     assert response.status_code == 200
-    preferences = user.get_event_preferences(event)
-    assert preferences.get("tables.submissions.ordering") is None
+    assert preferences().get("tables.submissions.columns") == ["title", "state"]
+    assert preferences().get("tables.submissions.ordering") is None
 
+    response = post(json.dumps({"table_name": "submissions", "reset": True}))
 
-def test_preferences_view_reset(client, event, preferences_url):
-    user = make_orga_user(event)
-    client.force_login(user)
+    assert response.status_code == 200
+    assert response.json() == {"success": True}
+    assert preferences().get("tables.submissions.columns") is None
+    assert preferences().get("tables.submissions.ordering") is None
 
-    client.post(
-        preferences_url,
-        data=json.dumps(
-            {
-                "table_name": "submissions",
-                "columns": ["title"],
-                "ordering": ["-created"],
-            }
+    for payload, error in (
+        (json.dumps({}), "table_name is required"),
+        ("not json", "Invalid JSON"),
+        (
+            json.dumps({"table_name": "submissions", "columns": "not_a_list"}),
+            "columns must be a list",
         ),
-        content_type="application/json",
-    )
-
-    response = client.post(
-        preferences_url,
-        data=json.dumps({"table_name": "submissions", "reset": True}),
-        content_type="application/json",
-    )
-
-    assert response.status_code == 200
-    assert response.json() == {"success": True}
-    preferences = user.get_event_preferences(event)
-    assert preferences.get("tables.submissions.columns") is None
-    assert preferences.get("tables.submissions.ordering") is None
-
-
-def test_preferences_view_missing_table_name(client, event, preferences_url):
-    user = make_orga_user(event)
-    client.force_login(user)
-
-    response = client.post(
-        preferences_url, data=json.dumps({}), content_type="application/json"
-    )
-
-    assert response.status_code == 400
-    assert response.json()["error"] == "table_name is required"
-
-
-def test_preferences_view_invalid_json(client, event, preferences_url):
-    user = make_orga_user(event)
-    client.force_login(user)
-
-    response = client.post(
-        preferences_url, data="not json", content_type="application/json"
-    )
-
-    assert response.status_code == 400
-    assert response.json()["error"] == "Invalid JSON"
-
-
-@pytest.mark.parametrize(
-    ("field", "error_msg"),
-    (("columns", "columns must be a list"), ("ordering", "ordering must be a list")),
-)
-def test_preferences_view_rejects_non_list_field(
-    client, event, preferences_url, field, error_msg
-):
-    user = make_orga_user(event)
-    client.force_login(user)
-
-    response = client.post(
-        preferences_url,
-        data=json.dumps({"table_name": "submissions", field: "not_a_list"}),
-        content_type="application/json",
-    )
-
-    assert response.status_code == 400
-    assert response.json()["error"] == error_msg
+        (
+            json.dumps({"table_name": "submissions", "ordering": "not_a_list"}),
+            "ordering must be a list",
+        ),
+    ):
+        response = post(payload)
+        assert response.status_code == 400, payload
+        assert response.json() == {"error": error}, payload

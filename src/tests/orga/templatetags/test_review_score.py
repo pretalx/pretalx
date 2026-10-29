@@ -23,22 +23,11 @@ def test_review_score_number_without_context(score, expected):
     assert _review_score_number(None, score) == expected
 
 
-def test_review_score_returns_dash_when_score_is_none():
-    submission = types.SimpleNamespace(current_score=None, user_score=None)
+def test_review_score_picks_current_or_user_score():
+    scored = types.SimpleNamespace(current_score=4.2, user_score=1.0)
+    unscored = types.SimpleNamespace(current_score=None, user_score=None)
 
-    assert review_score({}, submission) == "-"
-    assert review_score({}, submission, user_score=True) == "-"
-
-
-def test_review_score_uses_current_score_by_default():
-    submission = types.SimpleNamespace(current_score=4.2, user_score=1.0)
-
-    result = review_score({"event": "ctx"}, submission)
-    assert result == "4.2"
-
-
-def test_review_score_uses_user_score_when_flag_set():
-    submission = types.SimpleNamespace(current_score=4.2, user_score=1.0)
-
-    result = review_score({"event": "ctx"}, submission, user_score=True)
-    assert result == "1"
+    assert review_score({"event": "ctx"}, scored) == "4.2"
+    assert review_score({"event": "ctx"}, scored, user_score=True) == "1"
+    assert review_score({}, unscored) == "-"
+    assert review_score({}, unscored, user_score=True) == "-"

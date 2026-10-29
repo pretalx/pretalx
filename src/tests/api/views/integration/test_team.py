@@ -11,7 +11,6 @@ from tests.factories import (
     TeamInviteFactory,
     TrackFactory,
     UserApiTokenFactory,
-    UserFactory,
 )
 from tests.utils import make_orga_user
 
@@ -88,19 +87,30 @@ def test_team_list_returns_organiser_teams(
         )
         for t in extra_teams:
             t.members.add(orga_user)
+        searchable = TeamFactory(
+            organiser=event.organiser,
+            name="Unique Searchable Name",
+            can_change_submissions=True,
+            all_events=True,
+        )
+    headers = {"Authorization": f"Token {orga_read_token.token}"}
 
     with django_assert_num_queries(14):
-        response = client.get(
-            _team_url(event.organiser),
-            follow=True,
-            headers={"Authorization": f"Token {orga_read_token.token}"},
-        )
+        response = client.get(_team_url(event.organiser), follow=True, headers=headers)
+    searched = client.get(
+        _team_url(event.organiser) + "?q=Unique+Searchable",
+        follow=True,
+        headers=headers,
+    )
 
     assert response.status_code == 200
-    data = response.json()
-    assert data["count"] == item_count + 1
-    names = [r["name"] for r in data["results"]]
-    assert team.name in names
+    assert {r["id"] for r in response.json()["results"]} == {
+        team.pk,
+        searchable.pk,
+        *(t.pk for t in extra_teams),
+    }
+    assert searched.status_code == 200
+    assert [r["id"] for r in searched.json()["results"]] == [searchable.pk]
 
 
 def test_team_list_denied_for_reviewer_only(client, event, team):
@@ -171,11 +181,29 @@ def test_team_list_allowed_for_all_events_token(client, event, team, orga_user):
     assert team.name in [t["name"] for t in response.json()["results"]]
 
 
-def test_team_detail_returns_team_data(client, orga_read_token, event, team):
+def test_team_detail_with_read_token(client, orga_read_token, event, team, orga_user):
+    invitation = TeamInviteFactory(team=team)
+    other_team = TeamFactory(
+        organiser=OrganiserFactory(),
+        can_change_teams=True,
+        can_change_submissions=True,
+        all_events=True,
+    )
+    with scopes_disabled():
+        track = TrackFactory(event=event)
+        team.limit_tracks.add(track)
+    headers = {"Authorization": f"Token {orga_read_token.token}"}
+
     response = client.get(
-        _team_url(event.organiser, team.pk),
+        _team_url(event.organiser, team.pk), follow=True, headers=headers
+    )
+    expanded = client.get(
+        _team_url(event.organiser, team.pk) + "?expand=members,invites,limit_tracks",
         follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+        headers=headers,
+    )
+    foreign = client.get(
+        _team_url(event.organiser, other_team.pk), follow=True, headers=headers
     )
 
     assert response.status_code == 200
@@ -183,48 +211,15 @@ def test_team_detail_returns_team_data(client, orga_read_token, event, team):
     assert data["name"] == team.name
     assert data["can_change_teams"] is True
     assert data["all_events"] is True
-
-
-def test_team_detail_excludes_other_organiser_teams(client, orga_read_token, event):
-    other_team = TeamFactory(
-        organiser=OrganiserFactory(),
-        can_change_teams=True,
-        can_change_submissions=True,
-        all_events=True,
-    )
-
-    response = client.get(
-        _team_url(event.organiser, other_team.pk),
-        follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    assert response.status_code == 404
-
-
-def test_team_detail_expand_related_fields(
-    client, orga_read_token, event, team, orga_user
-):
-    invitation = TeamInviteFactory(team=team)
-    with scopes_disabled():
-        track = TrackFactory(event=event)
-        team.limit_tracks.add(track)
-
-    response = client.get(
-        _team_url(event.organiser, team.pk) + "?expand=members,invites,limit_tracks",
-        follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["name"] == team.name
-    assert len(data["members"]) == 1
-    assert data["members"][0]["code"] == orga_user.code
-    assert len(data["invites"]) == 1
-    assert data["invites"][0]["email"] == invitation.email
-    assert len(data["limit_tracks"]) == 1
-    assert data["limit_tracks"][0]["name"]["en"] == track.name
+    assert data["members"] == [orga_user.code]
+    assert data["invites"] == [invitation.pk]
+    assert data["limit_tracks"] == [track.pk]
+    assert expanded.status_code == 200
+    data = expanded.json()
+    assert [m["code"] for m in data["members"]] == [orga_user.code]
+    assert [i["email"] for i in data["invites"]] == [invitation.email]
+    assert [t["name"]["en"] for t in data["limit_tracks"]] == [track.name]
+    assert foreign.status_code == 404
 
 
 def test_team_create_with_write_token(client, orga_write_token, event):
@@ -255,41 +250,32 @@ def test_team_create_with_write_token(client, orga_write_token, event):
         assert new_team.organiser == organiser
 
 
-def test_team_create_rejected_without_events(client, orga_write_token, event):
-    organiser = event.organiser
-    team_count = organiser.teams.count()
-
-    response = client.post(
-        _team_url(organiser),
-        follow=True,
-        data={
+@pytest.mark.parametrize(
+    "data",
+    (
+        {
             "name": "No Events Team",
             "can_change_submissions": True,
             "limit_events": [],
             "all_events": False,
         },
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 400
-    with scopes_disabled():
-        assert organiser.teams.count() == team_count
-
-
-def test_team_create_rejected_without_permissions(client, orga_write_token, event):
+        {
+            "name": "No Perms Team",
+            "can_change_submissions": False,
+            "is_reviewer": False,
+            "all_events": True,
+        },
+    ),
+    ids=("without_events", "without_permissions"),
+)
+def test_team_create_rejected_for_invalid_team(client, orga_write_token, event, data):
     organiser = event.organiser
     team_count = organiser.teams.count()
 
     response = client.post(
         _team_url(organiser),
         follow=True,
-        data={
-            "name": "No Perms Team",
-            "can_change_submissions": False,
-            "is_reviewer": False,
-            "all_events": True,
-        },
+        data=data,
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -330,13 +316,10 @@ def test_team_update_with_write_token(client, orga_write_token, event, team):
     assert team.is_reviewer is True
 
 
-def test_team_update_rejected_removing_last_permission(
-    client, orga_write_token, event, team
-):
-    response = client.patch(
-        _team_url(event.organiser, team.pk),
-        follow=True,
-        data={
+@pytest.mark.parametrize(
+    "data",
+    (
+        {
             "is_reviewer": False,
             "can_create_events": False,
             "can_change_teams": False,
@@ -344,6 +327,15 @@ def test_team_update_rejected_removing_last_permission(
             "can_change_event_settings": False,
             "can_change_submissions": False,
         },
+        {"can_change_teams": False},
+    ),
+    ids=("removing_last_permission", "removing_last_can_change_teams"),
+)
+def test_team_update_rejected(client, orga_write_token, event, team, data):
+    response = client.patch(
+        _team_url(event.organiser, team.pk),
+        follow=True,
+        data=data,
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -351,26 +343,21 @@ def test_team_update_rejected_removing_last_permission(
     assert response.status_code == 400
     team.refresh_from_db()
     assert team.can_change_submissions is True
-
-
-def test_team_update_rejected_when_removing_last_can_change_teams(
-    client, orga_write_token, event, team
-):
-    response = client.patch(
-        _team_url(event.organiser, team.pk),
-        follow=True,
-        data={"can_change_teams": False},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 400
-    team.refresh_from_db()
     assert team.can_change_teams is True
 
 
 def test_team_delete_with_write_token(client, orga_write_token, event, team, orga_user):
     organiser = event.organiser
+    url = _team_url(organiser, team.pk)
+    headers = {"Authorization": f"Token {orga_write_token.token}"}
+    team_count = organiser.teams.count()
+
+    rejected = client.delete(url, follow=True, headers=headers)
+
+    assert rejected.status_code == 400
+    assert organiser.teams.count() == team_count
+    assert organiser.teams.filter(pk=team.pk).exists()
+
     with scopes_disabled():
         other = TeamFactory(
             organiser=organiser,
@@ -379,113 +366,61 @@ def test_team_delete_with_write_token(client, orga_write_token, event, team, org
             all_events=True,
         )
         other.members.add(orga_user)
-    team_pk = team.pk
-    team_count = organiser.teams.count()
 
-    response = client.delete(
-        _team_url(organiser, team_pk),
-        follow=True,
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
+    response = client.delete(url, follow=True, headers=headers)
 
     assert response.status_code == 204
-    assert organiser.teams.count() == team_count - 1
-    assert not organiser.teams.filter(pk=team_pk).exists()
+    assert list(organiser.teams.all()) == [other]
 
 
-def test_team_delete_rejected_when_last_team_with_can_change_teams(
-    client, orga_write_token, event, team
-):
-    organiser = event.organiser
-    team_count = organiser.teams.count()
-
-    response = client.delete(
-        _team_url(organiser, team.pk),
-        follow=True,
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 400
-    assert organiser.teams.count() == team_count
-    assert organiser.teams.filter(pk=team.pk).exists()
-
-
-def test_team_invite_creates_invite(client, orga_write_token, event, team):
+def test_team_invite_lifecycle(client, orga_write_token, event, team, orga_user):
     invite_email = "new.invite@example.com"
-    invite_count = team.invites.count()
-    member_count = team.members.count()
+    headers = {"Authorization": f"Token {orga_write_token.token}"}
+    invite_url = _team_url(event.organiser, team.pk, "invite/")
 
     response = client.post(
-        _team_url(event.organiser, team.pk, "invite/"),
+        invite_url,
         follow=True,
         data={"email": invite_email},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
     )
 
     assert response.status_code == 201
     data = response.json()
-    assert data["email"] == invite_email
-    assert team.invites.count() == invite_count + 1
-    invite = team.invites.get(email=invite_email)
-    assert data["id"] == invite.pk
-    assert "token" not in data
-    assert team.members.count() == member_count
+    invite = team.invites.get()
+    assert data == {"id": invite.pk, "email": invite_email}
+    assert list(team.members.all()) == [orga_user]
 
-
-def test_team_invite_rejected_for_existing_member(
-    client, orga_write_token, event, team, orga_user
-):
-    invite_count = team.invites.count()
-
-    response = client.post(
-        _team_url(event.organiser, team.pk, "invite/"),
+    repeated = client.post(
+        invite_url,
+        follow=True,
+        data={"email": invite_email},
+        content_type="application/json",
+        headers=headers,
+    )
+    member = client.post(
+        invite_url,
         follow=True,
         data={"email": orga_user.email},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
     )
 
-    assert response.status_code == 400
-    assert "already a member" in response.text
-    assert team.invites.count() == invite_count
+    assert repeated.status_code == 400
+    assert repeated.json() == ["This user has already been invited to the team."]
+    assert member.status_code == 400
+    assert member.json() == ["This user is already a member of the team."]
+    assert list(team.invites.all()) == [invite]
 
+    delete_url = _team_url(event.organiser, team.pk, f"invites/{invite.pk}/")
+    deleted = client.delete(delete_url, follow=True, headers=headers)
+    missing = client.delete(delete_url, follow=True, headers=headers)
 
-def test_team_invite_rejected_for_already_invited_email(
-    client, orga_write_token, event, team
-):
-    invitation = TeamInviteFactory(team=team)
-    invite_count = team.invites.count()
-
-    response = client.post(
-        _team_url(event.organiser, team.pk, "invite/"),
-        follow=True,
-        data={"email": invitation.email},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 400
-    assert "already been invited" in response.text
-    assert team.invites.count() == invite_count
-
-
-def test_team_delete_invite_removes_invite_and_logs(
-    client, orga_write_token, event, team
-):
-    invitation = TeamInviteFactory(team=team)
-    invite_count = team.invites.count()
-
-    response = client.delete(
-        _team_url(event.organiser, team.pk, f"invites/{invitation.pk}/"),
-        follow=True,
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 204
+    assert deleted.status_code == 204
+    assert missing.status_code == 404
     with scopes_disabled():
-        assert team.invites.count() == invite_count - 1
-        assert not team.invites.filter(pk=invitation.pk).exists()
+        assert team.invites.count() == 0
         assert (
             team.logged_actions()
             .filter(action_type="pretalx.team.invite.orga.retract")
@@ -493,115 +428,53 @@ def test_team_delete_invite_removes_invite_and_logs(
         )
 
 
-def test_team_delete_invite_returns_404_for_wrong_invite(
-    client, orga_write_token, event, team
-):
-    response = client.delete(
-        _team_url(event.organiser, team.pk, "invites/99999/"),
-        follow=True,
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 404
-
-
-def test_team_remove_member_removes_and_logs(
-    client, orga_write_token, event, team, orga_user
-):
+def test_team_remove_member(client, orga_write_token, event, team, orga_user):
     other_user = make_orga_user(teams=[team])
-    member_count = team.members.count()
+    url = _team_url(event.organiser, team.pk, "remove_member/")
+    headers = {"Authorization": f"Token {orga_write_token.token}"}
 
     response = client.post(
-        _team_url(event.organiser, team.pk, "remove_member/"),
+        url,
         follow=True,
         data={"user_code": other_user.code},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
     )
 
     assert response.status_code == 204
     with scopes_disabled():
-        team.refresh_from_db()
-        assert team.members.count() == member_count - 1
-        assert not team.members.filter(pk=other_user.pk).exists()
+        assert list(team.members.all()) == [orga_user]
         assert (
             team.logged_actions()
             .filter(action_type="pretalx.team.remove_member")
             .exists()
         )
 
-
-def test_team_remove_member_rejected_for_non_member(
-    client, orga_write_token, event, team
-):
-    non_member = UserFactory()
-    member_count = team.members.count()
-
-    response = client.post(
-        _team_url(event.organiser, team.pk, "remove_member/"),
+    non_member = client.post(
+        url,
         follow=True,
-        data={"user_code": non_member.code},
+        data={"user_code": other_user.code},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
     )
-
-    assert response.status_code == 400
-    assert "not a member" in response.text
-    assert team.members.count() == member_count
-
-
-def test_team_remove_member_rejected_for_nonexistent_user(
-    client, orga_write_token, event, team
-):
-    member_count = team.members.count()
-
-    response = client.post(
-        _team_url(event.organiser, team.pk, "remove_member/"),
+    unknown = client.post(
+        url,
         follow=True,
         data={"user_code": "NONEXISTENTCODE"},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
     )
-
-    assert response.status_code == 400
-    assert "not found" in response.text
-    assert team.members.count() == member_count
-
-
-def test_team_remove_member_rejected_when_would_leave_no_can_change_teams(
-    client, orga_write_token, event, team, orga_user
-):
-    member_count = team.members.count()
-
-    response = client.post(
-        _team_url(event.organiser, team.pk, "remove_member/"),
+    last_admin = client.post(
+        url,
         follow=True,
         data={"user_code": orga_user.code},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
     )
 
-    assert response.status_code == 400
-    team.refresh_from_db()
-    assert team.members.count() == member_count
-
-
-def test_team_list_search_filters_by_name(client, orga_write_token, event, team):
-    with scopes_disabled():
-        TeamFactory(
-            organiser=event.organiser,
-            name="Unique Searchable Name",
-            can_change_submissions=True,
-            all_events=True,
-        )
-
-    response = client.get(
-        _team_url(event.organiser) + "?q=Unique+Searchable",
-        follow=True,
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["count"] == 1
-    assert data["results"][0]["name"] == "Unique Searchable Name"
+    assert non_member.status_code == 400
+    assert "not a member" in non_member.text
+    assert unknown.status_code == 400
+    assert "not found" in unknown.text
+    assert last_admin.status_code == 400
+    assert list(team.members.all()) == [orga_user]

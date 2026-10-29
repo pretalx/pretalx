@@ -14,8 +14,27 @@ from tests.factories import EventFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_cfp_settings_form_init_populates_json_fields():
+@pytest.mark.parametrize(
+    ("email", "help_text_suffix"),
+    (
+        ("", ""),
+        (
+            "test@example.com",
+            ' (<a href="mailto:test@example.com">test@example.com</a>)',
+        ),
+        (
+            '"><script>alert()</script>"@example.com',
+            (
+                ' (<a href="mailto:&quot;&gt;&lt;script&gt;alert()&lt;/script&gt;&quot;@example.com">'
+                "&quot;&gt;&lt;script&gt;alert()&lt;/script&gt;&quot;@example.com</a>)"
+            ),
+        ),
+    ),
+    ids=["no-email", "email", "escaped-email"],
+)
+def test_cfp_settings_form_init(email, help_text_suffix):
     event = EventFactory(
+        email=email,
         mail_settings={"mail_on_new_submission": True},
         feature_flags={"submission_public_review": True},
     )
@@ -24,45 +43,23 @@ def test_cfp_settings_form_init_populates_json_fields():
 
     assert form.fields["mail_on_new_submission"].initial is True
     assert form.fields["submission_public_review"].initial is True
-
-
-def test_cfp_settings_form_init_appends_email_to_help_text():
-    event = EventFactory(email="test@example.com")
-
-    form = CfPSettingsForm(obj=event)
-
-    assert "test@example.com" in form.fields["mail_on_new_submission"].help_text
-
-
-def test_cfp_settings_form_init_no_email_skips_mailto():
-    event = EventFactory(email="")
-
-    form = CfPSettingsForm(obj=event)
-
-    assert "mailto:" not in str(form.fields["mail_on_new_submission"].help_text)
-
-
-def test_cfp_settings_form_init_escapes_email_in_help_text():
-    event = EventFactory(email='"><script>alert()</script>"@example.com')
-
-    form = CfPSettingsForm(obj=event)
-
-    help_text = str(form.fields["mail_on_new_submission"].help_text)
-    assert "<script>" not in help_text
-    assert "&lt;script&gt;" in help_text
-
-
-def test_cfp_settings_form_save_updates_json_fields():
-    event = EventFactory()
-
-    form = CfPSettingsForm(
-        data={
-            "mail_on_new_submission": True,
-            "submission_public_review": False,
-            "speakers_can_edit_submissions": True,
-        },
-        obj=event,
+    assert str(form.fields["mail_on_new_submission"].help_text) == (
+        "If this setting is checked, you will receive an email to the organiser "
+        "address for every received proposal." + help_text_suffix
     )
+
+
+def test_cfp_settings_form_save_updates_json_fields_unless_read_only():
+    event = EventFactory()
+    data = {
+        "mail_on_new_submission": True,
+        "submission_public_review": False,
+        "speakers_can_edit_submissions": True,
+    }
+
+    assert not CfPSettingsForm(data=data, obj=event, read_only=True).is_valid()
+
+    form = CfPSettingsForm(data=data, obj=event)
     assert form.is_valid(), form.errors
     form.save()
     event.refresh_from_db()
@@ -70,40 +67,6 @@ def test_cfp_settings_form_save_updates_json_fields():
     assert event.feature_flags["submission_public_review"] is False
     assert event.mail_settings["mail_on_new_submission"] is True
     assert event.feature_flags["speakers_can_edit_submissions"] is True
-
-
-def test_cfp_settings_form_read_only_rejects_changes():
-    event = EventFactory()
-
-    form = CfPSettingsForm(
-        data={
-            "mail_on_new_submission": False,
-            "submission_public_review": False,
-            "speakers_can_edit_submissions": True,
-        },
-        obj=event,
-        read_only=True,
-    )
-
-    assert not form.is_valid()
-
-
-def test_cfp_form_valid_with_minimal_data():
-    event = EventFactory()
-    cfp = event.cfp
-
-    form = CfPForm(
-        data={
-            "headline_0": "Submit your talk!",
-            "text_0": "We want your talks.",
-            "count_length_in": "chars",
-        },
-        instance=cfp,
-        locales=event.locales,
-        event=event,
-    )
-
-    assert form.is_valid(), form.errors
 
 
 def test_cfp_form_saves_json_fields():
@@ -173,46 +136,24 @@ def test_cfp_form_count_length_in_rejects_lengths_above_model_limit(
 
 
 @pytest.mark.parametrize(
-    ("field_key", "expect_length_fields"),
+    ("field_key", "extra_fields"),
     (
-        ("title", True),
-        ("abstract", True),
-        ("description", True),
-        ("biography", True),
-        ("notes", False),
-        ("image", False),
+        ("title", ["min_length", "max_length"]),
+        ("abstract", ["min_length", "max_length"]),
+        ("description", ["min_length", "max_length"]),
+        ("biography", ["min_length", "max_length"]),
+        ("notes", []),
+        ("image", []),
+        ("additional_speaker", ["max"]),
+        ("tags", ["min_number", "max_number"]),
     ),
-    ids=["title", "abstract", "description", "biography", "notes", "image"],
 )
-def test_cfp_field_config_form_length_fields_presence(field_key, expect_length_fields):
+def test_cfp_field_config_form_fields_per_field_key(field_key, extra_fields):
     event = EventFactory()
 
     form = CfPFieldConfigForm(field_key=field_key, event=event)
 
-    assert ("min_length" in form.fields) is expect_length_fields
-    assert ("max_length" in form.fields) is expect_length_fields
-
-
-def test_cfp_field_config_form_max_speakers_only_for_additional_speaker():
-    event = EventFactory()
-
-    form_speaker = CfPFieldConfigForm(field_key="additional_speaker", event=event)
-    form_other = CfPFieldConfigForm(field_key="title", event=event)
-
-    assert "max" in form_speaker.fields
-    assert "max" not in form_other.fields
-
-
-def test_cfp_field_config_form_tag_fields_only_for_tags():
-    event = EventFactory()
-
-    form_tags = CfPFieldConfigForm(field_key="tags", event=event)
-    form_other = CfPFieldConfigForm(field_key="title", event=event)
-
-    assert "min_number" in form_tags.fields
-    assert "max_number" in form_tags.fields
-    assert "min_number" not in form_other.fields
-    assert "max_number" not in form_other.fields
+    assert list(form.fields) == ["label", "help_text", "visibility", *extra_fields]
 
 
 def test_cfp_field_config_form_tags_help_text_mentions_public_tags():
@@ -220,33 +161,48 @@ def test_cfp_field_config_form_tags_help_text_mentions_public_tags():
 
     form = CfPFieldConfigForm(field_key="tags", event=event)
 
-    assert "public tags" in str(form.fields["help_text"].help_text).lower()
+    assert str(form.fields["help_text"].help_text) == (
+        "Additional instructions shown below the field. "
+        "Note: Only public tags will be shown to submitters."
+    )
 
 
-def test_cfp_field_config_form_clean_rejects_min_greater_than_max():
+@pytest.mark.parametrize(
+    ("field_key", "data", "errors"),
+    (
+        (
+            "tags",
+            {"min_number": 5, "max_number": 2},
+            {"__all__": ["Minimum tags cannot be greater than maximum tags."]},
+        ),
+        ("tags", {"min_number": 1, "max_number": 5}, {}),
+        (
+            "title",
+            {"min_length": 10, "max_length": 5},
+            {"__all__": ["Minimum length cannot be greater than maximum length."]},
+        ),
+        ("title", {"min_length": 5, "max_length": 10}, {}),
+        ("title", {"min_length": 5, "max_length": 5}, {}),
+        ("title", {"min_length": 10}, {}),
+    ),
+    ids=[
+        "tags-min-above-max",
+        "tags-valid",
+        "min-above-max",
+        "min-below-max",
+        "min-equals-max",
+        "min-only",
+    ],
+)
+def test_cfp_field_config_form_clean_min_max(field_key, data, errors):
     event = EventFactory()
 
     form = CfPFieldConfigForm(
-        data={"visibility": "optional", "min_number": 5, "max_number": 2},
-        field_key="tags",
-        event=event,
+        data={"visibility": "optional", **data}, field_key=field_key, event=event
     )
-    valid = form.is_valid()
 
-    assert not valid
-
-
-def test_cfp_field_config_form_clean_accepts_valid_tag_range():
-    event = EventFactory()
-
-    form = CfPFieldConfigForm(
-        data={"visibility": "optional", "min_number": 1, "max_number": 5},
-        field_key="tags",
-        event=event,
-    )
-    valid = form.is_valid()
-
-    assert valid, form.errors
+    assert form.is_valid() == (not errors)
+    assert form.errors == errors
 
 
 @pytest.mark.parametrize("length_field", ("min_length", "max_length"))
@@ -274,34 +230,9 @@ def test_cfp_field_config_form_length_against_model_limit(
 
     assert valid is expected_valid
     if not valid:
-        assert list(form.errors) == [length_field]
-        assert "1000" in str(form.errors[length_field])
-
-
-@pytest.mark.parametrize(
-    ("min_length", "max_length", "expected_valid"),
-    ((10, 5, False), (5, 10, True), (5, 5, True), (10, None, True)),
-    ids=["min-above-max", "min-below-max", "min-equals-max", "min-only"],
-)
-def test_cfp_field_config_form_clean_rejects_min_length_above_max_length(
-    min_length, max_length, expected_valid
-):
-    event = EventFactory()
-
-    form = CfPFieldConfigForm(
-        data={
-            "visibility": "optional",
-            "min_length": min_length,
-            "max_length": max_length,
-        },
-        field_key="title",
-        event=event,
-    )
-    valid = form.is_valid()
-
-    assert valid is expected_valid
-    if not valid:
-        assert list(form.errors) == ["__all__"]
+        assert form.errors == {
+            length_field: ["This field cannot be longer than 1000 characters."]
+        }
 
 
 def test_step_header_form_valid_with_empty_data():

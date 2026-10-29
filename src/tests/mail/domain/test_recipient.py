@@ -10,6 +10,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def test_recipient_wraps_bare_user():
+    event = EventFactory(locale="en", locales=["en"])
     user = UserFactory(name="Jane Doe", locale="de")
 
     recipient = Recipient(user)
@@ -18,6 +19,7 @@ def test_recipient_wraps_bare_user():
     assert recipient.email == user.email
     assert recipient.name == "Jane Doe"
     assert recipient.locale == "de"
+    assert recipient.get_locale_for_event(event) == "en"
 
 
 def test_recipient_wraps_speaker_profile():
@@ -33,35 +35,19 @@ def test_recipient_wraps_speaker_profile():
     assert recipient.speaker(speaker.event) == speaker
 
 
-def test_recipient_user_locale_for_event():
-    event = EventFactory(locale="en", locales=["en"])
-    user = UserFactory(locale="de")
-
-    recipient = Recipient(user)
-
-    assert recipient.get_locale_for_event(event) == "en"
-
-
-def test_recipient_user_speaker_resolution():
+def test_recipient_speaker_resolves_per_event():
     event = EventFactory()
+    other_event = EventFactory()
     user = UserFactory()
+    assert Recipient(None).speaker(event) is None
     assert Recipient(user).speaker(event) is None
 
     with scopes_disabled():
         speaker = SpeakerFactory(user=user, event=event)
+
     assert Recipient(user).speaker(event) == speaker
-
-
-def test_recipient_speaker_for_other_event_is_none():
-    with scopes_disabled():
-        speaker = SpeakerFactory()
-    other_event = EventFactory()
-
+    assert Recipient(speaker).speaker(event) == speaker
     assert Recipient(speaker).speaker(other_event) is None
-
-
-def test_recipient_without_user_or_speaker_has_no_speaker():
-    assert Recipient(None).speaker(EventFactory()) is None
 
 
 def test_recipient_equality_and_hash():

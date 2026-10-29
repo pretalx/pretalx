@@ -37,15 +37,20 @@ def test_render_boolean(value, expected):
     assert render_boolean(value) == expected
 
 
-@pytest.mark.parametrize("value", (None, "", 0))
-def test_resolve_foreign_key_falsy_value(value):
-    field = db_models.ForeignKey(to="event.Event", on_delete=db_models.CASCADE)
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        (Submission._meta.get_field("event"), None),
+        (Submission._meta.get_field("event"), ""),
+        (Submission._meta.get_field("event"), 0),
+        (Submission._meta.get_field("event"), 99999),
+        (db_models.CharField(), "some_value"),
+    ),
+    ids=("none", "empty", "zero", "missing_pk", "non_fk_field"),
+)
+def test_resolve_foreign_key_passes_through_unresolvable_values(field, value):
     assert resolve_foreign_key(field, value) == value
-
-
-def test_resolve_foreign_key_non_fk_field():
-    field = db_models.CharField()
-    assert resolve_foreign_key(field, "some_value") == "some_value"
 
 
 @pytest.mark.django_db
@@ -57,20 +62,18 @@ def test_resolve_foreign_key_resolves_fk():
 
 
 @pytest.mark.django_db
-def test_resolve_foreign_key_missing_pk():
-    field = Submission._meta.get_field("event")
-    assert resolve_foreign_key(field, 99999) == 99999
-
-
-@pytest.mark.parametrize("value", (None, []))
-def test_resolve_many_to_many_falsy_value(value):
-    field = UserApiToken._meta.get_field("limit_events")
-    assert resolve_many_to_many(field, value) == value
-
-
-def test_resolve_many_to_many_non_m2m_field():
-    field = db_models.CharField()
-    assert resolve_many_to_many(field, ["some_value"]) == ["some_value"]
+@pytest.mark.parametrize(
+    ("field", "value", "expected"),
+    (
+        (UserApiToken._meta.get_field("limit_events"), None, None),
+        (UserApiToken._meta.get_field("limit_events"), [], []),
+        (UserApiToken._meta.get_field("limit_events"), [99999], "99999"),
+        (db_models.CharField(), ["some_value"], ["some_value"]),
+    ),
+    ids=("none", "empty", "missing_pk", "non_m2m_field"),
+)
+def test_resolve_many_to_many_without_resolvable_objects(field, value, expected):
+    assert resolve_many_to_many(field, value) == expected
 
 
 @pytest.mark.django_db
@@ -84,12 +87,6 @@ def test_resolve_many_to_many_resolves_pks():
 
 
 @pytest.mark.django_db
-def test_resolve_many_to_many_missing_pk():
-    field = UserApiToken._meta.get_field("limit_events")
-    assert resolve_many_to_many(field, [99999]) == "99999"
-
-
-@pytest.mark.django_db
 def test_get_display_returns_choice_label():
     submission = SubmissionFactory(state=SubmissionStates.SUBMITTED)
     result = get_display(submission, "state", SubmissionStates.ACCEPTED)
@@ -98,151 +95,118 @@ def test_get_display_returns_choice_label():
 
 
 @pytest.mark.django_db
-def test_history_tab_groups_context_entries(event):
+def test_history_tab_groups_entries_and_takes_presentation_from_context(event):
     submission = SubmissionFactory(event=event)
     log = ActivityLogFactory(event=event, content_object=submission)
+    request = RequestFactory().get("/")
 
-    rf = RequestFactory()
-    request = rf.get("/")
-    context = {"request": request, "history_log_entries": [log]}
-
-    result = history_tab(context)
+    plain = history_tab({"request": request, "history_log_entries": [log]})
+    presented = history_tab(
+        {
+            "request": request,
+            "history_log_entries": [log],
+            "history_with_objects": True,
+            "history_show_event": True,
+        }
+    )
 
     entries = [
-        entry for group in result["activity_groups"] for entry in group["entries"]
+        entry for group in plain["activity_groups"] for entry in group["entries"]
     ]
-    assert len(entries) == 1
-    assert entries[0]["log"] == log
-    assert result["request"] == request
+    assert [entry["log"] for entry in entries] == [log]
+    assert plain["request"] == request
     assert entries[0]["object_url"] == ""
-    assert result["show_event"] is False
-
-
-@pytest.mark.django_db
-def test_history_tab_takes_presentation_from_context(event):
-    submission = SubmissionFactory(event=event)
-    log = ActivityLogFactory(event=event, content_object=submission)
-
-    context = {
-        "request": RequestFactory().get("/"),
-        "history_log_entries": [log],
-        "history_with_objects": True,
-        "history_show_event": True,
-    }
-
-    result = history_tab(context)
-
-    assert result["show_event"] is True
-    entry = result["activity_groups"][0]["entries"][0]
+    assert plain["show_event"] is False
+    assert presented["show_event"] is True
+    entry = presented["activity_groups"][0]["entries"][0]
     assert entry["object_url"] == submission.orga_urls.base
 
 
 @pytest.mark.django_db
-def test_change_row_simple_text_change(event):
-    submission = SubmissionFactory(event=event)
+@pytest.mark.parametrize(
+    ("key", "make_change", "has_diff"),
+    (
+        (
+            "title",
+            lambda event, other: (
+                {"old": "hello world", "new": "hello there", "field": None},
+                ("hello world", "hello there"),
+            ),
+            True,
+        ),
+        (
+            "is_featured",
+            lambda event, other: (
+                {
+                    "old": False,
+                    "new": True,
+                    "field": Submission._meta.get_field("is_featured"),
+                },
+                (BooleanColumn.FALSE_MARK, BooleanColumn.TRUE_MARK),
+            ),
+            False,
+        ),
+        (
+            "event",
+            lambda event, other: (
+                {
+                    "old": event.pk,
+                    "new": other.pk,
+                    "old_display": str(event),
+                    "new_display": str(other),
+                    "field": Submission._meta.get_field("event"),
+                },
+                (str(event), str(other)),
+            ),
+            False,
+        ),
+        (
+            "limit_events",
+            lambda event, other: (
+                {
+                    "old": [event.pk],
+                    "new": [event.pk, other.pk],
+                    "old_display": str(event),
+                    "new_display": f"{event}, {other}",
+                    "field": UserApiToken._meta.get_field("limit_events"),
+                },
+                (str(event), f"{event}, {other}"),
+            ),
+            False,
+        ),
+        (
+            "state",
+            lambda event, other: (
+                {
+                    "old": SubmissionStates.SUBMITTED,
+                    "new": SubmissionStates.ACCEPTED,
+                    "field": None,
+                },
+                ("submitted", "accepted"),
+            ),
+            False,
+        ),
+    ),
+    ids=("text", "boolean", "foreign_key", "many_to_many", "choices"),
+)
+def test_change_row_renders_one_row_per_scalar_change(
+    event, key, make_change, has_diff
+):
+    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     log = ActivityLogFactory(event=event, content_object=submission)
-
-    rf = RequestFactory()
-    request = rf.get("/")
-    request.event = event
-    context = {"request": request}
-
-    change = {
-        "question": None,
-        "old": "hello world",
-        "new": "hello there",
-        "field": None,
-        "label": "Title",
-    }
-    result = change_row(context, "title", change, log)
-
-    assert len(result["rows"]) == 1
-    row = result["rows"][0]
-    assert row["label"] == "Title"
-    assert row["old"] == "hello world"
-    assert row["new"] == "hello there"
-    assert "diff_data" in row
-    assert result["field"] == "title"
-
-
-@pytest.mark.django_db
-def test_change_row_boolean_field(event):
-    submission = SubmissionFactory(event=event)
-    log = ActivityLogFactory(event=event, content_object=submission)
-
-    rf = RequestFactory()
-    request = rf.get("/")
-    request.event = event
-    context = {"request": request}
-
-    bool_field = Submission._meta.get_field("is_featured")
-    change = {
-        "question": None,
-        "old": False,
-        "new": True,
-        "field": bool_field,
-        "label": "Featured",
-    }
-    result = change_row(context, "is_featured", change, log)
-
-    row = result["rows"][0]
-    assert row["old"] == BooleanColumn.FALSE_MARK
-    assert row["new"] == BooleanColumn.TRUE_MARK
-
-
-@pytest.mark.django_db
-def test_change_row_fk_field(event):
-    submission = SubmissionFactory(event=event)
-    log = ActivityLogFactory(event=event, content_object=submission)
-
-    rf = RequestFactory()
-    request = rf.get("/")
-    request.event = event
-    context = {"request": request}
-
-    fk_field = Submission._meta.get_field("event")
-    change = {
-        "question": None,
-        "old": event.pk,
-        "new": event.pk,
-        "old_display": str(event),
-        "new_display": str(event),
-        "field": fk_field,
-        "label": "Event",
-    }
-    result = change_row(context, "event", change, log)
-
-    row = result["rows"][0]
-    assert row["old"] == str(event)
-    assert row["new"] == str(event)
-
-
-@pytest.mark.django_db
-def test_change_row_m2m_field(event):
-    submission = SubmissionFactory(event=event)
-    log = ActivityLogFactory(event=event, content_object=submission)
-
-    rf = RequestFactory()
-    request = rf.get("/")
-    request.event = event
-    context = {"request": request}
-
     other_event = EventFactory()
-    m2m_field = UserApiToken._meta.get_field("limit_events")
-    change = {
-        "question": None,
-        "old": [event.pk],
-        "new": [event.pk, other_event.pk],
-        "old_display": str(event),
-        "new_display": f"{event}, {other_event}",
-        "field": m2m_field,
-        "label": "Events",
-    }
-    result = change_row(context, "limit_events", change, log)
+    request = RequestFactory().get("/")
+    request.event = event
+    change, (old_display, new_display) = make_change(event, other_event)
+    change.update({"question": None, "label": "Label"})
 
-    row = result["rows"][0]
-    assert row["old"] == str(event)
-    assert row["new"] == f"{event}, {other_event}"
+    result = change_row({"request": request}, key, change, log)
+
+    assert result["field"] == key
+    assert [
+        (row["label"], row["old"], row["new"], "diff_data" in row)
+        for row in result["rows"]
+    ] == [("Label", old_display, new_display, has_diff)]
 
 
 @pytest.mark.django_db
@@ -269,30 +233,6 @@ def test_change_row_dict_values(event):
     assert result["rows"][0]["rowspan"] == 2
     languages = {row["language"] for row in result["rows"]}
     assert languages == {"en", "de"}
-
-
-@pytest.mark.django_db
-def test_change_row_choices_field(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    log = ActivityLogFactory(event=event, content_object=submission)
-
-    rf = RequestFactory()
-    request = rf.get("/")
-    request.event = event
-    context = {"request": request}
-
-    change = {
-        "question": None,
-        "old": SubmissionStates.SUBMITTED,
-        "new": SubmissionStates.ACCEPTED,
-        "field": None,
-        "label": "State",
-    }
-    result = change_row(context, "state", change, log)
-
-    row = result["rows"][0]
-    assert row["old"] == "submitted"
-    assert row["new"] == "accepted"
 
 
 @pytest.mark.django_db

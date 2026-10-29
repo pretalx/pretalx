@@ -27,6 +27,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 def test_review_score_category_serializer_fields():
     category = ReviewScoreCategoryFactory()
+    track = TrackFactory(event=category.event)
+    TrackFactory(event=category.event)
+    category.limit_tracks.add(track)
     request = make_api_request(category.event)
 
     serializer = ReviewScoreCategorySerializer(category, context={"request": request})
@@ -46,19 +49,7 @@ def test_review_score_category_serializer_fields():
     assert data["required"] is False
     assert data["active"] is True
     assert data["is_independent"] is False
-    assert data["limit_tracks"] == []
-
-
-def test_review_score_category_serializer_with_limit_tracks():
-    category = ReviewScoreCategoryFactory()
-    track = TrackFactory(event=category.event)
-    TrackFactory(event=category.event)
-    category.limit_tracks.add(track)
-    request = make_api_request(category.event)
-
-    serializer = ReviewScoreCategorySerializer(category, context={"request": request})
-
-    assert serializer.data["limit_tracks"] == [track.pk]
+    assert data["limit_tracks"] == [track.pk]
 
 
 def test_review_score_serializer_fields():
@@ -150,50 +141,30 @@ def test_review_write_serializer_init_scores_queryset_filtered_by_event():
     assert set(scores_qs.values_list("category__event", flat=True)) == {event.pk}
 
 
-def test_review_write_serializer_validate_scores_unique_categories():
+def test_review_write_serializer_validate_scores_requires_unique_categories():
     category_a = ReviewScoreCategoryFactory()
     category_b = ReviewScoreCategoryFactory(event=category_a.event)
-    score_a = ReviewScoreFactory(category=category_a)
+    score_a = ReviewScoreFactory(category=category_a, value=1)
+    score_a2 = ReviewScoreFactory(category=category_a, value=2)
     score_b = ReviewScoreFactory(category=category_b)
     request = make_api_request(category_a.event)
     serializer = ReviewWriteSerializer(context={"request": request})
 
-    result = serializer.validate_scores([score_a, score_b])
-
-    assert result == [score_a, score_b]
-
-
-def test_review_write_serializer_validate_scores_duplicate_category_raises():
-    category = ReviewScoreCategoryFactory()
-    score_a = ReviewScoreFactory(category=category, value=1)
-    score_b = ReviewScoreFactory(category=category, value=2)
-    request = make_api_request(category.event)
-    serializer = ReviewWriteSerializer(context={"request": request})
-
+    assert serializer.validate_scores([score_a, score_b]) == [score_a, score_b]
     with pytest.raises(DjangoValidationError, match="one score per category"):
-        serializer.validate_scores([score_a, score_b])
+        serializer.validate_scores([score_a, score_a2])
 
 
-def test_review_write_serializer_validate_submission_already_reviewed():
+def test_review_write_serializer_validate_submission_rejects_already_reviewed():
     review = ReviewFactory()
     event = review.submission.event
+    unreviewed = SubmissionFactory(event=event)
     request = make_api_request(event, user=review.user)
     serializer = ReviewWriteSerializer(context={"request": request})
 
+    assert serializer.validate_submission(unreviewed) == unreviewed
     with pytest.raises(ValidationError, match="already reviewed"):
         serializer.validate_submission(review.submission)
-
-
-def test_review_write_serializer_validate_submission_not_yet_reviewed():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    user = UserFactory()
-    request = make_api_request(event, user=user)
-
-    serializer = ReviewWriteSerializer(context={"request": request})
-    result = serializer.validate_submission(submission)
-
-    assert result == submission
 
 
 def test_review_write_serializer_create_sets_user():
@@ -212,6 +183,7 @@ def test_review_write_serializer_create_sets_user():
     assert review.user == user
     assert review.submission == submission
     assert review.text == "Great talk"
+    assert list(review.scores.all()) == []
 
 
 def test_review_write_serializer_create_concurrent_duplicate_raises_validation_error():
@@ -256,21 +228,6 @@ def test_review_write_serializer_create_with_scores():
     assert serializer.is_valid(), serializer.errors
     review = serializer.save()
     assert list(review.scores.all()) == [score]
-
-
-def test_review_write_serializer_create_without_scores():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    user = UserFactory()
-    request = make_api_request(event, user=user)
-
-    serializer = ReviewWriteSerializer(
-        data={"submission": submission.code, "text": "Text only", "answers": []},
-        context={"request": request, "submissions": event.submissions.all()},
-    )
-    assert serializer.is_valid(), serializer.errors
-    review = serializer.save()
-    assert list(review.scores.all()) == []
 
 
 def test_review_write_serializer_update_sets_user():

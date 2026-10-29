@@ -19,47 +19,19 @@ pytestmark = [pytest.mark.unit]
 
 
 @pytest.mark.django_db
-def test_get_requested_etag_present(event):
-    request = make_request(event, headers={"If-None-Match": '"abc123"'})
-
-    assert get_requested_etag(request) == "abc123"
-
-
-@pytest.mark.django_db
-def test_get_requested_etag_missing(event):
-    request = make_request(event)
-
-    assert get_requested_etag(request) is None
+def test_get_requested_etag(event):
+    assert (
+        get_requested_etag(make_request(event, headers={"If-None-Match": '"abc123"'}))
+        == "abc123"
+    )
+    assert get_requested_etag(make_request(event)) is None
 
 
-def test_get_etag_bytes_content():
-    response = HttpResponse(b"hello world")
-
-    etag = get_etag(response)
-
-    assert len(etag) == 32  # MD5 hex digest
-
-
-def test_get_etag_same_content_same_hash():
-    r1 = HttpResponse(b"identical")
-    r2 = HttpResponse(b"identical")
-
-    assert get_etag(r1) == get_etag(r2)
-
-
-def test_get_etag_different_content_different_hash():
-    r1 = HttpResponse(b"content-a")
-    r2 = HttpResponse(b"content-b")
-
-    assert get_etag(r1) != get_etag(r2)
-
-
-def test_get_etag_string_content():
-    response = HttpResponse("text content")
-
-    etag = get_etag(response)
-
-    assert len(etag) == 32
+def test_get_etag_hashes_content():
+    assert get_etag(HttpResponse(b"identical")) == get_etag(HttpResponse(b"identical"))
+    assert get_etag(HttpResponse(b"content-a")) != get_etag(HttpResponse(b"content-b"))
+    assert len(get_etag(HttpResponse(b"hello world"))) == 32
+    assert len(get_etag(HttpResponse("text content"))) == 32
 
 
 @pytest.mark.parametrize(
@@ -80,136 +52,94 @@ def test_should_cache(event, response_factory, expected):
 
 
 @pytest.mark.django_db
-def test_should_cache_private_cache_control(event):
+def test_should_cache_false_for_private_responses(event):
     request = make_request(event)
-    response = HttpResponse("ok")
-    response["Cache-Control"] = "private"
+    private = HttpResponse("ok")
+    private["Cache-Control"] = "private"
+    with_cookie = HttpResponse("ok")
+    with_cookie.set_cookie("session", "abc")
+    with_cookie["Vary"] = "Cookie"
 
-    assert should_cache(request, response) is False
-
-
-@pytest.mark.django_db
-def test_should_cache_false_when_response_sets_cookie_with_vary(event):
-    request = make_request(event)
-    response = HttpResponse("ok")
-    response.set_cookie("session", "abc")
-    response["Vary"] = "Cookie"
-
-    assert should_cache(request, response) is False
+    assert should_cache(request, private) is False
+    assert should_cache(request, with_cookie) is False
 
 
-def test_patched_response_sets_cache_headers():
-    response = HttpResponse("ok")
-
-    result = patched_response(response, 300)
-
-    assert "max-age=300" in result["Cache-Control"]
-
-
-def test_patched_response_sets_custom_headers():
+def test_patched_response_sets_cache_and_custom_headers():
     response = HttpResponse("ok")
 
     result = patched_response(response, 300, headers={"X-Custom": "value"})
 
+    assert result["Cache-Control"] == "max-age=300"
     assert result["X-Custom"] == "value"
 
 
 @pytest.mark.django_db
-def test_conditional_cache_page_skips_non_get(event):
+def test_conditional_cache_page_caches_only_matching_get_requests(event):
     calls = []
 
     @conditional_cache_page(300)
     def view(request):
-        calls.append(1)
+        calls.append("plain")
         return HttpResponse("ok")
-
-    request = make_request(event, method="post", path="/test/")
-    view(request)
-    view(request)
-
-    assert len(calls) == 2
-
-
-@pytest.mark.django_db
-def test_conditional_cache_page_skips_when_condition_false(event):
-    calls = []
 
     @conditional_cache_page(300, condition=lambda req: False)
-    def view(request):
-        calls.append(1)
+    def conditional_view(request):
+        calls.append("conditional")
         return HttpResponse("ok")
 
-    request = make_request(event, path="/test/")
-    view(request)
-    view(request)
+    post_request = make_request(event, method="post", path="/test/")
+    get_request = make_request(event, path="/cache-get/")
 
-    assert len(calls) == 2
+    view(post_request)
+    view(post_request)
+    conditional_view(get_request)
+    conditional_view(get_request)
+    assert view(get_request).status_code == 200
+    assert view(get_request).status_code == 200
 
-
-@pytest.mark.django_db
-def test_conditional_cache_page_caches_get_request(event):
-    calls = []
-
-    @conditional_cache_page(300)
-    def view(request):
-        calls.append(1)
-        return HttpResponse("cached")
-
-    request = make_request(event, path="/cache-get/")
-    first = view(request)
-    second = view(request)
-
-    assert first.status_code == 200
-    assert second.status_code == 200
-    assert len(calls) == 1
+    assert calls == ["plain", "plain", "conditional", "conditional", "plain"]
 
 
 @pytest.mark.django_db
-def test_etag_cache_page_caches_response(event):
+@pytest.mark.parametrize("server_timeout", (None, 120))
+def test_etag_cache_page_serves_cached_response_by_etag(event, server_timeout):
     calls = []
 
     def handler(request):
         calls.append(1)
         return HttpResponse("cached content")
 
-    request = make_request(event, path="/cacheable/")
-    etag_cache_page(
-        300, request=request, request_args=(), request_kwargs={}, handler=handler
-    )
-    etag_cache_page(
-        300, request=request, request_args=(), request_kwargs={}, handler=handler
-    )
+    def cached(request):
+        return etag_cache_page(
+            60,
+            server_timeout=server_timeout,
+            request=request,
+            request_args=(),
+            request_kwargs={},
+            handler=handler,
+        )
 
-    assert len(calls) == 1
+    first = cached(make_request(event, path="/cacheable/"))
+    etag_value = first["ETag"].strip('"')
+
+    assert first.status_code == 200
+    assert cached(make_request(event, path="/cacheable/")).status_code == 200
+    assert calls == [1]
+
+    matching = make_request(
+        event, path="/cacheable/", headers={"If-None-Match": f'"{etag_value}"'}
+    )
+    assert cached(matching).status_code == 304
+
+    stale = make_request(
+        event, path="/cacheable/", headers={"If-None-Match": '"stale-etag-value"'}
+    )
+    assert cached(stale).status_code == 200
+    assert calls == [1]
 
 
 @pytest.mark.django_db
-def test_etag_cache_page_returns_304_on_matching_etag(event):
-    def handler(request):
-        return HttpResponse("content")
-
-    request = make_request(event, path="/etag-test/")
-    first_response = etag_cache_page(
-        300, request=request, request_args=(), request_kwargs={}, handler=handler
-    )
-    etag_value = first_response["ETag"].strip('"')
-
-    request_with_etag = make_request(
-        event, path="/etag-test/", headers={"If-None-Match": f'"{etag_value}"'}
-    )
-    second_response = etag_cache_page(
-        300,
-        request=request_with_etag,
-        request_args=(),
-        request_kwargs={},
-        handler=handler,
-    )
-
-    assert second_response.status_code == 304
-
-
-@pytest.mark.django_db
-def test_etag_cache_page_callable_key_prefix(event):
+def test_etag_cache_page_callable_key_prefix_and_custom_headers(event):
     prefix_calls = []
 
     def handler(request):
@@ -227,78 +157,13 @@ def test_etag_cache_page_callable_key_prefix(event):
         request_args=(),
         request_kwargs={},
         handler=handler,
+        headers={"X-Frame-Options": "DENY"},
     )
 
     assert response.status_code == 200
     assert response.has_header("ETag")
-    assert len(prefix_calls) == 1
-
-
-@pytest.mark.django_db
-def test_etag_cache_page_custom_headers(event):
-    def handler(request):
-        return HttpResponse("ok")
-
-    request = make_request(event, path="/headers-test/")
-    response = etag_cache_page(
-        300,
-        request=request,
-        request_args=(),
-        request_kwargs={},
-        handler=handler,
-        headers={"X-Frame-Options": "DENY"},
-    )
-
     assert response["X-Frame-Options"] == "DENY"
-
-
-@pytest.mark.django_db
-def test_etag_cache_page_server_timeout(event):
-    calls = []
-
-    def handler(request):
-        calls.append(1)
-        return HttpResponse("ok")
-
-    request = make_request(event, path="/timeout-test/")
-    etag_cache_page(
-        60,
-        server_timeout=120,
-        request=request,
-        request_args=(),
-        request_kwargs={},
-        handler=handler,
-    )
-    etag_cache_page(
-        60,
-        server_timeout=120,
-        request=request,
-        request_args=(),
-        request_kwargs={},
-        handler=handler,
-    )
-
-    assert len(calls) == 1
-
-
-@pytest.mark.django_db
-def test_etag_cache_page_mismatched_etag_returns_full_response(event):
-    def handler(request):
-        return HttpResponse("new content")
-
-    request = make_request(event, path="/stale-etag/")
-    etag_cache_page(
-        300, request=request, request_args=(), request_kwargs={}, handler=handler
-    )
-
-    request_stale = make_request(
-        event, path="/stale-etag/", headers={"If-None-Match": '"stale-etag-value"'}
-    )
-    response = etag_cache_page(
-        300, request=request_stale, request_args=(), request_kwargs={}, handler=handler
-    )
-
-    assert response.status_code == 200
+    assert prefix_calls == [1]
 
 
 @pytest.mark.django_db

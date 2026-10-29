@@ -42,38 +42,72 @@ def test_access_code_list_with_orga_read_token(
     assert response.status_code == 200
     data = response.json()
     assert data["count"] == item_count
-    result_codes = {r["code"] for r in data["results"]}
-    assert all(c.code in result_codes for c in codes)
+    assert {r["code"] for r in data["results"]} == {c.code for c in codes}
 
 
-def test_access_code_detail_with_orga_read_token(client, event, orga_read_token):
+@pytest.mark.parametrize(
+    "extra_headers",
+    ({}, {"Pretalx-Version": "v-next"}),
+    ids=["default-v2", "dev-preview"],
+)
+def test_access_code_detail_with_orga_read_token(
+    client, event, orga_read_token, extra_headers
+):
     with scopes_disabled():
+        track = TrackFactory(event=event)
+        sub_type = SubmissionTypeFactory(event=event)
         code = SubmitterAccessCodeFactory(
             event=event, maximum_uses=5, internal_notes="Test note"
         )
+        code.tracks.add(track)
+        code.submission_types.add(sub_type)
+    headers = {"Authorization": f"Token {orga_read_token.token}", **extra_headers}
 
     response = client.get(
-        event.api_urls.access_codes + f"{code.pk}/",
+        event.api_urls.access_codes + f"{code.pk}/", follow=True, headers=headers
+    )
+    expanded = client.get(
+        event.api_urls.access_codes + f"{code.pk}/?expand=tracks,submission_types",
         follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+        headers=headers,
     )
 
     assert response.status_code == 200
-    data = response.json()
-    assert data["id"] == code.pk
-    assert data["code"] == code.code
-    assert data["maximum_uses"] == 5
-    assert data["redeemed"] == 0
-    assert data["internal_notes"] == "Test note"
+    assert response.json() == {
+        "id": code.pk,
+        "code": code.code,
+        "tracks": [track.pk],
+        "submission_types": [sub_type.pk],
+        "valid_until": None,
+        "maximum_uses": 5,
+        "redeemed": 0,
+        "internal_notes": "Test note",
+    }
+    assert expanded.status_code == 200
+    data = expanded.json()
+    assert [t["name"]["en"] for t in data["tracks"]] == [str(track.name)]
+    assert [t["name"]["en"] for t in data["submission_types"]] == [str(sub_type.name)]
 
 
 def test_access_code_create_with_write_token(client, event, orga_write_token):
+    with scopes_disabled():
+        track = TrackFactory(event=event)
+        other_track = TrackFactory(event=EventFactory())
+    headers = {"Authorization": f"Token {orga_write_token.token}"}
+
     response = client.post(
         event.api_urls.access_codes,
         follow=True,
-        data={"code": "TESTCODE123", "maximum_uses": 10},
+        data={"code": "TESTCODE123", "maximum_uses": 10, "tracks": [track.pk]},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
+    )
+    rejected = client.post(
+        event.api_urls.access_codes,
+        follow=True,
+        data={"code": "BADTRACK", "tracks": [other_track.pk]},
+        content_type="application/json",
+        headers=headers,
     )
 
     assert response.status_code == 201
@@ -83,11 +117,18 @@ def test_access_code_create_with_write_token(client, event, orga_write_token):
     with scopes_disabled():
         code = event.submitter_access_codes.get(code="TESTCODE123")
         assert code.maximum_uses == 10
+        assert list(code.tracks.all()) == [track]
         assert (
             code.logged_actions()
             .filter(action_type="pretalx.access_code.create")
             .exists()
         )
+    assert rejected.status_code == 400
+    assert rejected.json() == {
+        "tracks": [f'Invalid pk "{other_track.pk}" - object does not exist.']
+    }
+    with scopes_disabled():
+        assert not event.submitter_access_codes.filter(code="BADTRACK").exists()
 
 
 def test_access_code_create_rejected_with_read_token(client, event, orga_read_token):
@@ -104,51 +145,20 @@ def test_access_code_create_rejected_with_read_token(client, event, orga_read_to
         assert not event.submitter_access_codes.filter(code="FORBIDDEN").exists()
 
 
-def test_access_code_create_with_tracks(client, event, orga_write_token):
-    with scopes_disabled():
-        track = TrackFactory(event=event)
-
-    response = client.post(
-        event.api_urls.access_codes,
-        follow=True,
-        data={"code": "TRACKED", "tracks": [track.pk]},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 201
-    with scopes_disabled():
-        code = event.submitter_access_codes.get(code="TRACKED")
-        assert list(code.tracks.all()) == [track]
-
-
-def test_access_code_create_rejects_track_from_other_event(
+def test_access_code_update_and_delete_with_write_token(
     client, event, orga_write_token
 ):
     with scopes_disabled():
-        other_track = TrackFactory(event=EventFactory())
-
-    response = client.post(
-        event.api_urls.access_codes,
-        follow=True,
-        data={"code": "BADTRACK", "tracks": [other_track.pk]},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 400
-
-
-def test_access_code_update_with_write_token(client, event, orga_write_token):
-    with scopes_disabled():
         code = SubmitterAccessCodeFactory(event=event, maximum_uses=1)
+    url = event.api_urls.access_codes + f"{code.pk}/"
+    headers = {"Authorization": f"Token {orga_write_token.token}"}
 
     response = client.patch(
-        event.api_urls.access_codes + f"{code.pk}/",
+        url,
         follow=True,
         data={"maximum_uses": 99},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
     )
 
     assert response.status_code == 200
@@ -161,21 +171,11 @@ def test_access_code_update_with_write_token(client, event, orga_write_token):
             .exists()
         )
 
-
-def test_access_code_delete_with_write_token(client, event, orga_write_token):
-    with scopes_disabled():
-        code = SubmitterAccessCodeFactory(event=event)
-        code_pk = code.pk
-
-    response = client.delete(
-        event.api_urls.access_codes + f"{code_pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
+    response = client.delete(url, follow=True, headers=headers)
 
     assert response.status_code == 204
     with scopes_disabled():
-        assert not event.submitter_access_codes.filter(pk=code_pk).exists()
+        assert not event.submitter_access_codes.filter(pk=code.pk).exists()
         assert (
             event.logged_actions()
             .filter(action_type="pretalx.access_code.delete")
@@ -201,112 +201,67 @@ def test_access_code_delete_used_code_returns_400(client, event, orga_write_toke
 
 def test_access_code_detail_v1_shows_singular_fields(client, event, orga_read_token):
     with scopes_disabled():
-        track = TrackFactory(event=event)
-        sub_type = SubmissionTypeFactory(event=event)
-        code = SubmitterAccessCodeFactory(event=event)
-        code.tracks.add(track)
-        code.submission_types.add(sub_type)
-
-    response = client.get(
-        event.api_urls.access_codes + f"{code.pk}/",
-        follow=True,
-        headers={
-            "Authorization": f"Token {orga_read_token.token}",
-            "Pretalx-Version": "v1",
-        },
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert "track" in data
-    assert "submission_type" in data
-    assert "tracks" not in data
-    assert "submission_types" not in data
-    assert data["track"] == track.pk
-    assert data["submission_type"] == sub_type.pk
-
-
-def test_access_code_detail_v1_returns_first_entry_only(client, event, orga_read_token):
-    with scopes_disabled():
         track1 = TrackFactory(event=event)
         track2 = TrackFactory(event=event)
         sub_type1 = SubmissionTypeFactory(event=event)
         sub_type2 = SubmissionTypeFactory(event=event)
-        code = SubmitterAccessCodeFactory(event=event)
+        code = SubmitterAccessCodeFactory(event=event, maximum_uses=5)
         code.tracks.add(track1, track2)
         code.submission_types.add(sub_type1, sub_type2)
+        empty_code = SubmitterAccessCodeFactory(event=event)
+    headers = {
+        "Authorization": f"Token {orga_read_token.token}",
+        "Pretalx-Version": "v1",
+    }
 
     response = client.get(
-        event.api_urls.access_codes + f"{code.pk}/",
-        follow=True,
-        headers={
-            "Authorization": f"Token {orga_read_token.token}",
-            "Pretalx-Version": "v1",
-        },
+        event.api_urls.access_codes + f"{code.pk}/", follow=True, headers=headers
     )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["track"] in (track1.pk, track2.pk)
-    assert data["submission_type"] in (sub_type1.pk, sub_type2.pk)
-
-
-def test_access_code_detail_v1_null_when_empty(client, event, orga_read_token):
-    with scopes_disabled():
-        code = SubmitterAccessCodeFactory(event=event)
-
-    response = client.get(
-        event.api_urls.access_codes + f"{code.pk}/",
-        follow=True,
-        headers={
-            "Authorization": f"Token {orga_read_token.token}",
-            "Pretalx-Version": "v1",
-        },
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["track"] is None
-    assert data["submission_type"] is None
-
-
-def test_access_code_detail_v1_expand_track(client, event, orga_read_token):
-    with scopes_disabled():
-        track = TrackFactory(event=event)
-        sub_type = SubmissionTypeFactory(event=event)
-        code = SubmitterAccessCodeFactory(event=event)
-        code.tracks.add(track)
-        code.submission_types.add(sub_type)
-
-    response = client.get(
+    expanded = client.get(
         event.api_urls.access_codes + f"{code.pk}/?expand=track,submission_type",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_read_token.token}",
-            "Pretalx-Version": "v1",
-        },
+        headers=headers,
+    )
+    empty = client.get(
+        event.api_urls.access_codes + f"{empty_code.pk}/", follow=True, headers=headers
     )
 
     assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data["track"], dict)
-    assert isinstance(data["submission_type"], dict)
+    assert response.json() == {
+        "id": code.pk,
+        "code": code.code,
+        "track": track1.pk,
+        "submission_type": sub_type1.pk,
+        "valid_until": None,
+        "maximum_uses": 5,
+        "redeemed": 0,
+        "internal_notes": None,
+    }
+    assert expanded.status_code == 200
+    assert expanded.json()["track"]["id"] == track1.pk
+    assert expanded.json()["submission_type"]["id"] == sub_type1.pk
+    assert empty.status_code == 200
+    assert empty.json()["track"] is None
+    assert empty.json()["submission_type"] is None
 
 
-def test_access_code_create_v1_with_submission_type(client, event, orga_write_token):
+def test_access_code_create_and_update_v1_track_and_submission_type(
+    client, event, orga_write_token
+):
     with scopes_disabled():
         track = TrackFactory(event=event)
         sub_type = SubmissionTypeFactory(event=event)
+    headers = {
+        "Authorization": f"Token {orga_write_token.token}",
+        "Pretalx-Version": "v1",
+    }
 
     response = client.post(
         event.api_urls.access_codes,
         follow=True,
         data={"code": "FULLV1", "track": track.pk, "submission_type": sub_type.pk},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_write_token.token}",
-            "Pretalx-Version": "v1",
-        },
+        headers=headers,
     )
 
     assert response.status_code == 201
@@ -314,106 +269,30 @@ def test_access_code_create_v1_with_submission_type(client, event, orga_write_to
         code = event.submitter_access_codes.get(code="FULLV1")
         assert list(code.tracks.all()) == [track]
         assert list(code.submission_types.all()) == [sub_type]
-
-
-def test_access_code_update_v1_track(client, event, orga_write_token):
-    with scopes_disabled():
-        code = SubmitterAccessCodeFactory(event=event)
-        track = TrackFactory(event=event)
-        sub_type = SubmissionTypeFactory(event=event)
+    url = event.api_urls.access_codes + f"{code.pk}/"
 
     response = client.patch(
-        event.api_urls.access_codes + f"{code.pk}/",
-        follow=True,
-        data={"track": track.pk, "submission_type": sub_type.pk},
-        content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_write_token.token}",
-            "Pretalx-Version": "v1",
-        },
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        code.refresh_from_db()
-        assert list(code.tracks.all()) == [track]
-        assert list(code.submission_types.all()) == [sub_type]
-
-
-def test_access_code_update_v1_clear_track(client, event, orga_write_token):
-    with scopes_disabled():
-        track = TrackFactory(event=event)
-        sub_type = SubmissionTypeFactory(event=event)
-        code = SubmitterAccessCodeFactory(event=event)
-        code.tracks.add(track)
-        code.submission_types.add(sub_type)
-
-    response = client.patch(
-        event.api_urls.access_codes + f"{code.pk}/",
+        url,
         follow=True,
         data={"track": None, "submission_type": None},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_write_token.token}",
-            "Pretalx-Version": "v1",
-        },
+        headers=headers,
     )
 
     assert response.status_code == 200
     with scopes_disabled():
-        code.refresh_from_db()
-        assert code.tracks.count() == 0
-        assert code.submission_types.count() == 0
+        assert list(code.tracks.all()) == []
+        assert list(code.submission_types.all()) == []
 
-
-@pytest.mark.parametrize(
-    "extra_headers",
-    ({}, {"Pretalx-Version": "v-next"}),
-    ids=["default-v2", "dev-preview"],
-)
-def test_access_code_detail_shows_plural_fields(
-    client, event, orga_read_token, extra_headers
-):
-    with scopes_disabled():
-        track = TrackFactory(event=event)
-        sub_type = SubmissionTypeFactory(event=event)
-        code = SubmitterAccessCodeFactory(event=event)
-        code.tracks.add(track)
-        code.submission_types.add(sub_type)
-
-    response = client.get(
-        event.api_urls.access_codes + f"{code.pk}/",
+    response = client.patch(
+        url,
         follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}", **extra_headers},
+        data={"track": track.pk, "submission_type": sub_type.pk},
+        content_type="application/json",
+        headers=headers,
     )
 
     assert response.status_code == 200
-    data = response.json()
-    assert "tracks" in data
-    assert "submission_types" in data
-    assert "track" not in data
-    assert "submission_type" not in data
-    assert data["tracks"] == [track.pk]
-    assert data["submission_types"] == [sub_type.pk]
-
-
-def test_access_code_expand_tracks(client, event, orga_read_token):
     with scopes_disabled():
-        track = TrackFactory(event=event)
-        sub_type = SubmissionTypeFactory(event=event)
-        code = SubmitterAccessCodeFactory(event=event)
-        code.tracks.add(track)
-        code.submission_types.add(sub_type)
-
-    response = client.get(
-        event.api_urls.access_codes + f"{code.pk}/?expand=tracks,submission_types",
-        follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data["tracks"]) == 1
-    assert data["tracks"][0]["name"]["en"] == str(track.name)
-    assert len(data["submission_types"]) == 1
-    assert data["submission_types"][0]["name"]["en"] == str(sub_type.name)
+        assert list(code.tracks.all()) == [track]
+        assert list(code.submission_types.all()) == [sub_type]

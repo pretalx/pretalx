@@ -28,45 +28,28 @@ from tests.factories import (
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
-
-@pytest.mark.parametrize("change_type", ("new_talks", "canceled_talks"))
-def test_serialize_changes_new_or_canceled_talk(change_type):
-    submission = SubmissionFactory()
-    slot = TalkSlotFactory(submission=submission)
-
-    changes = {
-        "count": 1,
-        "action": "update",
-        "new_talks": [],
-        "canceled_talks": [],
-        "moved_talks": [],
-    }
-    changes[change_type] = [slot]
-
-    result = _serialize_changes(changes)
-
-    assert result["count"] == 1
-    assert result["action"] == "update"
-    assert len(result[change_type]) == 1
-    assert result[change_type][0]["id"] == slot.id
-    assert result[change_type][0]["submission_code"] == submission.code
-    assert result["moved_talks"] == []
+EMPTY_CHANGES = {
+    "count": 0,
+    "action": "update",
+    "new_talks": [],
+    "canceled_talks": [],
+    "moved_talks": [],
+}
 
 
-def test_serialize_changes_moved_talks():
+def test_serialize_changes_flattens_slots_rooms_and_times():
     submission = SubmissionFactory()
     event = submission.event
     room_old = RoomFactory(event=event)
     room_new = RoomFactory(event=event)
     slot = TalkSlotFactory(submission=submission, room=room_new)
-
     old_start = event.datetime_from
     new_start = event.datetime_from + dt.timedelta(hours=2)
     changes = {
-        "count": 1,
+        "count": 3,
         "action": "update",
-        "new_talks": [],
-        "canceled_talks": [],
+        "new_talks": [slot],
+        "canceled_talks": [slot],
         "moved_talks": [
             {
                 "submission": submission,
@@ -80,17 +63,24 @@ def test_serialize_changes_moved_talks():
         ],
     }
 
-    result = _serialize_changes(changes)
-
-    assert len(result["moved_talks"]) == 1
-    moved = result["moved_talks"][0]
-    assert moved["submission_code"] == submission.code
-    assert moved["old_start"] == old_start.isoformat()
-    assert moved["new_start"] == new_start.isoformat()
-    assert moved["old_room"] == room_old.pk
-    assert moved["new_room"] == room_new.pk
-    assert moved["new_info"] == "Speaker info"
-    assert moved["new_slot_id"] == slot.id
+    assert _serialize_changes(EMPTY_CHANGES) == EMPTY_CHANGES
+    assert _serialize_changes(changes) == {
+        "count": 3,
+        "action": "update",
+        "new_talks": [{"id": slot.id, "submission_code": submission.code}],
+        "canceled_talks": [{"id": slot.id, "submission_code": submission.code}],
+        "moved_talks": [
+            {
+                "submission_code": submission.code,
+                "old_start": old_start.isoformat(),
+                "new_start": new_start.isoformat(),
+                "old_room": room_old.pk,
+                "new_room": room_new.pk,
+                "new_info": "Speaker info",
+                "new_slot_id": slot.id,
+            }
+        ],
+    }
 
 
 def test_serialize_changes_null_fields():
@@ -98,7 +88,6 @@ def test_serialize_changes_null_fields():
     slot = TalkSlotFactory(
         submission=None, schedule=event.wip_schedule, room=None, is_visible=False
     )
-
     changes = {
         "count": 1,
         "action": "update",
@@ -117,35 +106,22 @@ def test_serialize_changes_null_fields():
         ],
     }
 
-    result = _serialize_changes(changes)
-
-    assert result["new_talks"][0]["submission_code"] is None
-    moved = result["moved_talks"][0]
-    assert moved["submission_code"] is None
-    assert moved["old_start"] is None
-    assert moved["new_start"] is None
-    assert moved["old_room"] is None
-    assert moved["new_room"] is None
-    assert moved["new_slot_id"] is None
-
-
-def test_serialize_changes_empty():
-    changes = {
-        "count": 0,
+    assert _serialize_changes(changes) == {
+        "count": 1,
         "action": "update",
-        "new_talks": [],
+        "new_talks": [{"id": slot.id, "submission_code": None}],
         "canceled_talks": [],
-        "moved_talks": [],
-    }
-
-    result = _serialize_changes(changes)
-
-    assert result == {
-        "count": 0,
-        "action": "update",
-        "new_talks": [],
-        "canceled_talks": [],
-        "moved_talks": [],
+        "moved_talks": [
+            {
+                "submission_code": None,
+                "old_start": None,
+                "new_start": None,
+                "old_room": None,
+                "new_room": None,
+                "new_info": "",
+                "new_slot_id": None,
+            }
+        ],
     }
 
 
@@ -182,10 +158,8 @@ def test_deserialize_changes_roundtrip():
 
     assert result["count"] == 3
     assert result["action"] == "update"
-    assert len(result["new_talks"]) == 1
-    assert result["new_talks"][0].id == new_slot.id
-    assert len(result["canceled_talks"]) == 1
-    assert result["canceled_talks"][0].id == new_slot.id
+    assert [slot.id for slot in result["new_talks"]] == [new_slot.id]
+    assert [slot.id for slot in result["canceled_talks"]] == [new_slot.id]
     assert len(result["moved_talks"]) == 1
     assert result["moved_talks"][0]["submission"] == submission
     assert result["moved_talks"][0]["old_room"] == room_old
@@ -193,49 +167,17 @@ def test_deserialize_changes_roundtrip():
     assert result["moved_talks"][0]["new_slot"].id == new_slot.id
 
 
-def test_deserialize_changes_missing_submission_skips_slot():
-    event = EventFactory()
-
-    serialized = {
-        "count": 1,
-        "action": "update",
-        "new_talks": [{"id": 99999, "submission_code": "NONEXIST"}],
-        "canceled_talks": [],
-        "moved_talks": [],
-    }
-
-    with scope(event=event):
-        result = _deserialize_changes(serialized, event)
-
-    assert result["new_talks"] == []
-
-
-def test_deserialize_changes_missing_slot_skips():
+def test_deserialize_changes_skips_unknown_submissions_and_slots():
     submission = SubmissionFactory()
     event = submission.event
-
     serialized = {
-        "count": 1,
+        "count": 3,
         "action": "update",
-        "new_talks": [{"id": 99999, "submission_code": submission.code}],
-        "canceled_talks": [],
-        "moved_talks": [],
-    }
-
-    with scope(event=event):
-        result = _deserialize_changes(serialized, event)
-
-    assert result["new_talks"] == []
-
-
-def test_deserialize_changes_moved_without_submission_skipped():
-    event = EventFactory()
-
-    serialized = {
-        "count": 1,
-        "action": "update",
-        "new_talks": [],
-        "canceled_talks": [],
+        "new_talks": [
+            {"id": 99999, "submission_code": "NONEXIST"},
+            {"id": 99999, "submission_code": submission.code},
+        ],
+        "canceled_talks": [{"id": 99999, "submission_code": submission.code}],
         "moved_talks": [
             {
                 "submission_code": "NOSUCH",
@@ -252,38 +194,31 @@ def test_deserialize_changes_moved_without_submission_skipped():
     with scope(event=event):
         result = _deserialize_changes(serialized, event)
 
-    assert result["moved_talks"] == []
-
-
-def test_deserialize_changes_canceled_missing_slot_skips():
-    submission = SubmissionFactory()
-    event = submission.event
-
-    serialized = {
-        "count": 1,
+    assert result == {
+        "count": 3,
         "action": "update",
         "new_talks": [],
-        "canceled_talks": [{"id": 99999, "submission_code": submission.code}],
+        "canceled_talks": [],
         "moved_talks": [],
     }
 
-    with scope(event=event):
-        result = _deserialize_changes(serialized, event)
 
-    assert result["canceled_talks"] == []
-
-
-def test_deserialize_changes_null_submission_codes():
-    event = EventFactory()
-    slot = TalkSlotFactory(
+def test_deserialize_changes_looks_slots_up_by_id_and_tolerates_null_fields():
+    submission = SubmissionFactory()
+    event = submission.event
+    slot = TalkSlotFactory(submission=submission)
+    bare_slot = TalkSlotFactory(
         submission=None, schedule=event.wip_schedule, room=None, is_visible=False
     )
-
+    start_iso = event.datetime_from.isoformat()
     serialized = {
         "count": 1,
         "action": "update",
-        "new_talks": [{"id": slot.id, "submission_code": None}],
-        "canceled_talks": [],
+        "new_talks": [
+            {"id": bare_slot.id, "submission_code": None},
+            {"id": slot.id, "submission_code": "XXXXXX"},
+        ],
+        "canceled_talks": [{"id": slot.id, "submission_code": "XXXXXX"}],
         "moved_talks": [
             {
                 "submission_code": None,
@@ -293,51 +228,7 @@ def test_deserialize_changes_null_submission_codes():
                 "new_room": None,
                 "new_info": "",
                 "new_slot_id": None,
-            }
-        ],
-    }
-
-    with scope(event=event):
-        result = _deserialize_changes(serialized, event)
-
-    assert len(result["new_talks"]) == 1
-    assert result["new_talks"][0].id == slot.id
-    assert result["moved_talks"] == []
-
-
-def test_deserialize_changes_slot_exists_no_matching_submission():
-    submission = SubmissionFactory()
-    event = submission.event
-    slot = TalkSlotFactory(submission=submission)
-
-    serialized = {
-        "count": 1,
-        "action": "update",
-        "new_talks": [{"id": slot.id, "submission_code": "XXXXXX"}],
-        "canceled_talks": [{"id": slot.id, "submission_code": "XXXXXX"}],
-        "moved_talks": [],
-    }
-
-    with scope(event=event):
-        result = _deserialize_changes(serialized, event)
-
-    assert len(result["new_talks"]) == 1
-    assert result["new_talks"][0].id == slot.id
-    assert len(result["canceled_talks"]) == 1
-
-
-def test_deserialize_changes_moved_with_null_rooms():
-    submission = SubmissionFactory()
-    event = submission.event
-    slot = TalkSlotFactory(submission=submission)
-
-    start_iso = event.datetime_from.isoformat()
-    serialized = {
-        "count": 1,
-        "action": "update",
-        "new_talks": [],
-        "canceled_talks": [],
-        "moved_talks": [
+            },
             {
                 "submission_code": submission.code,
                 "old_start": start_iso,
@@ -346,14 +237,17 @@ def test_deserialize_changes_moved_with_null_rooms():
                 "new_room": None,
                 "new_info": "",
                 "new_slot_id": slot.id,
-            }
+            },
         ],
     }
 
     with scope(event=event):
         result = _deserialize_changes(serialized, event)
 
+    assert [talk.id for talk in result["new_talks"]] == [bare_slot.id, slot.id]
+    assert [talk.id for talk in result["canceled_talks"]] == [slot.id]
     assert len(result["moved_talks"]) == 1
+    assert result["moved_talks"][0]["submission"] == submission
     assert result["moved_talks"][0]["old_room"] is None
     assert result["moved_talks"][0]["new_room"] is None
 
@@ -362,11 +256,13 @@ def test_calculate_schedule_changes_no_previous_schedule(event):
     with scope(event=event):
         result = calculate_schedule_changes(event.wip_schedule)
 
-    assert result["action"] == "create"
-    assert result["count"] == 0
-    assert result["new_talks"] == []
-    assert result["canceled_talks"] == []
-    assert result["moved_talks"] == []
+    assert result == {
+        "action": "create",
+        "count": 0,
+        "new_talks": [],
+        "canceled_talks": [],
+        "moved_talks": [],
+    }
 
 
 def test_calculate_schedule_changes_no_changes():
@@ -400,76 +296,6 @@ def test_calculate_schedule_changes_no_changes():
 
     assert result["action"] == "update"
     assert result["count"] == 0
-
-
-def test_calculate_schedule_changes_new_talk():
-    sub1 = SubmissionFactory(state=SubmissionStates.CONFIRMED)
-    event = sub1.event
-    sub2 = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    room = RoomFactory(event=event)
-    start_time = event.datetime_from
-    end_time = start_time + dt.timedelta(hours=1)
-
-    schedule_v1 = ScheduleFactory(
-        event=event, version="v1", published=now() - dt.timedelta(hours=2)
-    )
-    TalkSlotFactory(
-        schedule=schedule_v1, submission=sub1, room=room, start=start_time, end=end_time
-    )
-
-    schedule_v2 = ScheduleFactory(event=event, version="v2")
-    TalkSlotFactory(
-        schedule=schedule_v2, submission=sub1, room=room, start=start_time, end=end_time
-    )
-    TalkSlotFactory(
-        schedule=schedule_v2,
-        submission=sub2,
-        room=room,
-        start=start_time + dt.timedelta(hours=2),
-        end=end_time + dt.timedelta(hours=2),
-    )
-
-    result = calculate_schedule_changes(schedule_v2)
-
-    assert result["action"] == "update"
-    assert result["count"] == 1
-    assert len(result["new_talks"]) == 1
-    assert result["new_talks"][0].submission == sub2
-
-
-def test_calculate_schedule_changes_canceled_talk():
-    sub1 = SubmissionFactory(state=SubmissionStates.CONFIRMED)
-    event = sub1.event
-    sub2 = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    room = RoomFactory(event=event)
-    start_time = event.datetime_from
-    end_time = start_time + dt.timedelta(hours=1)
-
-    schedule_v1 = ScheduleFactory(
-        event=event, version="v1", published=now() - dt.timedelta(hours=2)
-    )
-    TalkSlotFactory(
-        schedule=schedule_v1, submission=sub1, room=room, start=start_time, end=end_time
-    )
-    TalkSlotFactory(
-        schedule=schedule_v1,
-        submission=sub2,
-        room=room,
-        start=start_time + dt.timedelta(hours=2),
-        end=end_time + dt.timedelta(hours=2),
-    )
-
-    schedule_v2 = ScheduleFactory(event=event, version="v2")
-    TalkSlotFactory(
-        schedule=schedule_v2, submission=sub1, room=room, start=start_time, end=end_time
-    )
-
-    result = calculate_schedule_changes(schedule_v2)
-
-    assert result["action"] == "update"
-    assert result["count"] == 1
-    assert len(result["canceled_talks"]) == 1
-    assert result["canceled_talks"][0].submission == sub2
 
 
 def test_calculate_schedule_changes_moved_talk_room_change():
@@ -596,12 +422,9 @@ def test_calculate_schedule_changes_mixed():
 
     assert result["action"] == "update"
     assert result["count"] == 3
-    assert len(result["new_talks"]) == 1
-    assert result["new_talks"][0].submission == sub_new
-    assert len(result["canceled_talks"]) == 1
-    assert result["canceled_talks"][0].submission == sub_canceled
-    assert len(result["moved_talks"]) == 1
-    assert result["moved_talks"][0]["submission"] == sub_kept
+    assert [slot.submission for slot in result["new_talks"]] == [sub_new]
+    assert [slot.submission for slot in result["canceled_talks"]] == [sub_canceled]
+    assert [moved["submission"] for moved in result["moved_talks"]] == [sub_kept]
 
 
 def test_calculate_schedule_changes_submission_loses_slot():
@@ -714,76 +537,25 @@ def test_calculate_schedule_changes_multi_slot_submission_both_moved():
     assert len(result["moved_talks"]) == 2
 
 
-def test_invalidate_cached_schedule_changes(event):
+def test_get_cached_schedule_changes_caches_invalidates_and_survives_bad_cache(event):
     with scope(event=event):
         schedule = event.wip_schedule
         cache_key = f"schedule_{schedule.id}_changes"
-        event.cache.set(cache_key, "cached_data")
-        assert event.cache.get(cache_key) == "cached_data"
+        assert event.cache.get(cache_key) is None
+
+        result = get_cached_schedule_changes(schedule)
+
+        assert result["action"] == "create"
+        assert json.loads(event.cache.get(cache_key))["action"] == "create"
+
+        event.cache.set(cache_key, json.dumps(EMPTY_CHANGES | {"count": 42}))
+        assert get_cached_schedule_changes(schedule)["count"] == 42
 
         invalidate_cached_schedule_changes(schedule)
-
         assert event.cache.get(cache_key) is None
 
-
-def test_get_cached_schedule_changes_caches_result(event):
-    with scope(event=event):
-        schedule = event.wip_schedule
-        cache_key = f"schedule_{schedule.id}_changes"
-
-        assert event.cache.get(cache_key) is None
-
-        result = get_cached_schedule_changes(schedule)
-
-        assert result["action"] == "create"
-        cached_data = json.loads(event.cache.get(cache_key))
-        assert cached_data["action"] == "create"
-
-
-def test_get_cached_schedule_changes_uses_cache():
-    submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
-    event = submission.event
-    room = RoomFactory(event=event)
-    start_time = event.datetime_from
-    end_time = start_time + dt.timedelta(hours=1)
-
-    schedule_v1 = ScheduleFactory(
-        event=event, version="v1", published=now() - dt.timedelta(hours=2)
-    )
-    TalkSlotFactory(
-        schedule=schedule_v1,
-        submission=submission,
-        room=room,
-        start=start_time,
-        end=end_time,
-    )
-
-    schedule_v2 = ScheduleFactory(event=event, version="v2")
-
-    cache_key = f"schedule_{schedule_v2.id}_changes"
-    cached = {
-        "count": 42,
-        "action": "update",
-        "new_talks": [],
-        "canceled_talks": [],
-        "moved_talks": [],
-    }
-    event.cache.set(cache_key, json.dumps(cached))
-
-    result = get_cached_schedule_changes(schedule_v2)
-
-    assert result["count"] == 42
-
-
-def test_get_cached_schedule_changes_invalid_json_recalculates(event):
-    with scope(event=event):
-        schedule = event.wip_schedule
-        cache_key = f"schedule_{schedule.id}_changes"
         event.cache.set(cache_key, "not valid json {{{")
-
-        result = get_cached_schedule_changes(schedule)
-
-        assert result["action"] == "create"
+        assert get_cached_schedule_changes(schedule)["action"] == "create"
 
 
 def test_get_cached_schedule_changes_versioned_schedule():
@@ -811,24 +583,15 @@ def test_get_cached_schedule_changes_versioned_schedule():
     assert result["count"] == 0
 
 
-def test_get_boolean_changes_create_action_with_talks():
-    submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
-    event = submission.event
-    TalkSlotFactory(submission=submission)
-
+def test_get_boolean_changes_create_action_depends_on_scheduled_talks(event):
     changes = {"action": "create", "count": 0}
 
-    result = _get_boolean_changes(event.wip_schedule, changes)
+    assert _get_boolean_changes(event.wip_schedule, changes) is False
 
-    assert result is True
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    TalkSlotFactory(submission=submission, schedule=event.wip_schedule)
 
-
-def test_get_boolean_changes_create_action_without_talks(event):
-    changes = {"action": "create", "count": 0}
-
-    result = _get_boolean_changes(event.wip_schedule, changes)
-
-    assert result is False
+    assert _get_boolean_changes(event.wip_schedule, changes) is True
 
 
 @pytest.mark.parametrize(("count", "expected"), ((3, True), (0, False)))
@@ -840,34 +603,17 @@ def test_get_boolean_changes_update_action(count, expected):
     assert result is expected
 
 
-def test_has_unreleased_schedule_changes_returns_cached(event):
+def test_unreleased_schedule_changes_cache_round_trip(event):
+    cache_key = "has_unreleased_schedule_changes"
     with scope(event=event):
-        event.cache.set("has_unreleased_schedule_changes", True)
+        assert event.cache.get(cache_key) is None
 
+        assert has_unreleased_schedule_changes(event) is False
+        assert event.cache.get(cache_key) is False
+
+        update_unreleased_schedule_changes(event, True)
+        assert event.cache.get(cache_key) is True
         assert has_unreleased_schedule_changes(event) is True
 
-
-def test_has_unreleased_schedule_changes_calculates_when_not_cached(event):
-    with scope(event=event):
-        assert event.cache.get("has_unreleased_schedule_changes") is None
-
-        result = has_unreleased_schedule_changes(event)
-
-        assert result is False
-        assert event.cache.get("has_unreleased_schedule_changes") is False
-
-
-def test_update_unreleased_schedule_changes_with_value(event):
-    with scope(event=event):
-        update_unreleased_schedule_changes(event, True)
-
-        assert event.cache.get("has_unreleased_schedule_changes") is True
-
-
-def test_update_unreleased_schedule_changes_recalculates_when_none(event):
-    with scope(event=event):
-        event.cache.set("has_unreleased_schedule_changes", True)
-
         update_unreleased_schedule_changes(event, None)
-
-        assert event.cache.get("has_unreleased_schedule_changes") is False
+        assert event.cache.get(cache_key) is False

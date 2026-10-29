@@ -20,33 +20,19 @@ from tests.factories import QueuedMailFactory, SpeakerFactory
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_mail_backend_for_event_default(event):
-    event.mail_settings["smtp_use_custom"] = ""
-    backend = mail_backend_for_event(event)
-    assert not isinstance(backend, CustomSMTPBackend)
-
-
-def test_mail_backend_for_event_custom(event):
-    event.mail_settings["smtp_use_custom"] = True
-    event.mail_settings["smtp_host"] = "mail.example.com"
-    event.mail_settings["smtp_port"] = 465
-    event.mail_settings["smtp_username"] = "user"
-    event.mail_settings["smtp_password"] = "pass"
-    event.mail_settings["smtp_use_tls"] = False
-    event.mail_settings["smtp_use_ssl"] = True
-
-    backend = mail_backend_for_event(event)
-
-    assert isinstance(backend, CustomSMTPBackend)
-
-
-def test_mail_backend_for_event_force_custom(event):
-    event.mail_settings["smtp_use_custom"] = ""
+@pytest.mark.parametrize(
+    ("smtp_use_custom", "force_custom", "is_custom"),
+    (("", False, False), (True, False, True), ("", True, True)),
+)
+def test_mail_backend_for_event_uses_custom_backend_on_setting_or_force(
+    event, smtp_use_custom, force_custom, is_custom
+):
+    event.mail_settings["smtp_use_custom"] = smtp_use_custom
     event.mail_settings["smtp_host"] = "mail.example.com"
 
-    backend = mail_backend_for_event(event, force_custom=True)
+    backend = mail_backend_for_event(event, force_custom=force_custom)
 
-    assert isinstance(backend, CustomSMTPBackend)
+    assert isinstance(backend, CustomSMTPBackend) is is_custom
 
 
 @pytest.mark.parametrize(("force_custom", "timeout"), ((True, 10), (False, 600)))

@@ -8,15 +8,10 @@ from pretalx.common.validators import validate_event_scope_coverage
 pytestmark = pytest.mark.unit
 
 
-def test_validate_event_scope_coverage_accepts_all_events():
+def test_validate_event_scope_coverage_requires_all_events_or_limit_events():
     validate_event_scope_coverage(all_events=True, limit_events=[])
-
-
-def test_validate_event_scope_coverage_accepts_limit_events():
     validate_event_scope_coverage(all_events=False, limit_events=[object()])
 
-
-def test_validate_event_scope_coverage_rejects_neither():
     with pytest.raises(ValidationError) as exc_info:
         validate_event_scope_coverage(all_events=False, limit_events=[])
     assert "limit_events" in exc_info.value.message_dict

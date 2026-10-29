@@ -49,15 +49,15 @@ def test_schedule_export_view_exporters_excludes_speaker_group(event):
 
     exporters = view.exporters()
 
-    for exporter in exporters:
-        assert exporter.group != "speaker"
+    assert exporters
+    assert {exporter.group for exporter in exporters} == {"submission"}
 
 
-def test_serialize_break_with_room(event):
+def test_serialize_break(event):
     room = RoomFactory(event=event)
     start = event.datetime_from
     end = event.datetime_from + dt.timedelta(minutes=30)
-    slot = TalkSlotFactory(
+    placed = TalkSlotFactory(
         submission=None,
         schedule=event.wip_schedule,
         room=room,
@@ -65,161 +65,123 @@ def test_serialize_break_with_room(event):
         end=end,
         is_visible=True,
     )
-
-    result = serialize_break(slot)
-
-    assert result["id"] == slot.pk
-    assert result["room"] == room.pk
-    assert result["start"] == start.isoformat()
-    assert result["end"] == end.isoformat()
-    assert result["duration"] == slot.duration
-    assert result["updated"] == slot.updated.isoformat()
-
-
-def test_serialize_break_without_room(event):
-    slot = TalkSlotFactory(
+    unplaced = TalkSlotFactory(
         submission=None, schedule=event.wip_schedule, room=None, is_visible=True
     )
 
-    result = serialize_break(slot)
-
-    assert result["id"] == slot.pk
-    assert result["room"] is None
-    assert result["start"] is None
-    assert result["end"] is None
+    assert serialize_break(placed) == {
+        "id": placed.pk,
+        "title": "",
+        "description": "",
+        "room": room.pk,
+        "start": start.isoformat(),
+        "end": end.isoformat(),
+        "duration": 30,
+        "updated": placed.updated.isoformat(),
+        "slot_type": placed.slot_type,
+    }
+    assert serialize_slot(placed) == serialize_break(placed)
+    assert serialize_break(unplaced) == {
+        "id": unplaced.pk,
+        "title": "",
+        "description": "",
+        "room": None,
+        "start": None,
+        "end": None,
+        "duration": unplaced.duration,
+        "updated": unplaced.updated.isoformat(),
+        "slot_type": unplaced.slot_type,
+    }
 
 
 def test_serialize_slot_with_submission(talk_slot):
-    result = serialize_slot(talk_slot)
+    submission = talk_slot.submission
 
-    assert result["id"] == talk_slot.pk
-    assert result["title"] == str(talk_slot.submission.title)
-    assert result["state"] == talk_slot.submission.state
-    assert result["room"] == talk_slot.room.pk
-    assert result["submission_type"] == str(talk_slot.submission.submission_type.name)
-    assert result["url"] == talk_slot.submission.orga_urls.base
-    assert result["abstract"] == str(talk_slot.submission.abstract)
-    assert result["description"] == str(talk_slot.submission.description)
-    assert result["warnings"] == []
+    assert serialize_slot(talk_slot, warnings=["Room conflict"]) == {
+        "id": talk_slot.pk,
+        "title": str(submission.title),
+        "speakers": [
+            {"name": speaker.get_display_name()}
+            for speaker in submission.sorted_speakers
+        ],
+        "submission_type": str(submission.submission_type.name),
+        "track": None,
+        "state": submission.state,
+        "description": str(submission.description),
+        "abstract": str(submission.abstract),
+        "notes": submission.notes,
+        "duration": submission.get_duration(),
+        "content_locale": submission.content_locale,
+        "do_not_record": False,
+        "room": talk_slot.room.pk,
+        "start": talk_slot.local_start.isoformat(),
+        "end": talk_slot.local_end.isoformat(),
+        "url": submission.orga_urls.base,
+        "warnings": ["Room conflict"],
+        "updated": talk_slot.updated.isoformat(),
+        "slot_type": talk_slot.slot_type,
+    }
+    assert serialize_slot(talk_slot)["warnings"] == []
 
 
-def test_serialize_slot_with_submission_and_track(event):
+def test_serialize_slot_with_track_speaker_and_flags(event):
     track = TrackFactory(event=event)
+    speaker = SpeakerFactory(event=event, name="Test Speaker")
     submission = SubmissionFactory(
-        event=event, state=SubmissionStates.CONFIRMED, track=track
+        event=event,
+        state=SubmissionStates.CONFIRMED,
+        track=track,
+        do_not_record=True,
+        content_locale="de",
     )
+    submission.speakers.add(speaker)
     slot = TalkSlotFactory(submission=submission, is_visible=True)
 
     result = serialize_slot(slot)
 
-    assert result["track"]["name"] == str(track.name)
-    assert result["track"]["color"] == track.color
+    assert result["track"] == {"name": str(track.name), "color": track.color}
+    assert result["speakers"] == [{"name": "Test Speaker"}]
+    assert result["do_not_record"] is True
+    assert result["content_locale"] == "de"
 
 
-def test_serialize_slot_without_track(talk_slot):
-    result = serialize_slot(talk_slot)
-
-    assert result["track"] is None
-
-
-def test_serialize_slot_with_warnings(talk_slot):
-    warnings = ["Speaker is unavailable", "Room conflict"]
-
-    result = serialize_slot(talk_slot, warnings=warnings)
-
-    assert result["warnings"] == warnings
-
-
-def test_serialize_slot_without_warnings(talk_slot):
-    result = serialize_slot(talk_slot)
-
-    assert result["warnings"] == []
-
-
-def test_serialize_slot_break_without_submission(event):
-    room = RoomFactory(event=event)
-    slot = TalkSlotFactory(
-        submission=None, schedule=event.wip_schedule, room=room, is_visible=True
-    )
-
-    result = serialize_slot(slot)
-
-    assert result["id"] == slot.pk
-    assert result["room"] == room.pk
-    assert "speakers" not in result
-    assert "state" not in result
-
-
-def test_talk_update_get_object_returns_slot(talk_slot):
+def test_talk_update_get_object(talk_slot):
     event = talk_slot.submission.event
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
-    view = make_view(TalkUpdate, request, pk=talk_slot.pk)
 
-    result = view.get_object()
-
-    assert result == talk_slot
-
-
-def test_talk_update_get_object_returns_none_for_missing_slot(talk_slot):
-    event = talk_slot.submission.event
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(TalkUpdate, request, pk=999999)
-
-    result = view.get_object()
-
-    assert result is None
-
-
-def test_quick_schedule_view_get_object(talk_slot):
-    event = talk_slot.submission.event
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(QuickScheduleView, request, code=talk_slot.submission.code)
-
-    result = view.get_object()
-
-    assert result == talk_slot
+    assert make_view(TalkUpdate, request, pk=talk_slot.pk).get_object() == talk_slot
+    assert make_view(TalkUpdate, request, pk=999999).get_object() is None
 
 
 def test_quick_schedule_view_get_object_case_insensitive(talk_slot):
     event = talk_slot.submission.event
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
-    view = make_view(QuickScheduleView, request, code=talk_slot.submission.code.lower())
+    code = talk_slot.submission.code
 
-    result = view.get_object()
-
-    assert result == talk_slot
+    assert make_view(QuickScheduleView, request, code=code).get_object() == talk_slot
+    assert (
+        make_view(QuickScheduleView, request, code=code.lower()).get_object()
+        == talk_slot
+    )
 
 
 def test_room_view_get_queryset(event):
-    room1 = RoomFactory(event=event)
-    room2 = RoomFactory(event=event, hidden=True)
-    other_event_room = RoomFactory()  # different event
+    used = TalkSlotFactory(submission__event=event).room
+    hidden = RoomFactory(event=event, hidden=True)
+    RoomFactory()
     user = make_orga_user(event, can_change_submissions=True)
     request = make_request(event, user=user)
     view = make_view(RoomView, request)
     view.action = "list"
 
-    result = set(view.get_queryset())
+    result = view.get_queryset()
 
-    assert result == {room1, room2}
-    assert other_event_room not in result
-
-
-def test_room_view_get_queryset_annotates_usage(event):
-    room = TalkSlotFactory(submission__event=event).room
-    user = make_orga_user(event, can_change_submissions=True)
-    request = make_request(event, user=user)
-    view = make_view(RoomView, request)
-    view.action = "list"
-
-    annotated = view.get_queryset().get(pk=room.pk)
-
-    assert annotated.has_slots is True
-    assert annotated.has_scheduled_slots is True
+    assert set(result) == {used, hidden}
+    assert result.get(pk=used.pk).has_slots is True
+    assert result.get(pk=used.pk).has_scheduled_slots is True
+    assert result.get(pk=hidden.pk).has_slots is False
 
 
 def test_room_visibility_view_requires_perform_action(event):
@@ -230,41 +192,3 @@ def test_room_visibility_view_requires_perform_action(event):
 
     with pytest.raises(NotImplementedError):
         view.perform_action()
-
-
-def test_serialize_slot_speakers_list(event):
-    speaker = SpeakerFactory(event=event, name="Test Speaker")
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    submission.speakers.add(speaker)
-    slot = TalkSlotFactory(submission=submission, is_visible=True)
-
-    result = serialize_slot(slot)
-
-    assert len(result["speakers"]) == 1
-    assert result["speakers"][0]["name"] == speaker.get_display_name()
-
-
-def test_serialize_slot_do_not_record_flag(event):
-    submission = SubmissionFactory(
-        event=event, state=SubmissionStates.CONFIRMED, do_not_record=True
-    )
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    slot = TalkSlotFactory(submission=submission, is_visible=True)
-
-    result = serialize_slot(slot)
-
-    assert result["do_not_record"] is True
-
-
-def test_serialize_slot_content_locale(event):
-    submission = SubmissionFactory(
-        event=event, state=SubmissionStates.CONFIRMED, content_locale="de"
-    )
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    slot = TalkSlotFactory(submission=submission, is_visible=True)
-
-    result = serialize_slot(slot)
-
-    assert result["content_locale"] == "de"

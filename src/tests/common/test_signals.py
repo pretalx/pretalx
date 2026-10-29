@@ -135,83 +135,25 @@ def test_event_plugin_signal_skips_inactive_receivers(method_name, kwargs, setti
 
 
 @pytest.mark.django_db
-def test_event_plugin_signal_send_calls_active_receivers(register_signal_handler):
+def test_event_plugin_signal_send_calls_active_receivers_sorted_by_name(
+    register_signal_handler,
+):
     signal = EventPluginSignal()
     event = EventFactory()
-    handler = _make_handler()
-
-    register_signal_handler(signal, handler)
-    responses = signal.send(event)
-
-    assert handler.received == [event]
-    assert responses[0][1] == "ok"
-
-
-@pytest.mark.django_db
-def test_event_plugin_signal_send_populates_app_cache(register_signal_handler):
-    signal = EventPluginSignal()
-    event = EventFactory()
-
-    def handler(signal, sender, **kwargs):
-        return "ok"
-
-    register_signal_handler(signal, handler)
-    app_cache.clear()
-    responses = signal.send(event)
-
-    assert len(app_cache) > 0
-    assert responses[0][1] == "ok"
-
-
-@pytest.mark.django_db
-def test_event_plugin_signal_send_responses_sorted(register_signal_handler):
-    signal = EventPluginSignal()
-    event = EventFactory()
-
-    def handler_b(signal, sender, **kwargs):
-        return "b"
-
-    def handler_a(signal, sender, **kwargs):
-        return "a"
+    handler_b = _make_handler()
+    handler_b.__name__ = "handler_b"
+    handler_a = _make_handler()
+    handler_a.__name__ = "handler_a"
 
     register_signal_handler(signal, handler_b)
     register_signal_handler(signal, handler_a)
+    app_cache.clear()
     responses = signal.send(event)
 
-    names = [r[0].__name__ for r in responses]
-    assert names == sorted(names)
-
-
-@pytest.mark.django_db
-def test_event_plugin_signal_send_robust_populates_app_cache(register_signal_handler):
-    signal = EventPluginSignal()
-    event = EventFactory()
-
-    def handler(signal, sender, **kwargs):
-        return "ok"
-
-    register_signal_handler(signal, handler)
-    app_cache.clear()
-    responses = signal.send_robust(event)
-
-    assert len(app_cache) > 0
-    assert responses[0][1] == "ok"
-
-
-@pytest.mark.django_db
-def test_event_plugin_signal_send_robust_catches_exceptions(register_signal_handler):
-    signal = EventPluginSignal()
-    event = EventFactory()
-
-    def bad_handler(signal, sender, **kwargs):
-        raise RuntimeError("boom")
-
-    register_signal_handler(signal, bad_handler)
-    responses = signal.send_robust(event)
-
-    assert len(responses) == 1
-    assert isinstance(responses[0][1], RuntimeError)
-    assert str(responses[0][1]) == "boom"
+    assert responses == [(handler_a, "ok"), (handler_b, "ok")]
+    assert handler_a.received == [event]
+    assert handler_b.received == [event]
+    assert "pretalx.common" in app_cache
 
 
 @pytest.mark.django_db
@@ -229,27 +171,14 @@ def test_event_plugin_signal_send_robust_returns_successful_and_failed(
 
     register_signal_handler(signal, good_handler)
     register_signal_handler(signal, bad_handler)
+    app_cache.clear()
     responses = signal.send_robust(event)
 
-    results = {r[0].__name__: r[1] for r in responses}
-    assert results["good_handler"] == "ok"
-    assert isinstance(results["bad_handler"], RuntimeError)
-
-
-@pytest.mark.django_db
-def test_event_plugin_signal_send_chained_populates_app_cache(register_signal_handler):
-    signal = EventPluginSignal()
-    event = EventFactory()
-
-    def handler(signal, sender, value, **kwargs):
-        return value + "!"
-
-    register_signal_handler(signal, handler)
-    app_cache.clear()
-    result = signal.send_chained(event, chain_kwarg_name="value", value="hi")
-
-    assert len(app_cache) > 0
-    assert result == "hi!"
+    assert [(r[0], str(r[1]), type(r[1])) for r in responses] == [
+        (bad_handler, "fail", RuntimeError),
+        (good_handler, "ok", str),
+    ]
+    assert "pretalx.common" in app_cache
 
 
 @pytest.mark.django_db
@@ -267,9 +196,11 @@ def test_event_plugin_signal_send_chained_passes_return_to_next(
 
     register_signal_handler(signal, handler_add_excl)
     register_signal_handler(signal, handler_add_q)
+    app_cache.clear()
     result = signal.send_chained(event, chain_kwarg_name="value", value="hello")
 
     assert result == "hello!?"
+    assert "pretalx.common" in app_cache
 
 
 def test_event_plugin_signal_get_live_receivers_empty():
@@ -280,31 +211,21 @@ def test_event_plugin_signal_get_live_receivers_empty():
     assert result == []
 
 
-def test_minimum_interval_allows_first_call():
+def test_minimum_interval_blocks_second_call_and_releases_lock():
     calls = []
 
-    @minimum_interval(minutes_after_success=10)
+    @minimum_interval(minutes_after_success=10, minutes_running_timeout=30)
     def task():
         calls.append(1)
         return "done"
 
-    result = task()
+    key_running = (
+        f"pretalx_periodic_{task.__module__}.{task.__wrapped__.__name__}_running"
+    )
 
-    assert calls == [1]
-    assert result == "done"
-
-
-def test_minimum_interval_blocks_second_call():
-    calls = []
-
-    @minimum_interval(minutes_after_success=10)
-    def task():
-        calls.append(1)
-        return "done"
-
-    task()
-    task()
-
+    assert task() == "done"
+    assert cache.get(key_running) is None
+    assert task() is None
     assert calls == [1]
 
 
@@ -326,47 +247,23 @@ def test_minimum_interval_blocks_during_running():
     assert calls == []
 
 
-def test_minimum_interval_caches_error_result():
+def test_minimum_interval_caches_error_result_and_releases_lock():
     calls = []
 
-    @minimum_interval(minutes_after_success=10, minutes_after_error=5)
+    @minimum_interval(
+        minutes_after_success=10, minutes_after_error=5, minutes_running_timeout=30
+    )
     def task():
         calls.append(1)
         raise RuntimeError("fail")
 
+    key_running = (
+        f"pretalx_periodic_{task.__module__}.{task.__wrapped__.__name__}_running"
+    )
+
     with pytest.raises(RuntimeError, match="fail"):
         task()
 
-    # Second call is blocked due to error cooldown
-    task()
-
+    assert cache.get(key_running) is None
+    assert task() is None
     assert calls == [1]
-
-
-def test_minimum_interval_releases_lock_after_success():
-
-    @minimum_interval(minutes_after_success=10, minutes_running_timeout=30)
-    def task():
-        return "done"
-
-    task()
-
-    key_running = (
-        f"pretalx_periodic_{task.__module__}.{task.__wrapped__.__name__}_running"
-    )
-    assert cache.get(key_running) is None
-
-
-def test_minimum_interval_releases_lock_after_error():
-
-    @minimum_interval(minutes_after_success=10, minutes_running_timeout=30)
-    def task():
-        raise RuntimeError("fail")
-
-    with pytest.raises(RuntimeError):
-        task()
-
-    key_running = (
-        f"pretalx_periodic_{task.__module__}.{task.__wrapped__.__name__}_running"
-    )
-    assert cache.get(key_running) is None

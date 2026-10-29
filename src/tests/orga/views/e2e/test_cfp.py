@@ -22,63 +22,32 @@ from tests.utils import make_orga_user
 pytestmark = [pytest.mark.e2e, pytest.mark.django_db]
 
 
-def test_cfp_editor_step_header_visible_in_submission_form(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    url = reverse("orga:cfp.editor.step", kwargs={"event": event.slug, "step": "info"})
-    response = client.post(
-        url, {"title_0": "TEST CFP WOO", "text_0": "PLS SUBMIT HERE THX"}
-    )
-    assert response.status_code == 200
-
-    response = client.get(event.cfp.urls.submit, follow=True)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "TEST CFP WOO" in content
-    assert "PLS SUBMIT HERE THX" in content
-
-
-def test_cfp_editor_field_toggle_shows_in_submission_form(client):
+def test_cfp_editor_changes_show_in_submission_form(client):
     event = EventFactory(cfp__fields={"duration": {"visibility": "do_not_ask"}})
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
+    editor_kwargs = {"event": event.slug, "step": "info"}
 
     response = client.get(event.cfp.urls.submit, follow=True)
+
     assert b"id_duration" not in response.content
 
-    toggle_url = reverse(
-        "orga:cfp.editor.field_toggle",
-        kwargs={"event": event.slug, "step": "info", "action": "add"},
-    )
-    response = client.post(toggle_url, {"field": "duration"})
-    assert response.status_code == 200
-
-    response = client.get(event.cfp.urls.submit, follow=True)
-    assert b"id_duration" in response.content
-
-    toggle_url = reverse(
-        "orga:cfp.editor.field_toggle",
-        kwargs={"event": event.slug, "step": "info", "action": "remove"},
-    )
-    response = client.post(toggle_url, {"field": "duration"})
-    assert response.status_code == 200
-
-    response = client.get(event.cfp.urls.submit, follow=True)
-    assert b"id_duration" not in response.content
-
-
-def test_cfp_editor_field_config_applies_to_submission_form(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    field_url = reverse(
-        "orga:cfp.editor.field",
-        kwargs={"event": event.slug, "step": "info", "field_key": "abstract"},
-    )
     response = client.post(
-        field_url,
+        reverse("orga:cfp.editor.step", kwargs=editor_kwargs),
+        {"title_0": "TEST CFP WOO", "text_0": "PLS SUBMIT HERE THX"},
+    )
+    assert response.status_code == 200
+    response = client.post(
+        reverse(
+            "orga:cfp.editor.field_toggle", kwargs={**editor_kwargs, "action": "add"}
+        ),
+        {"field": "duration"},
+    )
+    assert response.status_code == 200
+    response = client.post(
+        reverse(
+            "orga:cfp.editor.field", kwargs={**editor_kwargs, "field_key": "abstract"}
+        ),
         {
             "visibility": "required",
             "min_length": "50",
@@ -93,8 +62,23 @@ def test_cfp_editor_field_config_applies_to_submission_form(client, event):
 
     assert response.status_code == 200
     content = response.content.decode()
+    assert "TEST CFP WOO" in content
+    assert "PLS SUBMIT HERE THX" in content
+    assert "id_duration" in content
     assert 'data-minlength="50"' in content
     assert 'data-maxlength="500"' in content
+
+    response = client.post(
+        reverse(
+            "orga:cfp.editor.field_toggle", kwargs={**editor_kwargs, "action": "remove"}
+        ),
+        {"field": "duration"},
+    )
+    assert response.status_code == 200
+
+    response = client.get(event.cfp.urls.submit, follow=True)
+
+    assert b"id_duration" not in response.content
 
 
 def test_question_create_and_remind_sends_mails(client, event):
@@ -133,7 +117,7 @@ def test_question_create_and_remind_sends_mails(client, event):
         assert QueuedMail.objects.count() == original_count + 1
 
 
-def test_access_code_create_send_and_verify_email(client, event):
+def test_access_code_create_send_and_bypass_closed_cfp(client, event):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
     )
@@ -164,24 +148,17 @@ def test_access_code_create_send_and_verify_email(client, event):
     assert mail.subject == "Invitation"
     assert mail.body == "Please submit!"
 
-
-def test_access_code_bypasses_closed_cfp(client, event):
-    user = make_orga_user(
-        event, can_change_event_settings=True, can_change_submissions=True
-    )
-    client.force_login(user)
-
-    client.post(event.cfp.urls.new_access_code, {"code": "VIPCODE"}, follow=True)
-
     with scopes_disabled():
         event.cfp.deadline = now() - dt.timedelta(days=1)
         event.cfp.save()
 
     response = client.get(event.cfp.urls.submit, follow=True)
-    content = response.content.decode().lower()
-    assert "closed" in content or "submit" not in response.wsgi_request.path
 
-    response = client.get(event.cfp.urls.submit + "?access_code=VIPCODE", follow=True)
+    assert b"id_title" not in response.content
+
+    response = client.get(
+        event.cfp.urls.submit + "?access_code=SPEAKERCODE", follow=True
+    )
 
     assert response.status_code == 200
     assert b"id_title" in response.content

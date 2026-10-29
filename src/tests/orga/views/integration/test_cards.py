@@ -17,7 +17,11 @@ def test_submission_cards_query_count(
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submissions = SubmissionFactory.create_batch(
-            item_count, event=event, state=SubmissionStates.ACCEPTED
+            item_count,
+            event=event,
+            state=SubmissionStates.ACCEPTED,
+            abstract=None,
+            notes=None,
         )
         for submission in submissions:
             speaker = SpeakerFactory(event=event)
@@ -31,23 +35,9 @@ def test_submission_cards_query_count(
     assert response["Content-Type"] == "application/pdf"
 
 
-def test_submission_cards_with_null_abstract_and_notes(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(
-            event=event, state=SubmissionStates.CONFIRMED, abstract=None, notes=None
-        )
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.submission_cards)
-
-    assert response.status_code == 200
-    assert response["Content-Type"] == "application/pdf"
-
-
-def test_submission_cards_empty_queryset_redirects(client, event):
+def test_submission_cards_empty_queryset_redirects_and_permission_required(
+    client, event
+):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -57,12 +47,7 @@ def test_submission_cards_empty_queryset_redirects(client, event):
     assert response.status_code == 302
     assert response.url == event.orga_urls.submissions
 
-
-def test_submission_cards_user_without_permission_gets_404(client, event):
     with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=False)
-    client.force_login(user)
+        client.force_login(make_orga_user(event, can_change_submissions=False))
 
-    response = client.get(event.orga_urls.submission_cards)
-
-    assert response.status_code == 404
+    assert client.get(event.orga_urls.submission_cards).status_code == 404

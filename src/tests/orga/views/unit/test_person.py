@@ -26,8 +26,11 @@ def test_user_settings_binds_only_the_submitted_form(event, form_name):
     assert bound == {form_name}
 
 
-def test_user_settings_forms_unbound_on_get(event):
-    request = make_request(event, user=UserFactory())
+def test_user_settings_get_shows_unbound_forms_and_own_tokens(event):
+    user = UserFactory()
+    token = UserApiTokenFactory(user=user)
+    UserApiTokenFactory()
+    request = make_request(event, user=user)
     view = make_view(UserSettings, request)
 
     bound = {
@@ -37,24 +40,7 @@ def test_user_settings_forms_unbound_on_get(event):
     }
 
     assert bound == set()
-
-
-def test_user_settings_tokens_returns_user_tokens(event):
-    user = UserFactory()
-    token = UserApiTokenFactory(user=user)
-    request = make_request(event, user=user)
-    view = make_view(UserSettings, request)
-
     assert list(view.tokens) == [token]
-
-
-def test_user_settings_tokens_excludes_other_users(event):
-    user = UserFactory()
-    UserApiTokenFactory()  # token for a different user
-    request = make_request(event, user=user)
-    view = make_view(UserSettings, request)
-
-    assert list(view.tokens) == []
 
 
 def test_token_edit_token_404_for_other_users_token(event):

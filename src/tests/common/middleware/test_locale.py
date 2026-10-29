@@ -95,64 +95,42 @@ def test_language_from_query(query_params, supported, expected):
     result = get_language_from_query(request, supported)
 
     assert result == expected
-
-
-def test_language_from_query_sets_cookie_on_valid_lang():
-    request = rf.get("/", {"lang": "de"})
-    request.COOKIES = {}
-
-    get_language_from_query(request, ["en", "de"])
-
-    assert request.COOKIES[settings.LANGUAGE_COOKIE_NAME] == "de"
+    assert request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME) == expected
 
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    ("locale", "expected"),
+    ("make_user", "expected"),
     (
-        pytest.param("de", "de", id="supported"),
-        pytest.param("fr", None, id="unsupported"),
+        pytest.param(lambda: UserFactory(locale="de"), "de", id="supported"),
+        pytest.param(lambda: UserFactory(locale="fr"), None, id="unsupported"),
+        pytest.param(AnonymousUser, None, id="anonymous"),
     ),
 )
-def test_language_from_user_authenticated(locale, expected):
-    user = UserFactory(locale=locale)
+def test_language_from_user(make_user, expected):
     request = rf.get("/")
-    request.user = user
+    request.user = make_user()
 
     result = get_language_from_user(request, ["en", "de"])
 
     assert result == expected
-
-
-def test_language_from_user_anonymous():
-    request = rf.get("/")
-    request.user = AnonymousUser()
-
-    result = get_language_from_user(request, ["en", "de"])
-
-    assert result is None
 
 
 @pytest.mark.parametrize(
-    ("cookie_value", "expected"),
-    (pytest.param("de", "de", id="valid"), pytest.param("xx", None, id="invalid")),
+    ("cookies", "expected"),
+    (
+        pytest.param({settings.LANGUAGE_COOKIE_NAME: "de"}, "de", id="valid"),
+        pytest.param({settings.LANGUAGE_COOKIE_NAME: "xx"}, None, id="invalid"),
+        pytest.param({}, None, id="missing"),
+    ),
 )
-def test_language_from_cookie(cookie_value, expected):
+def test_language_from_cookie(cookies, expected):
     request = rf.get("/")
-    request.COOKIES = {settings.LANGUAGE_COOKIE_NAME: cookie_value}
+    request.COOKIES = cookies
 
     result = get_language_from_cookie(request, ["en", "de"])
 
     assert result == expected
-
-
-def test_language_from_cookie_missing():
-    request = rf.get("/")
-    request.COOKIES = {}
-
-    result = get_language_from_cookie(request, ["en", "de"])
-
-    assert result is None
 
 
 @pytest.mark.parametrize(
@@ -200,35 +178,33 @@ def test_language_from_event_without_event():
 
 
 @pytest.mark.parametrize(
-    ("accept_header", "cookies", "expected"),
+    ("query", "accept_header", "cookies", "expected"),
     (
         pytest.param(
+            {},
             "en;q=1.0",
             {settings.LANGUAGE_COOKIE_NAME: "de"},
             "de",
             id="cookie_over_browser",
         ),
         pytest.param(
+            {},
             "xx;q=1.0,de;q=0.8",
             {settings.LANGUAGE_COOKIE_NAME: "xx"},
             "de",
             id="browser_when_cookie_unsupported",
         ),
-        pytest.param("sw", {}, settings.LANGUAGE_CODE, id="default_when_no_match"),
+        pytest.param({}, "sw", {}, settings.LANGUAGE_CODE, id="default_when_no_match"),
+        pytest.param(
+            {"lang": "de"}, "", {}, settings.LANGUAGE_CODE, id="ignores_query"
+        ),
     ),
 )
-def test_language_from_early_request(accept_header, cookies, expected):
-    request = rf.get("/", HTTP_ACCEPT_LANGUAGE=accept_header)
+def test_language_from_early_request(query, accept_header, cookies, expected):
+    request = rf.get("/", query, HTTP_ACCEPT_LANGUAGE=accept_header)
     request.COOKIES = cookies
 
     assert get_language_from_early_request(request) == expected
-
-
-def test_language_from_early_request_ignores_query_parameter():
-    request = rf.get("/", {"lang": "de"})
-    request.COOKIES = {}
-
-    assert get_language_from_early_request(request) == settings.LANGUAGE_CODE
 
 
 @pytest.mark.parametrize(
@@ -249,6 +225,7 @@ def test_middleware_activates_language_without_user_or_event(
     assert response.content == b"ok"
     assert expected == request.LANGUAGE_CODE
     assert translation.get_language() == expected
+    assert response.headers["Vary"] == "Accept-Language"
 
 
 def test_middleware_deactivates_stale_timezone():
@@ -258,14 +235,6 @@ def test_middleware_deactivates_stale_timezone():
     _make_middleware()(request)
 
     assert timezone.get_current_timezone_name() == settings.TIME_ZONE
-
-
-def test_middleware_marks_response_as_varying_by_language():
-    request = rf.get("/", HTTP_ACCEPT_LANGUAGE="de")
-
-    response = _make_middleware()(request)
-
-    assert response.headers["Vary"] == "Accept-Language"
 
 
 def test_middleware_keeps_other_vary_headers():

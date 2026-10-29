@@ -34,23 +34,20 @@ def test_schedule_slot_sets_start_end_room(talk_slot):
     assert talk_slot.room_id == room.pk
 
 
-def test_create_user_with_retry_creates_user():
+@pytest.mark.parametrize(
+    ("existing", "expected_email"),
+    (((), "fresh@example.org"), (("fresh@example.org",), "fresh1@example.org")),
+    ids=("free", "retries_on_duplicate"),
+)
+def test_create_user_with_retry(existing, expected_email):
+    for email in existing:
+        UserFactory(name="Existing", email=email)
     cmd = Command(stdout=StringIO(), stderr=StringIO())
 
-    user = cmd.create_user_with_retry(name="Test User", email_base="fresh@example.org")
-
-    assert user.name == "Test User"
-    assert user.email == "fresh@example.org"
-
-
-def test_create_user_with_retry_retries_on_duplicate_email():
-    UserFactory(name="Existing", email="taken@example.org")
-    cmd = Command(stdout=StringIO(), stderr=StringIO())
-
-    user = cmd.create_user_with_retry(name="New User", email_base="taken@example.org")
+    user = cmd.create_user_with_retry(name="New User", email_base="fresh@example.org")
 
     assert user.name == "New User"
-    assert user.email == "taken1@example.org"
+    assert user.email == expected_email
 
 
 def test_create_user_with_retry_exhausts_retries_raises():
@@ -74,12 +71,16 @@ def test_build_event_without_admin_returns_none():
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("stage", ("cfp", "review", "schedule", "over"))
-def test_create_test_event_end_to_end(stage):
+@pytest.mark.parametrize(
+    ("stage", "seed"),
+    (("cfp", None), ("review", "42"), ("schedule", "42"), ("over", "42")),
+    ids=("cfp-unseeded", "review", "schedule", "over"),
+)
+def test_create_test_event_end_to_end(stage, seed):
     UserFactory(is_administrator=True)
     slug = f"demo-{stage}"
 
-    call_command("create_test_event", stage=stage, slug=slug, seed="42")
+    call_command("create_test_event", stage=stage, slug=slug, seed=seed)
 
     event = Event.objects.get(slug=slug)
     assert event.name == "DemoCon"
@@ -117,16 +118,7 @@ def test_create_test_event_handle_without_admin_returns_early():
     assert not Event.objects.filter(slug="no-admin").exists()
 
 
-@pytest.mark.slow
-def test_create_test_event_handle_without_seed():
-    UserFactory(is_administrator=True)
-
-    call_command("create_test_event", stage="cfp", slug="no-seed")
-
-    assert Event.objects.filter(slug="no-seed").exists()
-
-
-def test_build_speaker_reuses_existing_user(event):
+def test_build_speaker_reuses_existing_user_and_profile(event):
     cmd = Command(stdout=StringIO(), stderr=StringIO())
     Faker.seed(99)
     cmd.fake = Faker()
@@ -136,9 +128,10 @@ def test_build_speaker_reuses_existing_user(event):
     next_email = cmd.fake.user_name() + "@example.org"
     Faker.seed(99)
     cmd.fake = Faker()
-    UserFactory(name="Pre-existing", email=next_email)
+    user = UserFactory(name="Pre-existing", email=next_email)
+    profile = SpeakerProfile.objects.create(user=user, event=event)
 
     speaker = cmd.build_speaker()
 
+    assert speaker == profile
     assert speaker.user.email == next_email
-    assert SpeakerProfile.objects.filter(user__email=next_email, event=event).exists()

@@ -232,7 +232,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
         email = self.fake.user_name() + "@example.org"
         user = User.objects.filter(email__iexact=email).first()
         if user:
-            speaker, _ = SpeakerProfile.objects.get_or_create(
+            speaker, _ = SpeakerProfile.objects.select_related("user").get_or_create(
                 user=user, event=self.event
             )
             return speaker

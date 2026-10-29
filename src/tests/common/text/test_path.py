@@ -54,29 +54,26 @@ def test_hashed_path_force_extension(original_name, extension, expected):
     assert result == expected
 
 
+@pytest.mark.parametrize(
+    ("media_root", "max_length", "expected"),
+    (
+        ("/m", 20, "longn_aaaaaaa.png"),
+        ("/m", 0, "longname_aaaaaaa.png"),
+        (
+            "/very/long/media/root/path/that/makes/things/exceed",
+            10,
+            "longname_aaaaaaa.png",
+        ),
+    ),
+    ids=("truncates", "no_max_length", "excess_larger_than_root"),
+)
 @pytest.mark.usefixtures("_deterministic_random")
-def test_hashed_path_truncates_long_names(settings):
-    settings.MEDIA_ROOT = "/m"
+def test_hashed_path_max_length(settings, media_root, max_length, expected):
+    settings.MEDIA_ROOT = media_root
 
-    result = hashed_path("f.png", target_name="longname", max_length=20)
+    result = hashed_path("f.png", target_name="longname", max_length=max_length)
 
-    assert result == "longn_aaaaaaa.png"
-
-
-@pytest.mark.usefixtures("_deterministic_random")
-def test_hashed_path_no_max_length():
-    result = hashed_path("f.png", target_name="longname", max_length=0)
-
-    assert result == "longname_aaaaaaa.png"
-
-
-@pytest.mark.usefixtures("_deterministic_random")
-def test_hashed_path_excess_larger_than_root(settings):
-    settings.MEDIA_ROOT = "/very/long/media/root/path/that/makes/things/exceed"
-
-    result = hashed_path("f.png", target_name="ab", max_length=10)
-
-    assert result == "ab_aaaaaaa.png"
+    assert result == expected
 
 
 @pytest.mark.parametrize(

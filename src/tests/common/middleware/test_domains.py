@@ -23,32 +23,23 @@ def dummy_response(request):
     return HttpResponse("ok")
 
 
-@override_settings(SITE_NETLOC="testserver")
-def test_get_cookie_domain_returns_none_when_host_has_no_dot():
-    request = rf.get("/")
-    request.host = "localhost"
-
-    assert get_cookie_domain(request) is None
-
-
+@pytest.mark.parametrize(
+    ("host", "expected"),
+    (
+        ("localhost", None),
+        ("testserver.com", ".testserver.com"),
+        ("custom.example.com", None),
+    ),
+    ids=("host_without_dot", "default_host", "custom_domain"),
+)
 @override_settings(
     SITE_NETLOC="testserver.com", SESSION_COOKIE_DOMAIN=".testserver.com"
 )
-def test_get_cookie_domain_returns_configured_domain_on_default_host():
+def test_get_cookie_domain(host, expected):
     request = rf.get("/")
-    request.host = "testserver.com"
+    request.host = host
 
-    assert get_cookie_domain(request) == ".testserver.com"
-
-
-@override_settings(
-    SITE_NETLOC="testserver.com", SESSION_COOKIE_DOMAIN=".testserver.com"
-)
-def test_get_cookie_domain_returns_none_on_custom_domain():
-    request = rf.get("/")
-    request.host = "custom.example.com"
-
-    assert get_cookie_domain(request) is None
+    assert get_cookie_domain(request) == expected
 
 
 @pytest.mark.parametrize(
@@ -74,6 +65,7 @@ def test_session_middleware_sets_correct_cookie_domain(host, expected_domain):
     cookie = response.cookies.get(settings.SESSION_COOKIE_NAME)
     assert cookie is not None
     assert cookie["domain"] == expected_domain
+    assert response["Vary"] == "Cookie"
 
 
 @pytest.mark.django_db
@@ -92,21 +84,6 @@ def test_session_middleware_deletes_cookie_when_session_empty():
     cookie = response.cookies.get(settings.SESSION_COOKIE_NAME)
     assert cookie is not None
     assert cookie["max-age"] == 0
-
-
-@pytest.mark.django_db
-def test_session_middleware_patches_vary_header_when_session_accessed():
-    def view(request):
-        _ = request.session.get("anything")
-        return HttpResponse("ok")
-
-    middleware = SessionMiddleware(view)
-    request = rf.get("/")
-    request.host = "localhost"
-
-    response = middleware(request)
-
-    assert response["Vary"] == "Cookie"
 
 
 @pytest.mark.django_db

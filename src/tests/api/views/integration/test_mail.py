@@ -41,41 +41,40 @@ def test_mail_template_list_with_orga_read_token(
 def test_mail_template_detail_with_orga_read_token(client, event, orga_read_token):
     with scopes_disabled():
         template = MailTemplateFactory(event=event, role=None)
+    headers = {"Authorization": f"Token {orga_read_token.token}"}
 
     response = client.get(
-        event.api_urls.mail_templates + f"{template.pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+        event.api_urls.mail_templates + f"{template.pk}/", follow=True, headers=headers
     )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["id"] == template.pk
-    assert isinstance(data["subject"], dict)
-    assert isinstance(data["text"], dict)
-
-
-def test_mail_template_detail_locale_override(client, event, orga_read_token):
-    with scopes_disabled():
-        template = MailTemplateFactory(event=event, role=None)
-
-    response = client.get(
+    localised = client.get(
         event.api_urls.mail_templates + f"{template.pk}/?lang=en",
         follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+        headers=headers,
     )
 
     assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data["subject"], str)
-    assert isinstance(data["text"], str)
+    assert response.json() == {
+        "id": template.pk,
+        "role": None,
+        "subject": {"en": str(template.subject)},
+        "text": {"en": str(template.text)},
+        "reply_to": template.reply_to,
+        "bcc": template.bcc,
+    }
+    assert localised.status_code == 200
+    assert localised.json()["subject"] == str(template.subject)
+    assert localised.json()["text"] == str(template.text)
 
 
 def test_mail_template_create_with_write_token(client, event, orga_write_token):
     response = client.post(
         event.api_urls.mail_templates,
         follow=True,
-        data={"subject": {"en": "Test Subject"}, "text": {"en": "Hello {event_name}"}},
+        data={
+            "subject": {"en": "Test Subject"},
+            "text": {"en": "Hello {event_name}"},
+            "role": "submission.state.accepted",
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -84,8 +83,8 @@ def test_mail_template_create_with_write_token(client, event, orga_write_token):
     data = response.json()
     assert data["subject"]["en"] == "Test Subject"
     with scopes_disabled():
-        assert event.mail_templates.filter(pk=data["id"]).exists()
         template = event.mail_templates.get(pk=data["id"])
+        assert not template.role
         assert (
             template.logged_actions()
             .filter(action_type="pretalx.mail_template.create")
@@ -129,85 +128,44 @@ def test_mail_template_create_validates_placeholders(
     )
 
     assert response.status_code == 400
+    assert list(response.json()) == [field]
 
 
-def test_mail_template_update_with_write_token(client, event, orga_write_token):
+def test_mail_template_update_log_and_delete_with_write_token(
+    client, event, orga_write_token
+):
     with scopes_disabled():
         template = MailTemplateFactory(event=event, role=None)
+    url = event.api_urls.mail_templates + f"{template.pk}/"
+    headers = {"Authorization": f"Token {orga_write_token.token}"}
 
     response = client.patch(
-        event.api_urls.mail_templates + f"{template.pk}/",
+        url,
         follow=True,
         data={"subject": {"en": "Updated Subject"}},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
     )
 
     assert response.status_code == 200
     with scopes_disabled():
         template.refresh_from_db()
         assert str(template.subject) == "Updated Subject"
-        assert (
-            template.logged_actions()
-            .filter(action_type="pretalx.mail_template.update")
-            .exists()
-        )
 
+    log = client.get(url + "log/", follow=True, headers=headers)
 
-def test_mail_template_delete_with_write_token(client, event, orga_write_token):
-    with scopes_disabled():
-        template = MailTemplateFactory(event=event, role=None)
-        template_pk = template.pk
+    assert log.status_code == 200
+    data = log.json()
+    assert data["count"] == 1
+    assert data["results"][0]["action_type"] == "pretalx.mail_template.update"
 
-    response = client.delete(
-        event.api_urls.mail_templates + f"{template_pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
+    response = client.delete(url, follow=True, headers=headers)
 
     assert response.status_code == 204
     with scopes_disabled():
-        assert not event.mail_templates.filter(pk=template_pk).exists()
+        assert not event.mail_templates.filter(pk=template.pk).exists()
         assert (
             event.logged_actions()
             .filter(action_type="pretalx.mail_template.delete")
             .exists()
         )
-
-
-def test_mail_template_log_endpoint(client, event, orga_read_token, orga_user):
-    with scopes_disabled():
-        template = MailTemplateFactory(event=event, role=None)
-        template.log_action(
-            "pretalx.mail_template.update", data={"key": "val"}, person=orga_user
-        )
-
-    response = client.get(
-        event.api_urls.mail_templates + f"{template.pk}/log/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["count"] == 1
-    assert data["results"][0]["action_type"] == "pretalx.mail_template.update"
-
-
-def test_mail_template_create_ignores_role_field(client, event, orga_write_token):
-    response = client.post(
-        event.api_urls.mail_templates,
-        follow=True,
-        data={
-            "subject": {"en": "With Role"},
-            "text": {"en": "Body text"},
-            "role": "submission.state.accepted",
-        },
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 201
-    with scopes_disabled():
-        template = event.mail_templates.get(pk=response.json()["id"])
-        assert not template.role

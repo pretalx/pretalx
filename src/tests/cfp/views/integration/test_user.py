@@ -123,34 +123,28 @@ def test_submission_views_render_slot_times_in_event_timezone(
     assert 'data-timezone="Asia/Manila"' in response.content.decode()
 
 
-def test_submissions_list_view_does_not_show_other_users_submissions(
-    client, speaker_client, submission_with_speaker, event
+def test_submissions_list_view_shows_own_submissions_drafts_and_information(
+    client, event
 ):
-    submission = submission_with_speaker
-    with scopes_disabled():
-        other_sub = SubmissionFactory(event=event)
-        other_speaker = SpeakerFactory(event=event)
-        other_sub.speakers.add(other_speaker)
-
-    response = speaker_client.get(event.urls.user_submissions, follow=True)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert submission.title in content
-    assert other_sub.title not in content
-
-
-def test_submissions_list_view_shows_drafts(client, event):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
+        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+        submission.speakers.add(speaker)
         draft = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
         draft.speakers.add(speaker)
+        other_sub = SubmissionFactory(event=event)
+        other_sub.speakers.add(SpeakerFactory(event=event))
+        info = SpeakerInformationFactory(event=event, target_group="submitters")
     client.force_login(speaker.user)
 
     response = client.get(event.urls.user_submissions, follow=True)
 
     assert response.status_code == 200
-    assert draft.title in response.content.decode()
+    content = response.content.decode()
+    assert submission.title in content
+    assert draft.title in content
+    assert other_sub.title not in content
+    assert str(info.title) in content
 
 
 def test_submissions_list_view_share_link_only_for_public_review_states(client, event):
@@ -180,21 +174,7 @@ def test_submissions_list_view_share_link_only_for_public_review_states(client, 
         assert path not in content
 
 
-def test_submissions_list_view_shows_speaker_information(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        submission.speakers.add(speaker)
-        info = SpeakerInformationFactory(event=event, target_group="submitters")
-    client.force_login(speaker.user)
-
-    response = client.get(event.urls.user_submissions, follow=True)
-
-    assert response.status_code == 200
-    assert str(info.title) in response.content.decode()
-
-
-def test_submissions_edit_view_shows_submission(
+def test_submissions_edit_view_edits_and_logs_changes(
     speaker_client, submission_with_speaker
 ):
     submission = submission_with_speaker
@@ -204,20 +184,6 @@ def test_submissions_edit_view_shows_submission(
     assert response.status_code == 200
     assert submission.title in response.content.decode()
 
-
-def test_submissions_edit_view_can_edit_title(speaker_client, submission_with_speaker):
-    submission = submission_with_speaker
-    data = _edit_form_data(submission, title="A Completely New Title")
-
-    response = speaker_client.post(submission.urls.user_base, follow=True, data=data)
-
-    assert response.status_code == 200
-    submission.refresh_from_db()
-    assert submission.title == "A Completely New Title"
-
-
-def test_submissions_edit_view_logs_changes(speaker_client, submission_with_speaker):
-    submission = submission_with_speaker
     with scopes_disabled():
         question = QuestionFactory(
             event=submission.event,
@@ -250,12 +216,33 @@ def test_submissions_edit_view_logs_changes(speaker_client, submission_with_spea
 
 def test_submissions_edit_view_with_resources(speaker_client, submission_with_speaker):
     submission = submission_with_speaker
+    original_title = submission.title
     with scopes_disabled():
         submission.event.cfp.fields["resources"] = {"visibility": "optional"}
         submission.event.cfp.save()
         resource1 = ResourceFactory(submission=submission)
         resource2 = ResourceFactory(submission=submission)
+        resource3 = ResourceFactory(submission=submission, description="My resource")
         new_file = SimpleUploadedFile("newfile.txt", b"new_file_content")
+
+    # A resource with neither file nor link is invalid and blocks the whole save.
+    data = _edit_form_data(
+        submission,
+        title="Changed title",
+        **{
+            "resource-TOTAL_FORMS": 1,
+            "resource-0-id": "",
+            "resource-0-description": "New resource",
+        },
+    )
+    response = speaker_client.post(submission.urls.user_base, follow=True, data=data)
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        submission.refresh_from_db(fields=["title"])
+        assert submission.title == original_title
+        assert submission.resources.count() == 3
+
     data = _edit_form_data(
         submission,
         **{
@@ -266,23 +253,29 @@ def test_submissions_edit_view_with_resources(speaker_client, submission_with_sp
             "resource-1-DELETE": True,
             "resource-1-description": resource2.description or "",
             "resource-1-link": resource2.link,
-            "resource-2-id": "",
-            "resource-2-description": "brand new resource",
-            "resource-2-resource": new_file,
-            "resource-TOTAL_FORMS": 3,
-            "resource-INITIAL_FORMS": 2,
+            "resource-2-id": resource3.id,
+            "resource-2-description": resource3.description,
+            "resource-2-link": resource3.link or "",
+            "resource-3-id": "",
+            "resource-3-description": "brand new resource",
+            "resource-3-resource": new_file,
+            "resource-TOTAL_FORMS": 4,
+            "resource-INITIAL_FORMS": 3,
         },
     )
-
     response = speaker_client.post(submission.urls.user_base, follow=True, data=data)
 
     assert response.status_code == 200
     with scopes_disabled():
-        assert submission.resources.count() == 2
+        assert submission.resources.count() == 3
         resource1.refresh_from_db()
         assert resource1.description == "Updated description"
         assert not submission.resources.filter(pk=resource2.pk).exists()
-        new_resource = submission.resources.exclude(pk=resource1.pk).first()
+        resource3.refresh_from_db()
+        assert resource3.description == "My resource"
+        new_resource = submission.resources.exclude(
+            pk__in=[resource1.pk, resource3.pk]
+        ).get()
         assert new_resource.description == "brand new resource"
         assert new_resource.resource.read() == b"new_file_content"
 
@@ -313,36 +306,22 @@ def _enable_signup(submission, *, state=SubmissionStates.ACCEPTED, capacity=None
     submission.save()
 
 
-@pytest.mark.parametrize(
-    "setup",
-    (
-        # Feature flag off → no signup section.
-        "disabled",
-        # Feature flag on but state still SUBMITTED → no signup section yet.
-        "wrong_state",
-    ),
-)
-def test_submissions_edit_view_does_not_render_signup(
-    speaker_client, submission_with_speaker, setup
-):
-    submission = submission_with_speaker
-    if setup == "wrong_state":
-        with scopes_disabled():
-            _enable_signup(submission, state=SubmissionStates.SUBMITTED)
-
-    response = speaker_client.get(submission.urls.user_base, follow=True)
-
-    assert response.status_code == 200
-    assert "Attendees are required to sign up" not in response.content.decode()
-
-
 def test_submissions_edit_view_renders_signup_section_when_required(
     speaker_client, submission_with_speaker
 ):
     submission = submission_with_speaker
+
+    response = speaker_client.get(submission.urls.user_base, follow=True)
+    assert response.status_code == 200
+    assert "Attendees are required to sign up" not in response.content.decode()
+
+    with scopes_disabled():
+        _enable_signup(submission, state=SubmissionStates.SUBMITTED, capacity=10)
+    response = speaker_client.get(submission.urls.user_base, follow=True)
+    assert "Attendees are required to sign up" not in response.content.decode()
+
     with scopes_disabled():
         _enable_signup(submission, capacity=10)
-
     response = speaker_client.get(submission.urls.user_base, follow=True)
 
     assert response.status_code == 200
@@ -353,6 +332,24 @@ def test_submissions_edit_view_renders_signup_section_when_required(
     assert re.search(r'title="0\s*/\s*10"', content)
     # No signups yet → no list dialog.
     assert "Show signup list" not in content
+
+    with scopes_disabled():
+        confirmed_signup = AttendeeSignupFactory(submission=submission)
+        confirmed_signup.attendee.user.name = "Alice Attendee"
+        confirmed_signup.attendee.user.save()
+        cancelled_signup = AttendeeSignupFactory(
+            submission=submission, state=AttendeeSignupStates.CANCELED
+        )
+        cancelled_signup.attendee.user.name = "Bob Backout"
+        cancelled_signup.attendee.user.save()
+    response = speaker_client.get(submission.urls.user_base, follow=True)
+
+    content = response.content.decode()
+    assert "Show signup list" in content
+    assert "Alice Attendee" in content
+    assert "Bob Backout" in content
+    assert confirmed_signup.attendee.user.email not in content
+    assert cancelled_signup.attendee.user.email not in content
 
 
 @pytest.mark.parametrize(
@@ -391,31 +388,6 @@ def test_submissions_edit_view_signup_progress_bar(
     assert expected_class in content
 
 
-def test_submissions_edit_view_renders_signup_list_dialog_with_names(
-    speaker_client, submission_with_speaker
-):
-    submission = submission_with_speaker
-    with scopes_disabled():
-        _enable_signup(submission)
-        confirmed_signup = AttendeeSignupFactory(submission=submission)
-        confirmed_signup.attendee.user.name = "Alice Attendee"
-        confirmed_signup.attendee.user.save()
-        cancelled_signup = AttendeeSignupFactory(
-            submission=submission, state=AttendeeSignupStates.CANCELED
-        )
-        cancelled_signup.attendee.user.name = "Bob Backout"
-        cancelled_signup.attendee.user.save()
-
-    response = speaker_client.get(submission.urls.user_base, follow=True)
-
-    content = response.content.decode()
-    assert "Show signup list" in content
-    assert "Alice Attendee" in content
-    assert "Bob Backout" in content
-    assert confirmed_signup.attendee.user.email not in content
-    assert cancelled_signup.attendee.user.email not in content
-
-
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_submissions_edit_view_signup_list_constant_query_count(
     speaker_client, submission_with_speaker, item_count, django_assert_num_queries
@@ -436,44 +408,25 @@ def test_submissions_edit_view_htmx_signup_table_returns_partial(
     speaker_client, submission_with_speaker
 ):
     submission = submission_with_speaker
+    headers = {"HX-Request": "true", "HX-Target": "table-content-AttendeeSignupTable"}
     with scopes_disabled():
         _enable_signup(submission)
+
+    response = speaker_client.get(submission.urls.user_base, headers=headers)
+
+    assert response.status_code == 200
+    assert "<html" not in response.content.decode()
+
+    with scopes_disabled():
         signup = AttendeeSignupFactory(submission=submission)
         signup.attendee.user.name = "Alice Attendee"
         signup.attendee.user.save()
-
-    response = speaker_client.get(
-        submission.urls.user_base,
-        headers={
-            "HX-Request": "true",
-            "HX-Target": "table-content-AttendeeSignupTable",
-        },
-    )
+    response = speaker_client.get(submission.urls.user_base, headers=headers)
 
     assert response.status_code == 200
     assert response["HX-Push-Url"] == submission.urls.user_base
     content = response.content.decode()
     assert "Alice Attendee" in content
-    assert "<html" not in content
-
-
-def test_submissions_edit_view_htmx_signup_table_without_signups(
-    speaker_client, submission_with_speaker
-):
-    submission = submission_with_speaker
-    with scopes_disabled():
-        _enable_signup(submission)
-
-    response = speaker_client.get(
-        submission.urls.user_base,
-        headers={
-            "HX-Request": "true",
-            "HX-Target": "table-content-AttendeeSignupTable",
-        },
-    )
-
-    assert response.status_code == 200
-    content = response.content.decode()
     assert "<html" not in content
 
 
@@ -513,7 +466,7 @@ def test_submissions_edit_view_draft_still_editable_when_feature_disabled(client
     assert submission.title == "Changed Draft Title"
 
 
-def test_submissions_edit_view_can_edit_submission_type(client, event):
+def test_submissions_edit_view_can_edit_submission_type_until_acceptance(client, event):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(
@@ -529,32 +482,22 @@ def test_submissions_edit_view_can_edit_submission_type(client, event):
 
     assert response.status_code == 200
     with scopes_disabled():
-        submission.refresh_from_db()
+        submission.refresh_from_db(fields=["submission_type"])
         assert submission.submission_type_id == new_type.pk
-
-
-def test_submissions_edit_view_cannot_edit_submission_type_after_acceptance(
-    client, event
-):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        submission.speakers.add(speaker)
+        submission.submission_type = new_type
         submission.accept()
-        new_type = SubmissionTypeFactory(event=event, name="Other", default_duration=13)
-    client.force_login(speaker.user)
+        default_type = event.cfp.default_type
 
-    data = _edit_form_data(submission, submission_type=new_type.pk)
-
+    data = _edit_form_data(submission, submission_type=default_type.pk)
     response = client.post(submission.urls.user_base, follow=True, data=data)
 
     assert response.status_code == 200
     with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.submission_type_id != new_type.pk
+        submission.refresh_from_db(fields=["submission_type"])
+        assert submission.submission_type_id == new_type.pk
 
 
-def test_submissions_edit_view_can_edit_slot_count(client):
+def test_submissions_edit_view_can_edit_slot_count_until_confirmed(client):
     event = EventFactory(feature_flags={"present_multiple_times": True})
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
@@ -570,34 +513,23 @@ def test_submissions_edit_view_can_edit_slot_count(client):
 
     assert response.status_code == 200
     with scopes_disabled():
-        submission.refresh_from_db()
+        submission.refresh_from_db(fields=["slot_count"])
+        assert submission.slot_count == 13
+        submission.accept()
+        submission.confirm()
+
+    data = _edit_form_data(submission, slot_count=5)
+    response = client.post(submission.urls.user_base, follow=True, data=data)
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        submission.refresh_from_db(fields=["slot_count"])
         assert submission.slot_count == 13
 
 
-def test_submissions_edit_view_tags_shown_when_public(client):
+def test_submissions_edit_view_shows_public_tags_and_preserves_private_ones(client):
     with scopes_disabled():
         event = EventFactory(cfp__fields={"tags": {"visibility": "optional"}})
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        submission.speakers.add(speaker)
-        TagFactory(tag="public-tag", event=event, is_public=True)
-        TagFactory(tag="private-tag", event=event, is_public=False)
-    client.force_login(speaker.user)
-
-    response = client.get(submission.urls.user_base, follow=True)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "public-tag" in content
-    assert "private-tag" not in content
-
-
-def test_submissions_edit_view_private_tags_preserved_on_save(client):
-    with scopes_disabled():
-        event = EventFactory(
-            feature_flags={"speakers_can_edit_submissions": True},
-            cfp__fields={"tags": {"visibility": "optional"}},
-        )
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(
             event=event, state=SubmissionStates.SUBMITTED, abstract="Test abstract"
@@ -608,78 +540,96 @@ def test_submissions_edit_view_private_tags_preserved_on_save(client):
         submission.tags.add(public_tag, private_tag)
     client.force_login(speaker.user)
 
-    data = _edit_form_data(submission, tags=[])
+    response = client.get(submission.urls.user_base, follow=True)
 
-    response = client.post(submission.urls.user_base, data, follow=True)
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "public-tag" in content
+    assert "private-tag" not in content
+
+    response = client.post(
+        submission.urls.user_base, _edit_form_data(submission, tags=[]), follow=True
+    )
 
     assert response.status_code == 200
     with scopes_disabled():
-        submission.refresh_from_db()
-        assert public_tag not in submission.tags.all()
-        assert private_tag in submission.tags.all()
+        assert list(submission.tags.all()) == [private_tag]
 
 
-def test_submissions_edit_view_tags_validation_min(client):
-    with scopes_disabled():
-        event = EventFactory(
-            cfp__fields={"tags": {"visibility": "required", "min": 2, "max": None}}
-        )
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        submission.speakers.add(speaker)
-        tag1 = TagFactory(tag="tag1", event=event, is_public=True)
-        TagFactory(tag="tag2", event=event, is_public=True)
-    client.force_login(speaker.user)
-
-    data = _edit_form_data(submission, tags=[tag1.pk])
-
-    response = client.post(submission.urls.user_base, data, follow=True)
-
-    assert response.status_code == 200
-    assert "at least 2 tags" in response.content.decode().lower()
-
-
-def test_submissions_edit_view_tags_validation_max(client):
-    with scopes_disabled():
-        event = EventFactory(
-            cfp__fields={"tags": {"visibility": "optional", "min": None, "max": 2}}
-        )
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        submission.speakers.add(speaker)
-        tag1 = TagFactory(tag="tag1", event=event, is_public=True)
-        tag2 = TagFactory(tag="tag2", event=event, is_public=True)
-        tag3 = TagFactory(tag="tag3", event=event, is_public=True)
-    client.force_login(speaker.user)
-
-    data = _edit_form_data(submission, tags=[tag1.pk, tag2.pk, tag3.pk])
-
-    response = client.post(submission.urls.user_base, data, follow=True)
-
-    assert response.status_code == 200
-    assert "at most 2 tags" in response.content.decode().lower()
-
-
-def test_submissions_withdraw_view_withdraws_submitted(
-    speaker_client, submission_with_speaker
+@pytest.mark.parametrize(
+    ("tags_config", "posted_count", "error", "saved_count"),
+    (
+        ({"visibility": "required", "min": 2, "max": None}, 1, "at least 2 tags", 0),
+        ({"visibility": "optional", "min": None, "max": 2}, 3, "at most 2 tags", 0),
+        ({"visibility": "optional", "min": 2, "max": 2}, 1, "exactly 2 tags", 0),
+        (
+            {"visibility": "required", "min": None, "max": None},
+            0,
+            "this field is required",
+            0,
+        ),
+        ({"visibility": "optional", "min": 1, "max": 2}, 2, "", 2),
+    ),
+    ids=["min", "max", "exact", "required_none", "valid"],
+)
+def test_submissions_edit_view_tags_count_validation(
+    client, tags_config, posted_count, error, saved_count
 ):
-    submission = submission_with_speaker
-    djmail.outbox = []
+    with scopes_disabled():
+        event = EventFactory(cfp__fields={"tags": tags_config})
+        speaker = SpeakerFactory(event=event)
+        submission = SubmissionFactory(
+            event=event, state=SubmissionStates.SUBMITTED, abstract="Test abstract"
+        )
+        submission.speakers.add(speaker)
+        tags = [
+            TagFactory(tag=f"tag{i}", event=event, is_public=True) for i in range(3)
+        ]
+    client.force_login(speaker.user)
 
-    response = speaker_client.post(submission.urls.withdraw, follow=True)
+    data = _edit_form_data(submission, tags=[tag.pk for tag in tags[:posted_count]])
+    response = client.post(submission.urls.user_base, data, follow=True)
 
     assert response.status_code == 200
-    submission.refresh_from_db()
-    assert submission.state == SubmissionStates.WITHDRAWN
-    assert len(djmail.outbox) == 0
-
-
-def test_submissions_withdraw_view_sends_orga_email_for_accepted(client, event):
+    assert error in response.content.decode().lower()
     with scopes_disabled():
+        assert set(submission.tags.all()) == set(tags[:saved_count])
+
+
+@pytest.mark.parametrize(
+    ("visibility", "is_public"),
+    (("optional", False), ("do_not_ask", True)),
+    ids=["no_public_tags", "do_not_ask"],
+)
+def test_submissions_edit_view_tags_hidden(client, visibility, is_public):
+    with scopes_disabled():
+        event = EventFactory(cfp__fields={"tags": {"visibility": visibility}})
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         submission.speakers.add(speaker)
-        submission.accept()
+        TagFactory(tag="some-tag", event=event, is_public=is_public)
+    client.force_login(speaker.user)
+
+    response = client.get(submission.urls.user_base, follow=True)
+
+    assert response.status_code == 200
+    assert "some-tag" not in response.content.decode()
+
+
+@pytest.mark.parametrize(
+    ("state", "expected_state", "orga_mails"),
+    (
+        (SubmissionStates.SUBMITTED, SubmissionStates.WITHDRAWN, 0),
+        (SubmissionStates.ACCEPTED, SubmissionStates.WITHDRAWN, 1),
+        (SubmissionStates.CONFIRMED, SubmissionStates.CONFIRMED, 0),
+    ),
+    ids=["submitted", "accepted_notifies_orga", "confirmed_not_withdrawable"],
+)
+def test_submissions_withdraw_view(client, event, state, expected_state, orga_mails):
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event)
+        submission = SubmissionFactory(event=event, state=state)
+        submission.speakers.add(speaker)
     client.force_login(speaker.user)
     djmail.outbox = []
 
@@ -687,71 +637,34 @@ def test_submissions_withdraw_view_sends_orga_email_for_accepted(client, event):
 
     assert response.status_code == 200
     with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.WITHDRAWN
-    assert len(djmail.outbox) == 1
+        submission.refresh_from_db(fields=["state"])
+        assert submission.state == expected_state
+    assert len(djmail.outbox) == orga_mails
 
 
-def test_submissions_withdraw_view_cannot_withdraw_non_withdrawable(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        submission.speakers.add(speaker)
-        submission.accept()
-        submission.confirm()
-    client.force_login(speaker.user)
-
-    response = client.post(submission.urls.withdraw, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.CONFIRMED
-
-
-def test_submission_confirm_view_confirms_accepted(client):
+def test_submission_confirm_view_confirms_accepted_submissions_only(client):
     with scopes_disabled():
         event = EventFactory(cfp__fields={"availabilities": {"visibility": "optional"}})
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         submission.speakers.add(speaker)
-        submission.accept()
     client.force_login(speaker.user)
 
     response = client.post(submission.urls.confirm, follow=True)
-
     assert response.status_code == 200
-    submission.refresh_from_db()
-    assert submission.state == SubmissionStates.CONFIRMED
-
-
-def test_submission_confirm_view_cannot_confirm_non_accepted(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        submission.speakers.add(speaker)
-    client.force_login(speaker.user)
-
-    response = client.post(submission.urls.confirm, follow=True)
-
-    assert response.status_code == 200
-    submission.refresh_from_db()
+    submission.refresh_from_db(fields=["state"])
     assert submission.state == SubmissionStates.SUBMITTED
 
-
-def test_submission_confirm_view_reconfirm_already_confirmed(client, event):
     with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        submission.speakers.add(speaker)
         submission.accept()
-        submission.confirm()
-    client.force_login(speaker.user)
+    response = client.post(submission.urls.confirm, follow=True)
+    assert response.status_code == 200
+    submission.refresh_from_db(fields=["state"])
+    assert submission.state == SubmissionStates.CONFIRMED
 
     response = client.post(submission.urls.confirm, follow=True)
-
     assert response.status_code == 200
-    submission.refresh_from_db()
+    submission.refresh_from_db(fields=["state"])
     assert submission.state == SubmissionStates.CONFIRMED
 
 
@@ -771,20 +684,6 @@ def test_submission_confirm_view_missing_availability_prevents_confirm(client):
     assert submission.state == SubmissionStates.ACCEPTED
 
 
-def test_submission_confirm_view_redirects_anonymous_to_login(client, event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        submission.accept()
-
-    response = client.post(submission.urls.confirm, follow=True)
-
-    assert response.status_code == 200
-    assert response.redirect_chain[-1][1] == 302
-    assert "login" in response.redirect_chain[-1][0]
-    submission.refresh_from_db()
-    assert submission.state == SubmissionStates.ACCEPTED
-
-
 @pytest.mark.parametrize(
     "url_attr", ("user_submissions", "user", "user_mails"), ids=str
 )
@@ -799,15 +698,23 @@ def test_logged_in_cfp_views_redirect_anonymous_to_event_login(client, event, ur
     assert parse_qs(parsed.query) == {"next": [url]}
 
 
-def test_submission_confirm_view_non_speaker_sees_error_template(client, event):
+def test_submission_confirm_view_rejects_anonymous_and_non_speakers(client, event):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         submission.speakers.add(speaker)
         submission.accept()
         other_user = UserFactory()
-    client.force_login(other_user)
 
+    response = client.post(submission.urls.confirm, follow=True)
+
+    assert response.status_code == 200
+    assert response.redirect_chain[-1][1] == 302
+    assert "login" in response.redirect_chain[-1][0]
+    submission.refresh_from_db(fields=["state"])
+    assert submission.state == SubmissionStates.ACCEPTED
+
+    client.force_login(other_user)
     response = client.get(submission.urls.confirm)
 
     assert response.status_code == 200
@@ -873,7 +780,7 @@ def test_profile_view_edit_profile_unchanged_skips_log(client, event):
         assert speaker.logged_actions().count() == log_count
 
 
-def test_profile_view_set_contact_email_logs_with_actor(client, event):
+def test_profile_view_set_and_clear_contact_email_logs_with_actor(client, event):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
     user = speaker.user
@@ -906,17 +813,10 @@ def test_profile_view_set_contact_email_logs_with_actor(client, event):
         assert not log.changes["email"]["old"]
         assert log.changes["email"]["new"] == "contact@example.com"
 
-
-def test_profile_view_clear_contact_email_falls_back_to_account(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event, email="contact@example.com")
-    user = speaker.user
-    client.force_login(user)
-
     response = client.post(
         event.urls.user,
         data={
-            "email": speaker.user.email,
+            "email": user.email,
             "contact_email": "",
             "old_password": "",
             "password": "",
@@ -942,35 +842,33 @@ def test_profile_view_clear_contact_email_falls_back_to_account(client, event):
         assert not log.changes["email"]["new"]
 
 
-def test_profile_view_account_email_change_requires_password(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-    client.force_login(speaker.user)
-    original_email = speaker.user.email
-
-    response = client.post(
-        event.urls.user,
-        data={
-            "email": "new_email@speaker.org",
-            "contact_email": "",
-            "old_password": "",
-            "password": "",
-            "password_repeat": "",
-            "form": "login",
-        },
-    )
-
-    assert response.status_code == 200
-    speaker.user.refresh_from_db()
-    assert speaker.user.email == original_email
-
-
-def test_profile_view_edit_login_info_defers_email_change(client, event):
+def test_profile_view_edit_login_info_defers_email_change_after_password_check(
+    client, event
+):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
     client.force_login(speaker.user)
     original_email = speaker.user.email
     djmail.outbox = []
+
+    for old_password in ("", "wrongpassword!"):
+        response = client.post(
+            event.urls.user,
+            data={
+                "old_password": old_password,
+                "email": "new_email@speaker.org",
+                "password": "",
+                "password_repeat": "",
+                "form": "login",
+            },
+            follow=True,
+        )
+
+        assert response.status_code == 200
+        speaker.user.refresh_from_db()
+        assert speaker.user.email == original_email
+        assert speaker.user.pending_email is None
+    assert djmail.outbox == []
 
     response = client.post(
         event.urls.user,
@@ -1000,7 +898,7 @@ def test_profile_view_edit_login_info_defers_email_change(client, event):
     ((0, "awaiting confirmation"), (25, "expired")),
     ids=("pending", "expired"),
 )
-def test_profile_view_shows_pending_email_with_cancel_without_writes(
+def test_profile_view_shows_pending_email_and_cancels_it(
     client, event, sent_offset_hours, expected_notice
 ):
     with scopes_disabled():
@@ -1008,6 +906,7 @@ def test_profile_view_shows_pending_email_with_cancel_without_writes(
     speaker.user.pending_email = "pending@example.com"
     speaker.user.pending_email_sent = now() - dt.timedelta(hours=sent_offset_hours)
     speaker.user.save()
+    token = make_verification_token(speaker.user, KIND_CHANGE)
     client.force_login(speaker.user)
 
     response = client.get(event.urls.user)
@@ -1019,16 +918,6 @@ def test_profile_view_shows_pending_email_with_cancel_without_writes(
     assert 'value="cancel_email_change"' in content
     assert speaker.user.pending_email == "pending@example.com"
     assert speaker.user.pending_email_sent is not None
-
-
-def test_profile_view_cancel_email_change_kills_links(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-    speaker.user.pending_email = "pending@example.com"
-    speaker.user.pending_email_sent = now()
-    speaker.user.save()
-    token = make_verification_token(speaker.user, KIND_CHANGE)
-    client.force_login(speaker.user)
 
     response = client.post(
         event.urls.user, data={"form": "cancel_email_change"}, follow=False
@@ -1047,52 +936,6 @@ def test_profile_view_cancel_email_change_kills_links(client, event):
     assert action.data == {"pending_email": "pending@example.com"}
     with pytest.raises(InvalidVerificationTokenError):
         parse_verification_token(token)
-
-
-def test_profile_view_edit_login_info_wrong_password(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-    client.force_login(speaker.user)
-    original_email = speaker.user.email
-
-    response = client.post(
-        event.urls.user,
-        data={
-            "old_password": "wrongpassword!",
-            "email": "new_email@speaker.org",
-            "password": "",
-            "password_repeat": "",
-            "form": "login",
-        },
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    speaker.user.refresh_from_db()
-    assert speaker.user.email == original_email
-
-
-def test_profile_view_edit_speaker_questions(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        question = QuestionFactory(
-            event=event,
-            target="speaker",
-            variant="string",
-            question_required="optional",
-        )
-    client.force_login(speaker.user)
-
-    response = client.post(
-        event.urls.user,
-        data={f"question_{question.pk}": "My answer", "form": "questions"},
-        follow=True,
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        answer = speaker.answers.get(question=question)
-        assert answer.answer == "My answer"
 
 
 def test_profile_view_skips_speaker_questions_restricted_to_other_tracks(client, event):
@@ -1175,7 +1018,7 @@ def test_profile_view_must_provide_availabilities(client, availability_data):
         assert speaker.biography != "Ruling since forever."
 
 
-def test_delete_account_view_requires_confirmation(client, event):
+def test_delete_account_view_deletes_account_after_confirmation(client, event):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event, biography="Has a bio")
     client.force_login(speaker.user)
@@ -1186,12 +1029,6 @@ def test_delete_account_view_requires_confirmation(client, event):
     with scopes_disabled():
         speaker.user.refresh_from_db()
         assert speaker.user.name != "Deleted User"
-
-
-def test_delete_account_view_deletes_account(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event, biography="Has a bio")
-    client.force_login(speaker.user)
 
     response = client.post(event.urls.user_delete, data={"really": True}, follow=True)
 
@@ -1204,36 +1041,7 @@ def test_delete_account_view_deletes_account(client, event):
         assert speaker.biography is None
 
 
-def test_submission_invite_view_sends_invitation(
-    speaker_client, submission_with_speaker, django_capture_on_commit_callbacks
-):
-    submission = submission_with_speaker
-    djmail.outbox = []
-
-    data = {
-        "speaker": "other@speaker.org",
-        "subject": "Please join!",
-        "text": "Come join us! {invitation_url}",
-    }
-
-    with django_capture_on_commit_callbacks(execute=True):
-        response = speaker_client.post(submission.urls.invite, follow=True, data=data)
-
-    assert response.status_code == 200
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == ["other@speaker.org"]
-    with scopes_disabled():
-        assert SubmissionInvitation.objects.filter(
-            submission=submission, email="other@speaker.org"
-        ).exists()
-        assert (
-            submission.logged_actions()
-            .filter(action_type="pretalx.submission.invitation.send")
-            .exists()
-        )
-
-
-def test_submission_invite_view_rejects_existing_speaker(
+def test_submission_invite_view_sends_one_invitation_per_address(
     speaker_client, submission_with_speaker, django_capture_on_commit_callbacks
 ):
     submission = submission_with_speaker
@@ -1241,15 +1049,28 @@ def test_submission_invite_view_rejects_existing_speaker(
         user = submission.speakers.select_related("user").first().user
     djmail.outbox = []
 
-    data = {
-        "speaker": user.email,
-        "subject": "Please join!",
-        "text": "Come join us! {invitation_url}",
-    }
+    response = speaker_client.get(
+        submission.urls.invite + "?email=prefilled%40example.com", follow=True
+    )
+    assert response.status_code == 200
+    assert "prefilled@example.com" in response.content.decode()
 
-    with django_capture_on_commit_callbacks(execute=True):
-        response = speaker_client.post(submission.urls.invite, follow=True, data=data)
+    response = speaker_client.get(
+        submission.urls.invite + "?email=not-an-email", follow=True
+    )
+    assert response.status_code == 200
+    assert "valid email" in response.content.decode().lower()
 
+    def invite(email):
+        data = {
+            "speaker": email,
+            "subject": "Please join!",
+            "text": "Come join us! {invitation_url}",
+        }
+        with django_capture_on_commit_callbacks(execute=True):
+            return speaker_client.post(submission.urls.invite, follow=True, data=data)
+
+    response = invite(user.email)
     assert response.context["form"].errors == {
         "speaker": ["This person is already a speaker on this proposal."]
     }
@@ -1257,32 +1078,38 @@ def test_submission_invite_view_rejects_existing_speaker(
         assert list(submission.invitations.all()) == []
     assert djmail.outbox == []
 
-
-def test_submission_invite_view_rejects_duplicate_invitation(
-    speaker_client, submission_with_speaker, django_capture_on_commit_callbacks
-):
-    submission = submission_with_speaker
+    response = invite("other@speaker.org")
+    assert response.status_code == 200
+    assert [mail.to for mail in djmail.outbox] == [["other@speaker.org"]]
     with scopes_disabled():
-        invitation = SubmissionInvitationFactory(
-            email="other@example.org", submission=submission
+        invitation = submission.invitations.get()
+        assert invitation.email == "other@speaker.org"
+        assert (
+            submission.logged_actions()
+            .filter(action_type="pretalx.submission.invitation.send")
+            .exists()
         )
-    djmail.outbox = []
 
-    data = {
-        "speaker": "other@example.org",
-        "subject": "Please join!",
-        "text": "Come join us! {invitation_url}",
-    }
-
-    with django_capture_on_commit_callbacks(execute=True):
-        response = speaker_client.post(submission.urls.invite, follow=True, data=data)
-
+    response = invite("other@speaker.org")
     assert response.context["form"].errors == {
         "speaker": ["This person has already been invited to this proposal."]
     }
     with scopes_disabled():
         assert list(submission.invitations.all()) == [invitation]
-    assert djmail.outbox == []
+    assert len(djmail.outbox) == 1
+
+    response = speaker_client.post(
+        submission.urls.retract_invitation + f"?id={invitation.pk}", follow=True
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert not SubmissionInvitation.objects.filter(pk=invitation.pk).exists()
+        assert (
+            submission.logged_actions()
+            .filter(action_type="pretalx.submission.invitation.retract")
+            .exists()
+        )
 
 
 def test_submission_invite_view_respects_max_speakers_limit(
@@ -1321,43 +1148,6 @@ def test_submission_invite_view_respects_max_speakers_limit(
     assert djmail.outbox == []
 
 
-def test_submission_invite_view_get_prefills_email_from_query(
-    speaker_client, submission_with_speaker
-):
-    submission = submission_with_speaker
-
-    response = speaker_client.get(
-        submission.urls.invite + "?email=prefilled%40example.com", follow=True
-    )
-
-    assert response.status_code == 200
-    assert "prefilled@example.com" in response.content.decode()
-
-
-def test_submission_invite_retract_view_deletes_invitation(
-    speaker_client, submission_with_speaker
-):
-    submission = submission_with_speaker
-    with scopes_disabled():
-        invitation = SubmissionInvitationFactory(
-            submission=submission, email="todelete@example.com"
-        )
-        invitation_id = invitation.pk
-
-    response = speaker_client.post(
-        submission.urls.retract_invitation + f"?id={invitation_id}", follow=True
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert not SubmissionInvitation.objects.filter(pk=invitation_id).exists()
-        assert (
-            submission.logged_actions()
-            .filter(action_type="pretalx.submission.invitation.retract")
-            .exists()
-        )
-
-
 @pytest.mark.parametrize(
     ("state", "expected_promote_logs"),
     ((EmailVerificationState.VERIFIED, 0), (EmailVerificationState.LEGACY, 1)),
@@ -1377,6 +1167,12 @@ def test_submission_invite_accept_view_adds_speaker_and_promotes_matching_user(
         invitation_pk = invitation.pk
         initial_count = submission.speakers.count()
     client.force_login(user)
+
+    response = client.post(invitation.urls.base.full() + "invalidtoken", follow=True)
+
+    assert response.status_code == 404
+    with scopes_disabled():
+        assert not submission.speakers.filter(user=user).exists()
 
     response = client.post(invitation.urls.base.full(), follow=True)
 
@@ -1419,22 +1215,6 @@ def test_submission_invite_accept_view_mismatched_email_does_not_promote(client,
     assert user.email_verification_state == EmailVerificationState.UNVERIFIED
 
 
-def test_submission_invite_accept_view_wrong_token_returns_404(client, event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        user = UserFactory()
-        invitation = SubmissionInvitationFactory(
-            submission=submission, email=user.email
-        )
-    client.force_login(user)
-
-    response = client.post(invitation.urls.base.full() + "invalidtoken", follow=True)
-
-    assert response.status_code == 404
-    with scopes_disabled():
-        assert not submission.speakers.filter(user=user).exists()
-
-
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_mail_list_view_shows_sent_mails(
     client, event, item_count, django_assert_num_queries
@@ -1458,11 +1238,13 @@ def test_mail_list_view_shows_sent_mails(
         assert mail.subject in content
 
 
-def test_mail_list_view_shows_profile_addressed_mails(client, event):
+def test_mail_list_view_shows_only_own_sent_mails(client, event):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
         mail.to_speakers.add(speaker)
+        draft_mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
+        draft_mail.to_speakers.add(speaker)
         other_speaker = SpeakerFactory(event=event)
         other_mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
         other_mail.to_speakers.add(other_speaker)
@@ -1473,25 +1255,8 @@ def test_mail_list_view_shows_profile_addressed_mails(client, event):
     assert response.status_code == 200
     content = response.content.decode()
     assert mail.subject in content
-    assert other_mail.subject not in content
-
-
-def test_mail_list_view_hides_unsent_mails(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        user = speaker.user
-        draft_mail = QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
-        draft_mail.to_speakers.add(speaker)
-        sent_mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENT)
-        sent_mail.to_speakers.add(speaker)
-    client.force_login(user)
-
-    response = client.get(event.urls.user_mails, follow=True)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert sent_mail.subject in content
     assert draft_mail.subject not in content
+    assert other_mail.subject not in content
 
 
 def test_submissions_edit_view_dedraft_redirects_to_wizard(client, event):
@@ -1508,17 +1273,47 @@ def test_submissions_edit_view_dedraft_redirects_to_wizard(client, event):
     response = client.post(submission.urls.user_base, data=data)
 
     assert response.status_code == 302
-    assert f"submit/restart-{submission.code}" in response.url
+    assert response.url == f"/{event.slug}/submit/restart-{submission.code}/"
+
+    with scopes_disabled():
+        access_code = SubmitterAccessCodeFactory(event=event)
+        submission.access_code = access_code
+        submission.save()
+    response = client.post(submission.urls.user_base, data=data)
+
+    assert response.status_code == 302
+    assert (
+        response.url
+        == f"/{event.slug}/submit/restart-{submission.code}/?access_code={access_code.code}"
+    )
 
 
+@pytest.mark.parametrize(
+    "restricted",
+    (
+        pytest.param(
+            lambda event: {
+                "track": TrackFactory(event=event, requires_access_code=True)
+            },
+            id="track",
+        ),
+        pytest.param(
+            lambda event: {
+                "submission_type": SubmissionTypeFactory(
+                    event=event, requires_access_code=True
+                )
+            },
+            id="submission_type",
+        ),
+    ),
+)
 def test_submissions_edit_view_dedraft_prevented_when_access_code_required(
-    client, event
+    client, event, restricted
 ):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
-        track = TrackFactory(event=event, requires_access_code=True)
         submission = SubmissionFactory(
-            event=event, state=SubmissionStates.DRAFT, track=track
+            event=event, state=SubmissionStates.DRAFT, **restricted(event)
         )
         submission.speakers.add(speaker)
     client.force_login(speaker.user)
@@ -1528,51 +1323,8 @@ def test_submissions_edit_view_dedraft_prevented_when_access_code_required(
     response = client.post(submission.urls.user_base, data=data, follow=True)
 
     assert response.status_code == 200
-    submission.refresh_from_db()
+    submission.refresh_from_db(fields=["state"])
     assert submission.state == SubmissionStates.DRAFT
-
-
-def test_submissions_edit_view_dedraft_with_access_code_includes_code_in_url(
-    client, event
-):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        access_code = SubmitterAccessCodeFactory(event=event)
-        submission = SubmissionFactory(
-            event=event,
-            state=SubmissionStates.DRAFT,
-            access_code=access_code,
-            abstract="Test abstract",
-        )
-        submission.speakers.add(speaker)
-    client.force_login(speaker.user)
-
-    data = _edit_form_data(submission, action="dedraft")
-
-    response = client.post(submission.urls.user_base, data=data)
-
-    assert response.status_code == 302
-    assert f"access_code={access_code.code}" in response.url
-
-
-def test_submissions_edit_view_cannot_edit_confirmed_slot_count(client):
-    event = EventFactory(feature_flags={"present_multiple_times": True})
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        submission.speakers.add(speaker)
-        submission.accept()
-        submission.confirm()
-    client.force_login(speaker.user)
-
-    data = _edit_form_data(submission, slot_count=13)
-
-    response = client.post(submission.urls.user_base, follow=True, data=data)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.slot_count != 13
 
 
 def test_profile_view_edit_speaker_answers_multiple_types(client, event):
@@ -1616,6 +1368,21 @@ def test_profile_view_edit_speaker_answers_multiple_types(client, event):
         file_answer = speaker.answers.get(question=file_question)
         assert file_answer.answer.startswith("file://")
         assert file_answer.answer_file.read() == b"file_content"
+        log_count = speaker.logged_actions().count()
+
+    response = client.post(
+        event.urls.user,
+        data={
+            f"question_{string_question.pk}": "black as the night",
+            f"question_{boolean_question.pk}": "True",
+            "form": "questions",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert speaker.logged_actions().count() == log_count
 
     response = client.post(
         event.urls.user,
@@ -1631,147 +1398,6 @@ def test_profile_view_edit_speaker_answers_multiple_types(client, event):
         assert (
             speaker.answers.get(question=string_question).answer == "green as the sky"
         )
-
-
-def test_submissions_edit_view_tags_hidden_when_no_public_tags(client):
-    with scopes_disabled():
-        event = EventFactory(cfp__fields={"tags": {"visibility": "optional"}})
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        submission.speakers.add(speaker)
-        TagFactory(tag="private-tag", event=event, is_public=False)
-    client.force_login(speaker.user)
-
-    response = client.get(submission.urls.user_base, follow=True)
-
-    assert response.status_code == 200
-    assert "private-tag" not in response.content.decode()
-
-
-def test_submissions_edit_view_tags_hidden_when_do_not_ask(client):
-    with scopes_disabled():
-        event = EventFactory(cfp__fields={"tags": {"visibility": "do_not_ask"}})
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        submission.speakers.add(speaker)
-        TagFactory(tag="public-tag", event=event, is_public=True)
-    client.force_login(speaker.user)
-
-    response = client.get(submission.urls.user_base, follow=True)
-
-    assert response.status_code == 200
-    assert "public-tag" not in response.content.decode()
-
-
-def test_submissions_edit_view_tags_valid_count_saves(client):
-    with scopes_disabled():
-        event = EventFactory(
-            feature_flags={"speakers_can_edit_submissions": True},
-            cfp__fields={"tags": {"visibility": "optional", "min": 1, "max": 2}},
-        )
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(
-            event=event, state=SubmissionStates.SUBMITTED, abstract="Test abstract"
-        )
-        submission.speakers.add(speaker)
-        tag1 = TagFactory(tag="tag1", event=event, is_public=True)
-        tag2 = TagFactory(tag="tag2", event=event, is_public=True)
-    client.force_login(speaker.user)
-
-    data = _edit_form_data(submission, tags=[tag1.pk, tag2.pk])
-
-    response = client.post(submission.urls.user_base, data, follow=True)
-
-    assert response.status_code == 200
-    assert "you selected" not in response.content.decode().lower()
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert set(submission.tags.all()) == {tag1, tag2}
-
-
-def test_submissions_edit_view_tags_required_but_none_submitted(client):
-    with scopes_disabled():
-        event = EventFactory(
-            cfp__fields={"tags": {"visibility": "required", "min": None, "max": None}}
-        )
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        submission.speakers.add(speaker)
-        TagFactory(tag="tag1", event=event, is_public=True)
-    client.force_login(speaker.user)
-
-    data = _edit_form_data(submission, tags=[])
-
-    response = client.post(submission.urls.user_base, data, follow=True)
-
-    assert response.status_code == 200
-    assert "this field is required" in response.content.decode().lower()
-
-
-def test_submissions_edit_view_tags_exact_count_validation(client):
-    with scopes_disabled():
-        event = EventFactory(
-            cfp__fields={"tags": {"visibility": "optional", "min": 2, "max": 2}}
-        )
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        submission.speakers.add(speaker)
-        tag1 = TagFactory(tag="tag1", event=event, is_public=True)
-        TagFactory(tag="tag2", event=event, is_public=True)
-        TagFactory(tag="tag3", event=event, is_public=True)
-    client.force_login(speaker.user)
-
-    data = _edit_form_data(submission, tags=[tag1.pk])
-
-    response = client.post(submission.urls.user_base, data, follow=True)
-
-    assert response.status_code == 200
-    assert "exactly 2 tags" in response.content.decode().lower()
-
-
-def test_submissions_edit_view_dedraft_prevented_when_submission_type_requires_access_code(
-    client, event
-):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        sub_type = SubmissionTypeFactory(event=event, requires_access_code=True)
-        submission = SubmissionFactory(
-            event=event, state=SubmissionStates.DRAFT, submission_type=sub_type
-        )
-        submission.speakers.add(speaker)
-    client.force_login(speaker.user)
-
-    data = _edit_form_data(submission, action="dedraft")
-
-    response = client.post(submission.urls.user_base, data=data, follow=True)
-
-    assert response.status_code == 200
-    submission.refresh_from_db()
-    assert submission.state == SubmissionStates.DRAFT
-
-
-def test_profile_view_edit_speaker_questions_unchanged_skips_log(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        question = QuestionFactory(
-            event=event,
-            target="speaker",
-            variant="string",
-            question_required="optional",
-        )
-    client.force_login(speaker.user)
-    data = {f"question_{question.pk}": "My answer", "form": "questions"}
-
-    client.post(event.urls.user, data=data, follow=True)
-    with scopes_disabled():
-        log_count = speaker.logged_actions().count()
-
-    response = client.post(event.urls.user, data=data, follow=True)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert speaker.answers.get(question=question).answer == "My answer"
-        assert speaker.logged_actions().count() == log_count
 
 
 def test_submissions_withdraw_view_handles_submission_error(
@@ -1815,67 +1441,6 @@ def test_submission_confirm_view_handles_submission_error(
     with scopes_disabled():
         submission.refresh_from_db()
         assert submission.state == SubmissionStates.ACCEPTED
-
-
-def test_submissions_edit_view_invalid_formset_shows_form_again(client, event):
-    with scopes_disabled():
-        event.cfp.fields["resources"] = {"visibility": "optional"}
-        event.cfp.save()
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(
-            event=event,
-            state=SubmissionStates.SUBMITTED,
-            title="Original title",
-            abstract="Test abstract",
-        )
-        submission.speakers.add(speaker)
-    client.force_login(speaker.user)
-
-    data = _edit_form_data(
-        submission,
-        title="Changed title",
-        **{
-            "resource-TOTAL_FORMS": 1,
-            "resource-0-id": "",
-            "resource-0-description": "New resource",
-            # Missing resource file AND link — should be invalid
-        },
-    )
-
-    response = client.post(submission.urls.user_base, follow=True, data=data)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.title == "Original title"
-        assert submission.resources.count() == 0
-
-
-def test_submissions_edit_view_unchanged_resource_preserved(
-    speaker_client, submission_with_speaker
-):
-    submission = submission_with_speaker
-    with scopes_disabled():
-        submission.event.cfp.fields["resources"] = {"visibility": "optional"}
-        submission.event.cfp.save()
-        resource = ResourceFactory(submission=submission, description="My resource")
-    data = _edit_form_data(
-        submission,
-        **{
-            "resource-0-id": resource.id,
-            "resource-0-description": resource.description or "",
-            "resource-0-link": resource.link or "",
-            "resource-TOTAL_FORMS": 1,
-            "resource-INITIAL_FORMS": 1,
-        },
-    )
-
-    response = speaker_client.post(submission.urls.user_base, follow=True, data=data)
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        resource.refresh_from_db()
-        assert resource.description == "My resource"
 
 
 def test_submissions_edit_view_uneditable_submission_shows_error(client):
@@ -1953,19 +1518,6 @@ def test_submissions_edit_view_track_change_updates_review_scores(client):
     with scopes_disabled():
         review.refresh_from_db()
         assert review.score is None
-
-
-def test_submission_invite_view_get_warns_on_invalid_email_query_param(
-    speaker_client, submission_with_speaker
-):
-    submission = submission_with_speaker
-
-    response = speaker_client.get(
-        submission.urls.invite + "?email=not-an-email", follow=True
-    )
-
-    assert response.status_code == 200
-    assert "valid email" in response.content.decode().lower()
 
 
 def test_submission_invite_accept_view_rejects_when_speakers_disabled(client):

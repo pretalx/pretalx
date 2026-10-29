@@ -15,11 +15,8 @@ from pretalx.common.text.timezones import timezone_name
         ("Asia/Manila", "Asia/Manila"),
         ("America/Argentina/Buenos_Aires", "America/Argentina/Buenos Aires"),
         ("UTC", "UTC"),
+        (zoneinfo.ZoneInfo("America/New_York"), "America/New York"),
     ),
 )
 def test_timezone_name_humanises_underscores(value, expected):
     assert timezone_name(value) == expected
-
-
-def test_timezone_name_accepts_tzinfo_objects():
-    assert timezone_name(zoneinfo.ZoneInfo("America/New_York")) == "America/New York"

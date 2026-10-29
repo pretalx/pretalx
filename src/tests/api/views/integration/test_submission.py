@@ -70,17 +70,67 @@ def orga_user_write_token(organiser_user):
     )
 
 
-def test_submission_list_anonymous_sees_only_scheduled(
-    client, public_event_with_schedule, published_talk_slot
+ORGA_ONLY_SUBMISSION_FIELDS = (
+    "access_code",
+    "review_code",
+    "anonymised_data",
+    "reviews",
+    "assigned_reviewers",
+    "mean_score",
+    "median_score",
+    "invitations",
+)
+
+
+def test_submission_public_reads(
+    client, public_event_with_schedule, published_talk_slot, track
 ):
     event = public_event_with_schedule
     with scopes_disabled():
         SubmissionFactory(event=event)  # unscheduled, should not appear
-    response = client.get(event.api_urls.submissions, follow=True)
-    content = response.json()
-    assert response.status_code == 200
-    assert content["count"] == 1
-    assert content["results"][0]["title"] == published_talk_slot.submission.title
+        sub = published_talk_slot.submission
+        sub.track = track
+        sub.save()
+        speaker = sub.speakers.select_related("user").first()
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+            is_public=True,
+        )
+        answer = AnswerFactory(question=question, submission=sub, answer="42")
+        ResourceFactory(submission=sub, link="https://example.com/public")
+        ResourceFactory(
+            submission=sub, link="https://example.com/private", is_public=False
+        )
+        AttendeeSignupFactory(submission=sub)
+
+    listing = client.get(event.api_urls.submissions, follow=True)
+    expanded = client.get(
+        event.api_urls.submissions
+        + "?expand=track,submission_type,speakers,answers,answers.question,resources",
+        follow=True,
+    )
+    attendees = client.get(event.api_urls.submissions + f"{sub.code}/attendees/")
+
+    assert listing.status_code == 200
+    assert [r["code"] for r in listing.json()["results"]] == [sub.code]
+    assert listing.json()["results"][0]["title"] == sub.title
+    assert expanded.status_code == 200
+    assert [r["code"] for r in expanded.json()["results"]] == [sub.code]
+    result = expanded.json()["results"][0]
+    assert result["track"]["name"]["en"] == track.name
+    assert result["submission_type"]["name"]["en"] == sub.submission_type.name
+    assert [s["name"] for s in result["speakers"]] == [speaker.get_display_name()]
+    assert result["speakers"][0]["biography"] == speaker.biography
+    assert "email" not in result["speakers"][0]
+    assert [a["id"] for a in result["answers"]] == [answer.pk]
+    assert result["answers"][0]["question"]["id"] == question.pk
+    assert [r["resource"] for r in result["resources"]] == [
+        "https://example.com/public"
+    ]
+    assert attendees.status_code == 401
 
 
 def test_submission_list_returns_401_when_schedule_not_public(client):
@@ -107,45 +157,44 @@ def test_submission_list_orga_sees_all_submissions(
 
     assert response.status_code == 200
     content = response.json()
-    assert content["count"] == item_count
-    codes = {r["code"] for r in content["results"]}
-    for role in roles:
-        assert role.submission.code in codes
+    assert {r["code"] for r in content["results"]} == {
+        role.submission.code for role in roles
+    }
 
 
-def test_submission_list_orga_sees_submissions_when_not_public(
-    client, event, orga_user_token, submission
+def test_submission_list_orga_filters(
+    client, event, orga_user_token, submission, track
 ):
     event.feature_flags["show_schedule"] = False
+    event.feature_flags["attendee_signup"] = True
     event.save()
-    response = client.get(
-        event.api_urls.submissions,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    content = response.json()
-    assert response.status_code == 200
-    assert content["count"] == 1
-
-
-def test_submission_list_orga_filter_by_state(
-    client, event, orga_user_token, submission
-):
     with scopes_disabled():
+        submission.attendee_signup_required = True
+        submission.attendee_signup_capacity = 5
+        submission.save()
         rejected = SpeakerRoleFactory(
             submission__event=event, speaker__event=event
         ).submission
         rejected.reject()
+        tracked = SubmissionFactory(event=event, track=track)
+    headers = {"Authorization": f"Token {orga_user_token.token}"}
 
-    response = client.get(
-        event.api_urls.submissions + "?state=rejected",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
+    listing = client.get(event.api_urls.submissions, follow=True, headers=headers)
+    by_state = client.get(
+        event.api_urls.submissions + "?state=rejected", follow=True, headers=headers
     )
-    content = response.json()
-    assert response.status_code == 200
-    assert content["count"] == 1
-    assert content["results"][0]["code"] == rejected.code
+    by_track = client.get(
+        event.api_urls.submissions + f"?track={track.pk}", follow=True, headers=headers
+    )
+
+    assert listing.status_code == 200
+    results = {r["code"]: r for r in listing.json()["results"]}
+    assert set(results) == {submission.code, rejected.code, tracked.code}
+    assert results[submission.code]["signup_status"] == "open"
+    assert by_state.status_code == 200
+    assert [r["code"] for r in by_state.json()["results"]] == [rejected.code]
+    assert by_track.status_code == 200
+    assert [r["code"] for r in by_track.json()["results"]] == [tracked.code]
 
 
 @pytest.mark.parametrize("casing", ("upper", "lower"))
@@ -168,6 +217,8 @@ def test_submission_retrieve_by_code(
 def test_submission_create_with_write_token(client, event, orga_user_write_token):
     with scopes_disabled():
         sub_type = event.cfp.default_type
+    headers = {"Authorization": f"Token {orga_user_write_token.token}"}
+
     response = client.post(
         event.api_urls.submissions,
         follow=True,
@@ -178,8 +229,20 @@ def test_submission_create_with_write_token(client, event, orga_user_write_token
             "content_locale": event.locale,
         },
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        headers=headers,
     )
+    bad_locale = client.post(
+        event.api_urls.submissions,
+        follow=True,
+        data={
+            "title": "Bad Locale Talk",
+            "submission_type": sub_type.pk,
+            "content_locale": "xx-invalid",
+        },
+        content_type="application/json",
+        headers=headers,
+    )
+
     assert response.status_code == 201
     data = response.json()
     assert data["title"] == "New API Talk"
@@ -192,25 +255,10 @@ def test_submission_create_with_write_token(client, event, orga_user_write_token
             .filter(action_type="pretalx.submission.create")
             .exists()
         )
-
-
-def test_submission_create_wrong_locale_returns_400(
-    client, event, orga_user_write_token
-):
+    assert bad_locale.status_code == 400
+    assert "content_locale" in bad_locale.json()
     with scopes_disabled():
-        sub_type = event.cfp.default_type
-    response = client.post(
-        event.api_urls.submissions,
-        follow=True,
-        data={
-            "title": "Bad Locale Talk",
-            "submission_type": sub_type.pk,
-            "content_locale": "xx-invalid",
-        },
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    assert response.status_code == 400
+        assert not Submission.objects.filter(title="Bad Locale Talk").exists()
 
 
 def test_submission_create_readonly_token_returns_403(client, event, orga_user_token):
@@ -229,155 +277,114 @@ def test_submission_create_readonly_token_returns_403(client, event, orga_user_t
         assert event.submissions.count() == initial_count
 
 
-def test_submission_update_with_write_token(
+def test_submission_update_and_delete_with_write_token(
     client, event, orga_user_write_token, submission
 ):
+    url = event.api_urls.submissions + f"{submission.code}/"
+    headers = {"Authorization": f"Token {orga_user_write_token.token}"}
+
     response = client.patch(
-        event.api_urls.submissions + f"{submission.code}/",
+        url,
         follow=True,
         data={"title": "Updated Title"},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        headers=headers,
     )
+
     assert response.status_code == 200
     with scopes_disabled():
         submission.refresh_from_db()
         assert submission.title == "Updated Title"
-        action = (
-            submission.logged_actions()
-            .filter(action_type="pretalx.submission.update")
-            .first()
+        action = submission.logged_actions().get(
+            action_type="pretalx.submission.update"
         )
-        assert action is not None
-        assert "title" in action.data.get("changes", {})
+        assert "title" in action.data["changes"]
 
+    response = client.delete(url, follow=True, headers=headers)
 
-def test_submission_delete_with_write_token(
-    client, event, orga_user_write_token, submission
-):
-    code = submission.code
-    response = client.delete(
-        event.api_urls.submissions + f"{code}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
     assert response.status_code == 204
     with scopes_disabled():
-        assert not Submission.objects.filter(code=code).exists()
+        assert not Submission.objects.filter(code=submission.code).exists()
 
 
-def test_submission_accept_changes_state(
+def test_submission_update_pending_state_and_signup_required(
     client, event, orga_user_write_token, submission
 ):
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/accept/",
-        follow=True,
+    with scopes_disabled():
+        AttendeeSignupFactory(submission=submission)
+    url = event.api_urls.submissions + f"{submission.code}/"
+    headers = {"Authorization": f"Token {orga_user_write_token.token}"}
+
+    response = client.patch(
+        url,
+        data={"pending_state": SubmissionStates.ACCEPTED},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        headers=headers,
     )
+
     assert response.status_code == 200
     with scopes_disabled():
         submission.refresh_from_db()
-        assert submission.state == SubmissionStates.ACCEPTED
+        assert submission.state == SubmissionStates.SUBMITTED
+        assert submission.pending_state == SubmissionStates.ACCEPTED
+        assert (
+            event.wip_schedule.talks.filter(submission=submission).count()
+            == submission.slot_count
+        )
 
-
-def test_submission_reject_changes_state(
-    client, event, orga_user_write_token, submission
-):
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/reject/",
-        follow=True,
+    same_as_state = client.patch(
+        url,
+        data={"pending_state": SubmissionStates.SUBMITTED},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        headers=headers,
     )
-    assert response.status_code == 200
+
+    assert same_as_state.status_code == 400
+    assert "pending_state" in same_as_state.json()
     with scopes_disabled():
         submission.refresh_from_db()
-        assert submission.state == SubmissionStates.REJECTED
+        assert submission.pending_state == SubmissionStates.ACCEPTED
 
-
-def test_submission_confirm_changes_state(client, event, orga_user_write_token):
-    with scopes_disabled():
-        sub = SpeakerRoleFactory(
-            submission__event=event, speaker__event=event
-        ).submission
-        sub.accept()
-
-    response = client.post(
-        event.api_urls.submissions + f"{sub.code}/confirm/",
-        follow=True,
+    with_signups = client.patch(
+        url,
+        data={"attendee_signup_required": False},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        headers=headers,
     )
-    assert response.status_code == 200
-    with scopes_disabled():
-        sub.refresh_from_db()
-        assert sub.state == SubmissionStates.CONFIRMED
+
+    assert with_signups.status_code == 400
+    assert "attendee_signup_required" in with_signups.json()
 
 
-def test_submission_cancel_changes_state(client, event, orga_user_write_token):
-    with scopes_disabled():
-        sub = SpeakerRoleFactory(
-            submission__event=event, speaker__event=event
-        ).submission
-        sub.accept()
+def test_submission_state_change_actions(
+    client, event, orga_user_write_token, submission
+):
+    headers = {"Authorization": f"Token {orga_user_write_token.token}"}
 
-    response = client.post(
-        event.api_urls.submissions + f"{sub.code}/cancel/",
-        follow=True,
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    assert response.status_code == 200
-    with scopes_disabled():
-        sub.refresh_from_db()
-        assert sub.state == SubmissionStates.CANCELED
+    for action, expected_state in (
+        ("accept", SubmissionStates.ACCEPTED),
+        ("confirm", SubmissionStates.CONFIRMED),
+        ("cancel", SubmissionStates.CANCELED),
+        ("make-submitted", SubmissionStates.SUBMITTED),
+        ("reject", SubmissionStates.REJECTED),
+    ):
+        response = client.post(
+            event.api_urls.submissions + f"{submission.code}/{action}/",
+            follow=True,
+            content_type="application/json",
+            headers=headers,
+        )
 
-
-def test_submission_make_submitted_changes_state(client, event, orga_user_write_token):
-    with scopes_disabled():
-        sub = SpeakerRoleFactory(
-            submission__event=event, speaker__event=event
-        ).submission
-        sub.reject()
-
-    response = client.post(
-        event.api_urls.submissions + f"{sub.code}/make-submitted/",
-        follow=True,
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    assert response.status_code == 200
-    with scopes_disabled():
-        sub.refresh_from_db()
-        assert sub.state == SubmissionStates.SUBMITTED
+        assert response.status_code == 200, action
+        with scopes_disabled():
+            submission.refresh_from_db()
+            assert submission.state == expected_state, action
 
 
-def test_submission_add_speaker(client, event, orga_user_write_token, submission):
+def test_submission_add_speaker_by_email(
+    client, event, orga_user_write_token, submission
+):
     new_email = "newspeaker@example.com"
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/add-speaker/",
-        follow=True,
-        data={"email": new_email},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        speaker_emails = [
-            s.effective_email for s in submission.speakers.select_related("user").all()
-        ]
-        assert new_email in speaker_emails
-        new_speaker = submission.speakers.get(email=new_email)
-        assert new_speaker.user is None
-        assert new_speaker.invitation_token is None
-        assert not event.queued_mails.exists()
-
-
-def test_submission_add_speaker_existing_email_reuses_profile(
-    client, event, orga_user_write_token, submission
-):
     with scopes_disabled():
         existing = SpeakerFactory(
             event=event,
@@ -386,20 +393,37 @@ def test_submission_add_speaker_existing_email_reuses_profile(
             origin=SpeakerProfileOrigin.ORGA,
         )
         profile_count = SpeakerProfile.objects.filter(event=event).count()
+    url = event.api_urls.submissions + f"{submission.code}/add-speaker/"
+    headers = {"Authorization": f"Token {orga_user_write_token.token}"}
 
     response = client.post(
-        event.api_urls.submissions + f"{submission.code}/add-speaker/",
+        url,
         follow=True,
-        data={"email": "known@example.com"},
+        data={"email": new_email},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        headers=headers,
     )
 
     assert response.status_code == 200
     with scopes_disabled():
-        submission.refresh_from_db()
+        new_speaker = submission.speakers.get(email=new_email)
+        assert new_speaker.user is None
+        assert new_speaker.invitation_token is None
+        assert not event.queued_mails.exists()
+        assert SpeakerProfile.objects.filter(event=event).count() == profile_count + 1
+
+    reused = client.post(
+        url,
+        follow=True,
+        data={"email": "known@example.com"},
+        content_type="application/json",
+        headers=headers,
+    )
+
+    assert reused.status_code == 200
+    with scopes_disabled():
         assert existing in submission.speakers.all()
-        assert SpeakerProfile.objects.filter(event=event).count() == profile_count
+        assert SpeakerProfile.objects.filter(event=event).count() == profile_count + 1
 
 
 def test_submission_add_speaker_by_code_next_version(
@@ -412,240 +436,220 @@ def test_submission_add_speaker_by_code_next_version(
             name="Bare Speaker",
             origin=SpeakerProfileOrigin.ORGA,
         )
-
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/add-speaker/",
-        follow=True,
-        data={"speaker": bare.code},
-        content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-            "Pretalx-Version": "v-next",
-        },
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert bare in submission.speakers.all()
-        assert not event.queued_mails.exists()
-
-
-def test_submission_add_speaker_by_code_next_version_requires_code(
-    client, event, orga_user_write_token, submission
-):
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/add-speaker/",
-        follow=True,
-        data={"email": "newspeaker@example.com"},
-        content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-            "Pretalx-Version": "v-next",
-        },
-    )
-
-    assert response.status_code == 400
-    assert "speaker" in response.json()
-
-
-def test_submission_add_speaker_by_code_unknown_code_returns_400(
-    client, event, orga_user_write_token, submission
-):
-    with scopes_disabled():
         cfp_leftover = SpeakerFactory(
             event=event, name="Draft Leftover", origin=SpeakerProfileOrigin.CFP
         )
+    url = event.api_urls.submissions + f"{submission.code}/add-speaker/"
+    headers = {
+        "Authorization": f"Token {orga_user_write_token.token}",
+        "Pretalx-Version": "v-next",
+    }
 
-    for code in ("NOCODE", cfp_leftover.code):
-        response = client.post(
-            event.api_urls.submissions + f"{submission.code}/add-speaker/",
+    response = client.post(
+        url,
+        follow=True,
+        data={"speaker": bare.code},
+        content_type="application/json",
+        headers=headers,
+    )
+    by_email = client.post(
+        url,
+        follow=True,
+        data={"email": "newspeaker@example.com"},
+        content_type="application/json",
+        headers=headers,
+    )
+    unknown = [
+        client.post(
+            url,
             follow=True,
             data={"speaker": code},
             content_type="application/json",
-            headers={
-                "Authorization": f"Token {orga_user_write_token.token}",
-                "Pretalx-Version": "v-next",
-            },
+            headers=headers,
         )
+        for code in ("NOCODE", cfp_leftover.code)
+    ]
 
-        assert response.status_code == 400
-        assert "Speaker not found" in response.json()["detail"]
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert bare in submission.speakers.all()
+        assert not event.queued_mails.exists()
+    assert by_email.status_code == 400
+    assert "speaker" in by_email.json()
+    for rejected in unknown:
+        assert rejected.status_code == 400
+        assert "Speaker not found" in rejected.json()["detail"]
+    with scopes_disabled():
+        assert submission.speakers.count() == 2
 
 
-def test_submission_expand_speakers_with_managed_speaker(
-    client, event, orga_user_write_token, submission
+def test_submission_orga_expandable_fields(
+    client, event, orga_user_write_token, submission, track
 ):
     with scopes_disabled():
+        submission.track = track
+        submission.save()
+        tag = TagFactory(event=event)
+        submission.tags.add(tag)
+        speaker = submission.speakers.first()
         managed = SpeakerRoleFactory(
             submission=submission,
             speaker__event=event,
             speaker__user=None,
             speaker__name="Managed Speaker",
         ).speaker
+        invitation = SubmissionInvitationFactory(
+            submission=submission, email="expandtest@example.com"
+        )
+        ResourceFactory(submission=submission, link="https://example.com/public")
+        ResourceFactory(
+            submission=submission, link="https://example.com/private", is_public=False
+        )
 
     response = client.get(
-        event.api_urls.submissions + f"{submission.code}/?expand=speakers",
+        event.api_urls.submissions
+        + f"{submission.code}/?expand=speakers,track,submission_type,tags,"
+        + "invitations,resources",
         follow=True,
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
 
     assert response.status_code == 200
-    speakers = response.json()["speakers"]
-    managed_data = next(s for s in speakers if s["code"] == managed.code)
-    assert managed_data["name"] == "Managed Speaker"
-    assert managed_data["email"] is None
+    data = response.json()
+    speakers = {s["code"]: s for s in data["speakers"]}
+    assert set(speakers) == {speaker.code, managed.code}
+    assert speakers[managed.code]["name"] == "Managed Speaker"
+    assert speakers[managed.code]["email"] is None
+    assert data["submission_type"]["id"] == submission.submission_type_id
+    assert [t["id"] for t in data["tags"]] == [tag.pk]
+    assert data["track"]["id"] == track.pk
+    assert [(i["id"], i["email"]) for i in data["invitations"]] == [
+        (invitation.pk, "expandtest@example.com")
+    ]
+    assert {r["resource"] for r in data["resources"]} == {
+        "https://example.com/public",
+        "https://example.com/private",
+    }
 
 
 def test_submission_remove_speaker(client, event, orga_user_write_token, submission):
     with scopes_disabled():
-        speaker = submission.speakers.first()
-        speaker_code = speaker.code
+        speaker_code = submission.speakers.first().code
+    url = event.api_urls.submissions + f"{submission.code}/remove-speaker/"
+    headers = {"Authorization": f"Token {orga_user_write_token.token}"}
+
     response = client.post(
-        event.api_urls.submissions + f"{submission.code}/remove-speaker/",
+        url,
         follow=True,
         data={"user": speaker_code},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        headers=headers,
     )
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert not submission.speakers.filter(code=speaker_code).exists()
-
-
-def test_submission_remove_speaker_not_found_returns_400(
-    client, event, orga_user_write_token, submission
-):
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/remove-speaker/",
+    missing = client.post(
+        url,
         follow=True,
         data={"user": "NONEXIST"},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        headers=headers,
     )
-    assert response.status_code == 400
-    assert "Speaker not found" in response.json()["detail"]
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert not submission.speakers.filter(code=speaker_code).exists()
+    assert missing.status_code == 400
+    assert "Speaker not found" in missing.json()["detail"]
 
 
-def test_submission_invite_speaker(client, event, orga_user_write_token, submission):
+def test_submission_invitation_lifecycle(
+    client, event, orga_user_write_token, submission
+):
     email = "invited@example.com"
+    with scopes_disabled():
+        event.cfp.fields["additional_speaker"]["max"] = 2
+        event.cfp.save()
+        speaker_email = submission.speakers.select_related("user").first().user.email
+    url = event.api_urls.submissions + f"{submission.code}/invitations/"
+    headers = {"Authorization": f"Token {orga_user_write_token.token}"}
+
     response = client.post(
-        event.api_urls.submissions + f"{submission.code}/invitations/",
+        url,
         follow=True,
         data={"email": email},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        headers=headers,
     )
+
     assert response.status_code == 200
     with scopes_disabled():
-        assert SubmissionInvitation.objects.filter(
-            submission=submission, email=email
-        ).exists()
+        invitation = SubmissionInvitation.objects.get(submission=submission)
+        assert invitation.email == email
         assert (
             submission.logged_actions()
             .filter(action_type="pretalx.submission.invitation.send")
             .exists()
         )
 
-
-def test_submission_invite_speaker_already_speaker_returns_400(
-    client, event, orga_user_write_token, submission
-):
-    with scopes_disabled():
-        speaker_email = submission.speakers.select_related("user").first().user.email
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/invitations/",
-        follow=True,
-        data={"email": speaker_email},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    assert response.status_code == 400
-    assert "already a speaker" in response.json()["detail"]
-
-
-def test_submission_invite_speaker_already_invited_returns_400(
-    client, event, orga_user_write_token, submission
-):
-    email = "duplicate@example.com"
-    with scopes_disabled():
-        SubmissionInvitationFactory(submission=submission, email=email)
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/invitations/",
+    already_invited = client.post(
+        url,
         follow=True,
         data={"email": email},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        headers=headers,
     )
-    assert response.status_code == 400
-    assert "already been invited" in response.json()["detail"]
+    already_speaker = client.post(
+        url,
+        follow=True,
+        data={"email": speaker_email},
+        content_type="application/json",
+        headers=headers,
+    )
 
-
-def test_submission_invite_speaker_max_exceeded_returns_400(
-    client, event, orga_user_write_token, submission
-):
+    assert already_invited.status_code == 400
+    assert "already been invited" in already_invited.json()["detail"]
+    assert already_speaker.status_code == 400
+    assert "already a speaker" in already_speaker.json()["detail"]
     with scopes_disabled():
+        assert SubmissionInvitation.objects.filter(submission=submission).count() == 1
+
+    retracted = client.delete(url + f"{invitation.pk}/", follow=True, headers=headers)
+    missing = client.delete(url + f"{invitation.pk}/", follow=True, headers=headers)
+
+    assert retracted.status_code == 204
+    assert missing.status_code == 404
+    with scopes_disabled():
+        assert not SubmissionInvitation.objects.filter(pk=invitation.pk).exists()
         event.cfp.fields["additional_speaker"]["max"] = 1
         event.cfp.save()
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/invitations/",
+
+    overflow = client.post(
+        url,
         follow=True,
         data={"email": "overflow@example.com"},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        headers=headers,
     )
-    assert response.status_code == 400
-    assert "maximum" in response.json()["detail"].lower()
+
+    assert overflow.status_code == 400
+    assert "maximum" in overflow.json()["detail"].lower()
 
 
-def test_submission_retract_invitation(
-    client, event, orga_user_write_token, submission
+def test_submission_link_resource_lifecycle(
+    client, event, orga_user_write_token, submission, other_submission
 ):
     with scopes_disabled():
-        invitation = SubmissionInvitationFactory(
-            submission=submission, email="retract@example.com"
-        )
-        invitation_id = invitation.pk
-    response = client.delete(
-        event.api_urls.submissions + f"{submission.code}/invitations/{invitation_id}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    assert response.status_code == 204
-    with scopes_disabled():
-        assert not SubmissionInvitation.objects.filter(pk=invitation_id).exists()
+        foreign = ResourceFactory(submission=other_submission)
+    url = event.api_urls.submissions + f"{submission.code}/resources/"
+    headers = {"Authorization": f"Token {orga_user_write_token.token}"}
 
-
-def test_submission_retract_invitation_not_found_returns_404(
-    client, event, orga_user_write_token, submission
-):
-    response = client.delete(
-        event.api_urls.submissions + f"{submission.code}/invitations/99999/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    assert response.status_code == 404
-
-
-def test_submission_add_link_resource(client, event, orga_user_write_token, submission):
     response = client.post(
-        event.api_urls.submissions + f"{submission.code}/resources/",
+        url,
         follow=True,
         data={"link": "https://example.com/slides", "description": "Slide deck"},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        headers=headers,
     )
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert submission.resources.filter(link="https://example.com/slides").exists()
-
-
-def test_submission_add_resource_both_link_and_file_returns_400(
-    client, event, orga_user_write_token, submission
-):
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/resources/",
+    both = client.post(
+        url,
         follow=True,
         data={
             "link": "https://example.com/slides",
@@ -653,317 +657,217 @@ def test_submission_add_resource_both_link_and_file_returns_400(
             "description": "Both provided",
         },
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        headers=headers,
     )
-    assert response.status_code == 400
-
-
-def test_submission_add_resource_neither_returns_400(
-    client, event, orga_user_write_token, submission
-):
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/resources/",
+    neither = client.post(
+        url,
         follow=True,
         data={"description": "No resource"},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        headers=headers,
     )
-    assert response.status_code == 400
 
-
-def test_submission_remove_resource(client, event, orga_user_write_token, submission):
-    with scopes_disabled():
-        resource = ResourceFactory(submission=submission)
-        resource_id = resource.pk
-    response = client.delete(
-        event.api_urls.submissions + f"{submission.code}/resources/{resource_id}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    assert response.status_code == 204
-    with scopes_disabled():
-        assert not Resource.objects.filter(pk=resource_id).exists()
-
-
-def test_submission_remove_resource_not_found_returns_404(
-    client, event, orga_user_write_token, submission
-):
-    response = client.delete(
-        event.api_urls.submissions + f"{submission.code}/resources/99999/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    assert response.status_code == 404
-
-
-def test_submission_remove_resource_from_different_submission_returns_404(
-    client, event, orga_user_write_token, submission, other_submission
-):
-    with scopes_disabled():
-        resource = ResourceFactory(submission=other_submission)
-    response = client.delete(
-        event.api_urls.submissions + f"{submission.code}/resources/{resource.pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    assert response.status_code == 404
-    with scopes_disabled():
-        assert Resource.objects.filter(pk=resource.pk).exists()
-
-
-def test_submission_public_only_sees_public_resources(
-    client, public_event_with_schedule, published_talk_slot
-):
-    event = public_event_with_schedule
-    with scopes_disabled():
-        sub = published_talk_slot.submission
-        ResourceFactory(submission=sub, link="https://example.com/public")
-        ResourceFactory(
-            submission=sub, link="https://example.com/private", is_public=False
-        )
-    response = client.get(
-        event.api_urls.submissions + f"{sub.code}/?expand=resources", follow=True
-    )
     assert response.status_code == 200
-    data = response.json()
-    resources = data["resources"]
-    assert len(resources) == 1
-    assert resources[0]["resource"] == "https://example.com/public"
-
-
-def test_submission_orga_sees_all_resources(
-    client, event, orga_user_write_token, submission
-):
+    assert both.status_code == 400
+    assert neither.status_code == 400
     with scopes_disabled():
-        ResourceFactory(submission=submission, link="https://example.com/public")
-        ResourceFactory(
-            submission=submission, link="https://example.com/private", is_public=False
-        )
-    response = client.get(
-        event.api_urls.submissions + f"{submission.code}/?expand=resources",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        resource = submission.resources.get()
+        assert resource.link == "https://example.com/slides"
+
+    removed = client.delete(url + f"{resource.pk}/", follow=True, headers=headers)
+    missing = client.delete(url + f"{resource.pk}/", follow=True, headers=headers)
+    foreign_removed = client.delete(
+        url + f"{foreign.pk}/", follow=True, headers=headers
     )
-    assert response.status_code == 200
-    data = response.json()
-    resources = data["resources"]
-    assert len(resources) == 2
-    urls = {r["resource"] for r in resources}
-    assert "https://example.com/public" in urls
-    assert "https://example.com/private" in urls
+
+    assert removed.status_code == 204
+    assert missing.status_code == 404
+    assert foreign_removed.status_code == 404
+    with scopes_disabled():
+        assert not Resource.objects.filter(pk=resource.pk).exists()
+        assert Resource.objects.filter(pk=foreign.pk).exists()
+
+
+def test_submission_file_resource_lifecycle(
+    client, event, orga_user_write_token, submission, django_capture_on_commit_callbacks
+):
+    f = SimpleUploadedFile(
+        "testfile.pdf", b"test content", content_type="application/pdf"
+    )
+    cached_file = CachedFileFactory(
+        session_key=f"api-upload-{orga_user_write_token.token}",
+        filename="testfile.pdf",
+        content_type="application/pdf",
+        expires=timezone.now() + timezone.timedelta(hours=1),
+    )
+    cached_file.file.save("testfile.pdf", f)
+    cached_file.save()
+    url = event.api_urls.submissions + f"{submission.code}/resources/"
+    headers = {"Authorization": f"Token {orga_user_write_token.token}"}
+
+    response = client.post(
+        url,
+        follow=True,
+        data={
+            "resource": f"file:{cached_file.pk}",
+            "description": "Uploaded slides",
+            "is_public": False,
+        },
+        content_type="application/json",
+        headers=headers,
+    )
+
+    assert response.status_code == 200, response.text
+    with scope(event=event):
+        resource = submission.resources.get()
+        assert resource.description == "Uploaded slides"
+        assert resource.is_public is False
+        file_path = resource.resource.path
+        assert resource.resource.name.startswith(
+            f"{event.slug}/submissions/{submission.code}/resources/"
+        )
+        cached_file.file.delete(save=False)
+        with resource.resource.open("rb") as stored:
+            assert stored.read() == b"test content"
+        assert resource.resource.storage.exists(file_path)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        removed = client.delete(url + f"{resource.pk}/", follow=True, headers=headers)
+
+    assert removed.status_code == 204
+    with scopes_disabled():
+        assert not Resource.objects.filter(pk=resource.pk).exists()
+    assert not resource.resource.storage.exists(file_path)
 
 
 def test_submission_log_orga_can_view(client, event, orga_user_write_token, submission):
     with scopes_disabled(), scope(event=event):
-        submission.log_action("pretalx.test.action", data={"key": "val"})
-    response = client.get(
-        event.api_urls.submissions + f"{submission.code}/log/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
+        for i in range(3):
+            submission.log_action(
+                f"pretalx.submission.update.{i}", data={"iteration": i}
+            )
+    url = event.api_urls.submissions + f"{submission.code}/log/"
+    headers = {"Authorization": f"Token {orga_user_write_token.token}"}
+
+    response = client.get(url, follow=True, headers=headers)
+    paginated = client.get(url + "?page_size=2", follow=True, headers=headers)
+
     assert response.status_code == 200
     data = response.json()
-    assert data["count"] == 1
-    assert data["results"][0]["action_type"] == "pretalx.test.action"
+    assert data["count"] == 3
+    assert {r["action_type"] for r in data["results"]} == {
+        f"pretalx.submission.update.{i}" for i in range(3)
+    }
+    assert paginated.status_code == 200
+    assert paginated.json()["count"] == 3
+    assert paginated.json()["next"] is not None
+    assert len(paginated.json()["results"]) == 2
 
 
-def test_submission_expandable_fields(client, event, orga_user_write_token, track):
-    tag = TagFactory(event=event)
-    with scopes_disabled():
-        role = SpeakerRoleFactory(
-            submission__event=event, submission__track=track, speaker__event=event
-        )
-        submission = role.submission
-        submission.tags.add(tag)
-
-    response = client.get(
-        event.api_urls.submissions
-        + f"{submission.code}/?expand=speakers,track,submission_type,tags",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data["speakers"]) == 1
-    assert "code" in data["speakers"][0]
-    assert "name" in data["speakers"][0]
-    assert isinstance(data["submission_type"], dict)
-    assert data["submission_type"]["id"] == submission.submission_type_id
-    assert len(data["tags"]) == 1
-    assert data["tags"][0]["id"] == tag.pk
-    assert isinstance(data["track"], dict)
-    assert data["track"]["id"] == track.pk
-
-
-def test_favourites_list_unauthenticated_returns_403(
-    client, public_event_with_schedule
-):
-    event = public_event_with_schedule
-    response = client.get(
-        f"/api/events/{event.slug}/submissions/favourites/", follow=True
-    )
-    assert response.status_code == 403
-
-
-def test_favourites_list_empty(client, public_event_with_schedule):
-    event = public_event_with_schedule
-    user = UserFactory()
-    client.force_login(user)
-    response = client.get(
-        f"/api/events/{event.slug}/submissions/favourites/", follow=True
-    )
-    assert response.status_code == 200
-    assert response.json() == []
-
-
-def test_favourites_list_with_data(
+def test_favourites_and_signups_anonymous_returns_403(
     client, public_event_with_schedule, published_talk_slot
 ):
+    event = public_event_with_schedule
+    with scopes_disabled():
+        sub = published_talk_slot.submission
+
+    favourites = client.get(
+        f"/api/events/{event.slug}/submissions/favourites/", follow=True
+    )
+    added = client.post(
+        f"/api/events/{event.slug}/submissions/{sub.code}/favourite/", follow=True
+    )
+    signups = client.get(f"/api/events/{event.slug}/submissions/signups/", follow=True)
+
+    assert favourites.status_code == 403
+    assert added.status_code == 403
+    assert signups.status_code == 403
+
+
+def test_favourite_lifecycle(client, public_event_with_schedule, published_talk_slot):
     event = public_event_with_schedule
     user = UserFactory()
     client.force_login(user)
     with scopes_disabled():
         sub = published_talk_slot.submission
+    list_url = f"/api/events/{event.slug}/submissions/favourites/"
+    url = f"/api/events/{event.slug}/submissions/{sub.code}/favourite/"
+
+    empty = client.get(list_url, follow=True)
+    removed_before_add = client.delete(url, follow=True)
+
+    assert empty.status_code == 200
+    assert empty.json() == []
+    assert removed_before_add.status_code == 200
+
+    with scopes_disabled():
         SubmissionFavouriteFactory(user=user, submission=sub)
-    response = client.get(
-        f"/api/events/{event.slug}/submissions/favourites/", follow=True
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert sub.code in data
+    listed = client.get(list_url, follow=True)
+    removed = client.delete(url, follow=True)
 
-
-def test_favourite_add_success(client, public_event_with_schedule, published_talk_slot):
-    event = public_event_with_schedule
-    user = UserFactory()
-    client.force_login(user)
-    with scopes_disabled():
-        sub = published_talk_slot.submission
-    response = client.post(
-        f"/api/events/{event.slug}/submissions/{sub.code}/favourite/", follow=True
-    )
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert SubmissionFavourite.objects.filter(user=user, submission=sub).exists()
-
-
-def test_favourite_add_as_reviewer(
-    client, public_event_with_schedule, published_talk_slot
-):
-    event = public_event_with_schedule
-    user = UserFactory()
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser,
-            all_events=True,
-            is_reviewer=True,
-            can_change_submissions=False,
-        )
-        team.members.add(user)
-        event.review_phases.update(is_active=False)
-        sub = published_talk_slot.submission
-    client.force_login(user)
-
-    response = client.post(
-        f"/api/events/{event.slug}/submissions/{sub.code}/favourite/", follow=True
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert SubmissionFavourite.objects.filter(user=user, submission=sub).exists()
-
-
-def test_favourites_list_as_reviewer(
-    client, public_event_with_schedule, published_talk_slot
-):
-    event = public_event_with_schedule
-    user = UserFactory()
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser,
-            all_events=True,
-            is_reviewer=True,
-            can_change_submissions=False,
-        )
-        team.members.add(user)
-        event.review_phases.update(is_active=False)
-        sub = published_talk_slot.submission
-        SubmissionFavouriteFactory(user=user, submission=sub)
-    client.force_login(user)
-
-    response = client.get(
-        f"/api/events/{event.slug}/submissions/favourites/", follow=True
-    )
-
-    assert response.status_code == 200
-    assert response.json() == [sub.code]
-
-
-def test_favourite_add_unauthenticated_returns_403(
-    client, public_event_with_schedule, published_talk_slot
-):
-    event = public_event_with_schedule
-    with scopes_disabled():
-        sub = published_talk_slot.submission
-    response = client.post(
-        f"/api/events/{event.slug}/submissions/{sub.code}/favourite/", follow=True
-    )
-    assert response.status_code == 403
-
-
-def test_favourite_add_nonexistent_returns_404(client, public_event_with_schedule):
-    event = public_event_with_schedule
-    user = UserFactory()
-    client.force_login(user)
-    response = client.post(
-        f"/api/events/{event.slug}/submissions/NONEXIST/favourite/", follow=True
-    )
-    assert response.status_code == 404
-
-
-def test_favourites_list_no_schedule_permission_returns_403(client, event):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.get(f"/api/events/{event.slug}/submissions/favourites/")
-
-    assert response.status_code == 403
-
-
-def test_favourite_add_no_schedule_permission_returns_403(client, event, submission):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.post(
-        f"/api/events/{event.slug}/submissions/{submission.code}/favourite/"
-    )
-
-    assert response.status_code == 403
-
-
-def test_favourite_remove_success(
-    client, public_event_with_schedule, published_talk_slot
-):
-    event = public_event_with_schedule
-    user = UserFactory()
-    client.force_login(user)
-    with scopes_disabled():
-        sub = published_talk_slot.submission
-        SubmissionFavouriteFactory(user=user, submission=sub)
-    response = client.delete(
-        f"/api/events/{event.slug}/submissions/{sub.code}/favourite/", follow=True
-    )
-    assert response.status_code == 200
+    assert listed.status_code == 200
+    assert listed.json() == [sub.code]
+    assert removed.status_code == 200
     with scopes_disabled():
         assert not SubmissionFavourite.objects.filter(
             user=user, submission=sub
         ).exists()
 
+    added = client.post(url, follow=True)
+    unknown = client.post(
+        f"/api/events/{event.slug}/submissions/NONEXIST/favourite/", follow=True
+    )
 
-def test_signups_list_unauthenticated_returns_403(client, public_event_with_schedule):
+    assert added.status_code == 200
+    with scopes_disabled():
+        assert SubmissionFavourite.objects.filter(user=user, submission=sub).exists()
+    assert unknown.status_code == 404
+
+
+def test_favourite_as_reviewer(client, public_event_with_schedule, published_talk_slot):
     event = public_event_with_schedule
-    response = client.get(f"/api/events/{event.slug}/submissions/signups/", follow=True)
-    assert response.status_code == 403
+    user = UserFactory()
+    with scopes_disabled():
+        team = TeamFactory(
+            organiser=event.organiser,
+            all_events=True,
+            is_reviewer=True,
+            can_change_submissions=False,
+        )
+        team.members.add(user)
+        event.review_phases.update(is_active=False)
+        sub = published_talk_slot.submission
+    client.force_login(user)
+
+    added = client.post(
+        f"/api/events/{event.slug}/submissions/{sub.code}/favourite/", follow=True
+    )
+    listed = client.get(
+        f"/api/events/{event.slug}/submissions/favourites/", follow=True
+    )
+
+    assert added.status_code == 200
+    with scopes_disabled():
+        assert SubmissionFavourite.objects.filter(user=user, submission=sub).exists()
+    assert listed.status_code == 200
+    assert listed.json() == [sub.code]
+
+
+def test_favourites_and_signups_no_schedule_permission_returns_403(
+    client, event, submission
+):
+    user = UserFactory()
+    client.force_login(user)
+
+    favourites = client.get(f"/api/events/{event.slug}/submissions/favourites/")
+    added = client.post(
+        f"/api/events/{event.slug}/submissions/{submission.code}/favourite/"
+    )
+    signups = client.get(f"/api/events/{event.slug}/submissions/signups/")
+
+    assert favourites.status_code == 403
+    assert added.status_code == 403
+    assert signups.status_code == 403
 
 
 def test_signups_list_with_data(
@@ -981,19 +885,14 @@ def test_signups_list_with_data(
     assert response.json() == [sub.code]
 
 
-def test_signups_list_no_schedule_permission_returns_403(client, event):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.get(f"/api/events/{event.slug}/submissions/signups/")
-
-    assert response.status_code == 403
-
-
-def test_tag_list_anonymous_returns_401(client, event):
+def test_tag_and_track_list_anonymous_returns_401(client, event, track):
     TagFactory(event=event)
-    response = client.get(event.api_urls.tags, follow=True)
-    assert response.status_code == 401
+
+    tags = client.get(event.api_urls.tags, follow=True)
+    tracks = client.get(event.api_urls.tracks, follow=True)
+
+    assert tags.status_code == 401
+    assert tracks.status_code == 401
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -1010,46 +909,48 @@ def test_tag_list_orga(
         )
 
     assert response.status_code == 200
-    content = response.json()
-    assert content["count"] == item_count
-    tag_ids = {r["id"] for r in content["results"]}
-    for tag in tags:
-        assert tag.pk in tag_ids
+    assert {r["id"] for r in response.json()["results"]} == {tag.pk for tag in tags}
 
 
 def test_tag_detail(client, event, orga_user_token):
     tag = TagFactory(event=event)
+    headers = {"Authorization": f"Token {orga_user_token.token}"}
+
     response = client.get(
-        event.api_urls.tags + f"{tag.pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
+        event.api_urls.tags + f"{tag.pk}/", follow=True, headers=headers
     )
+    localised = client.get(
+        event.api_urls.tags + f"{tag.pk}/?lang=en", follow=True, headers=headers
+    )
+
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == tag.pk
     assert data["color"] == tag.color
-
-
-def test_tag_detail_locale_override(client, event, orga_user_token):
-    tag = TagFactory(event=event)
-    response = client.get(
-        event.api_urls.tags + f"{tag.pk}/?lang=en",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data["tag"], str)
+    assert data["tag"] == str(tag.tag)
+    assert data["description"] == {"en": str(tag.description)}
+    assert localised.status_code == 200
+    assert localised.json()["description"] == str(tag.description)
 
 
 def test_tag_create_with_write_token(client, event, orga_user_write_token):
+    headers = {"Authorization": f"Token {orga_user_write_token.token}"}
+
     response = client.post(
         event.api_urls.tags,
         follow=True,
         data={"tag": "new-tag", "color": "#00ff00"},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        headers=headers,
     )
+    duplicate = client.post(
+        event.api_urls.tags,
+        follow=True,
+        data={"tag": "new-tag", "color": "#ff0000"},
+        content_type="application/json",
+        headers=headers,
+    )
+
     assert response.status_code == 201
     with scopes_disabled():
         created_tag = event.tags.get(tag="new-tag")
@@ -1059,78 +960,89 @@ def test_tag_create_with_write_token(client, event, orga_user_write_token):
             .filter(action_type="pretalx.tag.create")
             .exists()
         )
+    assert duplicate.status_code == 400
+    with scopes_disabled():
+        assert event.tags.count() == 1
 
 
-def test_tag_create_duplicate_returns_400(client, event, orga_user_write_token):
-    tag = TagFactory(event=event)
-    response = client.post(
-        event.api_urls.tags,
-        follow=True,
-        data={"tag": str(tag.tag), "color": "#ff0000"},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    assert response.status_code == 400
+def test_tag_track_and_type_create_readonly_token_returns_403(
+    client, event, orga_user_token
+):
+    headers = {"Authorization": f"Token {orga_user_token.token}"}
 
-
-def test_tag_create_readonly_token_returns_403(client, event, orga_user_token):
-    response = client.post(
+    tag = client.post(
         event.api_urls.tags,
         follow=True,
         data={"tag": "forbidden-tag", "color": "#ff0000"},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_token.token}"},
+        headers=headers,
     )
-    assert response.status_code == 403
+    track = client.post(
+        event.api_urls.tracks,
+        follow=True,
+        data={"name": "Forbidden Track", "color": "#0000ff"},
+        content_type="application/json",
+        headers=headers,
+    )
+    sub_type = client.post(
+        event.api_urls.submission_types,
+        follow=True,
+        data={"name": "Forbidden Type", "default_duration": 30},
+        content_type="application/json",
+        headers=headers,
+    )
+
+    assert tag.status_code == 403
+    assert track.status_code == 403
+    assert sub_type.status_code == 403
     with scopes_disabled():
         assert not event.tags.filter(tag="forbidden-tag").exists()
+        assert not event.tracks.filter(name="Forbidden Track").exists()
+        assert not event.submission_types.filter(name="Forbidden Type").exists()
 
 
-def test_tag_update_with_write_token(client, event, orga_user_write_token):
+def test_tag_update_and_delete_with_write_token(client, event, orga_user_write_token):
     tag = TagFactory(event=event)
+    url = event.api_urls.tags + f"{tag.pk}/"
+    headers = {"Authorization": f"Token {orga_user_write_token.token}"}
+
     response = client.patch(
-        event.api_urls.tags + f"{tag.pk}/",
+        url,
         follow=True,
         data={"tag": "updated-tag"},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        headers=headers,
     )
+
     assert response.status_code == 200
     with scopes_disabled():
         tag.refresh_from_db()
         assert str(tag.tag) == "updated-tag"
 
+    response = client.delete(url, follow=True, headers=headers)
 
-def test_tag_delete_with_write_token(client, event, orga_user_write_token):
-    tag = TagFactory(event=event)
-    tag_pk = tag.pk
-    response = client.delete(
-        event.api_urls.tags + f"{tag_pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
     assert response.status_code == 204
     with scopes_disabled():
-        assert not event.tags.filter(pk=tag_pk).exists()
+        assert not event.tags.filter(pk=tag.pk).exists()
 
 
-def test_track_list_anonymous_returns_401(client, event, track):
-    response = client.get(event.api_urls.tracks, follow=True)
-    assert response.status_code == 401
-
-
-def test_track_list_public_event_shows_tracks(
+def test_track_and_type_list_public_event(
     client, public_event_with_schedule, published_talk_slot
 ):
     event = public_event_with_schedule
     with scopes_disabled():
         event.feature_flags["use_tracks"] = True
         event.save()
-        TrackFactory(event=event)
-    response = client.get(event.api_urls.tracks, follow=True)
-    assert response.status_code == 200
-    content = response.json()
-    assert content["count"] == 1
+        track = TrackFactory(event=event)
+        default_type = event.cfp.default_type
+
+    tracks = client.get(event.api_urls.tracks, follow=True)
+    types = client.get(event.api_urls.submission_types, follow=True)
+
+    assert tracks.status_code == 200
+    assert [t["id"] for t in tracks.json()["results"]] == [track.pk]
+    assert types.status_code == 200
+    assert [t["id"] for t in types.json()["results"]] == [default_type.pk]
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -1147,34 +1059,26 @@ def test_track_list_orga(
         )
 
     assert response.status_code == 200
-    content = response.json()
-    assert content["count"] == item_count
-    track_ids = {r["id"] for r in content["results"]}
-    for t in tracks:
-        assert t.pk in track_ids
+    assert {r["id"] for r in response.json()["results"]} == {t.pk for t in tracks}
 
 
 def test_track_detail(client, event, orga_user_token, track):
+    headers = {"Authorization": f"Token {orga_user_token.token}"}
+
     response = client.get(
-        event.api_urls.tracks + f"{track.pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
+        event.api_urls.tracks + f"{track.pk}/", follow=True, headers=headers
     )
+    localised = client.get(
+        event.api_urls.tracks + f"{track.pk}/?lang=en", follow=True, headers=headers
+    )
+
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == track.pk
     assert data["color"] == track.color
-
-
-def test_track_detail_locale_override(client, event, orga_user_token, track):
-    response = client.get(
-        event.api_urls.tracks + f"{track.pk}/?lang=en",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data["name"], str)
+    assert data["name"] == {"en": str(track.name)}
+    assert localised.status_code == 200
+    assert localised.json()["name"] == str(track.name)
 
 
 def test_track_create_with_write_token(client, event, orga_write_token):
@@ -1196,43 +1100,30 @@ def test_track_create_with_write_token(client, event, orga_write_token):
         )
 
 
-def test_track_create_readonly_token_returns_403(client, event, orga_user_token):
-    response = client.post(
-        event.api_urls.tracks,
-        follow=True,
-        data={"name": "Forbidden Track", "color": "#0000ff"},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        assert not event.tracks.filter(name="Forbidden Track").exists()
+def test_track_update_and_delete_with_write_token(
+    client, event, orga_write_token, track
+):
+    url = event.api_urls.tracks + f"{track.pk}/"
+    headers = {"Authorization": f"Token {orga_write_token.token}"}
 
-
-def test_track_update_with_write_token(client, event, orga_write_token, track):
     response = client.patch(
-        event.api_urls.tracks + f"{track.pk}/",
+        url,
         follow=True,
         data={"name": "Updated Track"},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
     )
+
     assert response.status_code == 200
     with scopes_disabled():
         track.refresh_from_db()
         assert str(track.name) == "Updated Track"
 
+    response = client.delete(url, follow=True, headers=headers)
 
-def test_track_delete_with_write_token(client, event, orga_write_token, track):
-    track_pk = track.pk
-    response = client.delete(
-        event.api_urls.tracks + f"{track_pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
     assert response.status_code == 204
     with scopes_disabled():
-        assert not event.tracks.filter(pk=track_pk).exists()
+        assert not event.tracks.filter(pk=track.pk).exists()
 
 
 def test_submission_type_list_anonymous_returns_401_when_not_public(client):
@@ -1241,21 +1132,13 @@ def test_submission_type_list_anonymous_returns_401_when_not_public(client):
     assert response.status_code == 401
 
 
-def test_submission_type_list_public_event(
-    client, public_event_with_schedule, published_talk_slot
-):
-    event = public_event_with_schedule
-    response = client.get(event.api_urls.submission_types, follow=True)
-    assert response.status_code == 200
-    content = response.json()
-    assert content["count"] == 1
-
-
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_submission_type_list_orga(
     client, event, orga_user_token, item_count, django_assert_num_queries
 ):
     types = SubmissionTypeFactory.create_batch(item_count, event=event)
+    with scopes_disabled():
+        default_type = event.cfp.default_type
 
     with django_assert_num_queries(10):
         response = client.get(
@@ -1265,39 +1148,35 @@ def test_submission_type_list_orga(
         )
 
     assert response.status_code == 200
-    content = response.json()
-    # item_count + 1 for the default_type
-    assert content["count"] == item_count + 1
-    type_ids = {r["id"] for r in content["results"]}
-    for st in types:
-        assert st.pk in type_ids
+    assert {r["id"] for r in response.json()["results"]} == {
+        default_type.pk,
+        *(st.pk for st in types),
+    }
 
 
 def test_submission_type_detail(client, event, orga_user_token):
     with scopes_disabled():
         sub_type = event.cfp.default_type
+    headers = {"Authorization": f"Token {orga_user_token.token}"}
+
     response = client.get(
         event.api_urls.submission_types + f"{sub_type.pk}/",
         follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
+        headers=headers,
     )
+    localised = client.get(
+        event.api_urls.submission_types + f"{sub_type.pk}/?lang=en",
+        follow=True,
+        headers=headers,
+    )
+
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == sub_type.pk
     assert data["default_duration"] == sub_type.default_duration
-
-
-def test_submission_type_detail_locale_override(client, event, orga_user_token):
-    with scopes_disabled():
-        sub_type = event.cfp.default_type
-    response = client.get(
-        event.api_urls.submission_types + f"{sub_type.pk}/?lang=en",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data["name"], str)
+    assert data["name"] == {"en": str(sub_type.name)}
+    assert localised.status_code == 200
+    assert localised.json()["name"] == str(sub_type.name)
 
 
 def test_submission_type_create_with_write_token(client, event, orga_write_token):
@@ -1319,51 +1198,33 @@ def test_submission_type_create_with_write_token(client, event, orga_write_token
         )
 
 
-def test_submission_type_create_readonly_token_returns_403(
-    client, event, orga_user_token
+def test_submission_type_update_and_delete_with_write_token(
+    client, event, orga_write_token
 ):
-    response = client.post(
-        event.api_urls.submission_types,
-        follow=True,
-        data={"name": "Forbidden Type", "default_duration": 30},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        assert not event.submission_types.filter(name="Forbidden Type").exists()
-
-
-def test_submission_type_update_with_write_token(client, event, orga_write_token):
     submission_type = SubmissionTypeFactory(
         event=event, name="Workshop", default_duration=60
     )
+    url = event.api_urls.submission_types + f"{submission_type.pk}/"
+    headers = {"Authorization": f"Token {orga_write_token.token}"}
+
     response = client.patch(
-        event.api_urls.submission_types + f"{submission_type.pk}/",
+        url,
         follow=True,
         data={"name": "Updated Type"},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
     )
+
     assert response.status_code == 200
     with scopes_disabled():
         submission_type.refresh_from_db()
         assert str(submission_type.name) == "Updated Type"
 
+    response = client.delete(url, follow=True, headers=headers)
 
-def test_submission_type_delete_with_write_token(client, event, orga_write_token):
-    submission_type = SubmissionTypeFactory(
-        event=event, name="Workshop", default_duration=60
-    )
-    type_pk = submission_type.pk
-    response = client.delete(
-        event.api_urls.submission_types + f"{type_pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
     assert response.status_code == 204
     with scopes_disabled():
-        assert not event.submission_types.filter(pk=type_pk).exists()
+        assert not event.submission_types.filter(pk=submission_type.pk).exists()
 
 
 @pytest.mark.parametrize(
@@ -1403,55 +1264,6 @@ def test_submission_state_change_signal_rejection_returns_400(
     assert "Blocked by signal" in response.json()["detail"]
 
 
-def test_submission_expand_speakers_user(
-    client, event, orga_user_write_token, submission
-):
-    response = client.get(
-        event.api_urls.submissions + f"{submission.code}/?expand=speakers.user",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data["speakers"]) == 1
-
-
-def test_submission_invite_speaker_within_max_speakers(
-    client, event, orga_user_write_token, submission
-):
-    with scopes_disabled():
-        event.cfp.fields["additional_speaker"]["max"] = 5
-        event.cfp.save()
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/invitations/",
-        follow=True,
-        data={"email": "within-limit@example.com"},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert SubmissionInvitation.objects.filter(
-            submission=submission, email="within-limit@example.com"
-        ).exists()
-
-
-def test_submission_orga_filter_by_track(
-    client, event, orga_user_token, other_submission, track
-):
-    submission = SubmissionFactory(event=event, track=track)
-
-    response = client.get(
-        event.api_urls.submissions + f"?track={track.pk}",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    content = response.json()
-    assert response.status_code == 200
-    assert content["count"] == 1
-    assert content["results"][0]["code"] == submission.code
-
-
 @pytest.mark.parametrize(
     ("is_visible_to_reviewers", "is_reviewer", "expected_answer_count"),
     ((True, True, 1), (False, True, 0), (True, False, 1), (False, False, 1)),
@@ -1466,7 +1278,6 @@ def test_submission_answer_visibility_to_reviewers(
     is_reviewer,
     expected_answer_count,
 ):
-
     with scopes_disabled():
         question = QuestionFactory(
             event=event,
@@ -1495,33 +1306,14 @@ def test_submission_answer_visibility_to_reviewers(
     assert len(content["results"][0]["answers"]) == expected_answer_count
 
 
-def test_submission_reviewer_log_access(client, event, submission):
-
-    with scopes_disabled():
-        user = UserFactory()
-        team = TeamFactory(
-            organiser=event.organiser,
-            all_events=True,
-            is_reviewer=True,
-            can_change_submissions=False,
-        )
-        team.members.add(user)
-        token = UserApiTokenFactory(
-            user=user,
-            limit_events=[event],
-            endpoints=dict.fromkeys(
-                ENDPOINTS,
-                ["list", "retrieve", "create", "update", "destroy", "actions"],
-            ),
-        )
-
+def test_submission_reviewer_log_access(client, event, submission, review_token):
     with scopes_disabled(), scope(event=event):
         submission.log_action("pretalx.submission.update", data={"note": "Reviewed"})
 
     response = client.get(
         event.api_urls.submissions + f"{submission.code}/log/",
         follow=True,
-        headers={"Authorization": f"Token {token.token}"},
+        headers={"Authorization": f"Token {review_token.token}"},
     )
     assert response.status_code == 200
     content = response.json()
@@ -1566,84 +1358,9 @@ def test_submission_action_denied_for_reviewer(
         assert SubmissionInvitation.objects.filter(submission=submission).count() == 0
 
 
-def test_submission_log_pagination(client, event, orga_user_write_token, submission):
-    with scopes_disabled(), scope(event=event):
-        for i in range(3):
-            submission.log_action(
-                f"pretalx.submission.update.{i}", data={"iteration": i}
-            )
-
-    response = client.get(
-        event.api_urls.submissions + f"{submission.code}/log/?page_size=2",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    content = response.json()
-    assert response.status_code == 200
-    assert content["count"] == 3
-    assert content["next"] is not None
-    assert len(content["results"]) == 2
-
-
-def test_submission_expand_invitations(
-    client, event, orga_user_write_token, submission
-):
-    with scopes_disabled():
-        SubmissionInvitationFactory(
-            submission=submission, email="expandtest@example.com"
-        )
-
-    response = client.get(
-        event.api_urls.submissions + "?expand=invitations",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    content = response.json()
-    assert response.status_code == 200
-    sub_data = next(s for s in content["results"] if s["code"] == submission.code)
-    assert len(sub_data["invitations"]) == 1
-    assert sub_data["invitations"][0]["email"] == "expandtest@example.com"
-    assert "id" in sub_data["invitations"][0]
-    assert "created" in sub_data["invitations"][0]
-
-
-def test_favourite_remove_not_favourited(
-    client, public_event_with_schedule, published_talk_slot
-):
-    event = public_event_with_schedule
-    user = UserFactory()
-    client.force_login(user)
-    with scopes_disabled():
-        sub = published_talk_slot.submission
-    response = client.delete(
-        f"/api/events/{event.slug}/submissions/{sub.code}/favourite/", follow=True
-    )
-    assert response.status_code == 200
-    with scopes_disabled():
-        assert not SubmissionFavourite.objects.filter(
-            user=user, submission=sub
-        ).exists()
-
-
 def test_reviewer_cannot_see_submissions_in_anonymised_phase(
-    client, event, orga_user_write_token, submission
+    client, event, orga_user_write_token, review_token, submission
 ):
-
-    with scopes_disabled():
-        reviewer = UserFactory()
-        team = TeamFactory(
-            organiser=event.organiser,
-            all_events=True,
-            is_reviewer=True,
-            can_change_submissions=False,
-        )
-        team.members.add(reviewer)
-        review_token = UserApiTokenFactory(
-            user=reviewer,
-            limit_events=[event],
-            endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve"]),
-        )
-
     with scope(event=event):
         phase = event.active_review_phase
         phase.can_see_speaker_names = False
@@ -1667,129 +1384,6 @@ def test_reviewer_cannot_see_submissions_in_anonymised_phase(
         headers={"Authorization": f"Token {review_token.token}"},
     )
     assert response.status_code == 403
-
-
-def test_submission_add_file_resource(client, event, orga_user_write_token, submission):
-
-    f = SimpleUploadedFile(
-        "testfile.pdf", b"test content", content_type="application/pdf"
-    )
-    cached_file = CachedFileFactory(
-        session_key=f"api-upload-{orga_user_write_token.token}",
-        filename="testfile.pdf",
-        content_type="application/pdf",
-        expires=timezone.now() + timezone.timedelta(hours=1),
-    )
-    cached_file.file.save("testfile.pdf", f)
-    cached_file.save()
-
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/resources/",
-        follow=True,
-        data={
-            "resource": f"file:{cached_file.pk}",
-            "description": "Uploaded slides",
-            "is_public": False,
-        },
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-    assert response.status_code == 200, response.text
-    with scope(event=event):
-        submission.refresh_from_db()
-        assert submission.resources.count() == 1
-        resource = submission.resources.first()
-        assert resource.description == "Uploaded slides"
-        assert resource.is_public is False
-        assert resource.resource.name.startswith(
-            f"{event.slug}/submissions/{submission.code}/resources/"
-        )
-
-        cached_file.file.delete(save=False)
-
-        with resource.resource.open("rb") as stored:
-            assert stored.read() == b"test content"
-
-
-def test_submission_remove_resource_with_file_cleans_up(
-    client, event, orga_user_write_token, submission, django_capture_on_commit_callbacks
-):
-
-    f = SimpleUploadedFile("testresource.txt", b"a resource")
-    with scopes_disabled():
-        resource = ResourceFactory(
-            submission=submission,
-            resource=f,
-            description="File resource",
-            is_public=True,
-        )
-    resource_id = resource.pk
-    file_path = resource.resource.path
-    assert resource.resource.storage.exists(file_path)
-
-    with django_capture_on_commit_callbacks(execute=True):
-        response = client.delete(
-            event.api_urls.submissions + f"{submission.code}/resources/{resource_id}/",
-            follow=True,
-            headers={"Authorization": f"Token {orga_user_write_token.token}"},
-        )
-    assert response.status_code == 204
-    with scopes_disabled():
-        assert not Resource.objects.filter(pk=resource_id).exists()
-    assert not resource.resource.storage.exists(file_path)
-
-
-def test_submission_public_with_expanded_speakers(
-    client, public_event_with_schedule, published_talk_slot
-):
-    event = public_event_with_schedule
-    response = client.get(event.api_urls.submissions + "?expand=speakers", follow=True)
-    content = response.json()
-    assert response.status_code == 200
-    assert content["count"] == 1
-    assert content["results"][0]["title"] == published_talk_slot.submission.title
-    with scopes_disabled():
-        speaker = published_talk_slot.submission.speakers.select_related("user").first()
-        assert (
-            content["results"][0]["speakers"][0]["name"] == speaker.get_display_name()
-        )
-        assert content["results"][0]["speakers"][0]["biography"] == speaker.biography
-
-
-def test_submission_public_expandable_fields(
-    client, public_event_with_schedule, published_talk_slot, track
-):
-    event = public_event_with_schedule
-    with scopes_disabled():
-        sub = published_talk_slot.submission
-        sub.track = track
-        sub.save()
-        question = QuestionFactory(
-            event=event,
-            variant=QuestionVariant.NUMBER,
-            target="submission",
-            question_required=QuestionRequired.OPTIONAL,
-            is_public=True,
-        )
-        answer = AnswerFactory(question=question, submission=sub, answer="42")
-
-    expand_fields = "track,submission_type,speakers,answers,answers.question"
-    response = client.get(
-        event.api_urls.submissions + f"?expand={expand_fields}", follow=True
-    )
-    content = response.json()
-    assert response.status_code == 200
-    assert content["count"] == 1
-    result = content["results"][0]
-
-    with scopes_disabled():
-        assert result["track"]["name"]["en"] == sub.track.name
-        assert result["submission_type"]["name"]["en"] == sub.submission_type.name
-        speaker = sub.speakers.select_related("user").first()
-        assert result["speakers"][0]["name"] == speaker.get_display_name()
-        assert "email" not in result["speakers"]
-        assert len(result["answers"]) == 1
-        assert result["answers"][0]["question"]["id"] == answer.question_id
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -1874,99 +1468,22 @@ def test_submission_attendees_orga_can_list(
     client, event, orga_user_write_token, submission
 ):
     with scopes_disabled():
-        submission.attendee_signup_required = True
-        submission.save()
-        signup = AttendeeSignupFactory(submission=submission)
-
-    response = client.get(
-        event.api_urls.submissions + f"{submission.code}/attendees/",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data) == 1
-    assert data[0]["name"] == signup.attendee.user.name
-    assert data[0]["email"] == signup.attendee.user.email
-    assert data[0]["state"] == "confirmed"
-
-
-def test_submission_attendees_404_when_signup_not_required(
-    client, event, orga_user_write_token, submission
-):
-    with scopes_disabled():
-        AttendeeSignupFactory(submission=submission)
-
-    response = client.get(
-        event.api_urls.submissions + f"{submission.code}/attendees/",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-
-    assert response.status_code == 404
-
-
-def test_submission_attendees_anonymous_denied(
-    client, public_event_with_schedule, published_talk_slot
-):
-    event = public_event_with_schedule
-    submission = published_talk_slot.submission
-    with scopes_disabled():
-        AttendeeSignupFactory(submission=submission)
-
-    response = client.get(event.api_urls.submissions + f"{submission.code}/attendees/")
-
-    assert response.status_code == 401
-
-
-def test_submission_attendees_readonly_token_returns_403(
-    client, event, orga_user_token, submission
-):
-    with scopes_disabled():
-        AttendeeSignupFactory(submission=submission)
-
-    response = client.get(
-        event.api_urls.submissions + f"{submission.code}/attendees/",
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-
-    assert response.status_code == 403
-
-
-def test_submission_attendees_reviewer_returns_403(
-    client, event, submission, review_user
-):
-    with scopes_disabled():
-        AttendeeSignupFactory(submission=submission)
-        token = UserApiTokenFactory(
-            user=review_user,
-            limit_events=[event],
-            endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve", "actions"]),
-        )
-
-    response = client.get(
-        event.api_urls.submissions + f"{submission.code}/attendees/",
-        headers={"Authorization": f"Token {token.token}"},
-    )
-
-    assert response.status_code == 403
-
-
-def test_submission_attendees_orders_by_state_then_position(
-    client, event, orga_user_write_token, submission
-):
-    with scopes_disabled():
-        submission.attendee_signup_required = True
-        submission.save()
         cancelled = AttendeeSignupFactory(
             submission=submission, position=0, state="canceled"
         )
         confirmed_late = AttendeeSignupFactory(submission=submission, position=2)
         confirmed_early = AttendeeSignupFactory(submission=submission, position=1)
+    url = event.api_urls.submissions + f"{submission.code}/attendees/"
+    headers = {"Authorization": f"Token {orga_user_write_token.token}"}
 
-    response = client.get(
-        event.api_urls.submissions + f"{submission.code}/attendees/",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
+    not_required = client.get(url, headers=headers)
+
+    assert not_required.status_code == 404
+
+    with scopes_disabled():
+        submission.attendee_signup_required = True
+        submission.save()
+    response = client.get(url, headers=headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -1975,171 +1492,85 @@ def test_submission_attendees_orders_by_state_then_position(
         confirmed_early.pk,
         confirmed_late.pk,
     ]
+    assert data[1]["name"] == confirmed_early.attendee.user.name
+    assert data[1]["email"] == confirmed_early.attendee.user.email
+    assert data[1]["state"] == "confirmed"
+    assert data[0]["state"] == "canceled"
 
 
-def test_submission_update_blocks_pending_state_equal_to_state(
-    client, event, orga_user_write_token, submission
+def test_submission_attendees_denied_without_write_permission(
+    client, event, orga_user_token, submission, review_user
 ):
     with scopes_disabled():
-        submission.pending_state = SubmissionStates.REJECTED
-        submission.save()
-
-    response = client.patch(
-        event.api_urls.submissions + f"{submission.code}/",
-        data={"pending_state": submission.state},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-
-    assert response.status_code == 400
-    assert "pending_state" in response.json()
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.pending_state == SubmissionStates.REJECTED
-
-
-def test_submission_update_pending_state_reconciles_slots(
-    client, event, orga_user_write_token, submission
-):
-    response = client.patch(
-        event.api_urls.submissions + f"{submission.code}/",
-        data={"pending_state": SubmissionStates.ACCEPTED},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-
-    assert response.status_code == 200
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.SUBMITTED
-        assert submission.pending_state == SubmissionStates.ACCEPTED
-        assert (
-            event.wip_schedule.talks.filter(submission=submission).count()
-            == submission.slot_count
-        )
-
-
-def test_submission_update_blocks_signup_required_false_with_signups(
-    client, event, orga_user_write_token, submission
-):
-    with scopes_disabled():
-        AttendeeSignupFactory(submission=submission)
-
-    response = client.patch(
-        event.api_urls.submissions + f"{submission.code}/",
-        data={"attendee_signup_required": False},
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
-
-    assert response.status_code == 400
-    assert "attendee_signup_required" in response.json()
-
-
-def test_submission_list_orga_annotates_signup_status_when_feature_on(
-    client, event, orga_user_token, submission
-):
-    with scopes_disabled():
-        event.feature_flags["attendee_signup"] = True
-        event.save()
         submission.attendee_signup_required = True
-        submission.attendee_signup_capacity = 5
         submission.save()
+        AttendeeSignupFactory(submission=submission)
+        reviewer_token = UserApiTokenFactory(
+            user=review_user,
+            limit_events=[event],
+            endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve", "actions"]),
+        )
+    url = event.api_urls.submissions + f"{submission.code}/attendees/"
 
-    response = client.get(
-        event.api_urls.submissions,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
+    readonly = client.get(
+        url, headers={"Authorization": f"Token {orga_user_token.token}"}
+    )
+    reviewer = client.get(
+        url, headers={"Authorization": f"Token {reviewer_token.token}"}
     )
 
-    assert response.status_code == 200
-    content = response.json()
-    assert content["count"] == 1
-    assert content["results"][0]["signup_status"] == "open"
-
-
-ORGA_ONLY_SUBMISSION_FIELDS = (
-    "access_code",
-    "review_code",
-    "anonymised_data",
-    "reviews",
-    "assigned_reviewers",
-    "mean_score",
-    "median_score",
-    "invitations",
-)
+    assert readonly.status_code == 403
+    assert reviewer.status_code == 403
 
 
 def test_submission_list_reviewer_does_not_get_orga_only_fields(
-    client, event, orga_user_token, review_user, submission
+    client, event, orga_user_token, review_user, review_token, submission
 ):
+    secret_notes = "SPEAKER INTERNAL SENTINEL NOTES"
     with scopes_disabled():
         submission.anonymised = {"_anonymised": True, "title": "SECRET ANON TITLE"}
         submission.review_code = "REVIEWCODE123456"
         submission.save()
         submission.assigned_reviewers.add(review_user)
-        review_token = UserApiTokenFactory(
-            user=review_user,
-            limit_events=[event],
-            endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve"]),
-        )
-
-    response = client.get(
-        event.api_urls.submissions,
-        follow=True,
-        headers={"Authorization": f"Token {review_token.token}"},
-    )
-    assert response.status_code == 200
-    content = response.json()
-    assert content["count"] == 1
-    result = content["results"][0]
-
-    for field in ORGA_ONLY_SUBMISSION_FIELDS:
-        assert field not in result, field
-    assert "internal_notes" in result
-    assert "notes" in result
-
-    response = client.get(
-        event.api_urls.submissions,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    orga_result = response.json()["results"][0]
-    for field in ORGA_ONLY_SUBMISSION_FIELDS:
-        assert field in orga_result, field
-
-
-def test_submission_list_reviewer_expand_speakers_hides_speaker_secrets(
-    client, event, review_user, submission
-):
-    secret_notes = "SPEAKER INTERNAL SENTINEL NOTES"
-    with scopes_disabled():
         profile = submission.speakers.select_related("user").first()
         profile.internal_notes = secret_notes
         profile.save()
         speaker_email = profile.user.email
-        review_token = UserApiTokenFactory(
-            user=review_user,
-            limit_events=[event],
-            endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve"]),
-        )
+    reviewer_headers = {"Authorization": f"Token {review_token.token}"}
 
     response = client.get(
+        event.api_urls.submissions, follow=True, headers=reviewer_headers
+    )
+    expanded = client.get(
         event.api_urls.submissions + "?expand=speakers",
         follow=True,
-        headers={"Authorization": f"Token {review_token.token}"},
+        headers=reviewer_headers,
     )
+    orga_response = client.get(
+        event.api_urls.submissions,
+        follow=True,
+        headers={"Authorization": f"Token {orga_user_token.token}"},
+    )
+
     assert response.status_code == 200
     content = response.json()
     assert content["count"] == 1
-    speakers = content["results"][0]["speakers"]
-    assert speakers, speakers
-    assert isinstance(speakers[0], dict), speakers
-    speaker = speakers[0]
+    result = content["results"][0]
+    for field in ORGA_ONLY_SUBMISSION_FIELDS:
+        assert field not in result, field
+    assert "internal_notes" in result
+    assert "notes" in result
+    assert "REVIEWCODE123456" not in response.text
+    assert expanded.status_code == 200
+    speaker = expanded.json()["results"][0]["speakers"][0]
+    assert speaker["code"] == profile.code
     assert "email" not in speaker, speaker
     assert "internal_notes" not in speaker, speaker
-    assert secret_notes not in response.text
-    assert speaker_email not in response.text
+    assert secret_notes not in expanded.text
+    assert speaker_email not in expanded.text
+    orga_result = orga_response.json()["results"][0]
+    for field in ORGA_ONLY_SUBMISSION_FIELDS:
+        assert field in orga_result, field
 
 
 def test_submission_reviewer_state_change_action_hides_orga_fields(

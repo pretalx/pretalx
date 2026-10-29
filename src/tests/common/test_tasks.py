@@ -16,45 +16,42 @@ from tests.factories import ProfilePictureFactory, SubmissionFactory, UserFactor
 pytestmark = pytest.mark.unit
 
 
-def test_task_process_image_unknown_model():
-    task_process_image(
-        model="UnknownModel", pk=1, field="avatar", generate_thumbnail=False
-    )
-
-
 @pytest.mark.django_db
-def test_task_process_image_instance_not_found():
-    task_process_image(
-        model="Profilepicture", pk=999999, field="avatar", generate_thumbnail=False
-    )
+@pytest.mark.parametrize(
+    ("task", "kwargs"),
+    (
+        (task_process_image, {"generate_thumbnail": False}),
+        (task_generate_thumbnails, {}),
+        (task_cleanup_file, {"path": "/nonexistent/file.png"}),
+    ),
+    ids=("process_image", "generate_thumbnails", "cleanup_file"),
+)
+def test_tasks_ignore_missing_targets(task, kwargs):
+    pic = ProfilePictureFactory(user=UserFactory())
 
-
-@pytest.mark.django_db
-def test_task_process_image_field_not_set():
-    user = UserFactory()
-    pic = ProfilePictureFactory(user=user)
-
-    task_process_image(
-        model="Profilepicture", pk=pic.pk, field="avatar", generate_thumbnail=False
-    )
+    task(model="UnknownModel", pk=1, field="avatar", **kwargs)
+    task(model="Profilepicture", pk=999999, field="avatar", **kwargs)
+    task(model="Profilepicture", pk=pic.pk, field="avatar", **kwargs)
 
     pic.refresh_from_db()
     assert not pic.avatar
 
 
 @pytest.mark.django_db
-def test_task_process_image_converts_to_webp(make_image):
+def test_task_process_image_converts_to_webp_and_generates_thumbnails(make_image):
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
     original_path = Path(pic.avatar.path)
 
     task_process_image(
-        model="Profilepicture", pk=pic.pk, field="avatar", generate_thumbnail=False
+        model="Profilepicture", pk=pic.pk, field="avatar", generate_thumbnail=True
     )
 
     pic.refresh_from_db()
     assert pic.avatar.path.endswith(".webp")
     assert not original_path.exists()
+    assert pic.avatar_thumbnail.path.endswith(".webp")
+    assert pic.avatar_thumbnail_tiny.path.endswith(".webp")
 
 
 @pytest.mark.django_db
@@ -74,40 +71,7 @@ def test_task_process_image_runs_without_active_scope(make_image):
 
 
 @pytest.mark.django_db
-def test_task_process_image_generates_thumbnails(make_image):
-    user = UserFactory()
-    pic = ProfilePictureFactory(user=user, avatar=make_image())
-
-    task_process_image(
-        model="Profilepicture", pk=pic.pk, field="avatar", generate_thumbnail=True
-    )
-
-    pic.refresh_from_db()
-    assert pic.avatar.path.endswith(".webp")
-    assert pic.avatar_thumbnail.path.endswith(".webp")
-    assert pic.avatar_thumbnail_tiny.path.endswith(".webp")
-
-
-@pytest.mark.django_db
-def test_task_process_image_catches_processing_error(make_image):
-    user = UserFactory()
-    pic = ProfilePictureFactory(user=user, avatar=make_image())
-
-    # Make the avatar directory read-only so the save operation fails with OSError
-    avatar_dir = Path(pic.avatar.path).parent
-    original_mode = avatar_dir.stat().st_mode
-    try:
-        avatar_dir.chmod(0o555)
-        task_process_image(
-            model="Profilepicture", pk=pic.pk, field="avatar", generate_thumbnail=False
-        )
-        # Task should complete without raising
-    finally:
-        avatar_dir.chmod(original_mode)
-
-
-@pytest.mark.django_db
-def test_task_generate_thumbnails_catches_processing_error(make_image):
+def test_image_tasks_catch_processing_errors(make_image):
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
     task_process_image(
@@ -116,68 +80,36 @@ def test_task_generate_thumbnails_catches_processing_error(make_image):
     pic.refresh_from_db()
     Path(pic.avatar_thumbnail.path).unlink()
     Path(pic.avatar_thumbnail_tiny.path).unlink()
+    avatar_path = Path(pic.avatar.path)
 
-    avatar_dir = Path(pic.avatar.path).parent
+    avatar_dir = avatar_path.parent
     original_mode = avatar_dir.stat().st_mode
     try:
         avatar_dir.chmod(0o555)
+        task_process_image(
+            model="Profilepicture", pk=pic.pk, field="avatar", generate_thumbnail=False
+        )
         task_generate_thumbnails(model="Profilepicture", pk=pic.pk, field="avatar")
     finally:
         avatar_dir.chmod(original_mode)
 
-
-def test_task_generate_thumbnails_unknown_model():
-    task_generate_thumbnails(model="UnknownModel", pk=1, field="avatar")
-
-
-@pytest.mark.django_db
-def test_task_generate_thumbnails_instance_not_found():
-    task_generate_thumbnails(model="Profilepicture", pk=999999, field="avatar")
+    pic.refresh_from_db()
+    assert Path(pic.avatar.path) == avatar_path
+    assert not Path(pic.avatar_thumbnail.path).exists()
 
 
 @pytest.mark.django_db
-def test_task_generate_thumbnails_field_not_set():
-    user = UserFactory()
-    pic = ProfilePictureFactory(user=user)
-
-    task_generate_thumbnails(model="Profilepicture", pk=pic.pk, field="avatar")
-
-
-def test_task_cleanup_file_unknown_model():
-    task_cleanup_file(
-        model="UnknownModel", pk=1, field="avatar", path="/nonexistent/path"
-    )
-
-
-@pytest.mark.django_db
-def test_task_cleanup_file_instance_not_found():
-    task_cleanup_file(
-        model="Profilepicture", pk=999999, field="avatar", path="/some/path"
-    )
-
-
-@pytest.mark.django_db
-def test_task_cleanup_file_file_still_in_use(make_image):
-    user = UserFactory()
-    pic = ProfilePictureFactory(user=user, avatar=make_image())
-    file_path = pic.avatar.path
-
-    task_cleanup_file(model="Profilepicture", pk=pic.pk, field="avatar", path=file_path)
-
-    assert Path(file_path).exists()
-
-
-@pytest.mark.django_db
-def test_task_cleanup_file_deletes_orphaned_file(make_image):
+def test_task_cleanup_file_deletes_only_orphaned_files(make_image):
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
     current_path = pic.avatar.path
-
-    # Create a separate orphaned file that the task should delete
     orphan_name = default_storage.save("avatars/orphan.png", make_image())
     orphan_path = default_storage.path(orphan_name)
     assert Path(orphan_path).exists()
 
+    task_cleanup_file(
+        model="Profilepicture", pk=pic.pk, field="avatar", path=current_path
+    )
     task_cleanup_file(
         model="Profilepicture", pk=pic.pk, field="avatar", path=orphan_path
     )
@@ -187,49 +119,25 @@ def test_task_cleanup_file_deletes_orphaned_file(make_image):
 
 
 @pytest.mark.django_db
-def test_task_cleanup_file_path_does_not_exist():
+def test_task_cleanup_file_with_empty_field_deletes_file_once_writable(make_image):
     user = UserFactory()
     pic = ProfilePictureFactory(user=user)
-
-    task_cleanup_file(
-        model="Profilepicture", pk=pic.pk, field="avatar", path="/nonexistent/file.png"
-    )
-
-
-@pytest.mark.django_db
-def test_task_cleanup_file_field_is_empty(make_image):
-    user = UserFactory()
-    pic = ProfilePictureFactory(user=user)
-
-    # Create a file via default_storage so the cleanup task can find and delete it
     stored_name = default_storage.save("orphaned_test_file.png", make_image())
     stored_path = default_storage.path(stored_name)
-    assert Path(stored_path).exists()
+    parent_dir = Path(stored_path).parent
+    original_mode = parent_dir.stat().st_mode
+
+    try:
+        parent_dir.chmod(0o555)
+        task_cleanup_file(
+            model="Profilepicture", pk=pic.pk, field="avatar", path=stored_path
+        )
+        assert Path(stored_path).exists()
+    finally:
+        parent_dir.chmod(original_mode)
 
     task_cleanup_file(
         model="Profilepicture", pk=pic.pk, field="avatar", path=stored_path
     )
 
     assert not Path(stored_path).exists()
-
-
-@pytest.mark.django_db
-def test_task_cleanup_file_oserror_during_deletion(make_image):
-    user = UserFactory()
-    pic = ProfilePictureFactory(user=user)
-
-    # Create a real file, then make its parent directory read-only so
-    # deletion fails with PermissionError (an OSError subclass)
-    stored_name = default_storage.save("oserror_test_file.png", make_image())
-    stored_path = default_storage.path(stored_name)
-    parent_dir = Path(stored_path).parent
-    original_mode = parent_dir.stat().st_mode
-    try:
-        parent_dir.chmod(0o555)
-        task_cleanup_file(
-            model="Profilepicture", pk=pic.pk, field="avatar", path=stored_path
-        )
-        # Task should complete without raising
-    finally:
-        parent_dir.chmod(original_mode)
-        default_storage.delete(stored_name)

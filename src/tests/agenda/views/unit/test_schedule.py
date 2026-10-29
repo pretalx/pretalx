@@ -4,7 +4,6 @@
 from types import SimpleNamespace
 
 import pytest
-from django.test import RequestFactory
 from django_scopes import scope
 
 from pretalx.agenda.views.schedule import (
@@ -26,85 +25,33 @@ class ConcreteScheduleMixin(ScheduleMixin):
 
 
 def test_schedule_mixin_version_returns_url_kwarg_verbatim(event):
-    rf = RequestFactory()
-    request = rf.get("/")
-    request.event = event
-
-    mixin = ConcreteScheduleMixin(request, kwargs={"version": "v1%20beta"})
+    mixin = ConcreteScheduleMixin(make_request(event), kwargs={"version": "v1%20beta"})
 
     assert mixin.version == "v1%20beta"
 
 
-def test_schedule_mixin_get_object_returns_matching_schedule(event):
+@pytest.mark.parametrize(
+    "kwargs",
+    ({"version": "v1"}, {}, {"version": "nonexistent"}),
+    ids=["case_insensitive_match", "no_version", "unknown_version"],
+)
+def test_schedule_mixin_get_object_resolves_to_current_schedule(event, kwargs):
     with scope(event=event):
         freeze_schedule(event.wip_schedule, "V1")
 
-    rf = RequestFactory()
-    request = rf.get("/")
-    request.event = event
-
-    mixin = ConcreteScheduleMixin(request, kwargs={"version": "v1"})
+    mixin = ConcreteScheduleMixin(make_request(event), kwargs=kwargs)
 
     result = mixin.get_object()
 
+    assert result == event.current_schedule
     assert result.version == "V1"
-
-
-def test_schedule_mixin_get_object_falls_back_to_current_schedule(event):
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, "v1")
-
-    rf = RequestFactory()
-    request = rf.get("/")
-    request.event = event
-
-    mixin = ConcreteScheduleMixin(request)
-
-    result = mixin.get_object()
-
-    assert result == event.current_schedule
-
-
-def test_schedule_mixin_get_object_returns_current_schedule_for_unknown_version(event):
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, "v1")
-
-    rf = RequestFactory()
-    request = rf.get("/")
-    request.event = event
-
-    mixin = ConcreteScheduleMixin(request, kwargs={"version": "nonexistent"})
-
-    result = mixin.get_object()
-
-    assert result == event.current_schedule
+    assert result.event is event
 
 
 def test_schedule_mixin_get_object_returns_none_when_no_schedules(event):
-    rf = RequestFactory()
-    request = rf.get("/")
-    request.event = event
+    mixin = ConcreteScheduleMixin(make_request(event))
 
-    mixin = ConcreteScheduleMixin(request)
-
-    result = mixin.get_object()
-
-    assert result is None
-
-
-def test_schedule_mixin_get_object_sets_event_on_schedule(event):
-    with scope(event=event):
-        freeze_schedule(event.wip_schedule, "v1")
-
-    rf = RequestFactory()
-    request = rf.get("/")
-    request.event = event
-
-    mixin = ConcreteScheduleMixin(request)
-
-    result = mixin.get_object()
-
-    assert result.event is event
+    assert mixin.get_object() is None
 
 
 def test_talk_sort_key_sorts_by_start_then_room_position():
@@ -123,29 +70,22 @@ def test_talk_sort_key_falls_back_to_room_id_when_position_missing():
     assert talk_sort_key(slot) == (1, 42)
 
 
-def test_schedule_view_show_talk_list_when_path_ends_with_talk(event):
-    request = make_request(event, path="/myevent/talk/")
+@pytest.mark.parametrize(
+    ("path", "display_setting", "expected"),
+    (
+        ("/myevent/talk/", "grid", True),
+        ("/myevent/schedule/", "list", True),
+        ("/myevent/schedule/", "grid", False),
+    ),
+    ids=["talk_path", "list_setting", "grid_setting"],
+)
+def test_schedule_view_show_talk_list(event, path, display_setting, expected):
+    event.display_settings["schedule"] = display_setting
+
+    request = make_request(event, path=path)
     view = make_view(ScheduleView, request)
 
-    assert view.show_talk_list() is True
-
-
-def test_schedule_view_show_talk_list_from_display_settings(event):
-    event.display_settings["schedule"] = "list"
-
-    request = make_request(event, path="/myevent/schedule/")
-    view = make_view(ScheduleView, request)
-
-    assert view.show_talk_list() is True
-
-
-def test_schedule_view_show_talk_list_false_for_grid(event):
-    event.display_settings["schedule"] = "grid"
-
-    request = make_request(event, path="/myevent/schedule/")
-    view = make_view(ScheduleView, request)
-
-    assert view.show_talk_list() is False
+    assert view.show_talk_list() is expected
 
 
 def test_changelog_view_schedules_returns_published_only(event):

@@ -20,20 +20,12 @@ from pretalx.common.language import (
 pytestmark = pytest.mark.unit
 
 
-def test_language_codes_mapping_contains_all_configured_languages():
+def test_language_tables_match_settings():
     assert set(LANGUAGE_CODES_MAPPING.values()) == set(
         settings.LANGUAGES_INFORMATION.keys()
     )
-
-
-def test_language_codes_mapping_lowercases_keys():
-    for key in LANGUAGE_CODES_MAPPING:
-        assert key == key.lower()
-
-
-def test_language_names_contains_configured_languages():
+    assert all(key == key.lower() for key in LANGUAGE_CODES_MAPPING)
     for lang_info in settings.LANGUAGES_INFORMATION.values():
-        assert lang_info["code"] in LANGUAGE_NAMES
         assert LANGUAGE_NAMES[lang_info["code"]] == lang_info["natural_name"]
 
 
@@ -98,21 +90,14 @@ def test_get_current_language_information():
     assert info["natural_name"] == "English"
 
 
-def test_language_context_manager_activates_language():
+def test_language_context_manager_activates_and_restores():
     with language("de"):
         assert get_language() == "de"
-
-
-def test_language_context_manager_restores_previous():
-    with language("de"):
         with language("en"):
             assert get_language() == "en"
+        with language(None):
+            assert get_language() == settings.LANGUAGE_CODE
         assert get_language() == "de"
-
-
-def test_language_context_manager_none_uses_default():
-    with language(None):
-        assert get_language() == settings.LANGUAGE_CODE
 
 
 def test_language_context_manager_restores_on_exception():
@@ -141,25 +126,15 @@ def test_get_moment_locale_with_explicit_locale(locale, expected):
     assert get_moment_locale(locale) == expected
 
 
-def test_get_moment_locale_falls_back_to_active_language():
-    with translation.override("de"):
-        assert get_moment_locale() == "de"
+@pytest.mark.parametrize(
+    ("active", "expected"), (("de", "de"), ("xx", settings.LANGUAGE_CODE))
+)
+def test_get_moment_locale_falls_back_to_active_language(active, expected):
+    with translation.override(active):
+        assert get_moment_locale() == expected
 
 
-def test_get_moment_locale_fallback_for_unknown_language():
-    with translation.override("xx"):
-        assert get_moment_locale() == settings.LANGUAGE_CODE
-
-
-def test_get_javascript_format_converts_date_format():
+def test_date_formats_for_javascript():
     with translation.override("en"):
-        result = get_javascript_format("DATE_INPUT_FORMATS")
-        assert "%" not in result
-        assert any(token in result for token in ("YYYY", "MM", "DD", "YY", "hh", "HH"))
-
-
-def test_get_day_month_date_format_excludes_year():
-    result = get_day_month_date_format()
-
-    assert isinstance(result, str)
-    assert "Y" not in result
+        assert get_javascript_format("DATE_INPUT_FORMATS") == "YYYY-MM-DD"
+        assert get_day_month_date_format() == "m-d"

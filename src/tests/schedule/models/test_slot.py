@@ -20,17 +20,13 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_talkslot_event_from_submission():
-    slot = TalkSlotFactory()
-
-    assert slot.event == slot.submission.event
-
-
-def test_talkslot_event_from_schedule_when_no_submission():
+def test_talkslot_event_from_submission_or_schedule():
+    talk = TalkSlotFactory()
     schedule = ScheduleFactory()
-    slot = TalkSlotFactory(submission=None, schedule=schedule, room=None)
+    break_slot = TalkSlotFactory(submission=None, schedule=schedule, room=None)
 
-    assert slot.event == schedule.event
+    assert talk.event == talk.submission.event
+    assert break_slot.event == schedule.event
 
 
 @pytest.mark.parametrize(
@@ -64,183 +60,94 @@ def test_talkslot_duration(has_start, has_end, has_submission, expected):
             assert result is None
 
 
-def test_talkslot_export_duration():
+def test_talkslot_export_durations():
     now = dt.datetime(2024, 1, 1, 10, 0, tzinfo=dt.UTC)
     slot = TalkSlot(start=now, end=now + dt.timedelta(hours=1, minutes=30))
 
-    assert slot.export_duration == "01:30"
+    assert (slot.export_duration, slot.pentabarf_export_duration) == ("01:30", "013000")
 
 
-def test_talkslot_pentabarf_export_duration():
-    now = dt.datetime(2024, 1, 1, 10, 0, tzinfo=dt.UTC)
-    slot = TalkSlot(start=now, end=now + dt.timedelta(hours=2, minutes=15))
-
-    assert slot.pentabarf_export_duration == "021500"
-
-
-def test_talkslot_local_start():
+def test_talkslot_time_properties():
     slot = TalkSlotFactory()
+    tz = slot.event.tz
 
-    result = slot.local_start
-
-    assert result == slot.start.astimezone(slot.event.tz)
-
-
-def test_talkslot_local_start_none_when_no_start():
-    schedule = ScheduleFactory()
-    slot = TalkSlot(start=None, schedule=schedule)
-
-    assert slot.local_start is None
-
-
-def test_talkslot_real_end_from_end():
-    slot = TalkSlotFactory()
-
+    assert slot.local_start == slot.start.astimezone(tz)
     assert slot.real_end == slot.end
+    assert slot.local_end == slot.end.astimezone(tz)
+    assert (slot.as_availability.start, slot.as_availability.end) == (
+        slot.start,
+        slot.end,
+    )
 
-
-def test_talkslot_real_end_computed_when_no_end():
-    slot = TalkSlotFactory()
-    start = slot.start
     slot.end = None
+    del slot.__dict__["real_end"]
 
-    result = slot.real_end
-
-    assert result == start + dt.timedelta(minutes=slot.duration)
-
-
-def test_talkslot_real_end_none_when_no_start_or_end():
-    schedule = ScheduleFactory()
-    slot = TalkSlot(start=None, end=None, schedule=schedule)
-
-    assert slot.real_end is None
+    assert slot.real_end == slot.start + dt.timedelta(minutes=slot.duration)
 
 
-def test_talkslot_local_end():
-    slot = TalkSlotFactory()
+def test_talkslot_time_properties_none_without_start():
+    slot = TalkSlot(start=None, end=None, schedule=ScheduleFactory())
 
-    result = slot.local_end
-
-    assert result == slot.real_end.astimezone(slot.event.tz)
+    assert (slot.local_start, slot.real_end, slot.local_end) == (None, None, None)
 
 
-def test_talkslot_local_end_none_when_no_real_end():
-    schedule = ScheduleFactory()
-    slot = TalkSlot(start=None, end=None, schedule=schedule)
-
-    assert slot.local_end is None
-
-
-def test_talkslot_as_availability():
-    slot = TalkSlotFactory()
-
-    avail = slot.as_availability
-
-    assert avail.start == slot.start
-    assert avail.end == slot.real_end
-
-
-def test_talkslot_is_same_slot_true():
-    room = RoomFactory()
-    start = dt.datetime(2024, 1, 1, 10, 0, tzinfo=dt.UTC)
-    slot_a = TalkSlot(room=room, start=start)
-    slot_b = TalkSlot(room=room, start=start)
-
-    assert slot_a.is_same_slot(slot_b) is True
-
-
-def test_talkslot_is_same_slot_different_room():
+def test_talkslot_is_same_slot_compares_room_and_start():
     room_a = RoomFactory()
     room_b = RoomFactory(event=room_a.event)
     start = dt.datetime(2024, 1, 1, 10, 0, tzinfo=dt.UTC)
-    slot_a = TalkSlot(room=room_a, start=start)
-    slot_b = TalkSlot(room=room_b, start=start)
+    slot = TalkSlot(room=room_a, start=start)
 
-    assert slot_a.is_same_slot(slot_b) is False
-
-
-def test_talkslot_is_same_slot_different_start():
-    start_a = dt.datetime(2024, 1, 1, 10, 0, tzinfo=dt.UTC)
-    start_b = dt.datetime(2024, 1, 1, 11, 0, tzinfo=dt.UTC)
-    slot_a = TalkSlot(start=start_a)
-    slot_b = TalkSlot(start=start_b)
-
-    assert slot_a.is_same_slot(slot_b) is False
-
-
-def test_talkslot_id_suffix_empty_when_feature_disabled():
-    slot = TalkSlotFactory()
-
-    assert slot.id_suffix == ""
-
-
-def test_talkslot_id_suffix_empty_when_single_slot():
-    slot = TalkSlotFactory(
-        submission__event__feature_flags={"present_multiple_times": True}
+    assert slot.is_same_slot(TalkSlot(room=room_a, start=start)) is True
+    assert slot.is_same_slot(TalkSlot(room=room_b, start=start)) is False
+    assert (
+        slot.is_same_slot(TalkSlot(room=room_a, start=start + dt.timedelta(hours=1)))
+        is False
     )
 
-    assert slot.id_suffix == ""
 
-
-def test_talkslot_id_suffix_with_multiple_slots():
+def test_talkslot_id_suffix_numbers_multiple_slots_when_enabled():
+    disabled = TalkSlotFactory()
     slot1 = TalkSlotFactory(
         submission__event__feature_flags={"present_multiple_times": True}
     )
-
+    single = slot1.id_suffix
     slot2 = TalkSlotFactory(
         submission=slot1.submission,
         schedule=slot1.schedule,
         start=slot1.start + dt.timedelta(hours=2),
         end=slot1.end + dt.timedelta(hours=2),
     )
-    assert slot1.id_suffix == "-0"
-    assert slot2.id_suffix == "-1"
+    del slot1.__dict__["id_suffix"]
+
+    assert (disabled.id_suffix, single, slot1.id_suffix, slot2.id_suffix) == (
+        "",
+        "",
+        "-0",
+        "-1",
+    )
 
 
-def test_talkslot_frab_slug_basic():
-    submission = SubmissionFactory(title="my talk")
+@pytest.mark.parametrize(
+    ("title", "suffix"),
+    (("my talk", "-my-talk"), ("Über Café", "-uber-cafe"), ("日本語", "")),
+    ids=["basic", "normalizes_unicode", "empty_after_normalization"],
+)
+def test_talkslot_frab_slug(title, suffix):
+    submission = SubmissionFactory(title=title)
     slot = TalkSlotFactory(submission=submission)
 
-    result = slot.frab_slug
-
-    assert result == f"{slot.event.slug}-{submission.pk}-my-talk"
+    assert slot.frab_slug == f"{slot.event.slug}-{submission.pk}{suffix}"
 
 
-def test_talkslot_frab_slug_normalizes_unicode():
-    submission = SubmissionFactory(title="Über Café")
-    slot = TalkSlotFactory(submission=submission)
-
-    result = slot.frab_slug
-
-    assert result == f"{slot.event.slug}-{submission.pk}-uber-cafe"
-
-
-def test_talkslot_frab_slug_empty_title_after_normalization():
-    submission = SubmissionFactory(title="日本語")
-    slot = TalkSlotFactory(submission=submission)
-
-    result = slot.frab_slug
-
-    assert result == f"{slot.event.slug}-{submission.pk}"
-
-
-def test_talkslot_uuid_is_uuid5():
+def test_talkslot_uuid_is_stable_uuid5():
     slot = TalkSlotFactory()
 
-    result = slot.uuid
-
-    assert isinstance(result, uuid.UUID)
-    assert result.version == 5
-
-
-def test_talkslot_uuid_is_stable():
-    slot = TalkSlotFactory()
-
-    uuid1 = slot.uuid
+    first = slot.uuid
     del slot.__dict__["uuid"]
-    uuid2 = slot.uuid
 
-    assert uuid1 == uuid2
+    assert isinstance(first, uuid.UUID)
+    assert first.version == 5
+    assert slot.uuid == first
 
 
 def test_talkslot_ordering_by_start():

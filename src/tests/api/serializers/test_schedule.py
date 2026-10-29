@@ -52,50 +52,22 @@ def test_schedule_list_serializer_version_uses_fallback_for_wip():
     assert serializer.data["version"] == "wip"
 
 
-def test_schedule_serializer_get_slots_returns_ids():
-    event = EventFactory()
-    schedule = ScheduleFactory(event=event, version="v1")
-    sub = SubmissionFactory(event=event)
-    slot = TalkSlotFactory(submission=sub, schedule=schedule, is_visible=True)
-
-    serializer = ScheduleSerializer(
-        schedule, context={"request": make_api_request(event=event)}
-    )
-    data = serializer.data
-
-    assert list(data["slots"]) == [slot.pk]
-
-
-def test_schedule_serializer_get_slots_filters_visible_only():
+def test_schedule_serializer_get_slots_filters_visible_only_by_default():
     event = EventFactory()
     schedule = ScheduleFactory(event=event, version="v1")
     sub1 = SubmissionFactory(event=event)
     sub2 = SubmissionFactory(event=event)
     visible_slot = TalkSlotFactory(submission=sub1, schedule=schedule, is_visible=True)
-    TalkSlotFactory(submission=sub2, schedule=schedule, is_visible=False)
+    hidden_slot = TalkSlotFactory(submission=sub2, schedule=schedule, is_visible=False)
+    request = make_api_request(event=event)
 
-    serializer = ScheduleSerializer(
-        schedule, context={"request": make_api_request(event=event)}
-    )
-    data = serializer.data
+    default = ScheduleSerializer(schedule, context={"request": request}).data
+    all_slots = ScheduleSerializer(
+        schedule, context={"request": request, "only_visible_slots": False}
+    ).data
 
-    assert list(data["slots"]) == [visible_slot.pk]
-
-
-def test_schedule_serializer_get_slots_includes_all_when_not_only_visible():
-    event = EventFactory()
-    schedule = ScheduleFactory(event=event, version="v1")
-    sub1 = SubmissionFactory(event=event)
-    sub2 = SubmissionFactory(event=event)
-    slot1 = TalkSlotFactory(submission=sub1, schedule=schedule, is_visible=True)
-    slot2 = TalkSlotFactory(submission=sub2, schedule=schedule, is_visible=False)
-
-    context = {"request": make_api_request(event=event)}
-    context["only_visible_slots"] = False
-    serializer = ScheduleSerializer(schedule, context=context)
-    data = serializer.data
-
-    assert set(data["slots"]) == {slot1.pk, slot2.pk}
+    assert list(default["slots"]) == [visible_slot.pk]
+    assert set(all_slots["slots"]) == {visible_slot.pk, hidden_slot.pk}
 
 
 def test_schedule_serializer_get_slots_returns_empty_for_unreleased_schedule():
@@ -127,53 +99,22 @@ def test_schedule_serializer_get_slots_expanded():
     assert data["slots"][0]["submission"] == sub.code
 
 
-def test_schedule_release_serializer_validate_version_rejects_duplicate():
-    event = EventFactory()
-    ScheduleFactory(event=event, version="v1")
-
-    context = {"request": make_api_request(event=event)}
-    serializer = ScheduleReleaseSerializer(
-        instance=event.wip_schedule, data={"version": "v1"}, context=context
-    )
-
-    assert not serializer.is_valid()
-    assert "version" in serializer.errors
-
-
-def test_schedule_release_serializer_validate_version_rejects_duplicate_case_insensitive():
+@pytest.mark.parametrize(
+    ("version", "valid"),
+    (("v2", True), ("v1", False), ("200 km/h", False)),
+    ids=["new_version", "duplicate_case_insensitive", "slash"],
+)
+def test_schedule_release_serializer_validate_version(version, valid):
     event = EventFactory()
     ScheduleFactory(event=event, version="V1")
 
     context = {"request": make_api_request(event=event)}
     serializer = ScheduleReleaseSerializer(
-        instance=event.wip_schedule, data={"version": "v1"}, context=context
+        instance=event.wip_schedule, data={"version": version}, context=context
     )
 
-    assert not serializer.is_valid()
-    assert "version" in serializer.errors
-
-
-def test_schedule_release_serializer_validate_version_rejects_slash():
-    event = EventFactory()
-
-    context = {"request": make_api_request(event=event)}
-    serializer = ScheduleReleaseSerializer(
-        instance=event.wip_schedule, data={"version": "200 km/h"}, context=context
-    )
-
-    assert not serializer.is_valid()
-    assert "version" in serializer.errors
-
-
-def test_schedule_release_serializer_validate_version_accepts_new_version():
-    event = EventFactory()
-
-    context = {"request": make_api_request(event=event)}
-    serializer = ScheduleReleaseSerializer(
-        instance=event.wip_schedule, data={"version": "v1"}, context=context
-    )
-
-    assert serializer.is_valid(), serializer.errors
+    assert serializer.is_valid() is valid, serializer.errors
+    assert ("version" in serializer.errors) is not valid
 
 
 def test_talk_slot_serializer_fields():
@@ -201,20 +142,7 @@ def test_talk_slot_serializer_fields():
     assert data["room"] == slot.room_id
     assert data["schedule"] == slot.schedule_id
     assert data["duration"] == slot.duration
-
-
-def test_talk_slot_serializer_end_uses_local_end():
-    event = EventFactory()
-    sub = SubmissionFactory(event=event)
-    slot = TalkSlotFactory(submission=sub)
-
-    serializer = TalkSlotSerializer(
-        slot, context={"request": make_api_request(event=event)}
-    )
-    data = serializer.data
-
-    expected = DRFDateTimeField().to_representation(slot.local_end)
-    assert data["end"] == expected
+    assert data["end"] == DRFDateTimeField().to_representation(slot.local_end)
 
 
 def test_talk_slot_orga_serializer_includes_extra_fields():
@@ -258,71 +186,48 @@ def test_talk_slot_orga_serializer_validate_allows_when_no_submission(field):
     assert result == "test value"
 
 
-def test_talk_slot_orga_serializer_rejects_hidden_room():
-    event = EventFactory()
-    room = RoomFactory(event=event)
-    hidden = RoomFactory(event=event, hidden=True)
-    slot = TalkSlotFactory(submission=None, room=room, schedule=event.wip_schedule)
-
-    serializer = TalkSlotOrgaSerializer(
-        instance=slot,
-        data={"room": hidden.pk},
-        partial=True,
-        context={"request": make_api_request(event=event)},
-    )
-
-    assert not serializer.is_valid()
-    assert "hidden" in serializer.errors["room"][0]
-
-
-def test_talk_slot_orga_serializer_accepts_visible_room():
+def test_talk_slot_orga_serializer_accepts_only_visible_rooms():
     event = EventFactory()
     room = RoomFactory(event=event)
     other_room = RoomFactory(event=event)
+    hidden = RoomFactory(event=event, hidden=True)
     slot = TalkSlotFactory(submission=None, room=room, schedule=event.wip_schedule)
+    context = {"request": make_api_request(event=event)}
 
-    serializer = TalkSlotOrgaSerializer(
-        instance=slot,
-        data={"room": other_room.pk},
-        partial=True,
-        context={"request": make_api_request(event=event)},
+    visible = TalkSlotOrgaSerializer(
+        instance=slot, data={"room": other_room.pk}, partial=True, context=context
+    )
+    rejected = TalkSlotOrgaSerializer(
+        instance=slot, data={"room": hidden.pk}, partial=True, context=context
     )
 
-    assert serializer.is_valid()
-    assert serializer.validated_data["room"] == other_room
+    assert visible.is_valid()
+    assert visible.validated_data["room"] == other_room
+    assert not rejected.is_valid()
+    assert "hidden" in rejected.errors["room"][0]
 
 
-def test_talk_slot_orga_serializer_rejects_start_before_event():
+def test_talk_slot_orga_serializer_rejects_times_outside_event_or_reversed():
     event = EventFactory()
     room = RoomFactory(event=event)
     slot = TalkSlotFactory(submission=None, room=room, schedule=event.wip_schedule)
-
+    context = {"request": make_api_request(event=event)}
     early = event.datetime_from - dt.timedelta(days=1)
-    serializer = TalkSlotOrgaSerializer(
-        instance=slot,
-        data={"start": early.isoformat()},
-        partial=True,
-        context={"request": make_api_request(event=event)},
-    )
-
-    assert not serializer.is_valid()
-
-
-def test_talk_slot_orga_serializer_rejects_end_before_start():
-    event = EventFactory()
-    room = RoomFactory(event=event)
-    slot = TalkSlotFactory(submission=None, room=room, schedule=event.wip_schedule)
     start = event.datetime_from + dt.timedelta(hours=2)
     end = event.datetime_from + dt.timedelta(hours=1)
 
-    serializer = TalkSlotOrgaSerializer(
+    before_event = TalkSlotOrgaSerializer(
+        instance=slot, data={"start": early.isoformat()}, partial=True, context=context
+    )
+    reversed_times = TalkSlotOrgaSerializer(
         instance=slot,
         data={"start": start.isoformat(), "end": end.isoformat()},
         partial=True,
-        context={"request": make_api_request(event=event)},
+        context=context,
     )
 
-    assert not serializer.is_valid()
+    assert not before_event.is_valid()
+    assert not reversed_times.is_valid()
 
 
 def test_talk_slot_orga_serializer_update_recomputes_unreleased_changes(

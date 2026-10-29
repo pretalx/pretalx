@@ -13,77 +13,43 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.django_db
-def test_access_code_log_parent_is_event():
-    code = SubmitterAccessCodeFactory()
-    assert code.log_parent == code.event
-
-
-@pytest.mark.django_db
 def test_access_code_generates_code_on_create():
     code = SubmitterAccessCodeFactory()
-    assert code.code
+
     assert len(code.code) == 32
+    assert code.log_parent == code.event
+    assert code.get_instance_data()["code"] == code.code
 
 
 @pytest.mark.parametrize(
-    ("maximum_uses", "redeemed", "expected"),
+    ("maximum_uses", "redeemed", "valid", "left"),
     (
-        (1, 0, True),
-        (10, 5, True),
-        (1, 1, False),
-        (10, 10, False),
-        (None, 0, True),
-        (None, 100, True),
-        (0, 0, True),
+        (1, 0, True, 1),
+        (10, 5, True, 5),
+        (1, 1, False, 0),
+        (10, 10, False, 0),
+        (None, 0, True, math.inf),
+        (None, 100, True, math.inf),
+        (0, 0, True, math.inf),
+        (0, 10, True, math.inf),
     ),
 )
-def test_access_code_redemptions_valid(maximum_uses, redeemed, expected):
+def test_access_code_redemptions(maximum_uses, redeemed, valid, left):
     code = SubmitterAccessCode(maximum_uses=maximum_uses, redeemed=redeemed)
-    assert code.redemptions_valid is expected
+
+    assert code.redemptions_valid is valid
+    assert code.redemptions_left == left
 
 
 @pytest.mark.parametrize(
-    ("maximum_uses", "redeemed", "expected"),
+    ("valid_until", "maximum_uses", "redeemed", "time_valid", "expected"),
     (
-        (0, 0, math.inf),
-        (0, 10, math.inf),
-        (None, 10, math.inf),
-        (None, 0, math.inf),
-        (10, 1, 9),
-        (10, 10, 0),
-        (1, 1, 0),
-        (1, 0, 1),
-    ),
-)
-def test_access_code_redemptions_left(maximum_uses, redeemed, expected):
-    code = SubmitterAccessCode(maximum_uses=maximum_uses, redeemed=redeemed)
-    assert code.redemptions_left == expected
-
-
-@pytest.mark.parametrize(
-    ("valid_until", "expected"),
-    ((None, True), ("future", True), ("past", False)),
-    ids=["no_deadline", "future_deadline", "past_deadline"],
-)
-def test_access_code_time_valid(valid_until, expected):
-    match valid_until:
-        case "future":
-            valid_until = now() + timedelta(days=1)
-        case "past":
-            valid_until = now() - timedelta(days=1)
-    code = SubmitterAccessCode(valid_until=valid_until)
-    assert code.time_valid is expected
-
-
-@pytest.mark.parametrize(
-    ("valid_until", "maximum_uses", "redeemed", "expected"),
-    (
-        (None, None, 0, True),
-        (None, 1, 1, False),
-        ("past", None, 0, False),
-        ("past", 1, 1, False),
-        ("future", 1, 0, True),
-        ("future", 1, 1, False),
+        (None, None, 0, True, True),
+        (None, 1, 1, True, False),
+        ("past", None, 0, False, False),
+        ("past", 1, 1, False, False),
+        ("future", 1, 0, True, True),
+        ("future", 1, 1, True, False),
     ),
     ids=[
         "no_limits",
@@ -94,7 +60,9 @@ def test_access_code_time_valid(valid_until, expected):
         "valid_time_but_redeemed",
     ],
 )
-def test_access_code_is_valid(valid_until, maximum_uses, redeemed, expected):
+def test_access_code_is_valid(
+    valid_until, maximum_uses, redeemed, time_valid, expected
+):
     match valid_until:
         case "past":
             valid_until = now() - timedelta(days=1)
@@ -103,11 +71,6 @@ def test_access_code_is_valid(valid_until, maximum_uses, redeemed, expected):
     code = SubmitterAccessCode(
         valid_until=valid_until, maximum_uses=maximum_uses, redeemed=redeemed
     )
+
+    assert code.time_valid is time_valid
     assert code.is_valid is expected
-
-
-@pytest.mark.django_db
-def test_access_code_get_instance_data_includes_code():
-    code = SubmitterAccessCodeFactory()
-    data = code.get_instance_data()
-    assert data["code"] == code.code

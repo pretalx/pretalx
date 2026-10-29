@@ -19,15 +19,12 @@ from tests.factories import EventFactory, UserApiTokenFactory, UserFactory
 pytestmark = pytest.mark.unit
 
 
-def test_generate_api_token_format():
+def test_generate_api_token_format_and_uniqueness():
     token = generate_api_token()
     assert len(token) == 64
     assert token.isalnum()
     assert token == token.lower()
-
-
-def test_generate_api_token_unique():
-    assert generate_api_token() != generate_api_token()
+    assert token != generate_api_token()
 
 
 @pytest.mark.parametrize(
@@ -123,7 +120,7 @@ def test_user_api_token_is_latest_version(version, expected):
 
 
 @pytest.mark.django_db
-def test_user_api_token_get_instance_data_includes_limit_events():
+def test_user_api_token_get_instance_data_lists_events_and_abbreviates_token():
     event = EventFactory()
     token = UserApiTokenFactory(limit_events=[event])
 
@@ -131,14 +128,6 @@ def test_user_api_token_get_instance_data_includes_limit_events():
 
     assert data["limit_events"] == [event.pk]
     assert data["all_events"] is False
-
-
-@pytest.mark.django_db
-def test_user_api_token_get_instance_data_abbreviates_token():
-    token = UserApiTokenFactory()
-
-    data = token.get_instance_data()
-
     assert data["token"].endswith("…")
     assert token.token not in str(data)
 
@@ -154,23 +143,19 @@ def test_user_api_token_serialize():
 
     result = token.serialize()
 
-    assert result["name"] == "Test Token"
-    assert result["token"] == f"{token.token[:4]}…"
-    assert result["all_events"] is False
-    assert result["limit_events"] == [event.slug]
-    assert result["endpoints"] == {"events": ["list"]}
-    assert result["expires"] is None
-    assert result["version"] is None
+    assert result == {
+        "name": "Test Token",
+        "token": f"{token.token[:4]}…",
+        "all_events": False,
+        "limit_events": [event.slug],
+        "endpoints": {"events": ["list"]},
+        "expires": None,
+        "version": None,
+    }
 
-
-@pytest.mark.django_db
-def test_user_api_token_serialize_with_expiry():
     expiry = tz_now()
-    token = UserApiTokenFactory(expires=expiry)
-
-    result = token.serialize()
-
-    assert result["expires"] == expiry.isoformat()
+    token.expires = expiry
+    assert token.serialize()["expires"] == expiry.isoformat()
 
 
 @pytest.mark.parametrize(
@@ -209,35 +194,17 @@ def test_user_api_token_get_endpoint_permissions_display(endpoints, expected):
     assert token.get_endpoint_permissions_display() == expected
 
 
-def test_user_api_token_clean_rejects_no_permissions():
+def test_user_api_token_clean_requires_permissions():
+    UserApiToken(endpoints={"events": ["list"]}).clean()
     with pytest.raises(ValidationError):
         UserApiToken(endpoints={}).clean()
 
 
-def test_user_api_token_clean_accepts_populated_endpoints():
-    UserApiToken(endpoints={"events": ["list"]}).clean()
-
-
 @pytest.mark.django_db
-@pytest.mark.parametrize(
-    "excluded_kwargs",
-    ({"expires": tz_now() - dt.timedelta(days=1)}, {"user__is_active": False}),
-    ids=["expired", "inactive_user"],
-)
-def test_user_api_token_manager_active_excludes(excluded_kwargs):
+def test_user_api_token_manager_active_excludes_expired_and_inactive_users():
     active = UserApiTokenFactory(expires=None)
-    UserApiTokenFactory(**excluded_kwargs)
+    future = UserApiTokenFactory(expires=tz_now() + dt.timedelta(days=1))
+    UserApiTokenFactory(expires=tz_now() - dt.timedelta(days=1))
+    UserApiTokenFactory(user__is_active=False)
 
-    result = list(UserApiToken.objects.active())
-
-    assert result == [active]
-
-
-@pytest.mark.django_db
-def test_user_api_token_manager_active_includes_future():
-    user = UserFactory()
-    future = UserApiTokenFactory(user=user, expires=tz_now() + dt.timedelta(days=1))
-
-    result = list(UserApiToken.objects.active())
-
-    assert result == [future]
+    assert set(UserApiToken.objects.active()) == {active, future}

@@ -7,41 +7,19 @@ from pretalx.common.text.phrases import BasePhrases, PhraseBook, Phrases, _phras
 pytestmark = pytest.mark.unit
 
 
-def test_phrase_book_returns_registered_app():
+def test_phrase_book_returns_registered_apps_only():
     book = PhraseBook()
 
-    result = book.base
-
-    assert isinstance(result, BasePhrases)
-
-
-def test_phrase_book_returns_none_for_unknown_app():
-    book = PhraseBook()
-
-    result = book.nonexistent_app
-
-    assert result is None
+    assert isinstance(book.base, BasePhrases)
+    assert book.base is _phrase_book["base"]
+    assert book.nonexistent_app is None
 
 
-def test_phrases_metaclass_registers_in_phrase_book():
-    assert "base" in _phrase_book
-    assert isinstance(_phrase_book["base"], BasePhrases)
-
-
-def test_phrases_returns_scalar_attribute_directly():
+def test_phrases_attributes():
     base = BasePhrases()
 
-    result = base.save
-
-    assert str(result) == "Save"
-
-
-def test_phrases_returns_random_choice_from_collection():
-    base = BasePhrases()
-
-    result = base.permission_denied_long
-
-    assert not isinstance(result, (list, tuple))
+    assert str(base.save) == "Save"
+    assert base.permission_denied_long in BasePhrases.permission_denied_long
 
 
 def test_custom_phrases_class_registered():

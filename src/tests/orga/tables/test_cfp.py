@@ -20,7 +20,7 @@ from tests.factories import (
 )
 from tests.utils import make_orga_user, make_request
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 @pytest.fixture
@@ -28,53 +28,34 @@ def event():
     return EventFactory()
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
-    ("maximum_uses", "redeemed", "expected"),
-    ((5, 2, "2 / 5"), (None, 3, "3 / ∞ "), (10, 0, "0 / 10")),
+    ("maximum_uses", "redeemed", "uses", "maximum"),
+    ((5, 2, "2 / 5", 5), (None, 3, "3 / ∞ ", "∞"), (10, 0, "0 / 10", 10)),
 )
 def test_submitter_access_code_table_render_uses(
-    event, maximum_uses, redeemed, expected
+    event, maximum_uses, redeemed, uses, maximum
 ):
     code = SubmitterAccessCodeFactory(
         event=event, maximum_uses=maximum_uses, redeemed=redeemed
     )
     table = SubmitterAccessCodeTable([code], event=event, user=UserFactory.build())
 
-    assert table.render_uses(code) == expected
+    assert table.render_uses(code) == uses
+    assert table.render_maximum_uses(code) == maximum
 
 
-@pytest.mark.django_db
-@pytest.mark.parametrize(("maximum_uses", "expected"), ((7, 7), (None, "∞")))
-def test_submitter_access_code_table_render_maximum_uses(event, maximum_uses, expected):
-    code = SubmitterAccessCodeFactory(event=event, maximum_uses=maximum_uses)
-    table = SubmitterAccessCodeTable([code], event=event, user=UserFactory.build())
-
-    assert table.render_maximum_uses(code) == expected
-
-
-@pytest.mark.django_db
-def test_submitter_access_code_table_excludes_tracks_when_feature_disabled():
-    event = EventFactory(feature_flags={"use_tracks": False})
+@pytest.mark.parametrize("use_tracks", (False, True), ids=("disabled", "enabled"))
+def test_submitter_access_code_table_tracks_column_follows_feature(use_tracks):
+    event = EventFactory(feature_flags={"use_tracks": use_tracks})
+    if use_tracks:
+        TrackFactory(event=event)
 
     code = SubmitterAccessCodeFactory(event=event)
     table = SubmitterAccessCodeTable([code], event=event, user=UserFactory.build())
 
-    assert "tracks" in table.exclude
+    assert ("tracks" in table.exclude) is not use_tracks
 
 
-@pytest.mark.django_db
-def test_submitter_access_code_table_includes_tracks_when_feature_enabled():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    TrackFactory(event=event)
-
-    code = SubmitterAccessCodeFactory(event=event)
-    table = SubmitterAccessCodeTable([code], event=event, user=UserFactory.build())
-
-    assert "tracks" not in table.exclude
-
-
-@pytest.mark.django_db
 def test_track_table_sets_dragsort_url(event):
     track = TrackFactory(event=event)
     table = TrackTable([track], event=event, user=UserFactory.build())
@@ -82,7 +63,6 @@ def test_track_table_sets_dragsort_url(event):
     assert table.attrs["dragsort-url"] == event.cfp.urls.tracks
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("table_class", "record_factory"),
     (
@@ -107,24 +87,8 @@ def test_table_attendee_signup_column_visibility(
     assert ("attendee_signup_required" in table.exclude) is excluded
 
 
-@pytest.mark.django_db
-def test_question_table_sets_dragsort_url(event):
+def test_question_table_name_and_dragsort_url_are_target_specific(event):
     question = QuestionFactory(event=event)
-    table = QuestionTable(
-        [question],
-        event=event,
-        user=UserFactory.build(),
-        target="sessions",
-        list_url=event.cfp.urls.questions,
-    )
-
-    assert table.attrs["dragsort-url"] == f"{event.cfp.urls.questions}?target=sessions"
-
-
-@pytest.mark.django_db
-def test_question_table_name_is_target_specific(event):
-    question = QuestionFactory(event=event)
-
     table = QuestionTable(
         [question],
         event=event,
@@ -134,86 +98,12 @@ def test_question_table_name_is_target_specific(event):
     )
 
     assert table.name == "QuestionTable-speakers"
+    assert table.attrs["dragsort-url"] == f"{event.cfp.urls.questions}?target=speakers"
 
 
-@pytest.mark.django_db
 def test_question_table_render_question_links_to_base_when_user_has_answer_access(
     event,
 ):
-    user = make_orga_user(event, can_change_submissions=True)
-    question = QuestionFactory(event=event)
-    request = make_request(event, user=user)
-    table = QuestionTable(
-        [question],
-        event=event,
-        user=user,
-        target="sessions",
-        list_url=event.cfp.urls.questions,
-    )
-    table.request = request
-
-    result = table.render_question(question, str(question.question))
-
-    expected = format_html(
-        '<a href="{}">{}</a>', question.urls.base, str(question.question)
-    )
-    assert result == expected
-
-
-@pytest.mark.django_db
-def test_question_table_render_question_links_to_edit_when_no_answer_access(event):
-    user = make_orga_user(event, can_change_submissions=False, all_events=False)
-    question = QuestionFactory(event=event)
-    request = make_request(event, user=user)
-    table = QuestionTable(
-        [question],
-        event=event,
-        user=user,
-        target="sessions",
-        list_url=event.cfp.urls.questions,
-    )
-    table.request = request
-
-    result = table.render_question(question, str(question.question))
-
-    expected = format_html(
-        '<a href="{}">{}</a>', question.urls.edit, str(question.question)
-    )
-    assert result == expected
-
-
-@pytest.mark.django_db
-def test_question_table_render_question_returns_plain_value_without_request(event):
-    question = QuestionFactory(event=event)
-    table = QuestionTable(
-        [question],
-        event=event,
-        user=None,
-        target="sessions",
-        list_url=event.cfp.urls.questions,
-    )
-
-    result = table.render_question(question, "My question text")
-
-    assert result == "My question text"
-
-
-@pytest.mark.django_db
-def test_question_table_accessible_question_ids_empty_without_user(event):
-    question = QuestionFactory(event=event)
-    table = QuestionTable(
-        [question],
-        event=event,
-        user=None,
-        target="sessions",
-        list_url=event.cfp.urls.questions,
-    )
-
-    assert table._accessible_question_ids == set()
-
-
-@pytest.mark.django_db
-def test_question_table_accessible_question_ids_populated_for_orga_user(event):
     user = make_orga_user(event, can_change_submissions=True)
     q1 = QuestionFactory(event=event)
     q2 = QuestionFactory(event=event)
@@ -224,13 +114,45 @@ def test_question_table_accessible_question_ids_populated_for_orga_user(event):
         target="sessions",
         list_url=event.cfp.urls.questions,
     )
+    table.request = make_request(event, user=user)
 
-    accessible_ids = table._accessible_question_ids
+    assert table._accessible_question_ids == {q1.pk, q2.pk}
+    assert table.render_question(q1, str(q1.question)) == format_html(
+        '<a href="{}">{}</a>', q1.urls.base, str(q1.question)
+    )
 
-    assert accessible_ids == {q1.pk, q2.pk}
+
+def test_question_table_render_question_links_to_edit_when_no_answer_access(event):
+    user = make_orga_user(event, can_change_submissions=False, all_events=False)
+    question = QuestionFactory(event=event)
+    table = QuestionTable(
+        [question],
+        event=event,
+        user=user,
+        target="sessions",
+        list_url=event.cfp.urls.questions,
+    )
+    table.request = make_request(event, user=user)
+
+    assert table.render_question(question, str(question.question)) == format_html(
+        '<a href="{}">{}</a>', question.urls.edit, str(question.question)
+    )
 
 
-@pytest.mark.django_db
+def test_question_table_render_question_returns_plain_value_without_request(event):
+    question = QuestionFactory(event=event)
+    table = QuestionTable(
+        [question],
+        event=event,
+        user=None,
+        target="sessions",
+        list_url=event.cfp.urls.questions,
+    )
+
+    assert table._accessible_question_ids == set()
+    assert table.render_question(question, "My question text") == "My question text"
+
+
 def test_question_table_accessible_question_ids_empty_without_list_permission(event):
     user = make_orga_user(
         event, can_change_submissions=False, can_change_event_settings=True

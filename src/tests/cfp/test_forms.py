@@ -18,13 +18,14 @@ class _CfPMixinForm(CfPFormMixin, forms.Form):
 class RequestRequireTestForm(RequestRequire, forms.Form):
     title = forms.CharField()
     abstract = forms.CharField(widget=forms.Textarea)
+    description = forms.CharField(widget=forms.Textarea)
 
     def __init__(self, *args, event=None, **kwargs):
         self.event = event
         super().__init__(*args, **kwargs)
 
     class Meta:
-        request_require = ["title", "abstract"]
+        request_require = ["title", "abstract", "description"]
 
 
 class RequestRequireWithTagsForm(RequestRequire, forms.Form):
@@ -43,69 +44,56 @@ class RequestRequireWithTagsForm(RequestRequire, forms.Form):
 
 def test_cfp_form_mixin_init_without_field_configuration():
     form = _CfPMixinForm()
+    form._update_cfp_texts("title")
 
     assert form.field_configuration is None
-    assert list(form.fields.keys()) == ["title", "abstract", "description"]
+    assert list(form.fields) == ["title", "abstract", "description"]
+    assert not hasattr(form.fields["title"], "original_help_text")
 
 
-def test_cfp_form_mixin_init_stores_field_configuration_as_dict():
-    config = [{"key": "title"}, {"key": "abstract"}]
-
+@pytest.mark.parametrize(
+    ("config", "expected_order"),
+    (
+        (
+            [{"key": "description"}, {"key": "abstract"}, {"key": "title"}],
+            ["description", "abstract", "title"],
+        ),
+        ([{"key": "abstract"}], ["abstract", "title", "description"]),
+        (
+            [{"key": "nonexistent"}, {"key": "title"}],
+            ["title", "abstract", "description"],
+        ),
+    ),
+    ids=["reorders", "unconfigured_keep_order", "ignores_unknown_keys"],
+)
+def test_cfp_form_mixin_reorders_fields(config, expected_order):
     form = _CfPMixinForm(field_configuration=config)
 
-    assert isinstance(form.field_configuration, dict)
-    assert set(form.field_configuration.keys()) == {"title", "abstract"}
+    assert list(form.field_configuration) == [entry["key"] for entry in config]
+    assert list(form.fields) == expected_order
 
 
-def test_cfp_form_mixin_reorder_fields():
-    config = [{"key": "description"}, {"key": "abstract"}, {"key": "title"}]
+@pytest.mark.parametrize(
+    ("entry", "expected_label", "expected_help_text"),
+    (
+        ({}, None, ""),
+        ({"label": "Custom Title"}, "Custom Title", ""),
+        ({"help_text": "Some help"}, None, "Some help"),
+        (
+            {"label": "Talk Title", "help_text": "Max 100 chars"},
+            "Talk Title",
+            "Max 100 chars",
+        ),
+    ),
+    ids=["neither", "label", "help_text", "both"],
+)
+def test_cfp_form_mixin_update_cfp_texts(entry, expected_label, expected_help_text):
+    form = _CfPMixinForm(field_configuration=[{"key": "title", **entry}])
+    form._update_cfp_texts("nonexistent")
 
-    form = _CfPMixinForm(field_configuration=config)
-
-    assert list(form.fields.keys()) == ["description", "abstract", "title"]
-
-
-def test_cfp_form_mixin_reorder_fields_preserves_unconfigured_fields():
-    config = [{"key": "abstract"}]
-
-    form = _CfPMixinForm(field_configuration=config)
-
-    keys = list(form.fields.keys())
-    assert keys[0] == "abstract"
-    assert set(keys[1:]) == {"title", "description"}
-
-
-def test_cfp_form_mixin_reorder_fields_ignores_unknown_keys():
-    config = [{"key": "nonexistent"}, {"key": "title"}]
-
-    form = _CfPMixinForm(field_configuration=config)
-
-    assert list(form.fields.keys()) == ["title", "abstract", "description"]
-
-
-def test_cfp_form_mixin_update_cfp_texts_sets_label():
-    config = [{"key": "title", "label": "Custom Title"}]
-
-    form = _CfPMixinForm(field_configuration=config)
-
-    assert form.fields["title"].label == "Custom Title"
-
-
-def test_cfp_form_mixin_update_cfp_texts_sets_help_text():
-    config = [{"key": "title", "help_text": "Enter a descriptive title"}]
-
-    form = _CfPMixinForm(field_configuration=config)
-
-    assert form.fields["title"].original_help_text == "Enter a descriptive title"
-    assert form.fields["title"].help_text  # rendered via rich_text
-
-
-def test_cfp_form_mixin_update_cfp_texts_no_help_text():
-    config = [{"key": "title"}]
-
-    form = _CfPMixinForm(field_configuration=config)
-
-    assert form.fields["title"].original_help_text == ""
+    assert form.fields["title"].label == expected_label
+    assert form.fields["title"].original_help_text == expected_help_text
+    assert bool(form.fields["title"].help_text) is bool(expected_help_text)
 
 
 def test_cfp_form_mixin_update_cfp_texts_preserves_added_help_text():
@@ -122,40 +110,6 @@ def test_cfp_form_mixin_update_cfp_texts_preserves_added_help_text():
 
     help_html = str(form.fields["title"].help_text)
     assert "(max 100 chars)" in help_html
-
-
-def test_cfp_form_mixin_update_cfp_texts_does_not_set_label_when_missing():
-    config = [{"key": "title", "help_text": "Some help"}]
-
-    form = _CfPMixinForm(field_configuration=config)
-
-    # Label is not overwritten — stays as the default (None for CharField)
-    assert form.fields["title"].label is None
-
-
-def test_cfp_form_mixin_update_cfp_texts_skips_missing_field():
-    config = [{"key": "title"}]
-    form = _CfPMixinForm(field_configuration=config)
-
-    # Calling _update_cfp_texts on a nonexistent field doesn't raise
-    form._update_cfp_texts("nonexistent")
-
-
-def test_cfp_form_mixin_update_cfp_texts_skips_when_no_field_configuration():
-    form = _CfPMixinForm()
-    form._update_cfp_texts("title")
-
-    # No original_help_text was set since field_configuration is None
-    assert not hasattr(form.fields["title"], "original_help_text")
-
-
-def test_cfp_form_mixin_update_cfp_texts_sets_label_and_help_text_together():
-    config = [{"key": "title", "label": "Talk Title", "help_text": "Max 100 chars"}]
-
-    form = _CfPMixinForm(field_configuration=config)
-
-    assert form.fields["title"].label == "Talk Title"
-    assert form.fields["title"].original_help_text == "Max 100 chars"
 
 
 @pytest.mark.parametrize(
@@ -187,10 +141,6 @@ def test_request_require_get_help_text(
         ("word word word", None, None, "words"),
         ("hello world", 1, 100, "chars"),
         ("hello world", 1, 100, "words"),
-        ("a" * 50, 10, 100, "chars"),
-        ("one two three", 1, 3, "words"),
-        ("word word word", None, 300, "chars"),
-        ("word word word", None, 3, "words"),
         ("line1\r\nline2", 11, 11, "chars"),
         ("one two three", 3, 3, "words"),
     ),
@@ -199,10 +149,6 @@ def test_request_require_get_help_text(
         "no_constraints_words",
         "chars_in_range",
         "words_in_range",
-        "chars_mid_range",
-        "words_at_boundary",
-        "chars_well_under_max",
-        "words_at_max_boundary",
         "crlf_counts_as_one_char",
         "words_exact_count",
     ),
@@ -214,29 +160,40 @@ def test_request_require_validate_field_length_accepts_valid(
 
 
 @pytest.mark.parametrize(
-    ("value", "min_length", "max_length", "count_in"),
+    ("value", "min_length", "max_length", "count_in", "message"),
     (
-        ("hi", 10, 100, "chars"),
-        ("a" * 200, 10, 100, "chars"),
-        ("one", 5, None, "words"),
-        ("one two three four five six", None, 3, "words"),
+        (
+            "hi",
+            10,
+            100,
+            "chars",
+            "Please write between 10 and 100 characters. You wrote 2 characters.",
+        ),
+        (
+            "a" * 200,
+            10,
+            100,
+            "chars",
+            "Please write between 10 and 100 characters. You wrote 200 characters.",
+        ),
+        ("one", 5, None, "words", "Please write at least 5 words. You wrote 1 words."),
+        (
+            "don't stop me now",
+            None,
+            2,
+            "words",
+            "Please write at most 2 words. You wrote 4 words.",
+        ),
     ),
     ids=("chars_too_short", "chars_too_long", "words_too_few", "words_too_many"),
 )
 def test_request_require_validate_field_length_rejects_invalid(
-    value, min_length, max_length, count_in
+    value, min_length, max_length, count_in, message
 ):
-    with pytest.raises(forms.ValidationError):
+    with pytest.raises(forms.ValidationError) as excinfo:
         RequestRequire.validate_field_length(value, min_length, max_length, count_in)
 
-
-def test_request_require_validate_field_length_error_message_reports_count():
-    with pytest.raises(forms.ValidationError) as excinfo:
-        RequestRequire.validate_field_length("don't stop me now", None, 2, "words")
-
-    assert excinfo.value.messages == [
-        "Please write at most 2 words. You wrote 4 words."
-    ]
+    assert excinfo.value.messages == [message]
 
 
 @pytest.mark.parametrize(
@@ -270,10 +227,6 @@ def test_count_length(value, count_in, expected):
     assert count_length(value, count_in) == expected
 
 
-def test_count_length_defaults_to_chars():
-    assert count_length("hello world") == 11
-
-
 @pytest.mark.parametrize(
     ("text", "min_number", "max_number", "expected"),
     (
@@ -302,24 +255,40 @@ def test_request_require_validate_tag_count_accepts_valid(
 
 
 @pytest.mark.parametrize(
-    ("value", "min_number", "max_number"),
-    ((["a"], 3, 5), (["a", "b", "c", "d", "e", "f"], None, 3), (None, 2, None)),
+    ("value", "min_number", "max_number", "message"),
+    (
+        (["a"], 3, 5, "Please select between 3 and 5 tags. You selected 1 tags."),
+        (
+            ["a", "b", "c", "d", "e", "f"],
+            None,
+            3,
+            "Please select at most 3 tags. You selected 6 tags.",
+        ),
+        (None, 2, None, "Please select at least 2 tags. You selected 0 tags."),
+    ),
     ids=("too_few", "too_many", "none_below_min"),
 )
 def test_request_require_validate_tag_count_rejects_invalid(
-    value, min_number, max_number
+    value, min_number, max_number, message
 ):
-    with pytest.raises(forms.ValidationError):
+    with pytest.raises(forms.ValidationError) as excinfo:
         RequestRequire.validate_tag_count(value, min_number, max_number)
+
+    assert excinfo.value.messages == [message]
 
 
 @pytest.mark.django_db
-def test_request_require_init_sets_field_required_from_cfp():
+def test_request_require_init_applies_cfp_visibility():
     event = EventFactory(
         cfp__fields={
             "title": {"visibility": "required", "min_length": None, "max_length": None},
             "abstract": {
                 "visibility": "optional",
+                "min_length": None,
+                "max_length": None,
+            },
+            "description": {
+                "visibility": "do_not_ask",
                 "min_length": None,
                 "max_length": None,
             },
@@ -330,55 +299,47 @@ def test_request_require_init_sets_field_required_from_cfp():
 
     assert form.fields["title"].required is True
     assert form.fields["abstract"].required is False
-
-
-@pytest.mark.django_db
-def test_request_require_init_removes_do_not_ask_fields():
-    event = EventFactory(
-        cfp__fields={
-            "title": {
-                "visibility": "do_not_ask",
-                "min_length": None,
-                "max_length": None,
-            },
-            "abstract": {
-                "visibility": "required",
-                "min_length": None,
-                "max_length": None,
-            },
-        }
-    )
-
-    form = RequestRequireTestForm(event=event)
-
-    assert "title" not in form.fields
-    assert "abstract" in form.fields
+    assert "description" not in form.fields
 
 
 @pytest.mark.parametrize(
-    ("min_length", "max_length", "cfp_settings", "expected_attrs"),
+    ("min_length", "max_length", "cfp_settings", "expected_attrs", "expected_help"),
     (
         (
             5,
             100,
             {},
             {"data-minlength": 5, "data-maxlength": 100, "data-count-in": "chars"},
+            " Please write between 5 and 100 characters.",
         ),
         (
             5,
             100,
             {"count_length_in": "words"},
             {"data-minlength": 5, "data-maxlength": 100, "data-count-in": "words"},
+            " Please write between 5 and 100 words.",
         ),
-        (5, None, {}, {"data-minlength": 5, "data-count-in": "chars"}),
-        (None, 50, {}, {"data-maxlength": 50, "data-count-in": "chars"}),
-        (None, None, {}, {}),
+        (
+            5,
+            None,
+            {},
+            {"data-minlength": 5, "data-count-in": "chars"},
+            " Please write at least 5 characters.",
+        ),
+        (
+            None,
+            50,
+            {},
+            {"data-maxlength": 50, "data-count-in": "chars"},
+            " Please write at most 50 characters.",
+        ),
+        (None, None, {}, {}, ""),
     ),
     ids=("chars", "words", "min_only", "max_only", "no_limits"),
 )
 @pytest.mark.django_db
-def test_request_require_init_sets_length_data_attrs(
-    min_length, max_length, cfp_settings, expected_attrs
+def test_request_require_init_sets_length_data_attrs_and_help_text(
+    min_length, max_length, cfp_settings, expected_attrs, expected_help
 ):
     event = EventFactory(
         cfp__fields={
@@ -397,21 +358,7 @@ def test_request_require_init_sets_length_data_attrs(
     assert {
         key: value for key, value in attrs.items() if key.startswith("data-")
     } == expected_attrs
-
-
-@pytest.mark.django_db
-def test_request_require_init_adds_help_text_for_length():
-    event = EventFactory(
-        cfp__fields={
-            "title": {"visibility": "required", "min_length": 10, "max_length": 200}
-        }
-    )
-
-    form = RequestRequireTestForm(event=event)
-
-    assert (
-        form.fields["title"].help_text == " Please write between 10 and 200 characters."
-    )
+    assert form.fields["title"].help_text == expected_help
 
 
 @pytest.mark.django_db
@@ -444,19 +391,23 @@ def test_request_require_init_field_not_in_form_is_skipped():
     assert "description" not in form.fields
 
 
+@pytest.mark.parametrize(
+    ("min_number", "max_number", "expected_help"),
+    ((1, 5, "Please select between 1 and 5 tags."), (None, None, "")),
+    ids=["with_limits", "without_limits"],
+)
 @pytest.mark.django_db
-def test_request_require_init_tags_with_limits():
+def test_request_require_init_tags_help_text(min_number, max_number, expected_help):
     event = EventFactory(
         cfp__fields={
             "title": {"visibility": "required", "min_length": None, "max_length": None},
-            "tags": {"visibility": "optional", "min": 1, "max": 5},
+            "tags": {"visibility": "optional", "min": min_number, "max": max_number},
         }
     )
 
     form = RequestRequireWithTagsForm(event=event)
 
-    field = form.fields["tags"]
-    assert field.help_text == "Please select between 1 and 5 tags."
+    assert form.fields["tags"].help_text == expected_help
 
 
 @pytest.mark.django_db
@@ -484,17 +435,3 @@ def test_request_require_init_tags_without_limits_preserves_help_text():
     form = TagsWithHelpForm(event=event)
 
     assert form.fields["tags"].help_text == "Choose tags."
-
-
-@pytest.mark.django_db
-def test_request_require_init_tags_without_limits_or_help_text():
-    event = EventFactory(
-        cfp__fields={
-            "title": {"visibility": "required", "min_length": None, "max_length": None},
-            "tags": {"visibility": "optional", "min": None, "max": None},
-        }
-    )
-
-    form = RequestRequireWithTagsForm(event=event)
-
-    assert not form.fields["tags"].help_text

@@ -34,55 +34,29 @@ from tests.utils import make_orga_user, make_request, make_view
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_event_list_view_queryset_excludes_drafts(event):
+def _event_list_view(event, user, query=None):
+    request = make_request(event, user=user)
+    if query is not None:
+        request.GET = request.GET.copy()
+        request.GET["q"] = query
+    return make_view(DashboardEventListView, request)
+
+
+def test_event_list_view_queryset(event):
+    EventFactory()
     speaker = SpeakerFactory(event=event)
     draft = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
     draft.speakers.add(speaker)
     submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     submitted.speakers.add(speaker)
     user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(DashboardEventListView, request)
 
-    qs = view.queryset
-    annotated_event = [e for e in qs if e.pk == event.pk][0]
+    view = _event_list_view(event, user)
 
-    assert annotated_event.submission_count == 1
-
-
-def test_event_list_view_queryset_filters_by_search(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    request.GET = request.GET.copy()
-    request.GET["q"] = event.slug
-    view = make_view(DashboardEventListView, request)
-
-    qs = view.queryset
-
-    assert list(qs) == [event]
-
-
-def test_event_list_view_queryset_search_excludes_nonmatching(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    request.GET = request.GET.copy()
-    request.GET["q"] = "nonexistent-slug-xyz"
-    view = make_view(DashboardEventListView, request)
-
-    qs = view.queryset
-
-    assert list(qs) == []
-
-
-def test_event_list_view_base_queryset_uses_user_permissions(event):
-    EventFactory()  # other event the user should not see
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    view = make_view(DashboardEventListView, request)
-
-    qs = view.base_queryset
-
-    assert list(qs) == [event]
+    assert list(view.base_queryset) == [event]
+    assert [(e.pk, e.submission_count) for e in view.queryset] == [(event.pk, 1)]
+    assert list(_event_list_view(event, user, event.slug).queryset) == [event]
+    assert list(_event_list_view(event, user, "nonexistent-slug-xyz").queryset) == []
 
 
 def test_organiser_event_list_view_base_queryset_returns_organiser_events(event):
@@ -96,16 +70,21 @@ def test_organiser_event_list_view_base_queryset_returns_organiser_events(event)
     assert list(qs) == [event]
 
 
-def test_organiser_list_view_organisers_admin_sees_all():
+def test_organiser_list_view_organisers_admin_sees_all_and_filters():
     org1 = OrganiserFactory()
     org2 = OrganiserFactory()
     admin_user = UserFactory(is_administrator=True)
     request = make_request(None, user=admin_user)
-    view = make_view(DashboardOrganiserListView, request)
+    searching = make_request(None, user=admin_user)
+    searching.GET = searching.GET.copy()
+    searching.GET["q"] = org1.slug
 
-    result = view.organisers()
-
-    assert {o.pk for o in result} == {org1.pk, org2.pk}
+    assert {
+        o.pk for o in make_view(DashboardOrganiserListView, request).organisers()
+    } == {org1.pk, org2.pk}
+    assert [
+        o.slug for o in make_view(DashboardOrganiserListView, searching).organisers()
+    ] == [org1.slug]
 
 
 def test_organiser_list_view_organisers_non_admin_sees_own():
@@ -145,87 +124,46 @@ def test_organiser_list_view_filter_organiser(query_attr, expected):
     assert view.filter_organiser(org, query) == expected
 
 
-def test_organiser_list_view_organisers_with_search_query():
-    org1 = OrganiserFactory()
-    OrganiserFactory()  # second organiser that should be excluded by search
-    admin_user = UserFactory(is_administrator=True)
-    request = make_request(None, user=admin_user)
-    request.GET = request.GET.copy()
-    request.GET["q"] = org1.slug
-    view = make_view(DashboardOrganiserListView, request)
-
-    result = view.organisers()
-
-    assert [o.slug for o in result] == [org1.slug]
-
-
-def test_event_dashboard_view_get_cfp_tiles_deadline_in_future():
-    future = now() + dt.timedelta(days=10)
-    event = EventFactory(cfp__deadline=future)
-    user = make_orga_user(event)
+def _dashboard_view(event, user=None):
+    user = user or make_orga_user(event)
     request = make_request(event, user=user)
     request.event = event
-    view = make_view(EventDashboardView, request)
-
-    tiles = view.get_cfp_tiles(now())
-
-    has_until_tile = any("until the CfP ends" in str(t.get("small", "")) for t in tiles)
-    assert has_until_tile
+    return make_view(EventDashboardView, request)
 
 
-def test_event_dashboard_view_get_cfp_tiles_drafts_with_permission():
-    event = EventFactory(cfp__deadline=now() + dt.timedelta(days=10))
-    SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
+def _tile_texts(tiles):
+    return [str(tile.get("small", "")) for tile in tiles]
 
-    tiles = view.get_cfp_tiles(now(), can_change_submissions=True)
 
-    has_drafts_tile = any(
-        "unsubmitted proposal draft" in str(t.get("small", "")) for t in tiles
+def test_event_dashboard_view_get_cfp_tiles():
+    open_event = EventFactory(cfp__deadline=now() + dt.timedelta(days=10))
+    SubmissionFactory(event=open_event, state=SubmissionStates.DRAFT)
+    closed_event = EventFactory(cfp__deadline=now() - dt.timedelta(days=1))
+    view = _dashboard_view(open_event)
+
+    with_permission = _tile_texts(
+        view.get_cfp_tiles(now(), can_change_submissions=True)
     )
-    assert has_drafts_tile
-
-
-def test_event_dashboard_view_get_cfp_tiles_drafts_without_permission():
-    event = EventFactory(cfp__deadline=now() + dt.timedelta(days=10))
-    SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
-
-    tiles = view.get_cfp_tiles(now(), can_change_submissions=False)
-
-    has_drafts_tile = any(
-        "unsubmitted proposal draft" in str(t.get("small", "")) for t in tiles
+    without_permission = _tile_texts(
+        view.get_cfp_tiles(now(), can_change_submissions=False)
     )
-    assert not has_drafts_tile
+
+    assert [text for text in with_permission if "until the CfP ends" in text]
+    assert [text for text in with_permission if "unsubmitted proposal draft" in text]
+    assert [text for text in without_permission if "until the CfP ends" in text]
+    assert not [
+        text for text in without_permission if "unsubmitted proposal draft" in text
+    ]
+    assert _dashboard_view(closed_event).get_cfp_tiles(now()) == []
 
 
-def test_event_dashboard_view_get_cfp_tiles_closed_cfp():
-    event = EventFactory(cfp__deadline=now() - dt.timedelta(days=1))
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
+def test_event_dashboard_view_get_review_tiles(event):
+    assert _dashboard_view(event).get_review_tiles() == []
 
-    tiles = view.get_cfp_tiles(now())
-
-    assert not tiles
-
-
-def test_event_dashboard_view_get_review_tiles_with_reviews(event):
     submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     ReviewFactory(submission=submission)
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
 
-    tiles = view.get_review_tiles()
+    tiles = _dashboard_view(event).get_review_tiles()
 
     review_tile = [t for t in tiles if str(t.get("small", "")) == "review"]
     assert len(review_tile) == 1
@@ -234,24 +172,11 @@ def test_event_dashboard_view_get_review_tiles_with_reviews(event):
     assert review_tile[0]["legend"][0]["count"] == 0
 
 
-def test_event_dashboard_view_get_review_tiles_no_reviews(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
-
-    tiles = view.get_review_tiles()
-
-    assert tiles == []
-
-
 def test_event_dashboard_view_attention_items_show_the_outbox(event):
-    QueuedMailFactory(event=event)
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
+    view = _dashboard_view(event)
+    assert view.get_attention_items(True, {"pending": 0, "accepted": 0}) == []
 
+    QueuedMailFactory(event=event)
     items = view.get_attention_items(False, {"pending": 0, "accepted": 0})
 
     assert len(items) == 1
@@ -269,9 +194,7 @@ def test_event_dashboard_view_attention_items_hide_the_outbox_without_permission
         can_change_submissions=False,
     )
     team.members.add(user)
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
+    view = _dashboard_view(event, user)
 
     items = view.get_attention_items(False, {"pending": 0, "accepted": 0})
 
@@ -280,10 +203,7 @@ def test_event_dashboard_view_attention_items_hide_the_outbox_without_permission
 
 def test_event_dashboard_view_attention_items_warn_about_access_code_only_cfp(event):
     event.submission_types.update(requires_access_code=True)
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
+    view = _dashboard_view(event)
 
     items = view.get_attention_items(True, {"pending": 0, "accepted": 0})
 
@@ -295,10 +215,7 @@ def test_event_dashboard_view_attention_items_warn_about_access_code_only_cfp(ev
 def test_event_dashboard_view_attention_items_warn_about_access_code_only_tracks():
     event = EventFactory(cfp__fields={"track": {"visibility": "required"}})
     TrackFactory(event=event, requires_access_code=True)
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
+    view = _dashboard_view(event)
 
     items = view.get_attention_items(True, {"pending": 0, "accepted": 0})
 
@@ -307,77 +224,29 @@ def test_event_dashboard_view_attention_items_warn_about_access_code_only_tracks
     assert items[0]["warning"] is True
 
 
-def test_event_dashboard_view_attention_items_no_warning_for_usable_cfp(event):
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
-
-    items = view.get_attention_items(True, {"pending": 0, "accepted": 0})
-
-    assert items == []
-
-
-def test_event_dashboard_view_reviews_missing_for_reviewer(event):
+def test_event_dashboard_view_reviews_missing_only_for_reviewers(event):
     SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    user = UserFactory()
+    reviewer = UserFactory()
     team = TeamFactory(organiser=event.organiser, is_reviewer=True, all_events=True)
-    team.members.add(user)
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
+    team.members.add(reviewer)
 
-    assert view.reviews_missing == 1
+    assert _dashboard_view(event, reviewer).reviews_missing == 1
+    assert _dashboard_view(event).reviews_missing == 0
 
 
-def test_event_dashboard_view_reviews_missing_for_non_reviewer(event):
-    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
-
-    assert view.reviews_missing == 0
-
-
-def test_event_dashboard_view_get_plugin_tiles_with_signal(
-    event, register_signal_handler
-):
-    tile_data = {"large": "Plugin!", "small": "test tile", "priority": 50}
-
-    def handler(signal, sender, **kwargs):
-        return tile_data
-
-    register_signal_handler(dashboard_tile, handler)
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
-
-    tiles = view.get_plugin_tiles()
-
-    assert tile_data in tiles
-
-
-def test_event_dashboard_view_get_plugin_tiles_list_response(
-    event, register_signal_handler
-):
+def test_event_dashboard_view_get_plugin_tiles(event, register_signal_handler):
+    tile = {"large": "Plugin!", "small": "test tile", "priority": 50}
     tile_list = [
         {"large": "A", "small": "first", "priority": 10},
         {"large": "B", "small": "second", "priority": 20},
     ]
-
-    def handler(signal, sender, **kwargs):
-        return tile_list
-
-    register_signal_handler(dashboard_tile, handler)
-    user = make_orga_user(event)
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
+    register_signal_handler(dashboard_tile, lambda signal, sender, **kwargs: tile)
+    register_signal_handler(dashboard_tile, lambda signal, sender, **kwargs: tile_list)
+    view = _dashboard_view(event)
 
     tiles = view.get_plugin_tiles()
 
+    assert tile in tiles
     assert tile_list[0] in tiles
     assert tile_list[1] in tiles
 
@@ -391,9 +260,7 @@ def test_event_dashboard_view_activity_groups(event):
         content_object=submission,
         action_type="pretalx.submission.create",
     )
-    request = make_request(event, user=user)
-    request.event = event
-    view = make_view(EventDashboardView, request)
+    view = _dashboard_view(event, user)
 
     groups = view.activity_groups()
 

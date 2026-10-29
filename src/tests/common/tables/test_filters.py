@@ -50,16 +50,13 @@ def test_pills_carry_a_removal_url_without_the_removed_value():
     assert urls == ["?colour=blue", "?colour=red"]
 
 
-def test_clear_url_drops_every_owned_parameter():
-    filterset = build([colours()], "colour=red&page=2")
-
-    assert filterset.clear_url == "?"
-
-
-def test_clear_url_keeps_parameters_the_bar_does_not_own():
-    filterset = build([colours()], "colour=red&sort=-code")
-
-    assert filterset.clear_url == "?sort=-code"
+@pytest.mark.parametrize(
+    ("query", "expected"),
+    (("colour=red&page=2", "?"), ("colour=red&sort=-code", "?sort=-code")),
+    ids=("drops_owned_parameters", "keeps_foreign_parameters"),
+)
+def test_clear_url(query, expected):
+    assert build([colours()], query).clear_url == expected
 
 
 def test_initials_apply_only_to_a_request_without_any_filter():
@@ -128,10 +125,7 @@ def test_boolean_filter_is_tri_state():
     assert build([boolean], "featured=true").values["featured"] is True
     assert build([boolean], "featured=false").values["featured"] is False
     assert build([boolean], f"featured={EMPTY_VALUE}").values["featured"] is None
-
-
-def test_boolean_filter_accepts_legacy_checkbox_value():
-    assert build([BooleanFilter(name="featured")], "featured=on").values["featured"]
+    assert build([boolean], "featured=on").values["featured"] is True
 
 
 def test_param_names_cover_search_companions():

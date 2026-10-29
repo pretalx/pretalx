@@ -10,43 +10,24 @@ from tests.factories import EventFactory
 pytestmark = [pytest.mark.unit]
 
 
-def test_namespaced_cache_set_and_get():
+def test_namespaced_cache_set_get_delete():
     cache = NamespacedCache("test-ns")
 
     cache.set("key1", "value1")
-
     assert cache.get("key1") == "value1"
-
-
-def test_namespaced_cache_get_missing_key():
-    cache = NamespacedCache("test-ns")
-
     assert cache.get("nonexistent") is None
 
-
-def test_namespaced_cache_clear_on_fresh_cache():
-    cache = NamespacedCache("fresh-ns")
-
-    cache.clear()
-    cache.set("key1", "value1")
-
-    assert cache.get("key1") == "value1"
-
-
-def test_namespaced_cache_clear_invalidates_keys():
-    cache = NamespacedCache("test-ns")
-    cache.set("key1", "value1")
-
-    cache.clear()
-
+    cache.delete("key1")
     assert cache.get("key1") is None
 
 
-def test_namespaced_cache_clear_does_not_affect_other_namespaces():
+def test_namespaced_cache_clear_invalidates_only_its_namespace():
     cache_a = NamespacedCache("ns-a")
     cache_b = NamespacedCache("ns-b")
+    cache_a.clear()
     cache_a.set("shared_key", "from_a")
     cache_b.set("shared_key", "from_b")
+    assert cache_a.get("shared_key") == "from_a"
 
     cache_a.clear()
 
@@ -54,98 +35,33 @@ def test_namespaced_cache_clear_does_not_affect_other_namespaces():
     assert cache_b.get("shared_key") == "from_b"
 
 
-def test_namespaced_cache_delete():
-    cache = NamespacedCache("test-ns")
-    cache.set("key1", "value1")
-
-    cache.delete("key1")
-
-    assert cache.get("key1") is None
-
-
-def test_namespaced_cache_get_or_set_returns_existing():
-    cache = NamespacedCache("test-ns")
-    cache.set("key1", "existing")
-
-    result = cache.get_or_set("key1", lambda: "new_value")
-
-    assert result == "existing"
-
-
-def test_namespaced_cache_get_or_set_stores_default():
+def test_namespaced_cache_get_or_set_stores_then_returns_existing():
     cache = NamespacedCache("test-ns")
 
-    result = cache.get_or_set("key1", lambda: "default_value")
-
-    assert result == "default_value"
+    assert cache.get_or_set("key1", lambda: "default_value") == "default_value"
     assert cache.get("key1") == "default_value"
+    assert cache.get_or_set("key1", lambda: "new_value") == "default_value"
 
 
-def test_namespaced_cache_set_many_and_get_many():
+def test_namespaced_cache_many_operations():
     cache = NamespacedCache("test-ns")
 
     cache.set_many({"a": "1", "b": "2", "c": "3"})
-    result = cache.get_many(["a", "b", "c"])
-
-    assert result == {"a": "1", "b": "2", "c": "3"}
-
-
-def test_namespaced_cache_get_many_missing_keys():
-    cache = NamespacedCache("test-ns")
-    cache.set("a", "1")
-
-    result = cache.get_many(["a", "missing"])
-
-    assert result == {"a": "1"}
-
-
-def test_namespaced_cache_delete_many():
-    cache = NamespacedCache("test-ns")
-    cache.set_many({"a": "1", "b": "2", "c": "3"})
+    assert cache.get_many(["a", "b", "c", "missing"]) == {"a": "1", "b": "2", "c": "3"}
 
     cache.delete_many(["a", "c"])
-
-    assert cache.get("a") is None
-    assert cache.get("b") == "2"
-    assert cache.get("c") is None
+    assert cache.get_many(["a", "b", "c"]) == {"b": "2"}
 
 
-def test_namespaced_cache_incr():
+def test_namespaced_cache_incr_and_decr():
     cache = NamespacedCache("test-ns")
     cache.set("counter", 10)
 
-    result = cache.incr("counter")
-
-    assert result == 11
-    assert cache.get("counter") == 11
-
-
-def test_namespaced_cache_incr_by_amount():
-    cache = NamespacedCache("test-ns")
-    cache.set("counter", 10)
-
-    result = cache.incr("counter", 5)
-
-    assert result == 15
-
-
-def test_namespaced_cache_decr():
-    cache = NamespacedCache("test-ns")
-    cache.set("counter", 10)
-
-    result = cache.decr("counter")
-
-    assert result == 9
-    assert cache.get("counter") == 9
-
-
-def test_namespaced_cache_decr_by_amount():
-    cache = NamespacedCache("test-ns")
-    cache.set("counter", 10)
-
-    result = cache.decr("counter", 3)
-
-    assert result == 7
+    assert cache.incr("counter") == 11
+    assert cache.incr("counter", 5) == 16
+    assert cache.decr("counter") == 15
+    assert cache.decr("counter", 3) == 12
+    assert cache.get("counter") == 12
 
 
 def test_namespaced_cache_close_is_noop():
@@ -184,32 +100,23 @@ def test_namespaced_cache_prefix_keys_looks_up_the_prefix_once():
     assert keys == [cache._prefix_key(key) for key in ("a", "b", "c")]
 
 
-def test_namespaced_cache_strip_prefix_roundtrips():
-    cache = NamespacedCache("test-ns")
+@pytest.mark.parametrize("namespace", ("test-ns", "Event:42"), ids=("plain", "colons"))
+def test_namespaced_cache_strip_prefix_roundtrips(namespace):
+    cache = NamespacedCache(namespace)
     prefixed = cache._prefix_key("mykey")
 
-    stripped = cache._strip_prefix(prefixed)
-
-    assert stripped == "mykey"
-
-
-def test_namespaced_cache_strip_prefix_with_colons_in_prefixkey():
-    cache = NamespacedCache("Event:42")
-    prefixed = cache._prefix_key("mykey")
-
-    stripped = cache._strip_prefix(prefixed)
-
-    assert stripped == "mykey"
+    assert cache._strip_prefix(prefixed) == "mykey"
 
 
 @pytest.mark.django_db
-def test_object_related_cache_set_and_get():
+def test_object_related_cache_set_and_get_under_model_and_pk_prefix():
     event = EventFactory()
     cache = ObjectRelatedCache(event)
 
     cache.set("key1", "value1")
 
     assert cache.get("key1") == "value1"
+    assert cache.prefixkey == f"Event:{event.pk}"
 
 
 @pytest.mark.django_db
@@ -225,14 +132,6 @@ def test_object_related_cache_clear_isolates_objects():
 
     assert cache1.get("data") is None
     assert cache2.get("data") == "event2-data"
-
-
-@pytest.mark.django_db
-def test_object_related_cache_uses_model_name_and_pk():
-    event = EventFactory()
-    cache = ObjectRelatedCache(event)
-
-    assert cache.prefixkey == f"Event:{event.pk}"
 
 
 @pytest.mark.django_db

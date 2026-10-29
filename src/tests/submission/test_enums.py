@@ -13,11 +13,6 @@ from pretalx.submission.enums import (
 pytestmark = pytest.mark.unit
 
 
-def test_submission_states_get_max_length():
-    result = SubmissionStates.get_max_length()
-    assert result == max(len(val) for val in SubmissionStates.values)
-
-
 @pytest.mark.parametrize(
     ("state", "expected_color"),
     (
@@ -43,10 +38,10 @@ def test_question_variant_short_answers():
 
 @pytest.mark.parametrize(
     "cls",
-    (QuestionVariant, QuestionTarget, QuestionRequired, QuestionIcon),
-    ids=("variant", "target", "required", "icon"),
+    (QuestionVariant, QuestionTarget, QuestionRequired, QuestionIcon, SubmissionStates),
+    ids=("variant", "target", "required", "icon", "submission_states"),
 )
-def test_question_choices_get_max_length(cls):
+def test_choices_get_max_length(cls):
     assert cls.get_max_length() == max(len(val) for val in cls.values)
 
 

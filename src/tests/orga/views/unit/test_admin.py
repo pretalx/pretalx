@@ -37,84 +37,32 @@ def test_admin_dashboard_queue_length_broker_error_returns_string(event):
     assert isinstance(result, str)
 
 
-@pytest.mark.parametrize("search", ("", "ab"))
-def test_admin_user_view_get_queryset_list_insufficient_search(search):
-    admin_user = UserFactory(is_administrator=True)
+@pytest.mark.parametrize(
+    ("action", "query", "expected"),
+    (
+        ("list", "", set()),
+        ("list", "ab", set()),
+        ("list", "Searchable", {("Searchable Name", 2)}),
+        ("list", "findme@example", {("Find Me", 0)}),
+        ("detail", "", {("Searchable Name", 2), ("Find Me", 0), ("Admin", 0)}),
+    ),
+    ids=("empty-search", "short-search", "by-name", "by-email", "detail"),
+)
+def test_admin_user_view_get_queryset(action, query, expected):
     event = EventFactory()
+    speaker = SpeakerFactory(user__name="Searchable Name", event=event)
+    for _ in range(2):
+        SubmissionFactory(event=event).speakers.add(speaker)
+    UserFactory(name="Find Me", email="findme@example.com")
+    admin_user = UserFactory(name="Admin", is_administrator=True)
     request = make_request(event, user=admin_user)
-    request.GET = {"q": search} if search else {}
+    request.GET = {"q": query} if query else {}
     view = make_view(AdminUserView, request)
-    view.action = "list"
+    view.action = action
 
     qs = view.get_queryset()
 
-    assert qs.count() == 0
-
-
-def test_admin_user_view_get_queryset_list_with_search():
-    target_user = UserFactory(name="Searchable Name")
-    UserFactory(name="Other Person")
-    admin_user = UserFactory(is_administrator=True)
-    event = EventFactory()
-    request = make_request(event, user=admin_user)
-    request.GET = {"q": "Searchable"}
-    view = make_view(AdminUserView, request)
-    view.action = "list"
-
-    qs = view.get_queryset()
-
-    assert list(qs) == [target_user]
-
-
-def test_admin_user_view_get_queryset_list_search_by_email():
-    target_user = UserFactory(email="findme@example.com")
-    UserFactory(email="other@example.com")
-    admin_user = UserFactory(is_administrator=True)
-    event = EventFactory()
-    request = make_request(event, user=admin_user)
-    request.GET = {"q": "findme@example"}
-    view = make_view(AdminUserView, request)
-    view.action = "list"
-
-    qs = view.get_queryset()
-
-    assert list(qs) == [target_user]
-
-
-def test_admin_user_view_get_queryset_detail_returns_all():
-    user1 = UserFactory()
-    user2 = UserFactory()
-    admin_user = UserFactory(is_administrator=True)
-    event = EventFactory()
-    request = make_request(event, user=admin_user)
-    request.GET = {}
-    view = make_view(AdminUserView, request)
-    view.action = "detail"
-
-    qs = view.get_queryset()
-
-    assert set(qs) == {user1, user2, admin_user}
-
-
-def test_admin_user_view_get_queryset_annotates_submission_count():
-    user = UserFactory()
-    event = EventFactory()
-    speaker = SpeakerFactory(user=user, event=event)
-    sub1 = SubmissionFactory(event=event)
-    sub2 = SubmissionFactory(event=event)
-    sub1.speakers.add(speaker)
-    sub2.speakers.add(speaker)
-
-    admin_user = UserFactory(is_administrator=True)
-    request = make_request(event, user=admin_user)
-    request.GET = {"q": user.name}
-    view = make_view(AdminUserView, request)
-    view.action = "list"
-
-    result = list(view.get_queryset())
-
-    assert len(result) == 1
-    assert result[0].submission_count == 2
+    assert {(user.name, user.submission_count) for user in qs} == expected
 
 
 def _admin_user_detail_view(target):

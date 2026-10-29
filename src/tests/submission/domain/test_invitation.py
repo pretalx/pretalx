@@ -24,76 +24,48 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_send_invitation_creates_persists_and_logs():
+def test_send_invitation_persists_logs_and_is_idempotent(
+    django_capture_on_commit_callbacks,
+):
     event = EventFactory()
     sender = UserFactory()
     submission = SubmissionFactory(event=event)
+    djmail.outbox = []
 
     with scope(event=event):
-        invitation = send_invitation(
-            submission, email="invitee@example.com", sender=sender
-        )
+        with django_capture_on_commit_callbacks(execute=True):
+            invitation = send_invitation(
+                submission, email="invitee@example.com", sender=sender, orga=True
+            )
 
         assert invitation.pk is not None
         assert invitation.email == "invitee@example.com"
-        assert (
-            submission.logged_actions()
-            .filter(action_type="pretalx.submission.invitation.send")
-            .exists()
+        assert [mail.to for mail in djmail.outbox] == [["invitee@example.com"]]
+        log = submission.logged_actions().get(
+            action_type="pretalx.submission.invitation.send"
         )
-
-
-def test_send_invitation_idempotent_for_duplicate(django_capture_on_commit_callbacks):
-    event = EventFactory()
-    sender = UserFactory()
-    submission = SubmissionFactory(event=event)
-
-    with scope(event=event):
-        first = send_invitation(submission, email="invitee@example.com", sender=sender)
-        djmail.outbox = []
+        assert log.person == sender
+        assert log.is_orga_action is True
+        assert log.data == {"email": "invitee@example.com"}
 
         with django_capture_on_commit_callbacks(execute=True):
-            second = send_invitation(
+            duplicate = send_invitation(
                 submission, email="invitee@example.com", sender=sender
             )
+            upper = send_invitation(
+                submission, email="INVITEE@example.com", sender=sender
+            )
 
-        assert second.pk == first.pk
-        assert djmail.outbox == []
+        assert duplicate.pk == invitation.pk
+        assert upper.pk == invitation.pk
+        assert len(djmail.outbox) == 1
+        assert submission.invitations.count() == 1
         assert (
             submission.logged_actions()
             .filter(action_type="pretalx.submission.invitation.send")
             .count()
             == 1
         )
-
-
-def test_send_invitation_idempotent_case_insensitive():
-    event = EventFactory()
-    sender = UserFactory()
-    submission = SubmissionFactory(event=event)
-
-    with scope(event=event):
-        first = send_invitation(submission, email="invitee@example.com", sender=sender)
-        second = send_invitation(submission, email="INVITEE@example.com", sender=sender)
-
-        assert second.pk == first.pk
-        assert submission.invitations.count() == 1
-
-
-def test_send_invitation_orga_flag_is_recorded():
-    event = EventFactory()
-    sender = UserFactory()
-    submission = SubmissionFactory(event=event)
-
-    with scope(event=event):
-        send_invitation(
-            submission, email="invitee@example.com", sender=sender, orga=True
-        )
-
-        log = submission.logged_actions().get(
-            action_type="pretalx.submission.invitation.send"
-        )
-        assert log.is_orga_action is True
 
 
 def test_send_invitation_swallows_render_failure(monkeypatch):
@@ -146,14 +118,14 @@ def _phish_link_count(rendered):
     return len(_PHISH_LINK_RE.findall(rendered))
 
 
-def test_send_invitation_blocks_injection_via_submission_title(
+def test_send_invitation_blocks_injection_via_title_and_speaker_name(
     django_capture_on_commit_callbacks,
 ):
-    # Speaker-triggered co-speaker invite; regression for the
-    # speaker-invite bypass identified during the fix review.
     event = EventFactory()
     submission = SubmissionFactory(event=event, title="[click](https://phish.com)")
-    inviting_user = UserFactory(name="Legit Speaker")
+    inviting_user = UserFactory(
+        name="[Click here to secure your account](https://phish.com)"
+    )
     djmail.outbox = []
 
     with scope(event=event), django_capture_on_commit_callbacks(execute=True):
@@ -168,18 +140,7 @@ def test_send_invitation_blocks_injection_via_submission_title(
     assert invitation.token in html_body
 
 
-def test_retract_invitation_deletes_row():
-    submission = SubmissionFactory()
-    invitation = SubmissionInvitationFactory(
-        submission=submission, email="test@example.com"
-    )
-
-    retract_invitation(invitation)
-
-    assert not SubmissionInvitation.objects.filter(pk=invitation.pk).exists()
-
-
-def test_retract_invitation_logs():
+def test_retract_invitation_deletes_row_and_logs():
     submission = SubmissionFactory()
     user = UserFactory()
     invitation = SubmissionInvitationFactory(
@@ -188,9 +149,11 @@ def test_retract_invitation_logs():
 
     retract_invitation(invitation, person=user)
 
+    assert not SubmissionInvitation.objects.filter(pk=invitation.pk).exists()
     log = submission.logged_actions().get(
         action_type="pretalx.submission.invitation.retract"
     )
+    assert log.person == user
     assert log.data == {"email": "test@example.com"}
 
 
@@ -213,22 +176,3 @@ def test_accept_invitation_adds_speaker_logs_and_deletes():
             action_type="pretalx.submission.invitation.accept"
         )
         assert log.data == {"email": "invitee@example.com"}
-
-
-def test_send_invitation_blocks_injection_via_inviting_speaker_name(
-    django_capture_on_commit_callbacks,
-):
-    event = EventFactory()
-    submission = SubmissionFactory(event=event)
-    inviting_user = UserFactory(
-        name="[Click here to secure your account](https://phish.com)"
-    )
-    djmail.outbox = []
-
-    with scope(event=event), django_capture_on_commit_callbacks(execute=True):
-        send_invitation(submission, email="victim@example.com", sender=inviting_user)
-
-    assert len(djmail.outbox) == 1
-    sent = djmail.outbox[0]
-    html_body = sent.alternatives[0][0]
-    assert _phish_link_count(html_body) == 0

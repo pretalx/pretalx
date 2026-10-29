@@ -3,75 +3,31 @@
 import pytest
 
 from pretalx.api.views.review import ReviewViewSet
-from tests.factories import SpeakerFactory, SpeakerRoleFactory, UserFactory
+from tests.factories import SpeakerFactory, UserFactory
 from tests.utils import make_api_request, make_view
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_reviewviewset_visible_submissions_excludes_speaker_talks(
-    event, review_user, submission
+def test_reviewviewset_visible_submissions_excludes_own_talks_for_reviewer(
+    event, review_user, orga_user, submission, other_submission
 ):
-    # Add review_user as a speaker on the existing submission
     speaker_profile = SpeakerFactory(event=event, user=review_user)
     submission.speakers.add(speaker_profile)
-    # Create a second submission that review_user is NOT a speaker on
-    other_role = SpeakerRoleFactory(submission__event=event, speaker__event=event)
-    other_sub = other_role.submission
 
-    request = make_api_request(event=event, user=review_user)
-    view = make_view(ReviewViewSet, request)
+    reviewer_view = make_view(
+        ReviewViewSet, make_api_request(event=event, user=review_user)
+    )
+    orga_view = make_view(ReviewViewSet, make_api_request(event=event, user=orga_user))
 
-    visible = list(view.visible_submissions)
-
-    # The submission where review_user is a speaker should be excluded
-    assert submission not in visible
-    # The other submission should still be visible
-    assert other_sub in visible
+    assert list(reviewer_view.visible_submissions) == [other_submission]
+    assert set(orga_view.visible_submissions) == {submission, other_submission}
 
 
-def test_reviewviewset_visible_submissions_organiser_sees_all(
-    event, orga_user, submission
-):
-    other_role = SpeakerRoleFactory(submission__event=event, speaker__event=event)
-    other_sub = other_role.submission
+def test_reviewviewset_empty_without_event_or_user(event):
+    no_event_view = make_view(ReviewViewSet, make_api_request(user=UserFactory()))
+    anonymous_view = make_view(ReviewViewSet, make_api_request(event=event))
 
-    request = make_api_request(event=event, user=orga_user)
-    view = make_view(ReviewViewSet, request)
-
-    visible = list(view.visible_submissions)
-
-    # Organiser should see both submissions (neither has orga_user as speaker)
-    assert submission in visible
-    assert other_sub in visible
-
-
-def test_reviewviewset_visible_submissions_empty_without_event(event):
-    user = UserFactory()
-    request = make_api_request(user=user)
-    # No event set on the request, so view.event will be None
-    view = make_view(ReviewViewSet, request)
-
-    visible = list(view.visible_submissions)
-
-    assert visible == []
-
-
-def test_reviewviewset_get_queryset_empty_for_anonymous(event):
-    request = make_api_request(event=event)
-    # make_api_request without user leaves request.user as AnonymousUser
-    view = make_view(ReviewViewSet, request)
-
-    result = list(view.get_queryset())
-
-    assert result == []
-
-
-def test_reviewviewset_get_queryset_empty_without_event():
-    user = UserFactory()
-    request = make_api_request(user=user)
-    view = make_view(ReviewViewSet, request)
-
-    result = list(view.get_queryset())
-
-    assert result == []
+    assert list(no_event_view.visible_submissions) == []
+    assert list(no_event_view.get_queryset()) == []
+    assert list(anonymous_view.get_queryset()) == []

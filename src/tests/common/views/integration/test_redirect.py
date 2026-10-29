@@ -22,28 +22,7 @@ def test_redirect_view_samesite_redirects(client):
     assert response.url == url
 
 
-def test_redirect_view_crosssite_shows_confirmation(client):
-    url = "https://example.com/target"
-    response = client.get("/redirect/", {"url": _sign(url)})
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    assert "example.com" in content
-
-
-def test_redirect_view_bad_signature_returns_400(client):
-    response = client.get("/redirect/", {"url": "tampered-value"})
-
-    assert response.status_code == 400
-
-
-def test_redirect_view_missing_url_returns_400(client):
-    response = client.get("/redirect/")
-
-    assert response.status_code == 400
-
-
-def test_redirect_view_escapes_hostname_html(client):
+def test_redirect_view_crosssite_shows_confirmation_with_escaped_hostname(client):
     url = "https://x<dialog open><h2>Session Expired</h2></dialog>y.com/"
     response = client.get("/redirect/", {"url": _sign(url)})
 
@@ -53,22 +32,28 @@ def test_redirect_view_escapes_hostname_html(client):
     assert "<h2>Session Expired</h2>" not in content
     assert "&lt;dialog open&gt;" in content
 
+    response = client.get("/redirect/", {"url": _sign("https://example.com/target")})
 
-@pytest.mark.parametrize(
-    "url",
-    (
-        "javascript:alert(document.domain)",
-        "data:text/html,<script>alert(1)</script>",
-        "vbscript:msgbox(1)",
-    ),
-)
-def test_redirect_view_rejects_dangerous_scheme(client, url):
-    response = client.get("/redirect/", {"url": _sign(url)})
+    assert response.status_code == 200
+    assert "example.com" in response.content.decode()
 
-    assert response.status_code == 400
-
-
-def test_redirect_view_allows_relative_url(client):
     response = client.get("/redirect/", {"url": _sign("/orga/event/")})
 
     assert response.status_code == 200
+
+
+@pytest.mark.parametrize(
+    "params",
+    (
+        {"url": "tampered-value"},
+        {},
+        {"url": _sign("javascript:alert(document.domain)")},
+        {"url": _sign("data:text/html,<script>alert(1)</script>")},
+        {"url": _sign("vbscript:msgbox(1)")},
+    ),
+    ids=("bad_signature", "missing_url", "javascript", "data", "vbscript"),
+)
+def test_redirect_view_rejects_unsafe_targets(client, params):
+    response = client.get("/redirect/", params)
+
+    assert response.status_code == 400

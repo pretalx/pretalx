@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import json
-from operator import attrgetter
 
 import pytest
 
@@ -14,6 +13,7 @@ from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import QuestionTarget, Submission, SubmissionStates
 from tests.factories import (
     AnswerFactory,
+    AttendeeSignupFactory,
     EventFactory,
     QuestionFactory,
     ResourceFactory,
@@ -31,299 +31,232 @@ from tests.utils import make_orga_user
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
+SCHEDULE_FIELD_NAMES = [
+    "title",
+    "state",
+    "pending_state",
+    "submission_type",
+    "track",
+    "created",
+    "tags",
+    "abstract",
+    "description",
+    "notes",
+    "internal_notes",
+    "duration",
+    "slot_count",
+    "content_locale",
+    "is_featured",
+    "do_not_record",
+    "image",
+    "speaker_ids",
+    "speaker_names",
+    "room",
+    "start",
+    "start_date",
+    "start_time",
+    "end",
+    "end_date",
+    "end_time",
+    "median_score",
+    "mean_score",
+    "resources",
+]
 
-def test_review_export_form_csv_needs_no_data_delimiter():
+
+def test_review_export_form_single_score_category_has_no_score_fields():
     event = EventFactory()
     user = make_orga_user(event)
+    ReviewScoreCategoryFactory(event=event, active=False)
 
     form = ReviewExportForm(
         event=event, user=user, data={"export_format": "csv", "target": "all"}
     )
 
     assert form.is_valid(), form.errors
-
-
-def test_review_export_form_score_categories_single():
-    event = EventFactory()
-    user = make_orga_user(event)
-
-    form = ReviewExportForm(event=event, user=user)
-
     assert form.score_categories == []
+    assert form.export_field_names == [
+        "score",
+        "text",
+        "submission_id",
+        "submission_title",
+        "created",
+        "updated",
+        "user_name",
+        "user_email",
+    ]
+    assert [name for name in form.fields if name.startswith("score_")] == []
 
 
-def test_review_export_form_score_categories_multiple():
-    event = EventFactory()
-    user = make_orga_user(event)
-    cat2 = ReviewScoreCategoryFactory(event=event, active=True)
-
-    form = ReviewExportForm(event=event, user=user)
-
-    # Default category from build_initial_data + cat2
-    assert len(form.score_categories) == 2
-    assert cat2 in form.score_categories
-
-
-def test_review_export_form_score_categories_excludes_inactive():
-    event = EventFactory()
-    user = make_orga_user(event)
-    ReviewScoreCategoryFactory(event=event, active=False)
-
-    form = ReviewExportForm(event=event, user=user)
-
-    # Only the default one (from build_initial_data), which is active
-    assert form.score_categories == []
-
-
-def test_review_export_form_builds_score_fields():
+def test_review_export_form_multiple_score_categories():
     event = EventFactory()
     user = make_orga_user(event)
     default_cat = event.score_categories.first()
-    cat2 = ReviewScoreCategoryFactory(event=event, active=True)
-
-    form = ReviewExportForm(event=event, user=user)
-
-    assert f"score_{default_cat.pk}" in form.fields
-    assert f"score_{cat2.pk}" in form.fields
-
-
-def test_review_export_form_export_field_names_with_score_categories():
-    event = EventFactory()
-    user = make_orga_user(event)
-    cat2 = ReviewScoreCategoryFactory(event=event, active=True)
-
-    form = ReviewExportForm(event=event, user=user)
-
-    assert f"score_{cat2.pk}" in form.export_field_names
-
-
-@pytest.mark.parametrize(
-    ("method", "attr_path"),
-    (
-        ("_get_submission_id_value", "submission.code"),
-        ("_get_submission_title_value", "submission.title"),
-        ("_get_user_name_value", "user.name"),
-        ("_get_user_email_value", "user.email"),
-    ),
-)
-def test_review_export_form_value_getter(method, attr_path):
-    event = EventFactory()
-    user = make_orga_user(event)
-    review = ReviewFactory(submission__event=event)
-
-    form = ReviewExportForm(event=event, user=user)
-
-    assert getattr(form, method)(review) == attrgetter(attr_path)(review)
-
-
-def test_review_export_form_get_additional_data():
-    event = EventFactory()
-    user = make_orga_user(event)
-    cat2 = ReviewScoreCategoryFactory(event=event, active=True)
+    cat2 = ReviewScoreCategoryFactory(event=event, active=True, name="Second")
     score = ReviewScoreFactory(category=cat2, value=5)
-    review = ReviewFactory(submission__event=event)
-    review.scores.add(score)
+    scored = ReviewFactory(submission__event=event)
+    scored.scores.add(score)
+    unscored = ReviewFactory(submission__event=event)
 
     form = ReviewExportForm(event=event, user=user)
 
-    data = form.get_additional_data(review)
-
-    assert str(cat2.name) in data
-    assert data[str(cat2.name)] == score.value
-
-
-def test_review_export_form_get_additional_data_no_score():
-    event = EventFactory()
-    user = make_orga_user(event)
-    cat2 = ReviewScoreCategoryFactory(event=event, active=True)
-    review = ReviewFactory(submission__event=event)
-
-    form = ReviewExportForm(event=event, user=user)
-    data = form.get_additional_data(review)
-
-    assert data[str(cat2.name)] is None
-
-
-@pytest.mark.parametrize(
-    ("target", "expected_states"),
-    (
-        ("all", None),
-        ("accepted", {SubmissionStates.ACCEPTED}),
-        ("confirmed", {SubmissionStates.CONFIRMED}),
-        ("rejected", {SubmissionStates.REJECTED}),
-    ),
-)
-def test_review_export_form_get_queryset_filters_by_target(target, expected_states):
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub_accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    sub_rejected = SubmissionFactory(event=event, state=SubmissionStates.REJECTED)
-    review_accepted = ReviewFactory(submission=sub_accepted)
-    review_rejected = ReviewFactory(submission=sub_rejected)
-
-    form = ReviewExportForm(
-        event=event, user=user, data={"export_format": "json", "target": target}
-    )
-    assert form.is_valid(), form.errors
-    queryset = form.get_queryset()
-
-    expected = set()
-    for review, state in [
-        (review_accepted, SubmissionStates.ACCEPTED),
-        (review_rejected, SubmissionStates.REJECTED),
-    ]:
-        if expected_states is None or state in expected_states:
-            expected.add(review)
-    assert set(queryset) == expected
+    assert set(form.score_categories) == {default_cat, cat2}
+    assert form.export_field_names == [
+        "score",
+        "text",
+        f"score_{default_cat.pk}",
+        f"score_{cat2.pk}",
+        "submission_id",
+        "submission_title",
+        "created",
+        "updated",
+        "user_name",
+        "user_email",
+    ]
+    assert str(form.fields[f"score_{cat2.pk}"].label) == "Score in “Second”"
+    assert form.get_additional_data(scored) == {
+        str(default_cat.name): None,
+        "Second": 5,
+    }
+    assert form.get_additional_data(unscored) == {
+        str(default_cat.name): None,
+        "Second": None,
+    }
 
 
-def test_review_export_form_get_queryset_excludes_own_submissions():
-    event = EventFactory()
-    user = make_orga_user(event)
-    speaker = SpeakerFactory(event=event, user=user)
-    own_sub = SubmissionFactory(event=event)
-    own_sub.speakers.add(speaker)
-    other_sub = SubmissionFactory(event=event)
-    ReviewFactory(submission=own_sub)  # should be excluded
-    review_other = ReviewFactory(submission=other_sub)
-
-    form = ReviewExportForm(
-        event=event, user=user, data={"export_format": "json", "target": "all"}
-    )
-    assert form.is_valid(), form.errors
-    queryset = form.get_queryset()
-
-    assert set(queryset) == {review_other}
-
-
-@pytest.mark.parametrize("has_answer", (True, False))
-def test_review_export_form_get_answer(has_answer):
-    event = EventFactory()
-    user = make_orga_user(event)
-    question = QuestionFactory(event=event, target=QuestionTarget.REVIEWER)
-    review = ReviewFactory(submission__event=event)
-    if has_answer:
-        answer = AnswerFactory(question=question, review=review, answer="42")
-
-    form = ReviewExportForm(event=event, user=user)
-    result = form.get_answer(question, review)
-
-    if has_answer:
-        assert result == answer
-    else:
-        assert result is None
-
-
-def test_review_export_form_questions():
+def test_review_export_form_value_getters_and_answers():
     event = EventFactory()
     user = make_orga_user(event)
     reviewer_q = QuestionFactory(
         event=event, target=QuestionTarget.REVIEWER, active=True
     )
     QuestionFactory(event=event, target=QuestionTarget.SUBMISSION, active=True)
+    review = ReviewFactory(submission__event=event)
+    unanswered = ReviewFactory(submission__event=event)
+    answer = AnswerFactory(question=reviewer_q, review=review, answer="42")
 
     form = ReviewExportForm(event=event, user=user)
 
     assert set(form.questions) == {reviewer_q}
+    assert form._get_submission_id_value(review) == review.submission.code
+    assert form._get_submission_title_value(review) == review.submission.title
+    assert form._get_user_name_value(review) == review.user.name
+    assert form._get_user_email_value(review) == review.user.email
+    assert form.get_answer(reviewer_q, review) == answer
+    assert form.get_answer(reviewer_q, unanswered) is None
+
+
+@pytest.mark.parametrize(
+    ("target", "expected"),
+    (
+        ("all", {"accepted", "confirmed", "rejected"}),
+        ("accepted", {"accepted"}),
+        ("confirmed", {"confirmed"}),
+        ("rejected", {"rejected"}),
+    ),
+)
+def test_review_export_form_get_queryset_filters_by_target_and_excludes_own(
+    target, expected
+):
+    event = EventFactory()
+    user = make_orga_user(event)
+    for state in ("accepted", "confirmed", "rejected"):
+        ReviewFactory(
+            submission=SubmissionFactory(event=event, state=state, title=state)
+        )
+    own = SubmissionFactory(event=event, state="accepted", title="own")
+    own.speakers.add(SpeakerFactory(event=event, user=user))
+    ReviewFactory(submission=own)
+
+    form = ReviewExportForm(
+        event=event, user=user, data={"export_format": "json", "target": target}
+    )
+    assert form.is_valid(), form.errors
+
+    assert {review.submission.title for review in form.get_queryset()} == expected
 
 
 def test_review_export_form_export_data_json():
     event = EventFactory()
     user = make_orga_user(event)
     sub = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    ReviewFactory(submission=sub)
+    ReviewFactory(submission=sub, score=3)
     form = ReviewExportForm(
         event=event,
         user=user,
-        data={"export_format": "json", "target": "all", "score": True},
+        data={
+            "export_format": "json",
+            "target": "all",
+            "score": True,
+            "submission_id": True,
+        },
     )
     assert form.is_valid(), form.errors
+
     response = form.export_data()
 
     assert response["Content-Type"] == "application/json; charset=utf-8"
-    data = json.loads(response.content)
-    assert len(data) >= 1
+    assert response["Content-Disposition"] == (
+        f'attachment; filename="{event.slug}_reviews.json"'
+    )
+    assert json.loads(response.content) == [{"Score": "3.00", "Proposal ID": sub.code}]
 
 
-def test_schedule_export_form_target_choices_exclude_draft():
-    event = EventFactory()
-    user = make_orga_user(event)
-    form = ScheduleExportForm(event=event, user=user)
-
-    target_values = [choice[0] for choice in form.fields["target"].choices]
-    expected = ["all"] + [
-        state
-        for state, _ in SubmissionStates.choices
-        if state != SubmissionStates.DRAFT
-    ]
-    assert target_values == expected
-
-
-def test_schedule_export_form_questions_property():
+def test_schedule_export_form_fields():
     event = EventFactory()
     user = make_orga_user(event)
     sub_q = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
     QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
+
     form = ScheduleExportForm(event=event, user=user)
 
+    assert [choice[0] for choice in form.fields["target"].choices] == [
+        "all",
+        *[
+            state
+            for state, _ in SubmissionStates.choices
+            if state != SubmissionStates.DRAFT
+        ],
+    ]
     assert list(form.questions) == [sub_q]
-
-
-def test_schedule_export_form_question_fields_added():
-    event = EventFactory()
-    user = make_orga_user(event)
-    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    form = ScheduleExportForm(event=event, user=user)
-
-    assert f"question_{question.pk}" in form.fields
+    assert form.question_field_names == [f"question_{sub_q.pk}"]
+    assert form.export_field_names == SCHEDULE_FIELD_NAMES
+    assert [bf.name for bf in form.export_fields] == [
+        *SCHEDULE_FIELD_NAMES,
+        f"question_{sub_q.pk}",
+    ]
 
 
 @pytest.mark.parametrize("flag_enabled", (True, False), ids=("enabled", "disabled"))
-@pytest.mark.parametrize("field", ("requires_signup", "attendee_signup_count"))
-def test_schedule_export_form_signup_fields_follow_flag(flag_enabled, field):
+def test_schedule_export_form_signup_fields_follow_flag(flag_enabled):
     event = EventFactory(feature_flags={"attendee_signup": flag_enabled})
     user = make_orga_user(event)
 
     form = ScheduleExportForm(event=event, user=user)
 
-    assert (field in form.fields) is flag_enabled
-    assert (field in form.export_field_names) is flag_enabled
+    for field in ("requires_signup", "attendee_signup_count"):
+        assert (field in form.fields) is flag_enabled
+        assert (field in form.export_field_names) is flag_enabled
 
 
-def test_schedule_export_form_get_queryset_all():
+@pytest.mark.parametrize(
+    ("target", "expected"),
+    ((["all"], {"submitted", "accepted"}), ([SubmissionStates.ACCEPTED], {"accepted"})),
+    ids=("all", "accepted"),
+)
+def test_schedule_export_form_get_queryset(target, expected):
     event = EventFactory()
     user = make_orga_user(event)
-    sub1 = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    sub2 = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED, title="submitted")
+    SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED, title="accepted")
     form = ScheduleExportForm(
-        data={"export_format": "json", "target": ["all"], "title": True},
+        data={"export_format": "json", "target": target, "title": True},
         event=event,
         user=user,
     )
-    form.is_valid()
-    qs = list(form.get_queryset())
+    assert form.is_valid(), form.errors
 
-    assert set(qs) == {sub1, sub2}
-
-
-def test_schedule_export_form_get_queryset_filtered():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub_accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    form = ScheduleExportForm(
-        data={
-            "export_format": "json",
-            "target": [SubmissionStates.ACCEPTED],
-            "title": True,
-        },
-        event=event,
-        user=user,
-    )
-    form.is_valid()
-    qs = list(form.get_queryset())
-
-    assert qs == [sub_accepted]
+    assert {sub.title for sub in form.get_queryset()} == expected
 
 
 def test_schedule_export_form_get_queryset_excludes_inaccessible():
@@ -335,74 +268,63 @@ def test_schedule_export_form_get_queryset_excludes_inaccessible():
         event=event,
         user=speaker.user,
     )
-    form.is_valid()
-    qs = list(form.get_queryset())
+    assert form.is_valid(), form.errors
 
-    assert qs == []
+    assert list(form.get_queryset()) == []
 
 
-def test_schedule_export_form_get_queryset_annotates_requires_signup():
+def test_schedule_export_form_get_queryset_annotates_signup_data():
     event = EventFactory(feature_flags={"attendee_signup": True})
     user = make_orga_user(event)
     sub = SubmissionFactory(
         event=event, state=SubmissionStates.SUBMITTED, attendee_signup_required=True
     )
+    AttendeeSignupFactory(submission=sub)
     form = ScheduleExportForm(
         data={"export_format": "json", "target": ["all"], "title": True},
         event=event,
         user=user,
     )
-    form.is_valid()
+    assert form.is_valid(), form.errors
+
     qs = list(form.get_queryset())
 
-    assert len(qs) == 1
+    assert [s.pk for s in qs] == [sub.pk]
     assert qs[0]._annotated_requires_signup is True
-    assert qs[0]._annotated_confirmed_signup_count == 0
-    assert qs[0].pk == sub.pk
+    assert qs[0]._annotated_confirmed_signup_count == 1
+    assert form._get_attendee_signup_count_value(qs[0]) == 1
 
 
-def test_schedule_export_form_get_speaker_ids_value():
+def test_schedule_export_form_value_getters_without_slot():
     event = EventFactory()
     user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
+    track = TrackFactory(event=event)
+    sub = SubmissionFactory(event=event, track=track, duration=45)
     speaker = SpeakerFactory(event=event)
     sub.speakers.add(speaker)
+    tag = TagFactory(event=event)
+    sub.tags.add(tag)
+    resource = ResourceFactory(submission=sub, is_public=True)
+    bare = SubmissionFactory(event=event)
+
     form = ScheduleExportForm(event=event, user=user)
-    result = form._get_speaker_ids_value(sub)
 
-    assert result == [speaker.code]
-
-
-def test_schedule_export_form_get_speaker_names_value():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    sub.speakers.add(speaker)
-    form = ScheduleExportForm(event=event, user=user)
-    result = form._get_speaker_names_value(sub)
-
-    assert result == [speaker.get_display_name()]
-
-
-def test_schedule_export_form_get_room_value_with_slot():
-    event = EventFactory()
-    user = make_orga_user(event)
-    room = RoomFactory(event=event)
-    sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    wip = event.wip_schedule
-    TalkSlotFactory(submission=sub, schedule=wip, room=room)
-    freeze_schedule(wip, "v1", notify_speakers=False)
-    sub = Submission.objects.select_related("event").get(pk=sub.pk)
-    form = ScheduleExportForm(event=event, user=user)
-    result = form._get_room_value(sub)
-
-    assert str(result) == str(room.name)
-
-
-@pytest.mark.parametrize(
-    "method_name",
-    (
+    assert form._get_speaker_ids_value(sub) == [speaker.code]
+    assert form._get_speaker_names_value(sub) == [speaker.get_display_name()]
+    assert form._get_duration_value(sub) == 45
+    assert form.get_object_attribute(sub, "duration") == 45
+    assert form.get_object_attribute(sub, "code") == sub.code
+    assert form.get_object_attribute(sub, "nonexistent_field") is None
+    assert form._get_image_value(sub) == ""
+    assert form._get_created_value(sub) == sub.created.isoformat()
+    assert str(form._get_submission_type_value(sub)) == str(sub.submission_type.name)
+    assert str(form._get_track_value(sub)) == str(track.name)
+    assert form._get_tags_value(sub) == [tag.tag]
+    assert form._get_resources_value(sub) == [resource.url]
+    assert form._get_track_value(bare) is None
+    assert form._get_tags_value(bare) is None
+    assert form._get_resources_value(bare) == []
+    for method_name in (
         "_get_room_value",
         "_get_start_value",
         "_get_start_date_value",
@@ -410,429 +332,37 @@ def test_schedule_export_form_get_room_value_with_slot():
         "_get_end_value",
         "_get_end_date_value",
         "_get_end_time_value",
-    ),
-)
-def test_schedule_export_form_getter_returns_none_without_slot(method_name):
+    ):
+        assert getattr(form, method_name)(bare) is None, method_name
+
+
+def test_schedule_export_form_slot_getters():
     event = EventFactory()
     user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    form = ScheduleExportForm(event=event, user=user)
-    result = getattr(form, method_name)(sub)
-
-    assert result is None
-
-
-def test_schedule_export_form_get_start_with_slot():
-    event = EventFactory()
-    user = make_orga_user(event)
+    room = RoomFactory(event=event)
     sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     wip = event.wip_schedule
-    slot = TalkSlotFactory(submission=sub, schedule=wip)
+    slot = TalkSlotFactory(submission=sub, schedule=wip, room=room)
     freeze_schedule(wip, "v1", notify_speakers=False)
     sub = Submission.objects.select_related("event").get(pk=sub.pk)
     form = ScheduleExportForm(event=event, user=user)
-
-    start_val = form._get_start_value(sub)
-    start_date_val = form._get_start_date_value(sub)
-    start_time_val = form._get_start_time_value(sub)
 
     local_start = slot.start.astimezone(event.tz)
-    assert start_val == local_start.isoformat()
-    assert start_date_val == local_start.date().isoformat()
-    assert start_time_val == local_start.time().isoformat()
-
-
-def test_schedule_export_form_get_end_with_slot():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    wip = event.wip_schedule
-    slot = TalkSlotFactory(submission=sub, schedule=wip)
-    freeze_schedule(wip, "v1", notify_speakers=False)
-    sub = Submission.objects.select_related("event").get(pk=sub.pk)
-    form = ScheduleExportForm(event=event, user=user)
-
-    end_val = form._get_end_value(sub)
-    end_date_val = form._get_end_date_value(sub)
-    end_time_val = form._get_end_time_value(sub)
-
     local_end = slot.end.astimezone(event.tz)
-    assert end_val == local_end.isoformat()
-    assert end_date_val == local_end.date().isoformat()
-    assert end_time_val == local_end.time().isoformat()
+    assert str(form._get_room_value(sub)) == str(room.name)
+    assert form._get_start_value(sub) == local_start.isoformat()
+    assert form._get_start_date_value(sub) == local_start.date().isoformat()
+    assert form._get_start_time_value(sub) == local_start.time().isoformat()
+    assert form._get_end_value(sub) == local_end.isoformat()
+    assert form._get_end_date_value(sub) == local_end.date().isoformat()
+    assert form._get_end_time_value(sub) == local_end.time().isoformat()
 
 
-def test_schedule_export_form_get_duration_value():
+def test_schedule_export_form_answers():
     event = EventFactory()
     user = make_orga_user(event)
-    sub = SubmissionFactory(event=event, duration=45)
-    form = ScheduleExportForm(event=event, user=user)
-    result = form._get_duration_value(sub)
-
-    assert result == 45
-
-
-def test_schedule_export_form_get_image_value_no_image():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    form = ScheduleExportForm(event=event, user=user)
-    result = form._get_image_value(sub)
-
-    assert result == ""
-
-
-def test_schedule_export_form_get_created_value():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    form = ScheduleExportForm(event=event, user=user)
-    result = form._get_created_value(sub)
-
-    assert result == sub.created.isoformat()
-
-
-def test_schedule_export_form_get_submission_type_value():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    form = ScheduleExportForm(event=event, user=user)
-    result = form._get_submission_type_value(sub)
-
-    assert str(result) == str(sub.submission_type.name)
-
-
-def test_schedule_export_form_get_track_value():
-    event = EventFactory()
-    user = make_orga_user(event)
-    track = TrackFactory(event=event)
-    sub = SubmissionFactory(event=event, track=track)
-    form = ScheduleExportForm(event=event, user=user)
-    result = form._get_track_value(sub)
-
-    assert str(result) == str(track.name)
-
-
-def test_schedule_export_form_get_track_value_none():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    form = ScheduleExportForm(event=event, user=user)
-    result = form._get_track_value(sub)
-
-    assert result is None
-
-
-def test_schedule_export_form_get_tags_value():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    tag = TagFactory(event=event)
-    sub.tags.add(tag)
-    form = ScheduleExportForm(event=event, user=user)
-    result = form._get_tags_value(sub)
-
-    assert result == [tag.tag]
-
-
-def test_schedule_export_form_get_tags_value_empty():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    form = ScheduleExportForm(event=event, user=user)
-    result = form._get_tags_value(sub)
-
-    assert result is None
-
-
-def test_schedule_export_form_get_resources_value():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    resource = ResourceFactory(submission=sub, is_public=True)
-    form = ScheduleExportForm(event=event, user=user)
-    result = form._get_resources_value(sub)
-
-    assert result == [resource.url]
-
-
-def test_schedule_export_form_get_resources_value_empty():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    form = ScheduleExportForm(event=event, user=user)
-    result = form._get_resources_value(sub)
-
-    assert result == []
-
-
-def test_schedule_export_form_get_attendee_signup_count_value():
-    event = EventFactory(feature_flags={"attendee_signup": True})
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    sub._annotated_confirmed_signup_count = 3
-    form = ScheduleExportForm(event=event, user=user)
-
-    assert form._get_attendee_signup_count_value(sub) == 3
-
-
-def test_schedule_export_form_get_answer():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    answer = AnswerFactory(question=question, submission=sub)
-    form = ScheduleExportForm(event=event, user=user)
-    result = form.get_answer(question, sub)
-
-    assert result == answer
-
-
-def test_schedule_export_form_get_answer_none():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    form = ScheduleExportForm(event=event, user=user)
-    result = form.get_answer(question, sub)
-
-    assert result is None
-
-
-def test_schedule_export_form_question_field_names():
-    event = EventFactory()
-    user = make_orga_user(event)
-    q = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    form = ScheduleExportForm(event=event, user=user)
-
-    assert form.question_field_names == [f"question_{q.pk}"]
-
-
-def test_schedule_export_form_export_fields():
-    event = EventFactory()
-    user = make_orga_user(event)
-    form = ScheduleExportForm(event=event, user=user)
-
-    field_names = [bf.name for bf in form.export_fields]
-    assert "title" in field_names
-    assert "speaker_ids" in field_names
-
-
-def test_schedule_export_form_clean_csv_without_delimiter():
-    event = EventFactory()
-    user = make_orga_user(event)
-    form = ScheduleExportForm(
-        event=event,
-        user=user,
-        data={"export_format": "csv", "target": ["all"], "title": True},
-    )
-
-    assert not form.is_valid()
-    assert "data_delimiter" in form.errors
-
-
-def test_schedule_export_form_clean_json_without_delimiter():
-    event = EventFactory()
-    user = make_orga_user(event)
-    form = ScheduleExportForm(
-        event=event,
-        user=user,
-        data={"export_format": "json", "target": ["all"], "title": True},
-    )
-
-    assert form.is_valid(), form.errors
-
-
-def test_schedule_export_form_get_object_attribute_custom_method():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event, duration=45)
-    form = ScheduleExportForm(event=event, user=user)
-    result = form.get_object_attribute(sub, "duration")
-
-    assert result == 45
-
-
-def test_schedule_export_form_get_object_attribute_direct():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    form = ScheduleExportForm(event=event, user=user)
-    result = form.get_object_attribute(sub, "code")
-
-    assert result == sub.code
-
-
-def test_schedule_export_form_get_object_attribute_missing():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    form = ScheduleExportForm(event=event, user=user)
-    result = form.get_object_attribute(sub, "nonexistent_field")
-
-    assert result is None
-
-
-def test_schedule_export_form_get_data():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    form = ScheduleExportForm(
-        event=event,
-        user=user,
-        data={"export_format": "json", "target": ["all"], "title": True},
-    )
-    form.is_valid()
-    data = form.get_data(form.get_queryset(), ["title"], [])
-
-    assert len(data) == 1
-    assert data[0]["ID"] == sub.code
-    assert str(sub.title) in str(data[0].values())
-
-
-def test_schedule_export_form_get_data_with_questions():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    answer = AnswerFactory(question=question, submission=sub)
-    form = ScheduleExportForm(event=event, user=user)
-    data = form.get_data(form.event.submissions.all(), [], [question])
-
-    assert len(data) == 1
-    assert data[0][str(question.question)] == answer.answer_string
-
-
-def test_schedule_export_form_get_data_without_answer():
-    event = EventFactory()
-    user = make_orga_user(event)
-    SubmissionFactory(event=event)
-    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    form = ScheduleExportForm(event=event, user=user)
-    data = form.get_data(form.event.submissions.all(), [], [question])
-
-    assert data[0][str(question.question)] is None
-
-
-def test_schedule_export_form_export_data_returns_none_when_empty():
-    event = EventFactory()
-    user = make_orga_user(event)
-    form = ScheduleExportForm(
-        event=event,
-        user=user,
-        data={
-            "export_format": "json",
-            "target": [SubmissionStates.ACCEPTED],
-            "title": True,
-        },
-    )
-    form.is_valid()
-    result = form.export_data()
-
-    assert result is None
-
-
-def test_schedule_export_form_export_data_json():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    form = ScheduleExportForm(
-        event=event,
-        user=user,
-        data={"export_format": "json", "target": ["all"], "title": True},
-    )
-    form.is_valid()
-    response = form.export_data()
-
-    assert response["Content-Type"] == "application/json; charset=utf-8"
-    assert f"{event.slug}_sessions.json" in response["Content-Disposition"]
-    data = json.loads(response.content)
-    assert len(data) == 1
-    assert data[0]["ID"] == sub.code
-
-
-def test_schedule_export_form_export_data_csv():
-    event = EventFactory()
-    user = make_orga_user(event)
-    SubmissionFactory(event=event)
-    form = ScheduleExportForm(
-        event=event,
-        user=user,
-        data={
-            "export_format": "csv",
-            "data_delimiter": "newline",
-            "target": ["all"],
-            "title": True,
-        },
-    )
-    form.is_valid()
-    response = form.export_data()
-
-    assert response["Content-Type"] == "text/plain; charset=utf-8"
-    assert f"{event.slug}_sessions.csv" in response["Content-Disposition"]
-    content = response.content.decode()
-    assert "ID" in content
-
-
-def test_schedule_export_form_csv_export_joins_lists_with_delimiter():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
-    speaker1 = SpeakerFactory(event=event)
-    speaker2 = SpeakerFactory(event=event)
-    sub.speakers.add(speaker1, speaker2)
-    form = ScheduleExportForm(
-        event=event,
-        user=user,
-        data={
-            "export_format": "csv",
-            "data_delimiter": "comma",
-            "target": ["all"],
-            "speaker_names": True,
-        },
-    )
-    form.is_valid()
-    response = form.export_data()
-
-    content = response.content.decode()
-    assert ", " in content
-
-
-def test_schedule_export_form_csv_export_starts_with_utf8_bom():
-    event = EventFactory()
-    user = make_orga_user(event)
-    # Use the characters from the user's bug report verbatim.
-    SubmissionFactory(
-        event=event, title="Beyond “Big” Data: Building Infrastructure for “Thick” Data"
-    )
-    SubmissionFactory(event=event, title="A Researcher’s Guide – André")
-    form = ScheduleExportForm(
-        event=event,
-        user=user,
-        data={
-            "export_format": "csv",
-            "data_delimiter": "newline",
-            "target": ["all"],
-            "title": True,
-        },
-    )
-    form.is_valid()
-    response = form.export_data()
-
-    assert response.content.startswith(b"\xef\xbb\xbf")
-    content = response.content.decode("utf-8-sig")
-    assert "Beyond “Big” Data: Building Infrastructure for “Thick” Data" in content
-    assert "A Researcher’s Guide – André" in content
-    # And a sanity check that the bytes do contain proper UTF-8 sequences,
-    # not the MacRoman-interpreted mojibake from the bug report.
-    assert "Andr√" not in content
-    assert "‚Äú" not in content
-
-
-def test_schedule_export_form_export_data_with_question():
-    event = EventFactory()
-    user = make_orga_user(event)
-    sub = SubmissionFactory(event=event)
+    sub = SubmissionFactory(event=event, title="Answered")
+    unanswered = SubmissionFactory(event=event, title="Unanswered")
     question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
     answer = AnswerFactory(question=question, submission=sub)
     form = ScheduleExportForm(
@@ -844,158 +374,178 @@ def test_schedule_export_form_export_data_with_question():
             f"question_{question.pk}": True,
         },
     )
-    form.is_valid()
+    assert form.is_valid(), form.errors
+
+    assert form.get_answer(question, sub) == answer
+    assert form.get_answer(question, unanswered) is None
+    assert sorted(
+        form.get_data(event.submissions.all(), [], [question]),
+        key=lambda row: row["ID"],
+    ) == sorted(
+        [
+            {"ID": sub.code, str(question.question): answer.answer_string},
+            {"ID": unanswered.code, str(question.question): None},
+        ],
+        key=lambda row: row["ID"],
+    )
+    response = form.export_data()
+    assert {
+        row["ID"]: row[str(question.question)] for row in json.loads(response.content)
+    } == {sub.code: answer.answer_string, unanswered.code: None}
+
+
+@pytest.mark.parametrize(
+    ("export_format", "errors"),
+    (
+        ("csv", {"data_delimiter": ["Please select a delimiter for your CSV export."]}),
+        ("json", {}),
+    ),
+)
+def test_schedule_export_form_clean_requires_csv_delimiter(export_format, errors):
+    event = EventFactory()
+    user = make_orga_user(event)
+    form = ScheduleExportForm(
+        event=event,
+        user=user,
+        data={"export_format": export_format, "target": ["all"], "title": True},
+    )
+
+    assert form.is_valid() == (not errors)
+    assert form.errors == errors
+
+
+def test_schedule_export_form_export_data_json():
+    event = EventFactory()
+    user = make_orga_user(event)
+    sub = SubmissionFactory(event=event)
+
+    empty = ScheduleExportForm(
+        event=event,
+        user=user,
+        data={
+            "export_format": "json",
+            "target": [SubmissionStates.ACCEPTED],
+            "title": True,
+        },
+    )
+    assert empty.is_valid(), empty.errors
+    assert empty.export_data() is None
+
+    form = ScheduleExportForm(
+        event=event,
+        user=user,
+        data={"export_format": "json", "target": ["all"], "title": True},
+    )
+    assert form.is_valid(), form.errors
     response = form.export_data()
 
-    data = json.loads(response.content)
-    assert data[0][str(question.question)] == answer.answer_string
+    assert response["Content-Type"] == "application/json; charset=utf-8"
+    assert response["Content-Disposition"] == (
+        f'attachment; filename="{event.slug}_sessions.json"'
+    )
+    assert json.loads(response.content) == [
+        {"ID": sub.code, "Proposal title": sub.title}
+    ]
 
 
-def test_speaker_export_form_questions_property():
+def test_schedule_export_form_export_data_csv():
+    event = EventFactory()
+    user = make_orga_user(event)
+    # Use the characters from the user's bug report verbatim.
+    sub = SubmissionFactory(event=event, title="A Researcher’s Guide – André")
+    speaker1 = SpeakerFactory(event=event, user__name="Ada")
+    speaker2 = SpeakerFactory(event=event, user__name="Bob")
+    sub.speakers.add(speaker1, through_defaults={"position": 0})
+    sub.speakers.add(speaker2, through_defaults={"position": 1})
+    form = ScheduleExportForm(
+        event=event,
+        user=user,
+        data={
+            "export_format": "csv",
+            "data_delimiter": "comma",
+            "target": ["all"],
+            "title": True,
+            "speaker_names": True,
+        },
+    )
+    assert form.is_valid(), form.errors
+
+    response = form.export_data()
+
+    assert response["Content-Type"] == "text/plain; charset=utf-8"
+    assert response["Content-Disposition"] == (
+        f'attachment; filename="{event.slug}_sessions.csv"'
+    )
+    assert response.content.startswith(b"\xef\xbb\xbf")
+    assert response.content.decode("utf-8-sig") == (
+        "ID,Proposal title,Speaker names\r\n"
+        f'{sub.code},A Researcher’s Guide – André,"Ada, Bob"\r\n'
+    )
+
+
+def test_speaker_export_form_fields():
     event = EventFactory()
     speaker_q = QuestionFactory(event=event, target="speaker", active=True)
     QuestionFactory(event=event, target="submission", active=True)
     QuestionFactory(event=event, target="speaker", active=False)
+
     form = SpeakerExportForm(event=event)
 
     assert list(form.questions) == [speaker_q]
-
-
-def test_speaker_export_form_question_fields_added():
-    event = EventFactory()
-    question = QuestionFactory(event=event, target="speaker", active=True)
-    form = SpeakerExportForm(event=event)
-
-    assert f"question_{question.pk}" in form.fields
-
-
-def test_speaker_export_form_get_queryset_all():
-    event = EventFactory()
-    speaker1 = SpeakerFactory(event=event)
-    speaker2 = SpeakerFactory(event=event)
-    sub1 = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    sub1.speakers.add(speaker1)
-    sub2 = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    sub2.speakers.add(speaker2)
-    form = SpeakerExportForm(
-        data={"export_format": "json", "target": "all", "name": True}, event=event
-    )
-    form.is_valid()
-    qs = list(form.get_queryset())
-
-    assert set(qs) == {speaker1, speaker2}
-
-
-def test_speaker_export_form_get_queryset_accepted_only():
-    event = EventFactory()
-    accepted_speaker = SpeakerFactory(event=event)
-    submitted_speaker = SpeakerFactory(event=event)
-    sub_accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    sub_accepted.speakers.add(accepted_speaker)
-    sub_submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    sub_submitted.speakers.add(submitted_speaker)
-    form = SpeakerExportForm(
-        data={"export_format": "json", "target": "accepted", "name": True}, event=event
-    )
-    form.is_valid()
-    qs = list(form.get_queryset())
-
-    assert qs == [accepted_speaker]
-
-
-def test_speaker_export_form_get_queryset_includes_confirmed():
-    event = EventFactory()
-    confirmed_speaker = SpeakerFactory(event=event)
-    sub_confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    sub_confirmed.speakers.add(confirmed_speaker)
-    form = SpeakerExportForm(
-        data={"export_format": "json", "target": "accepted", "name": True}, event=event
-    )
-    form.is_valid()
-    qs = list(form.get_queryset())
-
-    assert qs == [confirmed_speaker]
-
-
-def test_speaker_export_form_get_name_value():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-    form = SpeakerExportForm(event=event)
-    result = form._get_name_value(speaker)
-
-    assert result == speaker.get_display_name()
-
-
-def test_speaker_export_form_get_avatar_value_no_avatar():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-    form = SpeakerExportForm(event=event)
-    result = form._get_avatar_value(speaker)
-
-    assert result is None
-
-
-def test_speaker_export_form_get_email_value():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-    form = SpeakerExportForm(event=event)
-    result = form._get_email_value(speaker)
-
-    assert result == speaker.user.email
+    assert form.export_field_names == [
+        "name",
+        "biography",
+        "email",
+        "avatar",
+        "submission_ids",
+        "submission_titles",
+    ]
+    assert [bf.name for bf in form.export_fields] == [
+        *form.export_field_names,
+        f"question_{speaker_q.pk}",
+    ]
 
 
 @pytest.mark.parametrize(
-    ("email", "expected"),
-    ((None, None), ("contact@example.com", "contact@example.com")),
-    ids=("email-less", "contact-email"),
+    ("target", "expected"),
+    (
+        ("all", {"submitted", "accepted", "confirmed"}),
+        ("accepted", {"accepted", "confirmed"}),
+    ),
 )
-def test_speaker_export_form_get_email_value_managed(email, expected):
+def test_speaker_export_form_get_queryset(target, expected):
     event = EventFactory()
-    speaker = SpeakerFactory(event=event, user=None, email=email)
-    form = SpeakerExportForm(event=event)
-    result = form._get_email_value(speaker)
+    for state in ("submitted", "accepted", "confirmed"):
+        SubmissionFactory(event=event, state=state).speakers.add(
+            SpeakerFactory(event=event, user__name=state)
+        )
+    form = SpeakerExportForm(
+        data={"export_format": "json", "target": target, "name": True}, event=event
+    )
+    assert form.is_valid(), form.errors
 
-    assert result == expected
+    assert {speaker.user.name for speaker in form.get_queryset()} == expected
 
 
-def test_speaker_export_form_get_submission_ids_value():
+def test_speaker_export_form_value_getters():
     event = EventFactory()
     speaker = SpeakerFactory(event=event)
+    managed = SpeakerFactory(event=event, user=None, email="contact@example.com")
+    bare = SpeakerFactory(event=event, user=None, email=None)
     sub = SubmissionFactory(event=event)
     sub.speakers.add(speaker)
-    form = SpeakerExportForm(event=event)
-    result = form._get_submission_ids_value(speaker)
-
-    assert result == [sub.code]
-
-
-def test_speaker_export_form_get_submission_titles_value():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-    sub = SubmissionFactory(event=event)
-    sub.speakers.add(speaker)
-    form = SpeakerExportForm(event=event)
-    result = form._get_submission_titles_value(speaker)
-
-    assert result == [sub.title]
-
-
-def test_speaker_export_form_get_answer():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
     question = QuestionFactory(event=event, target="speaker", active=True)
     answer = AnswerFactory(question=question, speaker=speaker)
+
     form = SpeakerExportForm(event=event)
-    result = form.get_answer(question, speaker)
 
-    assert result == answer
-
-
-def test_speaker_export_form_get_answer_none():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-    question = QuestionFactory(event=event, target="speaker", active=True)
-    form = SpeakerExportForm(event=event)
-    result = form.get_answer(question, speaker)
-
-    assert result is None
+    assert form._get_name_value(speaker) == speaker.get_display_name()
+    assert form._get_avatar_value(speaker) is None
+    assert form._get_email_value(speaker) == speaker.user.email
+    assert form._get_email_value(managed) == "contact@example.com"
+    assert form._get_email_value(bare) is None
+    assert form._get_submission_ids_value(speaker) == [sub.code]
+    assert form._get_submission_titles_value(speaker) == [sub.title]
+    assert form._get_submission_ids_value(bare) == []
+    assert form.get_answer(question, speaker) == answer
+    assert form.get_answer(question, bare) is None

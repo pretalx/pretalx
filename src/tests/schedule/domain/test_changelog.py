@@ -17,20 +17,10 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_build_changelog_returns_empty_without_released_schedules(event):
+def test_build_changelog_lists_released_schedules_newest_first(event):
     assert build_changelog(event) == []
 
-
-def test_build_changelog_skips_wip_schedule(event):
-    ScheduleFactory(event=event, version="v1")
     ScheduleFactory(event=event, version=None, published=None)
-
-    result = build_changelog(event)
-
-    assert [s.version for s in result] == ["v1"]
-
-
-def test_build_changelog_chains_previous_schedule(event):
     v1 = ScheduleFactory(
         event=event, version="v1", published=now() - dt.timedelta(hours=2)
     )
@@ -45,75 +35,46 @@ def test_build_changelog_chains_previous_schedule(event):
     assert result[1].previous_schedule is None
 
 
-def test_build_changelog_populates_scheduled_talks(event):
+def test_build_changelog_batches_visible_scheduled_talks(
+    event, django_assert_num_queries
+):
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     room = RoomFactory(event=event)
-    schedule = ScheduleFactory(event=event, version="v1")
-    TalkSlotFactory(
-        schedule=schedule,
-        submission=submission,
-        room=room,
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=1),
+    start = event.datetime_from
+    end = start + dt.timedelta(hours=1)
+    v1 = ScheduleFactory(
+        event=event, version="v1", published=now() - dt.timedelta(hours=2)
     )
-
-    result = build_changelog(event)
-
-    assert len(result) == 1
-    talks = result[0].scheduled_talks
-    assert len(talks) == 1
-    assert talks[0].submission == submission
-
-
-def test_build_changelog_filters_hidden_and_unassigned_slots(event):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    room = RoomFactory(event=event)
-    schedule = ScheduleFactory(event=event, version="v1")
+    v2 = ScheduleFactory(
+        event=event, version="v2", published=now() - dt.timedelta(hours=1)
+    )
+    slot_v1 = TalkSlotFactory(
+        schedule=v1, submission=submission, room=room, start=start, end=end
+    )
+    slot_v2 = TalkSlotFactory(
+        schedule=v2, submission=submission, room=room, start=start, end=end
+    )
     TalkSlotFactory(
-        schedule=schedule,
+        schedule=v2,
         submission=submission,
         room=room,
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=1),
+        start=start,
+        end=end,
         is_visible=False,
     )
-    TalkSlotFactory(
-        schedule=schedule,
-        submission=submission,
-        room=None,
-        start=event.datetime_from,
-        end=event.datetime_from + dt.timedelta(hours=1),
-    )
-    TalkSlotFactory(
-        schedule=schedule, submission=submission, room=room, start=None, end=None
-    )
-
-    result = build_changelog(event)
-
-    assert result[0].scheduled_talks == []
-
-
-def test_build_changelog_uses_batched_slot_query(event, django_assert_num_queries):
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    room = RoomFactory(event=event)
-    for version in ("v1", "v2", "v3"):
-        schedule = ScheduleFactory(event=event, version=version)
-        TalkSlotFactory(
-            schedule=schedule,
-            submission=submission,
-            room=room,
-            start=event.datetime_from,
-            end=event.datetime_from + dt.timedelta(hours=1),
-        )
+    TalkSlotFactory(schedule=v2, submission=submission, room=None, start=start, end=end)
+    TalkSlotFactory(schedule=v2, submission=submission, room=room, start=None, end=None)
 
     # 1 query for schedules, 1 for slots, 1 for rooms, 1 for submissions,
     # 1 for the speakers prefetch.
     with django_assert_num_queries(5):
         result = build_changelog(event)
-        for schedule in result:
-            list(schedule.scheduled_talks)
+        talks = [
+            [(slot, slot.submission, slot.room) for slot in schedule.scheduled_talks]
+            for schedule in result
+        ]
 
-    assert len(result) == 3
+    assert talks == [[(slot_v2, submission, room)], [(slot_v1, submission, room)]]
 
 
 def test_build_changelog_limit_returns_newest_schedules(event):
@@ -140,7 +101,9 @@ def test_build_changelog_limit_returns_newest_schedules(event):
     assert len(result[-1].previous_schedule.scheduled_talks) == 1
 
 
-def _release_v1_v2_with_move_new_and_canceled(event):
+def test_build_changelog_computes_changes_without_n_plus_one(
+    event, django_assert_num_queries
+):
     sub_a = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     sub_b = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     sub_c = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -148,7 +111,6 @@ def _release_v1_v2_with_move_new_and_canceled(event):
     room_2 = RoomFactory(event=event)
     start = event.datetime_from
     hour = dt.timedelta(hours=1)
-
     v1 = ScheduleFactory(
         event=event, version="v1", published=now() - dt.timedelta(hours=2)
     )
@@ -162,7 +124,6 @@ def _release_v1_v2_with_move_new_and_canceled(event):
         start=start + hour,
         end=start + 2 * hour,
     )
-
     v2 = ScheduleFactory(
         event=event, version="v2", published=now() - dt.timedelta(hours=1)
     )
@@ -176,39 +137,24 @@ def _release_v1_v2_with_move_new_and_canceled(event):
     TalkSlotFactory(
         schedule=v2, submission=sub_b, room=room_1, start=start, end=start + hour
     )
-    return v1, v2, sub_a, sub_b, sub_c
-
-
-def test_build_changelog_computes_real_changes(event):
-    v1, v2, sub_a, sub_b, sub_c = _release_v1_v2_with_move_new_and_canceled(event)
-
-    result = build_changelog(event)
-    v2_hydrated, v1_hydrated = result
-
-    assert v1_hydrated.changes["action"] == "create"
-    assert v1_hydrated.changes["count"] == 0
-
-    changes = v2_hydrated.changes
-    assert changes["action"] == "update"
-    assert changes["count"] == 3
-    assert {slot.submission_id for slot in changes["new_talks"]} == {sub_b.pk}
-    assert {move["submission"].pk for move in changes["moved_talks"]} == {sub_a.pk}
-    assert {slot.submission_id for slot in changes["canceled_talks"]} == {sub_c.pk}
-
-
-def test_build_changelog_changes_access_does_not_n_plus_one(
-    event, django_assert_num_queries
-):
-    _release_v1_v2_with_move_new_and_canceled(event)
     event.cache.clear()
 
     with django_assert_num_queries(5):
-        result = build_changelog(event)
-        for schedule in result:
-            _ = schedule.changes
+        v2_hydrated, v1_hydrated = build_changelog(event)
+        for schedule in (v2_hydrated, v1_hydrated):
             for slot in schedule.changes["new_talks"]:
                 _ = slot.submission.display_title_with_speakers
             for slot in schedule.changes["canceled_talks"]:
                 _ = slot.submission.display_title_with_speakers
             for move in schedule.changes["moved_talks"]:
                 _ = move["submission"].display_title_with_speakers
+
+    assert (v1_hydrated.changes["action"], v1_hydrated.changes["count"]) == (
+        "create",
+        0,
+    )
+    changes = v2_hydrated.changes
+    assert (changes["action"], changes["count"]) == ("update", 3)
+    assert [slot.submission for slot in changes["new_talks"]] == [sub_b]
+    assert [move["submission"] for move in changes["moved_talks"]] == [sub_a]
+    assert [slot.submission for slot in changes["canceled_talks"]] == [sub_c]

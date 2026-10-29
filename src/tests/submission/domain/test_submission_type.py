@@ -24,61 +24,46 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_propagate_default_duration_rewrites_inherited_slots():
+def test_propagate_default_duration_rewrites_only_inherited_slots():
     event = EventFactory()
     st = event.cfp.default_type
-    submission = SubmissionFactory(event=event, duration=None)
-    slot = TalkSlotFactory(submission=submission)
+    inherited = TalkSlotFactory(
+        submission=SubmissionFactory(event=event, duration=None)
+    )
+    custom = TalkSlotFactory(submission=SubmissionFactory(event=event, duration=45))
+    custom_end = custom.end
 
     st.default_duration += 15
     st.save()
     propagate_default_duration(st)
 
-    slot.refresh_from_db()
-    assert slot.end == slot.start + dt.timedelta(minutes=st.default_duration)
-
-
-def test_propagate_default_duration_skips_slots_with_custom_duration():
-    event = EventFactory()
-    st = event.cfp.default_type
-    submission = SubmissionFactory(event=event, duration=45)
-    slot = TalkSlotFactory(submission=submission)
-    original_end = slot.end
+    inherited.refresh_from_db()
+    custom.refresh_from_db()
+    assert inherited.end == inherited.start + dt.timedelta(minutes=st.default_duration)
+    assert custom.end == custom_end
 
     st.default_duration += 15
     st.save()
-    propagate_default_duration(st)
+    apply_submission_type_field_changes(st, ["default_duration"])
 
-    slot.refresh_from_db()
-    assert slot.end == original_end
+    inherited.refresh_from_db()
+    custom.refresh_from_db()
+    assert inherited.end == inherited.start + dt.timedelta(minutes=st.default_duration)
+    assert custom.end == custom_end
 
 
-def test_can_delete_submission_type_true_for_unused():
+def test_can_delete_submission_type_unless_default_or_used():
     event = EventFactory()
     st = SubmissionTypeFactory(event=event)
 
     with scope(event=event):
         assert can_delete_submission_type(st) is True
-
-
-def test_can_delete_submission_type_false_for_default():
-    event = EventFactory()
-    default = event.cfp.default_type
-
-    with scope(event=event):
-        assert can_delete_submission_type(default) is False
-
-
-def test_can_delete_submission_type_false_when_used_by_submission():
-    event = EventFactory()
-    st = SubmissionTypeFactory(event=event)
-    SubmissionFactory(event=event, submission_type=st)
-
-    with scope(event=event):
+        assert can_delete_submission_type(event.cfp.default_type) is False
+        SubmissionFactory(event=event, submission_type=st)
         assert can_delete_submission_type(st) is False
 
 
-def test_make_default_submission_type_promotes_and_logs():
+def test_make_default_submission_type_promotes_and_logs_once():
     event = EventFactory()
     user = UserFactory()
     new_default = SubmissionTypeFactory(event=event)
@@ -88,33 +73,12 @@ def test_make_default_submission_type_promotes_and_logs():
         cfp = CfP.objects.select_related("default_type").get(event=event)
 
         assert cfp.default_type == new_default
-        log = new_default.logged_actions().first()
+        log = new_default.logged_actions().get()
         assert log.action_type == "pretalx.submission_type.make_default"
         assert log.person == user
 
-
-def test_make_default_submission_type_no_op_when_already_default():
-    event = EventFactory()
-    user = UserFactory()
-    default = event.cfp.default_type
-
-    with scope(event=event):
-        make_default_submission_type(default, person=user)
-        assert not default.logged_actions().exists()
-
-
-def test_apply_submission_type_field_changes_propagates_duration():
-    event = EventFactory()
-    st = event.cfp.default_type
-    submission = SubmissionFactory(event=event, duration=None)
-    slot = TalkSlotFactory(submission=submission)
-
-    st.default_duration += 15
-    st.save()
-    apply_submission_type_field_changes(st, ["default_duration"])
-
-    slot.refresh_from_db()
-    assert slot.end == slot.start + dt.timedelta(minutes=st.default_duration)
+        make_default_submission_type(new_default, person=user)
+        assert new_default.logged_actions().count() == 1
 
 
 @pytest.mark.parametrize(
@@ -144,9 +108,5 @@ def test_apply_submission_type_field_changes_signup_cascade(
         pinned = apply_submission_type_field_changes(sub_type, changed_fields)
 
         submission.refresh_from_db()
-    if expect_pinned:
-        assert pinned == [submission]
-        assert submission.attendee_signup_required is True
-    else:
-        assert pinned == []
-        assert submission.attendee_signup_required is None
+    assert pinned == ([submission] if expect_pinned else [])
+    assert submission.attendee_signup_required is (True if expect_pinned else None)

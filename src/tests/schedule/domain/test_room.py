@@ -16,54 +16,34 @@ from pretalx.schedule.domain.room import (
 )
 from pretalx.schedule.models import Room
 from tests.factories import RoomFactory, ScheduleFactory, TalkSlotFactory, UserFactory
+from tests.utils import refresh
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_delete_room_removes_unused_room(event):
-    room = RoomFactory(event=event)
+def test_delete_room_protects_referenced_rooms(event):
+    unused_room = RoomFactory(event=event)
+    used_room = TalkSlotFactory(submission__event=event).room
 
-    delete_room(room)
-
-    assert not Room.objects.filter(pk=room.pk).exists()
-
-
-def test_delete_room_raises_protected_error_when_referenced():
-    slot = TalkSlotFactory()
-    room = slot.room
-
+    delete_room(unused_room)
     with pytest.raises(ProtectedError):
-        delete_room(room)
+        delete_room(used_room)
 
-    assert Room.objects.filter(pk=room.pk).exists()
+    assert list(Room.objects.filter(event=event)) == [used_room]
 
 
-def test_active_schedule_pks_without_released_schedule(event):
+def test_active_schedule_pks_adds_released_schedule(event):
     with scope(event=event):
         assert active_schedule_pks(event) == [event.wip_schedule.pk]
 
-
-def test_active_schedule_pks_with_released_schedule(event):
     released = ScheduleFactory(event=event, version="v1")
+    event = refresh(event)
 
     with scope(event=event):
-        result = active_schedule_pks(event)
-
-    assert set(result) == {event.wip_schedule.pk, released.pk}
+        assert active_schedule_pks(event) == [event.wip_schedule.pk, released.pk]
 
 
-def test_room_is_in_use_only_for_current_or_wip_slots(event):
-    old_room = RoomFactory(event=event)
-    wip_room = TalkSlotFactory(submission__event=event).room
-    old_schedule = ScheduleFactory(event=event, version="v0", published=None)
-    TalkSlotFactory(submission=None, room=old_room, schedule=old_schedule)
-
-    with scope(event=event):
-        assert room_is_in_use(wip_room) is True
-        assert room_is_in_use(old_room) is False
-
-
-def test_annotate_room_usage_matches_predicates(event):
+def test_room_usage_only_for_current_or_wip_slots(event):
     unused_room = RoomFactory(event=event)
     historic_room = RoomFactory(event=event)
     historic_schedule = ScheduleFactory(event=event, version="v0", published=None)
@@ -71,67 +51,39 @@ def test_annotate_room_usage_matches_predicates(event):
     current_room = TalkSlotFactory(submission__event=event).room
 
     with scope(event=event):
-        rooms = {
-            room.pk: room
+        in_use = [room_is_in_use(r) for r in (unused_room, historic_room, current_room)]
+        annotated = {
+            room.pk: (room.is_deletable, room.is_in_use)
             for room in annotate_room_usage(event.rooms.all(), event=event)
         }
 
-    assert (rooms[unused_room.pk].is_deletable, rooms[unused_room.pk].is_in_use) == (
-        True,
-        False,
-    )
-    assert (
-        rooms[historic_room.pk].is_deletable,
-        rooms[historic_room.pk].is_in_use,
-    ) == (False, False)
-    assert (rooms[current_room.pk].is_deletable, rooms[current_room.pk].is_in_use) == (
-        False,
-        True,
-    )
+    assert in_use == [False, False, True]
+    assert annotated == {
+        unused_room.pk: (True, False),
+        historic_room.pk: (False, False),
+        current_room.pk: (False, True),
+    }
 
 
-def test_hide_room_sets_flag_and_logs(event):
+def test_hide_and_unhide_room(event):
     user = UserFactory()
-    room = RoomFactory(event=event)
+    room = RoomFactory(event=event, position=3)
+    used_room = TalkSlotFactory(submission__event=event).room
 
     with scope(event=event):
         hide_room(room, log_kwargs={"person": user, "orga": True})
-
-    room.refresh_from_db()
-    assert room.hidden is True
-    log = (
-        ActivityLog.objects.select_related("person")
-        .prefetch_related("content_object")
-        .get(action_type="pretalx.room.hide")
-    )
-    assert log.content_object == room
-    assert log.person == user
-
-
-def test_hide_room_refuses_room_with_scheduled_sessions(event):
-    room = TalkSlotFactory(submission__event=event).room
-
-    with scope(event=event), pytest.raises(ValidationError):
-        hide_room(room)
-
-    room.refresh_from_db()
-    assert room.hidden is False
-    assert not ActivityLog.objects.filter(action_type="pretalx.room.hide").exists()
-
-
-def test_unhide_room_clears_flag_and_logs(event):
-    user = UserFactory()
-    room = RoomFactory(event=event, hidden=True, position=3)
-
-    with scope(event=event):
+        hidden = room.hidden
         unhide_room(room, log_kwargs={"person": user, "orga": True})
+        with pytest.raises(ValidationError):
+            hide_room(used_room)
 
     room.refresh_from_db()
-    assert room.hidden is False
-    assert room.position == 3
-    log = (
-        ActivityLog.objects.select_related("person")
-        .prefetch_related("content_object")
-        .get(action_type="pretalx.room.unhide")
+    used_room.refresh_from_db()
+    assert (hidden, room.hidden, room.position) == (True, False, 3)
+    assert used_room.hidden is False
+    logs = ActivityLog.objects.select_related("person").prefetch_related(
+        "content_object"
     )
-    assert log.content_object == room
+    assert [
+        (log.action_type, log.content_object, log.person) for log in logs.order_by("pk")
+    ] == [("pretalx.room.hide", room, user), ("pretalx.room.unhide", room, user)]

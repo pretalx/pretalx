@@ -12,7 +12,10 @@ from tests.utils import refresh
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_send_orga_mail_delivers_email(event):
+def test_send_orga_mail_delivers_email_in_event_locale(event):
+    event.locale = "de"
+    event.locales = ["en", "de"]
+    event.save()
     djmail.outbox = []
     text = "Dashboard: {event_dashboard}, Submissions: {submission_count}"
 
@@ -22,7 +25,7 @@ def test_send_orga_mail_delivers_email(event):
     assert len(djmail.outbox) == 1
     sent = djmail.outbox[0]
     assert sent.to == [event.email]
-    assert sent.subject == "News from your content system"
+    assert sent.subject == "Nachricht von deinem Beitrags-System"
     assert sent.body == (f"Dashboard: {event.orga_urls.base.full()}, Submissions: 0")
 
 
@@ -47,15 +50,3 @@ def test_send_orga_mail_with_stats(event):
     assert sent.to == [event.email]
     assert sent.subject == "News from your content system"
     assert sent.body == "Talks: 0, Reviews: 0, Schedules: 1, Mails: 0, Submissions: 0"
-
-
-def test_send_orga_mail_uses_event_locale(event):
-    event.locale = "de"
-    event.locales = ["en", "de"]
-    event.save()
-    djmail.outbox = []
-
-    with scope(event=event):
-        send_orga_mail(event, "Body")
-
-    assert djmail.outbox[0].subject == "Nachricht von deinem Beitrags-System"

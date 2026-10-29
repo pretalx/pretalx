@@ -29,7 +29,6 @@ from tests.factories import (
     EventExtraLinkFactory,
     EventFactory,
     OrganiserFactory,
-    ScheduleFactory,
     SubmissionFactory,
     SubmissionTypeFactory,
     TalkSlotFactory,
@@ -41,7 +40,7 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_event_wizard_localisation_form_locales_field_filters_hidden_languages():
+def test_event_wizard_localisation_form_offers_visible_languages_for_both_fields():
     admin = UserFactory(is_administrator=True)
     hidden_info = dict(settings.LANGUAGES_INFORMATION)
     hidden_info["xx-hidden"] = {
@@ -58,40 +57,72 @@ def test_event_wizard_localisation_form_locales_field_filters_hidden_languages()
 
     locale_codes = [code for code, _label in form.fields["locales"].choices]
     assert "xx-hidden" not in locale_codes
+    assert len(locale_codes) > 1
     for code in locale_codes:
         assert settings.LANGUAGES_INFORMATION[code].get("visible", True)
-
-
-def test_event_wizard_localisation_form_locale_offers_all_visible_languages():
     # The default language is narrowed down to the active languages in the
     # browser, so the form itself offers every language the event could use.
-    admin = UserFactory(is_administrator=True)
-
-    form = EventWizardLocalisationForm(user=admin)
-
     assert form.fields["locale"].choices == form.fields["locales"].choices
-    assert len(form.fields["locale"].choices) > 1
 
 
-def test_event_wizard_localisation_form_accepts_locale_from_locales():
+@pytest.mark.parametrize(
+    ("data", "errors"),
+    (
+        (
+            {"locales": ["de-formal", "en"], "locale": "de-formal", "timezone": "UTC"},
+            {},
+        ),
+        (
+            {"locales": ["de"], "locale": "en", "timezone": "UTC"},
+            {
+                "locale": [
+                    "Your default language needs to be one of your active languages."
+                ]
+            },
+        ),
+    ),
+    ids=("locale_in_locales", "locale_outside_locales"),
+)
+def test_event_wizard_localisation_form_clean_requires_locale_in_locales(data, errors):
     admin = UserFactory(is_administrator=True)
-    data = {"locales": ["de-formal", "en"], "locale": "de-formal", "timezone": "UTC"}
 
     form = EventWizardLocalisationForm(data=data, user=admin)
 
-    assert form.is_valid(), form.errors
-    assert form.cleaned_data["locale"] == "de-formal"
-
-
-def test_event_wizard_localisation_form_rejects_locale_outside_locales():
-    admin = UserFactory(is_administrator=True)
-    data = {"locales": ["de"], "locale": "en", "timezone": "UTC"}
-
-    form = EventWizardLocalisationForm(data=data, user=admin)
-
-    assert not form.is_valid()
-    assert list(form.errors) == ["locale"]
+    assert form.is_valid() == (not errors)
+    assert form.errors == errors
+    assert form.cleaned_data.get("locale") == (None if errors else data["locale"])
     assert "data-autofill" not in form.fields["timezone"].widget.attrs
+
+
+def test_event_wizard_localisation_form_seeded_from_copy_event():
+    admin = UserFactory(is_administrator=True)
+    source = EventFactory(
+        timezone="Pacific/Auckland", locales=["de", "en"], locale="de"
+    )
+
+    form = EventWizardLocalisationForm(user=admin, copy_from_event=source)
+
+    assert form.fields["timezone"].initial == "Pacific/Auckland"
+    assert form.fields["locale"].initial == "de"
+    assert form.fields["locales"].initial == ["de", "en"]
+    assert "data-autofill" not in form.fields["timezone"].widget.attrs
+
+
+@pytest.mark.parametrize(
+    ("language", "expected"),
+    (("de", "de"), ("xx", settings.LANGUAGE_CODE)),
+    ids=("active", "unknown"),
+)
+def test_event_wizard_localisation_form_initials_without_copy_event(language, expected):
+    admin = UserFactory(is_administrator=True)
+
+    with translation.override(language):
+        form = EventWizardLocalisationForm(user=admin)
+
+    assert form.fields["locales"].initial == [expected]
+    assert form.fields["locale"].initial == expected
+    assert form.fields["timezone"].initial == "UTC"
+    assert form.fields["timezone"].widget.attrs["data-autofill"] == "timezone"
 
 
 @pytest.mark.parametrize(
@@ -116,174 +147,143 @@ def test_event_wizard_basics_form_valid_for_locales_without_english(locale, expe
     assert form.instance.locale == expected
 
 
-def test_event_wizard_basics_form_clean_slug_rejects_duplicate():
+@pytest.mark.parametrize(
+    ("overrides", "errors"),
+    (
+        ({}, {}),
+        ({"date_to": "2025-06-10"}, {}),
+        ({"deadline": ""}, {}),
+        (
+            {"slug": "MyEvent"},
+            {
+                "slug": [
+                    (
+                        "This short name is already taken, please choose another one "
+                        "(or ask the owner of that event to add you to their team)."
+                    )
+                ]
+            },
+        ),
+        (
+            {"date_from": "2025-06-15", "date_to": "2025-06-10"},
+            {"date_from": ["The event end cannot be before the start."]},
+        ),
+    ),
+    ids=(
+        "multi_day",
+        "same_day",
+        "empty_deadline",
+        "duplicate_slug",
+        "end_before_start",
+    ),
+)
+def test_event_wizard_basics_form_clean(overrides, errors):
     existing = EventFactory(slug="myevent")
-    user = UserFactory(is_administrator=True)
     data = {
         "name_0": "New Event",
-        "slug": "MyEvent",
+        "slug": "new-event",
         "email": "test@example.com",
         "date_from": "2025-06-10",
         "date_to": "2025-06-15",
+        **overrides,
     }
 
     form = EventWizardBasicsForm(
-        data=data, user=user, locales=["en"], organiser=existing.organiser
+        data=data, user=None, locales=["en"], organiser=existing.organiser
     )
 
-    assert not form.is_valid()
-    assert "slug" in form.errors
+    assert form.is_valid() == (not errors)
+    assert form.errors == errors
+    assert form.cleaned_data.get("deadline") is None
 
 
-def test_event_wizard_organiser_form_hides_a_single_organiser():
+def test_event_wizard_organiser_form_hides_single_organiser_and_rejects_others():
     user = UserFactory()
     organiser = OrganiserFactory()
+    other = OrganiserFactory()
     team = TeamFactory(organiser=organiser, can_create_events=True)
     team.members.add(user)
+    organisers = Organiser.objects.filter(pk=organiser.pk)
 
-    form = EventWizardOrganiserForm(
-        user=user, organisers=Organiser.objects.filter(pk=organiser.pk)
-    )
+    form = EventWizardOrganiserForm(user=user, organisers=organisers)
 
     assert form.single_organiser == organiser
     assert form.fields["organiser"].widget.is_hidden
     assert form["organiser"].value() == organiser.pk
 
-
-def test_event_wizard_organiser_form_rejects_a_foreign_hidden_organiser():
-    user = UserFactory()
-    organiser = OrganiserFactory()
-    other = OrganiserFactory()
-    team = TeamFactory(organiser=organiser, can_create_events=True)
-    team.members.add(user)
-
     form = EventWizardOrganiserForm(
-        data={"organiser": other.pk},
-        user=user,
-        organisers=Organiser.objects.filter(pk=organiser.pk),
+        data={"organiser": other.pk}, user=user, organisers=organisers
     )
 
     assert not form.is_valid()
-    assert list(form.errors) == ["organiser"]
+    assert form.errors == {
+        "organiser": [
+            "Select a valid choice. That choice is not one of the available choices."
+        ]
+    }
 
 
-def test_event_wizard_organiser_form_copy_from_event_field_present():
+@pytest.mark.parametrize(
+    ("all_events", "limit_to_event", "offered"),
+    ((True, False, True), (False, True, True), (False, False, False)),
+    ids=("all_events_team", "limited_team", "no_events"),
+)
+def test_event_wizard_organiser_form_copy_from_event_lists_permitted_own_events(
+    all_events, limit_to_event, offered
+):
     user = UserFactory()
     organiser = OrganiserFactory()
     event = EventFactory(organiser=organiser)
-    EventFactory()  # event of an unrelated organiser, should not appear
+    EventFactory()
     team = TeamFactory(
         organiser=organiser,
-        all_events=True,
+        all_events=all_events,
         can_create_events=True,
         can_change_event_settings=True,
     )
     team.members.add(user)
-
-    form = EventWizardOrganiserForm(
-        user=user, organisers=Organiser.objects.filter(pk=organiser.pk)
-    )
-
-    assert "copy_from_event" in form.fields
-    assert list(form.fields["copy_from_event"].queryset) == [event]
-
-
-def test_event_wizard_organiser_form_copy_from_event_field_absent():
-    user = UserFactory()
-    organiser = OrganiserFactory()
-    team = TeamFactory(organiser=organiser, can_create_events=True)
-    team.members.add(user)
-
-    form = EventWizardOrganiserForm(
-        user=user, organisers=Organiser.objects.filter(pk=organiser.pk)
-    )
-
-    assert "copy_from_event" not in form.fields
-
-
-def test_event_wizard_organiser_form_copy_ignores_events_of_other_organisers():
-    user = UserFactory()
-    own = OrganiserFactory()
+    if limit_to_event:
+        team.limit_events.add(event)
     other = OrganiserFactory()
     EventFactory(organiser=other)
-    own_team = TeamFactory(organiser=own, can_create_events=True)
-    own_team.members.add(user)
     other_team = TeamFactory(
         organiser=other, all_events=True, can_change_event_settings=True
     )
     other_team.members.add(user)
 
     form = EventWizardOrganiserForm(
-        user=user, organisers=Organiser.objects.filter(pk=own.pk)
-    )
-
-    assert "copy_from_event" not in form.fields
-
-
-def test_event_wizard_organiser_form_copy_from_includes_limit_events():
-    user = UserFactory()
-    organiser = OrganiserFactory()
-    event = EventFactory(organiser=organiser)
-    team = TeamFactory(
-        organiser=organiser,
-        all_events=False,
-        can_create_events=True,
-        can_change_event_settings=True,
-    )
-    team.members.add(user)
-    team.limit_events.add(event)
-
-    form = EventWizardOrganiserForm(
         user=user, organisers=Organiser.objects.filter(pk=organiser.pk)
     )
 
-    assert "copy_from_event" in form.fields
-    assert list(form.fields["copy_from_event"].queryset) == [event]
+    assert ("copy_from_event" in form.fields) is offered
+    if offered:
+        assert list(form.fields["copy_from_event"].queryset) == [event]
 
 
-def test_event_wizard_organiser_form_copy_choices_follow_initial_organiser():
+@pytest.mark.parametrize(
+    ("submitted", "expected"),
+    ((None, "first"), ("second", "second"), ("not-a-pk", "first")),
+    ids=("unbound_initial", "submitted", "invalid_falls_back"),
+)
+def test_event_wizard_organiser_form_copy_choices_follow_selected_organiser(
+    submitted, expected
+):
     admin = UserFactory(is_administrator=True)
     first = OrganiserFactory(name="AAA")
     second = OrganiserFactory(name="BBB")
-    own_event = EventFactory(organiser=first)
-    EventFactory(organiser=second)
+    events = {
+        "first": EventFactory(organiser=first),
+        "second": EventFactory(organiser=second),
+    }
+    pks = {"second": second.pk}
+    data = None if submitted is None else {"organiser": pks.get(submitted, submitted)}
 
     form = EventWizardOrganiserForm(
-        user=admin, organisers=Organiser.objects.order_by("name")
+        data=data, user=admin, organisers=Organiser.objects.order_by("name")
     )
 
     assert form.fields["organiser"].initial == first
-    assert list(form.fields["copy_from_event"].queryset) == [own_event]
-
-
-def test_event_wizard_organiser_form_copy_choices_follow_submitted_organiser():
-    admin = UserFactory(is_administrator=True)
-    OrganiserFactory(name="AAA")
-    second = OrganiserFactory(name="BBB")
-    other_event = EventFactory(organiser=second)
-
-    form = EventWizardOrganiserForm(
-        data={"organiser": second.pk},
-        user=admin,
-        organisers=Organiser.objects.order_by("name"),
-    )
-
-    assert list(form.fields["copy_from_event"].queryset) == [other_event]
-
-
-def test_event_wizard_organiser_form_copy_choices_fall_back_on_bad_organiser():
-    admin = UserFactory(is_administrator=True)
-    first = OrganiserFactory(name="AAA")
-    own_event = EventFactory(organiser=first)
-    EventFactory(organiser=OrganiserFactory(name="BBB"))
-
-    form = EventWizardOrganiserForm(
-        data={"organiser": "not-a-pk"},
-        user=admin,
-        organisers=Organiser.objects.order_by("name"),
-    )
-
-    assert list(form.fields["copy_from_event"].queryset) == [own_event]
+    assert list(form.fields["copy_from_event"].queryset) == [events[expected]]
 
 
 @pytest.mark.parametrize(
@@ -304,10 +304,11 @@ def test_event_wizard_basics_form_lists_event_specific_teams_of_copy_source(
         can_change_teams=can_change_teams,
     )
     creator_team.members.add(user)
-    single = TeamFactory(organiser=organiser, name="Reviewers", all_events=False)
+    single = TeamFactory(organiser=organiser, name="<b>Reviewers</b>", all_events=False)
     single.limit_events.add(source)
     multi = TeamFactory(organiser=organiser, name="Helpers", all_events=False)
     multi.limit_events.add(source, other)
+    multi.limit_tracks.add(TrackFactory(event=other))
     TeamFactory(organiser=organiser, all_events=False).limit_events.add(other)
     TeamFactory(organiser=OrganiserFactory(), all_events=False).limit_events.add(source)
 
@@ -317,48 +318,27 @@ def test_event_wizard_basics_form_lists_event_specific_teams_of_copy_source(
 
     assert ("add_to_teams" in form.fields) is offered
     if offered:
-        help_text = form.fields["add_to_teams"].help_text
-        assert help_text.endswith(f": {multi.name}, {single.name}.")
+        assert form.fields["add_to_teams"].help_text == (
+            "Members of these teams have access to the event you are copying: "
+            "&lt;b&gt;Reviewers&lt;/b&gt;, Helpers."
+        )
 
 
-@pytest.mark.parametrize(
-    ("track_on_source", "mentions_tracks"), ((True, True), (False, False))
-)
-def test_event_wizard_basics_form_mentions_track_limits_only_for_source_tracks(
-    track_on_source, mentions_tracks
-):
+def test_event_wizard_basics_form_mentions_track_limits_on_source_tracks():
     admin = UserFactory(is_administrator=True)
     source = EventFactory()
-    track_event = (
-        source if track_on_source else EventFactory(organiser=source.organiser)
-    )
-    limited = TeamFactory(organiser=source.organiser, all_events=False)
+    limited = TeamFactory(organiser=source.organiser, name="Limited", all_events=False)
     limited.limit_events.add(source)
-    limited.limit_tracks.add(TrackFactory(event=track_event))
-    TeamFactory(organiser=source.organiser, all_events=False).limit_events.add(source)
+    limited.limit_tracks.add(TrackFactory(event=source))
 
     form = EventWizardBasicsForm(
         user=admin, locales=["en"], organiser=source.organiser, copy_from_event=source
     )
 
-    help_text = form.fields["add_to_teams"].help_text
-    assert ("track limits" in help_text) is mentions_tracks
-
-
-def test_event_wizard_basics_form_escapes_team_names_in_help_text():
-    admin = UserFactory(is_administrator=True)
-    source = EventFactory()
-    TeamFactory(
-        organiser=source.organiser, name="<b>x</b>", all_events=False
-    ).limit_events.add(source)
-
-    form = EventWizardBasicsForm(
-        user=admin, locales=["en"], organiser=source.organiser, copy_from_event=source
+    assert form.fields["add_to_teams"].help_text == (
+        "Members of these teams have access to the event you are copying: Limited. "
+        "Their track limits will apply to the copied tracks, too."
     )
-
-    help_text = form.fields["add_to_teams"].help_text
-    assert "&lt;b&gt;x&lt;/b&gt;" in help_text
-    assert "<b>" not in help_text
 
 
 @pytest.mark.parametrize(
@@ -383,113 +363,15 @@ def test_event_wizard_basics_form_no_team_field(all_events, copying):
     assert "add_to_teams" not in form.fields
 
 
-def test_event_wizard_localisation_form_seeded_from_copy_event():
-    admin = UserFactory(is_administrator=True)
-    source = EventFactory(
-        timezone="Pacific/Auckland", locales=["de", "en"], locale="de"
-    )
-
-    form = EventWizardLocalisationForm(user=admin, copy_from_event=source)
-
-    assert form.fields["timezone"].initial == "Pacific/Auckland"
-    assert form.fields["locale"].initial == "de"
-    assert form.fields["locales"].initial == ["de", "en"]
-    assert "data-autofill" not in form.fields["timezone"].widget.attrs
-
-
-@pytest.mark.parametrize(
-    ("language", "expected"),
-    (("de", "de"), ("xx", settings.LANGUAGE_CODE)),
-    ids=("active", "unknown"),
-)
-def test_event_wizard_localisation_form_initial_locales_follow_active_language(
-    language, expected
-):
-    admin = UserFactory(is_administrator=True)
-
-    with translation.override(language):
-        form = EventWizardLocalisationForm(user=admin)
-
-    assert form.fields["locales"].initial == [expected]
-    assert form.fields["locale"].initial == expected
-
-
-def test_event_wizard_localisation_form_timezone_autofilled_without_copy_event():
-    admin = UserFactory(is_administrator=True)
-
-    form = EventWizardLocalisationForm(user=admin)
-
-    assert form.fields["timezone"].initial == "UTC"
-    assert form.fields["timezone"].widget.attrs["data-autofill"] == "timezone"
-
-
-def test_eventform_locale_offers_community_translations_with_note():
-    event = EventFactory(locales=["en"], locale="en")
-
-    form = EventForm(instance=event, locales=event.locales)
-
-    rendered = str(form["locale"])
-    assert str(LanguageWidget.community_group_label) in rendered
-    assert str(LanguageWidget.community_note) in rendered
-
-
-def test_event_wizard_basics_form_clean_rejects_end_before_start():
-    data = {
-        "name_0": "New Event",
-        "slug": "backwards",
-        "email": "test@example.com",
-        "date_from": "2025-06-15",
-        "date_to": "2025-06-10",
-    }
-
-    form = EventWizardBasicsForm(data=data, user=None, locales=["en"], organiser=None)
-
-    assert not form.is_valid()
-    assert "date_from" in form.errors
-
-
-@pytest.mark.parametrize(
-    "date_to", ("2025-06-15", "2025-06-10"), ids=("multi_day", "same_day")
-)
-def test_event_wizard_basics_form_clean_accepts_valid_dates(date_to):
-    data = {
-        "name_0": "New Event",
-        "slug": "validdates",
-        "email": "test@example.com",
-        "date_from": "2025-06-10",
-        "date_to": date_to,
-    }
-
-    form = EventWizardBasicsForm(data=data, user=None, locales=["en"], organiser=None)
-
-    assert form.is_valid(), form.errors
-
-
-def test_event_wizard_basics_form_deadline_is_optional():
-    data = {
-        "name_0": "New Event",
-        "slug": "nodeadline",
-        "email": "test@example.com",
-        "date_from": "2025-06-10",
-        "date_to": "2025-06-15",
-        "deadline": "",
-    }
-
-    form = EventWizardBasicsForm(data=data, user=None, locales=["en"], organiser=None)
-
-    assert form.is_valid(), form.errors
-    assert form.cleaned_data["deadline"] is None
-
-
-def test_event_wizard_display_form_init_creates_logo_field():
+def test_event_wizard_display_form_fields_without_copy_event():
     form = EventWizardDisplayForm(user=None, locales=None, organiser=None)
 
-    assert "logo" in form.fields
-    assert "primary_color" in form.fields
-    assert "header_pattern" in form.fields
+    assert list(form.fields) == ["primary_color", "header_pattern", "logo"]
+    assert form.fields["primary_color"].initial is None
+    assert form.fields["header_pattern"].initial is None
 
 
-def test_event_wizard_display_form_copy_prefills_color():
+def test_event_wizard_display_form_copy_prefills_color_and_pattern():
     event = EventFactory(
         primary_color="#ff0000", display_settings={"header_pattern": "topo"}
     )
@@ -502,46 +384,27 @@ def test_event_wizard_display_form_copy_prefills_color():
     assert form.fields["header_pattern"].initial == "topo"
 
 
-def test_event_wizard_display_form_no_copy_no_prefill():
-    form = EventWizardDisplayForm(user=None, locales=None, organiser=None)
+@pytest.mark.parametrize(
+    ("copy_plugins", "expected_initial"),
+    ((None, []), ("tests.dummy_app", ["tests.dummy_app"]), ("nonexistent_plugin", [])),
+    ids=("no_copy", "copy_available", "copy_unavailable"),
+)
+def test_event_wizard_plugin_form_lists_installed_plugins_and_preselects_copied(
+    copy_plugins, expected_initial
+):
+    source = None if copy_plugins is None else EventFactory(plugins=copy_plugins)
 
-    assert form.fields["primary_color"].initial is None
-    assert form.fields["header_pattern"].initial is None
+    form = EventWizardPluginForm(
+        user=None, locales=None, organiser=None, copy_from_event=source
+    )
 
-
-def test_event_wizard_plugin_form_init_creates_field_for_installed_plugins():
-    form = EventWizardPluginForm(user=None, locales=None, organiser=None)
-
-    assert "plugins" in form.fields
-    assert form.fields["plugins"].initial == []
+    assert form.fields["plugins"].initial == expected_initial
     modules = [
         code
         for _group, plugins in form.fields["plugins"].choices
         for code, _label in plugins
     ]
     assert "tests.dummy_app" in modules
-
-
-def test_event_wizard_plugin_form_copy_preselects_matching_plugins():
-    event = EventFactory(plugins="tests.dummy_app")
-
-    form = EventWizardPluginForm(
-        user=None, locales=None, organiser=None, copy_from_event=event
-    )
-
-    assert "plugins" in form.fields
-    assert "tests.dummy_app" in form.fields["plugins"].initial
-
-
-def test_event_wizard_plugin_form_copy_ignores_unavailable_plugins():
-    event = EventFactory(plugins="nonexistent_plugin")
-
-    form = EventWizardPluginForm(
-        user=None, locales=None, organiser=None, copy_from_event=event
-    )
-
-    assert "plugins" in form.fields
-    assert form.fields["plugins"].initial == []
 
 
 def test_event_wizard_plugin_form_no_plugins_skips_field(monkeypatch):
@@ -575,48 +438,43 @@ def _build_event_form_data(event, **overrides):
     return data
 
 
-def test_eventform_init_sets_locale_initial():
-    event = EventFactory(locales=["en", "de"])
+def test_eventform_init_defaults():
+    event = EventFactory(
+        locales=["en", "de"],
+        content_locales=["en", "de", "fr"],
+        custom_domain="https://custom.example.org",
+        feature_flags={"use_tracks": False},
+    )
+
     form = EventForm(instance=event, locales=event.locales)
 
     assert form.initial["locales"] == ["en", "de"]
-
-
-def test_eventform_init_sets_content_locale_initial():
-    event = EventFactory(content_locales=["en", "de", "fr"])
-    form = EventForm(instance=event, locales=event.locales)
-
     assert form.initial["content_locales"] == ["en", "de", "fr"]
-
-
-@pytest.mark.parametrize(
-    ("is_administrator", "expected_disabled"),
-    ((False, True), (True, False)),
-    ids=("non_admin", "admin"),
-)
-def test_eventform_init_slug_disabled(is_administrator, expected_disabled):
-    event = EventFactory()
-    form = EventForm(
-        instance=event, locales=event.locales, is_administrator=is_administrator
-    )
-
-    assert form.fields["slug"].disabled is expected_disabled
-
-
-def test_eventform_init_custom_domain_adjusts_slug_addon():
-    event = EventFactory(custom_domain="https://custom.example.org")
-    form = EventForm(instance=event, locales=event.locales)
-
+    assert form.fields["slug"].disabled is True
     assert form.fields["slug"].widget.addon_before == "https://custom.example.org/"
-
-
-def test_eventform_init_show_featured_help_text_contains_link():
-    event = EventFactory()
-    form = EventForm(instance=event, locales=event.locales)
-
     help_text = str(form.fields["show_featured"].help_text)
-    assert "<a " in help_text
-    assert str(event.urls.featured) in help_text
+    assert f'<a href="{event.urls.featured}">here</a>' in help_text
+    for code, _label in form.fields["locales"].choices:
+        info = settings.LANGUAGES_INFORMATION.get(code, {})
+        assert info.get("visible", True) or code in event.plugin_locales
+    rendered = str(form["locale"])
+    assert str(LanguageWidget.community_group_label) in rendered
+    assert str(LanguageWidget.community_note) in rendered
+    assert dict(form.fields["timezone"].choices)["America/New_York"] == (
+        "America/New York"
+    )
+    assert "heading_font" not in form.fields
+    assert "text_font" not in form.fields
+    assert "attendee_signup_tracks" not in form.fields
+    assert "attendee_signup_types" in form.fields
+
+
+def test_eventform_init_administrator_may_edit_slug():
+    event = EventFactory()
+
+    form = EventForm(instance=event, locales=event.locales, is_administrator=True)
+
+    assert form.fields["slug"].disabled is False
 
 
 @pytest.mark.parametrize(
@@ -630,108 +488,146 @@ def test_eventform_init_featured_text_depends_on_feature_flag(show_featured, exp
     assert ("featured_sessions_text" in form.fields) is expected
 
 
-def test_eventform_init_locale_choices_filter_visible():
-    event = EventFactory()
+def test_eventform_init_attendee_signup_fields_scoped_to_event():
+    event = EventFactory(feature_flags={"use_tracks": True})
+    required_track = TrackFactory(event=event, attendee_signup_required=True)
+    optional_track = TrackFactory(event=event, attendee_signup_required=False)
+    TrackFactory()
+    required_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
+    SubmissionTypeFactory(event=event, attendee_signup_required=False)
+
     form = EventForm(instance=event, locales=event.locales)
 
-    locale_codes = [code for code, _label in form.fields["locales"].choices]
-    for code in locale_codes:
-        info = settings.LANGUAGES_INFORMATION.get(code, {})
-        assert info.get("visible", True) or code in event.plugin_locales
+    assert list(form.fields["attendee_signup_tracks"].queryset) == [
+        required_track,
+        optional_track,
+    ]
+    assert form.initial["attendee_signup_tracks"] == [required_track.pk]
+    assert form.initial["attendee_signup_types"] == [required_type.pk]
 
 
-def test_eventform_clean_date_from_after_date_to_invalid():
+def test_eventform_font_fields_present_when_plugin_provides_fonts(
+    register_signal_handler,
+):
     event = EventFactory()
-    data = _build_event_form_data(event, date_from="2024-06-20", date_to="2024-06-15")
-    form = EventForm(data=data, instance=event, locales=event.locales)
 
-    assert not form.is_valid()
-    assert "date_from" in form.errors
+    def handler(signal, sender, **kwargs):
+        return {"PluginFont": {"regular": {"woff2": "fonts/plugin.woff2"}}}
+
+    register_signal_handler(register_fonts, handler)
+    form = EventForm(instance=event, locales=event.locales)
+
+    assert isinstance(form.fields["heading_font"].widget, FontSelect)
+    assert isinstance(form.fields["text_font"].widget, FontSelect)
+    assert [code for code, _label in form.fields["heading_font"].choices] == [
+        "",
+        "PluginFont",
+    ]
+    assert [code for code, _label in form.fields["text_font"].choices] == [
+        "",
+        "PluginFont",
+    ]
 
 
-def test_eventform_clean_locale_not_in_active_locales_invalid():
-    event = EventFactory()
-    data = _build_event_form_data(event, locale="de", locales=["en"])
-    form = EventForm(data=data, instance=event, locales=event.locales)
-
-    assert not form.is_valid()
-    assert "locale" in form.errors
-
-
-def test_eventform_clean_valid_dates():
+def test_eventform_read_only_disables_fields_and_rejects_changes():
     event = EventFactory()
     data = _build_event_form_data(event)
-    form = EventForm(data=data, instance=event, locales=event.locales)
 
-    assert form.is_valid(), form.errors
+    form = EventForm(data=data, instance=event, locales=event.locales, read_only=True)
 
-
-def test_eventform_clean_custom_domain_empty_passthrough():
-    event = EventFactory()
-    data = _build_event_form_data(event, custom_domain="")
-    form = EventForm(data=data, instance=event, locales=event.locales)
-
-    form.is_valid()
-    assert form.cleaned_data.get("custom_domain") in ("", None)
-
-
-@override_settings(SITE_HOST="pretalx.example.com")
-def test_eventform_clean_custom_domain_rejects_site_url_hostname():
-    event = EventFactory()
-    data = _build_event_form_data(event, custom_domain="pretalx.example.com")
-    form = EventForm(data=data, instance=event, locales=event.locales)
-
-    with patch("pretalx.event.validators.event.socket.gethostbyname"):
-        valid = form.is_valid()
-
-    assert not valid
-    assert "custom_domain" in form.errors
-
-
-@override_settings(SITE_HOST="pretalx.example.com")
-def test_eventform_clean_custom_domain_rejects_full_site_url():
-    event = EventFactory()
-    data = _build_event_form_data(event, custom_domain="https://pretalx.example.com")
-    form = EventForm(data=data, instance=event, locales=event.locales)
-
+    assert all(field.disabled for field in form.fields.values())
     assert not form.is_valid()
-    assert "custom_domain" in form.errors
 
 
 @pytest.mark.parametrize(
-    ("domain", "expected"),
+    ("overrides", "errors"),
     (
-        ("custom.example.org", "https://custom.example.org"),
-        ("http://custom.example.org", "https://custom.example.org"),
-        ("https://custom.example.org", "https://custom.example.org"),
-        ("https://custom.example.org/", "https://custom.example.org"),
+        ({}, {}),
+        ({"custom_domain": ""}, {}),
+        ({"custom_css_text": "body { color: red; }"}, {}),
+        (
+            {"date_from": "2024-06-20", "date_to": "2024-06-15"},
+            {"date_from": ["The event end cannot be before the start."]},
+        ),
+        (
+            {"locale": "de", "locales": ["en"]},
+            {
+                "locale": [
+                    "Your default language needs to be one of your active languages."
+                ]
+            },
+        ),
+        (
+            {"custom_css_text": "body { position: fixed; }"},
+            {
+                "custom_css": [
+                    "You are not allowed to include “position” keys in your CSS."
+                ]
+            },
+        ),
+        (
+            {"locales": [], "content_locales": []},
+            {
+                "locales": ["This field is required."],
+                "content_locales": ["This field is required."],
+            },
+        ),
+        (
+            {"attendee_signup": "on", "present_multiple_times": "on"},
+            {
+                "__all__": [
+                    (
+                        "Attendee signup cannot be combined with multi-slot scheduling "
+                        "(sessions taking place multiple times)."
+                    )
+                ]
+            },
+        ),
     ),
-    ids=("bare_domain", "http_prefix", "https_prefix", "trailing_slash"),
+    ids=(
+        "valid",
+        "empty_custom_domain",
+        "valid_css",
+        "end_before_start",
+        "locale_not_active",
+        "malicious_css",
+        "missing_locales",
+        "signup_multi_slot_conflict",
+    ),
 )
-def test_eventform_clean_custom_domain_normalizes(domain, expected):
-    event = EventFactory()
-    data = _build_event_form_data(event, custom_domain=domain)
+def test_eventform_clean(overrides, errors):
+    event = EventFactory(
+        locales=["en"],
+        feature_flags={"attendee_signup": False, "present_multiple_times": False},
+    )
+    data = _build_event_form_data(event, **overrides)
+
     form = EventForm(data=data, instance=event, locales=event.locales)
 
-    with patch(
-        "pretalx.event.validators.event._resolve_host",
-        return_value=("host", {"127.0.0.1"}),
-    ):
-        form.is_valid()
+    assert form.is_valid() == (not errors)
+    assert form.errors == errors
+    assert event.locales == ["en"]
 
-    assert form.cleaned_data["custom_domain"] == expected
+
+@override_settings(SITE_HOST="pretalx.example.com")
+def test_eventform_clean_custom_domain_rejects_site_host():
+    event = EventFactory()
+    data = _build_event_form_data(event, custom_domain="pretalx.example.com")
+
+    form = EventForm(data=data, instance=event, locales=event.locales)
+
+    assert not form.is_valid()
+    assert form.errors == {
+        "custom_domain": [
+            "Please do not choose the default domain as custom event domain."
+        ]
+    }
 
 
 @pytest.mark.parametrize(
     "submitted",
-    (
-        "https://custom.example.org",
-        "https://custom.example.org/",
-        "http://custom.example.org",
-        "custom.example.org",
-        "CUSTOM.example.org",
-    ),
-    ids=("exact", "trailing_slash", "http_prefix", "bare", "mixed_case"),
+    ("https://custom.example.org", "CUSTOM.example.org/"),
+    ids=("exact", "unnormalised"),
 )
 def test_eventform_clean_custom_domain_skips_dns_on_normalized_match(submitted):
     event = EventFactory(custom_domain="https://custom.example.org")
@@ -739,7 +635,7 @@ def test_eventform_clean_custom_domain_skips_dns_on_normalized_match(submitted):
     form = EventForm(data=data, instance=event, locales=event.locales)
 
     with patch("pretalx.event.validators.event._resolve_host") as resolve_host:
-        form.is_valid()
+        assert form.is_valid(), form.errors
 
     assert not resolve_host.called
     assert form.cleaned_data["custom_domain"] == "https://custom.example.org"
@@ -756,37 +652,37 @@ def test_eventform_clean_custom_domain_dns_failure():
         valid = form.is_valid()
 
     assert not valid
-    assert "custom_domain" in form.errors
+    assert form.errors == {
+        "custom_domain": [
+            (
+                "The domain “https://nodns.example.org” does not have a name server "
+                "entry at this time. Please make sure the domain is working before "
+                "configuring it here."
+            )
+        ]
+    }
 
 
-def test_eventform_clean_custom_domain_warns_on_mismatch():
+@pytest.mark.parametrize(
+    ("ips", "warns"),
+    (({"custom.example.org": "9.9.9.9"}, True), ({}, False)),
+    ids=("mismatch", "points_to_site"),
+)
+def test_eventform_clean_custom_domain_normalises_and_warns_on_mismatch(ips, warns):
     event = EventFactory()
     data = _build_event_form_data(event, custom_domain="custom.example.org")
     form = EventForm(data=data, instance=event, locales=event.locales)
 
     def resolve(host):
-        return ({"custom.example.org": "custom.example.org"}.get(host, host), {host})
+        return (host, {ips.get(host, "1.2.3.4")})
 
     with patch("pretalx.event.validators.event._resolve_host", side_effect=resolve):
         assert form.is_valid(), form.errors
 
     assert form.cleaned_data["custom_domain"] == "https://custom.example.org"
-    assert "does not appear to point" in str(form.custom_domain_warning)
-
-
-@pytest.mark.parametrize(
-    ("css_text", "expected_valid"),
-    (("body { color: red; }", True), ("body { position: fixed; }", False), ("", True)),
-    ids=("valid", "malicious", "empty"),
-)
-def test_eventform_clean_custom_css_text(css_text, expected_valid):
-    event = EventFactory()
-    data = _build_event_form_data(event, custom_css_text=css_text)
-    form = EventForm(data=data, instance=event, locales=event.locales)
-
-    assert form.is_valid() == expected_valid, form.errors
-    if not expected_valid:
-        assert "custom_css" in form.errors
+    assert (form.custom_domain_warning is not None) is warns
+    if warns:
+        assert "does not appear to point" in str(form.custom_domain_warning)
 
 
 def test_eventform_saves_with_a_missing_custom_css_file():
@@ -843,37 +739,19 @@ def test_eventform_clean_custom_css_file(css_content, expected_valid):
         assert "custom_css" in form.errors
 
 
-def test_eventform_save_updates_locales():
+def test_eventform_save_updates_locales_and_custom_css_text():
     event = EventFactory()
-    data = _build_event_form_data(event, locales=["en", "de"])
+    css = "body { color: green; }"
+    data = _build_event_form_data(
+        event, locales=["en", "de"], content_locales=["en", "de"], custom_css_text=css
+    )
     form = EventForm(data=data, instance=event, locales=event.locales)
     assert form.is_valid(), form.errors
     form.save()
 
     event.refresh_from_db()
     assert event.locales == ["en", "de"]
-
-
-def test_eventform_save_updates_content_locales():
-    event = EventFactory()
-    data = _build_event_form_data(event, content_locales=["en", "de"])
-    form = EventForm(data=data, instance=event, locales=event.locales)
-    assert form.is_valid(), form.errors
-    form.save()
-
-    event.refresh_from_db()
     assert event.content_locales == ["en", "de"]
-
-
-def test_eventform_save_custom_css_text():
-    event = EventFactory()
-    css = "body { color: green; }"
-    data = _build_event_form_data(event, custom_css_text=css)
-    form = EventForm(data=data, instance=event, locales=event.locales)
-    assert form.is_valid(), form.errors
-    form.save()
-
-    event.refresh_from_db()
     assert event.custom_css.read().decode() == css
 
 
@@ -924,232 +802,52 @@ def test_eventform_save_processes_image_on_change(
     assert event.logo.name.endswith(".webp")
 
 
-def test_eventform_change_dates_moves_slots():
-    event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
-    wip = event.wip_schedule
-    sub = SubmissionFactory(event=event)
-    slot = TalkSlotFactory(submission=sub, schedule=wip)
-    original_start = slot.start
-
-    data = _build_event_form_data(event, date_from="2024-06-11", date_to="2024-06-13")
-    form = EventForm(data=data, instance=event, locales=event.locales)
-    assert form.is_valid(), form.errors
-    form.save()
-
-    slot.refresh_from_db()
-
-    assert slot.start == original_start + dt.timedelta(days=1)
-
-
-def test_eventform_change_dates_does_not_move_published_slots():
-    event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
-    sub = SubmissionFactory(event=event)
-
-    released = ScheduleFactory(event=event, version="v1")
-    published_slot = TalkSlotFactory(submission=sub, schedule=released)
-    published_original_start = published_slot.start
-
-    wip = event.wip_schedule
-    wip_slot = TalkSlotFactory(submission=sub, schedule=wip)
-    wip_original_start = wip_slot.start
-
-    data = _build_event_form_data(event, date_from="2024-06-11", date_to="2024-06-13")
-    form = EventForm(data=data, instance=event, locales=event.locales)
-    assert form.is_valid(), form.errors
-    form.save()
-
-    published_slot.refresh_from_db()
-    wip_slot.refresh_from_db()
-
-    assert published_slot.start == published_original_start
-    assert wip_slot.start == wip_original_start + dt.timedelta(days=1)
-
-
-def test_eventform_change_dates_shortening_deschedules_outside_talks():
-    event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 14))
-    wip = event.wip_schedule
-    sub = SubmissionFactory(event=event)
-    slot = TalkSlotFactory(
-        submission=sub,
-        schedule=wip,
-        start=dt.datetime(2024, 6, 14, 10, 0, tzinfo=dt.UTC),
-        end=dt.datetime(2024, 6, 14, 11, 0, tzinfo=dt.UTC),
-    )
-
-    data = _build_event_form_data(event, date_from="2024-06-10", date_to="2024-06-12")
-    form = EventForm(data=data, instance=event, locales=event.locales)
-    assert form.is_valid(), form.errors
-    form.save()
-
-    slot.refresh_from_db()
-
-    assert slot.start is None
-    assert slot.end is None
-    assert slot.room is None
-
-
-def test_eventform_change_dates_no_slots_does_nothing():
-    event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
-    data = _build_event_form_data(event, date_from="2024-06-11", date_to="2024-06-13")
-    form = EventForm(data=data, instance=event, locales=event.locales)
-    assert form.is_valid(), form.errors
-    form.save()
-
-    event.refresh_from_db()
-    assert event.date_from == dt.date(2024, 6, 11)
-
-
-def test_eventform_change_dates_extending_end_does_not_move_slots():
-    event = EventFactory(date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12))
-    wip = event.wip_schedule
-    sub = SubmissionFactory(event=event)
-    slot = TalkSlotFactory(submission=sub, schedule=wip)
-    original_start = slot.start
-
-    data = _build_event_form_data(event, date_to="2024-06-14")
-    form = EventForm(data=data, instance=event, locales=event.locales)
-    assert form.is_valid(), form.errors
-    form.save()
-
-    slot.refresh_from_db()
-
-    assert slot.start == original_start
-
-
-def test_eventform_change_timezone_adjusts_slots():
+def test_eventform_save_applies_date_and_timezone_changes_to_slots():
     event = EventFactory(
         date_from=dt.date(2024, 6, 10), date_to=dt.date(2024, 6, 12), timezone="UTC"
     )
-    wip = event.wip_schedule
     sub = SubmissionFactory(event=event)
     slot = TalkSlotFactory(
         submission=sub,
-        schedule=wip,
+        schedule=event.wip_schedule,
         start=dt.datetime(2024, 6, 10, 10, 0, tzinfo=dt.UTC),
         end=dt.datetime(2024, 6, 10, 11, 0, tzinfo=dt.UTC),
     )
     event = Event.objects.get(pk=event.pk)
-
-    data = _build_event_form_data(event, timezone="Europe/Berlin")
+    data = _build_event_form_data(
+        event, date_from="2024-06-11", date_to="2024-06-13", timezone="Europe/Berlin"
+    )
     form = EventForm(data=data, instance=event, locales=event.locales)
     assert form.is_valid(), form.errors
-    form.save()
 
-    slot.refresh_from_db()
-
-    assert slot.start == dt.datetime(2024, 6, 10, 8, 0, tzinfo=dt.UTC)
-
-
-def test_eventform_change_timezone_no_slots_does_nothing():
-    event = EventFactory(timezone="UTC")
-    event = Event.objects.get(pk=event.pk)
-
-    data = _build_event_form_data(event, timezone="Europe/Berlin")
-    form = EventForm(data=data, instance=event, locales=event.locales)
-    assert form.is_valid(), form.errors
     form.save()
 
     event.refresh_from_db()
-    assert event.timezone == "Europe/Berlin"
-
-
-def test_eventform_change_timezone_same_offset_does_not_move():
-    event = EventFactory(
-        date_from=dt.date(2024, 6, 10),
-        date_to=dt.date(2024, 6, 12),
-        timezone="Europe/Berlin",
-    )
-    wip = event.wip_schedule
-    sub = SubmissionFactory(event=event)
-    slot = TalkSlotFactory(
-        submission=sub,
-        schedule=wip,
-        start=dt.datetime(2024, 6, 10, 8, 0, tzinfo=dt.UTC),
-        end=dt.datetime(2024, 6, 10, 9, 0, tzinfo=dt.UTC),
-    )
-    event = Event.objects.get(pk=event.pk)
-
-    data = _build_event_form_data(event, timezone="Europe/Paris")
-    form = EventForm(data=data, instance=event, locales=event.locales)
-    assert form.is_valid(), form.errors
-    form.save()
-
     slot.refresh_from_db()
-
-    assert slot.start == dt.datetime(2024, 6, 10, 8, 0, tzinfo=dt.UTC)
-
-
-def test_eventform_read_only_rejects_changes():
-    event = EventFactory()
-    data = _build_event_form_data(event)
-    form = EventForm(data=data, instance=event, locales=event.locales, read_only=True)
-
-    assert not form.is_valid()
+    assert event.date_from == dt.date(2024, 6, 11)
+    assert event.timezone == "Europe/Berlin"
+    assert slot.start == dt.datetime(2024, 6, 11, 8, 0, tzinfo=dt.UTC)
 
 
-def test_eventform_read_only_disables_all_fields():
-    event = EventFactory()
-    form = EventForm(instance=event, locales=event.locales, read_only=True)
-
-    for field in form.fields.values():
-        assert field.disabled is True
-
-
-def test_eventform_font_fields_present_when_plugin_provides_fonts(
-    register_signal_handler,
-):
+@pytest.mark.parametrize(
+    ("data", "errors"),
+    (
+        ({"label_0": "Example", "url": "https://example.com"}, {}),
+        ({"label_0": "Example", "url": ""}, {"url": ["This field is required."]}),
+        (
+            {"label_0": "", "url": "https://example.com"},
+            {"label": ["This field is required."]},
+        ),
+    ),
+    ids=("valid", "missing_url", "missing_label"),
+)
+def test_eventextralinkform_clean(data, errors):
     event = EventFactory()
 
-    def handler(signal, sender, **kwargs):
-        return {"PluginFont": {"regular": {"woff2": "fonts/plugin.woff2"}}}
-
-    register_signal_handler(register_fonts, handler)
-    form = EventForm(instance=event, locales=event.locales)
-
-    assert "heading_font" in form.fields
-    assert "text_font" in form.fields
-    assert isinstance(form.fields["heading_font"].widget, FontSelect)
-    assert isinstance(form.fields["text_font"].widget, FontSelect)
-    heading_choices = dict(form.fields["heading_font"].choices)
-    assert "PluginFont" in heading_choices
-    assert "" in heading_choices
-    text_choices = dict(form.fields["text_font"].choices)
-    assert "PluginFont" in text_choices
-
-
-def test_eventform_font_fields_removed_when_no_plugins():
-    event = EventFactory()
-
-    form = EventForm(instance=event, locales=event.locales)
-
-    assert "heading_font" not in form.fields
-    assert "text_font" not in form.fields
-
-
-def test_eventextralinkform_valid():
-    event = EventFactory()
-    data = {"label_0": "Example", "url": "https://example.com"}
     form = EventExtraLinkForm(data=data, locales=event.locales)
 
-    assert form.is_valid(), form.errors
-
-
-def test_eventextralinkform_requires_url():
-    event = EventFactory()
-    data = {"label_0": "Example", "url": ""}
-    form = EventExtraLinkForm(data=data, locales=event.locales)
-
-    assert not form.is_valid()
-    assert "url" in form.errors
-
-
-def test_eventextralinkform_requires_label():
-    event = EventFactory()
-    data = {"label_0": "", "url": "https://example.com"}
-    form = EventExtraLinkForm(data=data, locales=event.locales)
-
-    assert not form.is_valid()
-    assert "label" in form.errors
+    assert form.is_valid() == (not errors)
+    assert form.errors == errors
 
 
 @pytest.mark.parametrize(
@@ -1158,13 +856,16 @@ def test_eventextralinkform_requires_label():
     ids=("footer", "header"),
 )
 def test_baseeventextralinkformset_filters_by_role(formset_cls, expected_role):
-    event = EventFactory()
+    event = EventFactory(locales=["en", "de"])
     expected_link = EventExtraLinkFactory(event=event, role=expected_role)
     other_role = "header" if expected_role == "footer" else "footer"
     EventExtraLinkFactory(event=event, role=other_role)
+
     formset = formset_cls(instance=event, event=event)
 
+    assert formset.locales == ["en", "de"]
     assert list(formset.get_queryset()) == [expected_link]
+    assert formset.get_queryset() is formset.get_queryset()
 
 
 @pytest.mark.parametrize(
@@ -1192,16 +893,12 @@ def test_baseeventextralinkformset_save_new_sets_role(
     assert formset.is_valid(), formset.errors
     formset.save()
 
-    links = list(EventExtraLink.objects.filter(event=event))
-    assert len(links) == 1
-    assert links[0].role == expected_role
-
-
-def test_baseeventextralinkformset_uses_event_locales():
-    event = EventFactory(locales=["en", "de"])
-    formset = EventFooterLinkFormset(instance=event, event=event)
-
-    assert formset.locales == event.locales
+    link = EventExtraLink.objects.get(event=event)
+    assert (str(link.label), link.url, link.role) == (
+        label,
+        "https://example.com/new",
+        expected_role,
+    )
 
 
 def test_baseeventextralinkformset_init_without_event():
@@ -1209,15 +906,6 @@ def test_baseeventextralinkformset_init_without_event():
     formset = EventFooterLinkFormset(instance=event)
 
     assert formset.forms is not None
-
-
-def test_baseeventextralinkformset_get_queryset_cached():
-    event = EventFactory()
-    formset = EventFooterLinkFormset(instance=event, event=event)
-    qs1 = formset.get_queryset()
-    qs2 = formset.get_queryset()
-
-    assert qs1 is qs2
 
 
 def test_baseeventextralinkformset_save_new_commit_false():
@@ -1240,72 +928,6 @@ def test_baseeventextralinkformset_save_new_commit_false():
     assert instance.pk is None
 
 
-def test_eventform_post_clean_skips_locales_when_invalid():
-    event = EventFactory(locales=["en"])
-    data = _build_event_form_data(event, locales=[], content_locales=[])
-    form = EventForm(data=data, instance=event, locales=event.locales)
-
-    assert not form.is_valid()
-    assert event.locales == ["en"]
-
-
-def test_eventform_timezone_choices_are_humanised():
-    event = EventFactory()
-
-    form = EventForm(instance=event, locales=event.locales)
-    choices = dict(form.fields["timezone"].choices)
-
-    assert choices["America/New_York"] == "America/New York"
-
-
-def test_eventform_init_drops_track_field_when_tracks_disabled():
-    event = EventFactory(feature_flags={"use_tracks": False})
-
-    form = EventForm(instance=event, locales=event.locales)
-
-    assert "attendee_signup_tracks" not in form.fields
-    assert "attendee_signup_types" in form.fields
-
-
-def test_eventform_init_track_queryset_scoped_to_event():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    own_track = TrackFactory(event=event)
-    other_track = TrackFactory()
-
-    form = EventForm(instance=event, locales=event.locales)
-
-    queryset = form.fields["attendee_signup_tracks"].queryset
-    assert list(queryset) == [own_track]
-    assert other_track not in queryset
-
-
-def test_eventform_init_initial_selections_match_required_flags():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    required_track = TrackFactory(event=event, attendee_signup_required=True)
-    TrackFactory(event=event, attendee_signup_required=False)
-    required_type = SubmissionTypeFactory(event=event, attendee_signup_required=True)
-    SubmissionTypeFactory(event=event, attendee_signup_required=False)
-
-    form = EventForm(instance=event, locales=event.locales)
-
-    assert form.initial["attendee_signup_tracks"] == [required_track.pk]
-    assert form.initial["attendee_signup_types"] == [required_type.pk]
-
-
-def test_eventform_clean_rejects_explicit_conflict():
-    event = EventFactory(
-        feature_flags={"attendee_signup": False, "present_multiple_times": False}
-    )
-    data = _build_event_form_data(
-        event, attendee_signup="on", present_multiple_times="on"
-    )
-    form = EventForm(data=data, instance=event, locales=event.locales)
-
-    assert not form.is_valid()
-    codes = [error.code for error in form.non_field_errors().as_data()]
-    assert codes == ["signup_multi_slot_conflict"]
-
-
 def test_eventform_can_flip_conflicting_flags_in_one_submission():
     event = EventFactory(
         feature_flags={"attendee_signup": False, "present_multiple_times": True}
@@ -1320,41 +942,6 @@ def test_eventform_can_flip_conflicting_flags_in_one_submission():
     event.refresh_from_db()
     assert event.feature_flags["attendee_signup"] is True
     assert event.feature_flags["present_multiple_times"] is False
-
-
-def test_eventform_save_persists_attendee_signup_settings():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    track_in = TrackFactory(event=event, attendee_signup_required=False)
-    track_out = TrackFactory(event=event, attendee_signup_required=True)
-    type_in = SubmissionTypeFactory(event=event, attendee_signup_required=False)
-    # Skip the default submission type's flag by selecting only ours.
-    default_type = event.cfp.default_type
-    default_type.attendee_signup_required = True
-    default_type.save()
-
-    data = _build_event_form_data(
-        event,
-        attendee_signup="on",
-        signup_domains="company.example",
-        attendee_signup_tracks=[track_in.pk],
-        attendee_signup_types=[type_in.pk],
-    )
-    form = EventForm(data=data, instance=event, locales=event.locales)
-    assert form.is_valid(), form.errors
-    form.save()
-
-    event.refresh_from_db()
-    track_in.refresh_from_db()
-    track_out.refresh_from_db()
-    type_in.refresh_from_db()
-    default_type.refresh_from_db()
-
-    assert event.feature_flags["attendee_signup"] is True
-    assert event.attendee_signup_settings == {"signup_domains": ["company.example"]}
-    assert track_in.attendee_signup_required is True
-    assert track_out.attendee_signup_required is False
-    assert type_in.attendee_signup_required is True
-    assert default_type.attendee_signup_required is False
 
 
 def test_eventform_save_leaves_track_and_type_flags_when_feature_off():
@@ -1373,7 +960,7 @@ def test_eventform_save_leaves_track_and_type_flags_when_feature_off():
     assert stype.attendee_signup_required is True
 
 
-def test_eventform_save_only_touches_changed_track_and_type_objects():
+def test_eventform_save_persists_signup_settings_and_only_touches_changed_objects():
     event = EventFactory(feature_flags={"use_tracks": True, "attendee_signup": True})
     track_stays_required = TrackFactory(event=event, attendee_signup_required=True)
     track_to_flip_off = TrackFactory(event=event, attendee_signup_required=True)
@@ -1382,6 +969,9 @@ def test_eventform_save_only_touches_changed_track_and_type_objects():
         event=event, attendee_signup_required=True
     )
     type_unrelated = SubmissionTypeFactory(event=event, attendee_signup_required=False)
+    default_type = event.cfp.default_type
+    default_type.attendee_signup_required = True
+    default_type.save()
 
     stamps_before = {
         "track_stays_required": track_stays_required.updated,
@@ -1394,6 +984,7 @@ def test_eventform_save_only_touches_changed_track_and_type_objects():
     data = _build_event_form_data(
         event,
         attendee_signup="on",
+        signup_domains="company.example",
         attendee_signup_tracks=[track_stays_required.pk, track_to_flip_on.pk],
         attendee_signup_types=[type_stays_required.pk],
     )
@@ -1401,20 +992,25 @@ def test_eventform_save_only_touches_changed_track_and_type_objects():
     assert form.is_valid(), form.errors
     form.save()
 
+    event.refresh_from_db()
     for obj in (
         track_stays_required,
         track_to_flip_off,
         track_to_flip_on,
         type_stays_required,
         type_unrelated,
+        default_type,
     ):
         obj.refresh_from_db()
 
+    assert event.feature_flags["attendee_signup"] is True
+    assert event.attendee_signup_settings == {"signup_domains": ["company.example"]}
     assert track_stays_required.attendee_signup_required is True
     assert track_to_flip_off.attendee_signup_required is False
     assert track_to_flip_on.attendee_signup_required is True
     assert type_stays_required.attendee_signup_required is True
     assert type_unrelated.attendee_signup_required is False
+    assert default_type.attendee_signup_required is False
     assert track_stays_required.updated == stamps_before["track_stays_required"]
     assert type_stays_required.updated == stamps_before["type_stays_required"]
     assert type_unrelated.updated == stamps_before["type_unrelated"]

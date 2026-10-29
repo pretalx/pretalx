@@ -31,46 +31,40 @@ def test_is_event_visible_returns_falsy_when_event_is_none():
     assert not is_event_visible(None, None)
 
 
-def test_check_team_permission_returns_true_for_administrator():
-    event = EventFactory()
+@pytest.mark.parametrize(
+    ("predicate", "obj_kind"),
+    (
+        (check_team_permission, "event"),
+        (can_change_teams, "event"),
+        (can_change_organiser_settings, "organiser"),
+        (has_any_organiser_permissions, "organiser"),
+        (can_change_any_organiser_settings, None),
+        (can_create_events, None),
+        (is_any_organiser, None),
+    ),
+)
+def test_predicates_return_true_for_administrator(predicate, obj_kind):
     user = UserFactory(is_administrator=True)
-    assert check_team_permission(user, event, "can_change_event_settings") is True
+    obj = {"event": EventFactory, "organiser": OrganiserFactory, None: lambda: None}[
+        obj_kind
+    ]()
+    args = ("can_change_event_settings",) if predicate is check_team_permission else ()
+
+    assert predicate(user, obj, *args) is True
 
 
-def test_check_team_permission_returns_true_when_user_has_permission():
+@pytest.mark.parametrize(("has_perm", "expected"), ((True, True), (False, False)))
+def test_check_team_permission_follows_team_permission(has_perm, expected):
     organiser = OrganiserFactory()
     event = EventFactory(organiser=organiser)
     user = UserFactory()
     team = TeamFactory(
-        organiser=organiser, all_events=True, can_change_event_settings=True
+        organiser=organiser, all_events=True, can_change_event_settings=has_perm
     )
     team.members.add(user)
 
-    assert check_team_permission(user, event, "can_change_event_settings") is True
-
-
-def test_check_team_permission_returns_false_when_user_lacks_permission():
-    organiser = OrganiserFactory()
-    event = EventFactory(organiser=organiser)
-    user = UserFactory()
-    team = TeamFactory(
-        organiser=organiser, all_events=True, can_change_event_settings=False
-    )
-    team.members.add(user)
-
-    assert check_team_permission(user, event, "can_change_event_settings") is False
-
-
-def test_can_change_event_settings_returns_true_with_permission():
-    organiser = OrganiserFactory()
-    event = EventFactory(organiser=organiser)
-    user = UserFactory()
-    team = TeamFactory(
-        organiser=organiser, all_events=True, can_change_event_settings=True
-    )
-    team.members.add(user)
-
-    assert can_change_event_settings(user, event) is True
+    assert check_team_permission(user, event, "can_change_event_settings") is expected
+    assert can_change_event_settings(user, event) is expected
 
 
 @pytest.mark.parametrize("user_val", (None, "anonymous"), ids=("none", "anonymous"))
@@ -80,24 +74,12 @@ def test_can_change_event_settings_returns_false_for_unauthenticated(user_val):
     assert can_change_event_settings(user, event) is False
 
 
-def test_can_change_event_settings_returns_false_when_obj_is_none():
-    user = object()  # any non-None user
-    assert can_change_event_settings(user, None) is False
-
-
-def test_can_change_event_settings_returns_false_when_obj_has_no_event():
+@pytest.mark.parametrize(
+    "obj", (None, type("NoEvent", (), {})()), ids=("none", "no_event_attribute")
+)
+def test_can_change_event_settings_returns_false_without_event(obj):
     user = UserFactory()
-
-    class NoEvent:
-        pass
-
-    assert can_change_event_settings(user, NoEvent()) is False
-
-
-def test_can_change_teams_returns_true_for_administrator():
-    event = EventFactory()
-    user = UserFactory(is_administrator=True)
-    assert can_change_teams(user, event) is True
+    assert can_change_event_settings(user, obj) is False
 
 
 @pytest.mark.parametrize(("has_perm", "expected"), ((True, True), (False, False)))
@@ -127,79 +109,33 @@ def test_can_change_teams_returns_false_for_unauthenticated(user_val):
     assert can_change_teams(user, object()) is False
 
 
-def test_can_change_organiser_settings_returns_true_for_administrator():
-    organiser = OrganiserFactory()
-    user = UserFactory(is_administrator=True)
-    assert can_change_organiser_settings(user, organiser) is True
-
-
 @pytest.mark.parametrize(("has_perm", "expected"), ((True, True), (False, False)))
 def test_can_change_organiser_settings_with_organiser_team(has_perm, expected):
     organiser = OrganiserFactory()
+    event = EventFactory(organiser=organiser)
     user = UserFactory()
     team = TeamFactory(organiser=organiser, can_change_organiser_settings=has_perm)
     team.members.add(user)
 
     assert can_change_organiser_settings(user, organiser) is expected
-
-
-def test_can_change_organiser_settings_uses_event_organiser_when_obj_has_event():
-    organiser = OrganiserFactory()
-    event = EventFactory(organiser=organiser)
-    user = UserFactory()
-    team = TeamFactory(organiser=organiser, can_change_organiser_settings=True)
-    team.members.add(user)
-
-    assert can_change_organiser_settings(user, event) is True
-
-
-def test_has_any_permission_returns_true_when_user_has_permissions():
-    organiser = OrganiserFactory()
-    event = EventFactory(organiser=organiser)
-    user = UserFactory()
-    team = TeamFactory(organiser=organiser, all_events=True)
-    team.members.add(user)
-
-    assert has_any_permission(user, event) is True
-
-
-def test_has_any_permission_returns_false_when_user_has_no_permissions():
-    event = EventFactory()
-    user = UserFactory()
-
-    assert has_any_permission(user, event) is False
-
-
-def test_has_any_organiser_permissions_returns_true_for_administrator():
-    organiser = OrganiserFactory()
-    user = UserFactory(is_administrator=True)
-    assert has_any_organiser_permissions(user, organiser) is True
+    assert can_change_organiser_settings(user, event) is expected
 
 
 @pytest.mark.parametrize(("has_team", "expected"), ((True, True), (False, False)))
-def test_has_any_organiser_permissions_with_team(has_team, expected):
-    organiser = OrganiserFactory()
-    user = UserFactory()
-    if has_team:
-        team = TeamFactory(organiser=organiser)
-        team.members.add(user)
-
-    assert has_any_organiser_permissions(user, organiser) is expected
-
-
-def test_has_any_organiser_permissions_uses_obj_organiser_attribute():
+def test_has_any_permission_and_organiser_permissions_follow_team_membership(
+    has_team, expected
+):
     organiser = OrganiserFactory()
     event = EventFactory(organiser=organiser)
     user = UserFactory()
-    team = TeamFactory(organiser=organiser)
-    team.members.add(user)
+    if has_team:
+        team = TeamFactory(organiser=organiser, all_events=True)
+        team.members.add(user)
 
-    assert has_any_organiser_permissions(user, event) is True
-
-
-def test_can_change_any_organiser_settings_returns_true_for_administrator():
-    user = UserFactory(is_administrator=True)
-    assert can_change_any_organiser_settings(user, None) is True
+    assert has_any_permission(user, event) is expected
+    assert has_any_organiser_permissions(user, organiser) is expected
+    assert has_any_organiser_permissions(user, event) is expected
+    assert is_any_organiser(user, None) is expected
 
 
 @pytest.mark.parametrize(("has_perm", "expected"), ((True, True), (False, False)))
@@ -211,11 +147,6 @@ def test_can_change_any_organiser_settings_with_team(has_perm, expected):
     assert can_change_any_organiser_settings(user, None) is expected
 
 
-def test_can_create_events_returns_true_for_administrator():
-    user = UserFactory(is_administrator=True)
-    assert can_create_events(user, None) is True
-
-
 @pytest.mark.parametrize(("has_perm", "expected"), ((True, True), (False, False)))
 def test_can_create_events_with_team(has_perm, expected):
     user = UserFactory()
@@ -223,24 +154,6 @@ def test_can_create_events_with_team(has_perm, expected):
     team.members.add(user)
 
     assert can_create_events(user, None) is expected
-
-
-def test_is_any_organiser_returns_true_for_administrator():
-    user = UserFactory(is_administrator=True)
-    assert is_any_organiser(user, None) is True
-
-
-def test_is_any_organiser_returns_true_when_user_has_teams():
-    user = UserFactory()
-    team = TeamFactory()
-    team.members.add(user)
-
-    assert is_any_organiser(user, None) is True
-
-
-def test_is_any_organiser_returns_false_when_user_has_no_teams():
-    user = UserFactory()
-    assert is_any_organiser(user, None) is False
 
 
 def test_organiser_predicates_use_cached_teams(django_assert_num_queries):

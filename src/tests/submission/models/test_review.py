@@ -21,24 +21,23 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_review_score_category_save_sets_weight_zero_when_independent():
+def test_review_score_category_save_zeroes_weight_when_independent():
     event = EventFactory()
     ReviewScoreCategoryFactory(event=event, is_independent=False)
-    category = ReviewScoreCategoryFactory(event=event, is_independent=False)
-    category.weight = Decimal("3.0")
+    dependent = ReviewScoreCategoryFactory(
+        event=event, is_independent=False, weight=Decimal("2.5")
+    )
+    category = ReviewScoreCategoryFactory(
+        event=event, is_independent=False, weight=Decimal("3.0")
+    )
+
+    dependent.save()
     category.is_independent = True
-
+    category.full_clean()
     category.save()
 
+    assert dependent.weight == Decimal("2.5")
     assert category.weight == 0
-
-
-def test_review_score_category_save_keeps_weight_when_not_independent():
-    category = ReviewScoreCategoryFactory(is_independent=False, weight=Decimal("2.5"))
-
-    category.save()
-
-    assert category.weight == Decimal("2.5")
 
 
 def test_review_score_category_clean_independent_validates_remaining_non_independent():
@@ -49,18 +48,6 @@ def test_review_score_category_clean_independent_validates_remaining_non_indepen
     category.is_independent = True
     with pytest.raises(ValidationError):
         category.full_clean()
-
-
-def test_review_score_category_clean_independent_allowed_with_other_non_independent():
-    event = EventFactory()
-    ReviewScoreCategoryFactory(event=event, is_independent=False)
-    category = ReviewScoreCategoryFactory(event=event, is_independent=False)
-
-    category.is_independent = True
-    category.full_clean()
-    category.save()
-
-    assert category.weight == 0
 
 
 def test_review_score_category_clean_new_independent_skips_validation():
@@ -118,44 +105,25 @@ def test_review_score_format(value, label, fmt, expected):
     assert score.format(fmt) == expected
 
 
-def test_review_score_str():
-    score = ReviewScoreFactory(value=Decimal(4), label="Great")
-
-    assert str(score) == "Great (4)"
-
-
-def test_review_score_ordering():
+def test_review_score_str_and_ordering():
     category = ReviewScoreCategoryFactory()
     s1 = ReviewScoreFactory(category=category, value=Decimal(1))
-    s2 = ReviewScoreFactory(category=category, value=Decimal(3))
+    s2 = ReviewScoreFactory(category=category, value=Decimal(3), label="Great")
     s3 = ReviewScoreFactory(category=category, value=Decimal(2))
 
-    result = list(ReviewScore.objects.filter(category=category))
+    assert str(s2) == "Great (3)"
+    assert list(ReviewScore.objects.filter(category=category)) == [s1, s3, s2]
 
-    assert result == [s1, s3, s2]
 
-
-def test_review_str():
+def test_review_properties():
     review = ReviewFactory(score=Decimal("3.0"))
 
-    result = str(review)
-
-    assert result == (
+    assert str(review) == (
         f"Review(event={review.submission.event.slug}, "
         f"submission={review.submission.title}, "
         f"user={review.user.get_display_name}, score={review.score})"
     )
-
-
-def test_review_log_parent():
-    review = ReviewFactory()
-
     assert review.log_parent == review.submission
-
-
-def test_review_event_delegates_to_submission():
-    review = ReviewFactory()
-
     assert review.event == review.submission.event
 
 

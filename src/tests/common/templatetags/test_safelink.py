@@ -8,6 +8,6 @@ pytestmark = pytest.mark.unit
 
 
 def test_safelink_produces_redirect_url():
-    result = safelink("https://example.com")
-    assert "redirect" in result
-    assert "url=" in result
+    assert safelink("https://example.com").startswith(
+        "/redirect/?url=https%3A//example.com%3A"
+    )

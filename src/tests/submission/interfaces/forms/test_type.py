@@ -10,59 +10,36 @@ from tests.factories import (
     EventFactory,
     SubmissionFactory,
     SubmissionTypeFactory,
+    TalkSlotFactory,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_submission_type_form_valid_with_minimal_data():
-    event = EventFactory()
+def test_submission_type_form_validates_name_and_propagates_duration():
+    event = EventFactory(feature_flags={"attendee_signup": False})
+
+    form = SubmissionTypeForm(
+        data={"name_0": "Workshop", "default_duration": "30"},
+        event=event,
+        locales=event.locales,
+    )
+    assert "attendee_signup_required" not in form.fields
+    assert form.is_valid(), form.errors
+    stype = form.save()
+    assert form.signup_pinned_submissions == []
 
     form = SubmissionTypeForm(
         data={"name_0": "Workshop", "default_duration": "60"},
         event=event,
         locales=event.locales,
     )
-    valid = form.is_valid()
 
-    assert valid, form.errors
+    assert not form.is_valid()
+    assert list(form.errors) == ["name"]
 
-
-def test_submission_type_form_clean_name_rejects_duplicate():
-    event = EventFactory()
-    SubmissionTypeFactory(event=event, name="Workshop")
-
-    form = SubmissionTypeForm(
-        data={"name_0": "Workshop", "default_duration": "60"},
-        event=event,
-        locales=event.locales,
-    )
-    valid = form.is_valid()
-
-    assert not valid
-    assert "name" in form.errors
-
-
-def test_submission_type_form_clean_name_allows_same_instance():
-    event = EventFactory()
-    stype = SubmissionTypeFactory(event=event, name="Workshop")
-
-    form = SubmissionTypeForm(
-        data={"name_0": "Workshop", "default_duration": "90"},
-        instance=stype,
-        event=event,
-        locales=event.locales,
-    )
-    valid = form.is_valid()
-
-    assert valid, form.errors
-
-
-def test_submission_type_form_save_updates_default_duration():
-    event = EventFactory()
-    stype = SubmissionTypeFactory(event=event, name="Workshop", default_duration=30)
-    SubmissionFactory(event=event, submission_type=stype, duration=None)
-
+    submission = SubmissionFactory(event=event, submission_type=stype, duration=None)
+    slot = TalkSlotFactory(submission=submission)
     form = SubmissionTypeForm(
         data={"name_0": "Workshop", "default_duration": "60"},
         instance=stype,
@@ -73,13 +50,9 @@ def test_submission_type_form_save_updates_default_duration():
     result = form.save()
 
     result.refresh_from_db()
-
+    slot.refresh_from_db(fields=["end"])
     assert result.default_duration == 60
-
-
-def test_submission_type_form_save_without_duration_change():
-    event = EventFactory()
-    stype = SubmissionTypeFactory(event=event, name="Workshop", default_duration=60)
+    assert (slot.end - slot.start).total_seconds() == 3600
 
     form = SubmissionTypeForm(
         data={"name_0": "Renamed Workshop", "default_duration": "60"},
@@ -91,22 +64,13 @@ def test_submission_type_form_save_without_duration_change():
     result = form.save()
 
     result.refresh_from_db()
-
     assert str(result.name) == "Renamed Workshop"
     assert result.default_duration == 60
 
-
-@pytest.mark.parametrize(
-    ("flag_enabled", "present"),
-    ((False, False), (True, True)),
-    ids=("disabled", "enabled"),
-)
-def test_submission_type_form_attendee_signup_field_visibility(flag_enabled, present):
-    event = EventFactory(feature_flags={"attendee_signup": flag_enabled})
-
+    event = EventFactory(feature_flags={"attendee_signup": True})
     form = SubmissionTypeForm(event=event, locales=event.locales)
 
-    assert ("attendee_signup_required" in form.fields) is present
+    assert "attendee_signup_required" in form.fields
 
 
 @pytest.mark.parametrize(
@@ -147,9 +111,5 @@ def test_submission_type_form_save_signup_cascade(
         form.save(commit=commit)
 
         submission.refresh_from_db()
-    if expect_pinned:
-        assert form.signup_pinned_submissions == [submission]
-        assert submission.attendee_signup_required is True
-    else:
-        assert form.signup_pinned_submissions == []
-        assert submission.attendee_signup_required is None
+    assert form.signup_pinned_submissions == ([submission] if expect_pinned else [])
+    assert submission.attendee_signup_required is (True if expect_pinned else None)

@@ -5,6 +5,7 @@ import datetime as dt
 
 import pytest
 from django.utils import timezone
+from django.utils.formats import date_format
 
 from pretalx.orga.tables.speaker import SpeakerInformationTable, SpeakerTable
 from pretalx.person.models import SpeakerProfile
@@ -16,7 +17,7 @@ from tests.factories import (
     UserFactory,
 )
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 @pytest.fixture
@@ -31,8 +32,7 @@ def event():
         (False, ["title", "limit_types", "resource"]),
     ),
 )
-@pytest.mark.django_db
-def test_speaker_information_table_default_columns(use_tracks, expected):
+def test_speaker_information_table_limit_tracks_follows_feature(use_tracks, expected):
     event = EventFactory(feature_flags={"use_tracks": use_tracks})
     if use_tracks:
         TrackFactory(event=event)
@@ -40,21 +40,9 @@ def test_speaker_information_table_default_columns(use_tracks, expected):
     table = SpeakerInformationTable([info], event=event, user=UserFactory.build())
 
     assert table.default_columns == expected
+    assert ("limit_tracks" in table.exclude) is not use_tracks
 
 
-@pytest.mark.parametrize("use_tracks", (True, False))
-@pytest.mark.django_db
-def test_speaker_information_table_limit_tracks_excluded_by_feature(use_tracks):
-    event = EventFactory(feature_flags={"use_tracks": use_tracks})
-    if use_tracks:
-        TrackFactory(event=event)
-    info = SpeakerInformationFactory(event=event)
-    table = SpeakerInformationTable([info], event=event, user=UserFactory.build())
-
-    assert ("limit_tracks" in table.exclude) != use_tracks
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("profile_kwargs", "expected_email", "expected_locale"),
     (
@@ -80,72 +68,33 @@ def test_speaker_table_email_and_locale_use_effective_values(
     assert row.get_cell_value("locale") == expected_locale
 
 
-@pytest.mark.django_db
-def test_speaker_table_render_invite_status_without_pending_invitation(event):
-    speaker = SpeakerFactory(event=event, user=None, email="mail@example.com")
-    table = SpeakerTable([speaker], event=event, user=UserFactory.build())
-
-    assert table.render_invite_status(speaker, speaker.invitation_sent) == "—"
-
-
-@pytest.mark.django_db
-def test_speaker_table_render_invite_status_pending_without_date(event):
-    speaker = SpeakerFactory(
+def test_speaker_table_render_invite_status(event):
+    sent = timezone.now()
+    plain = SpeakerFactory(event=event, user=None, email="mail@example.com")
+    pending = SpeakerFactory(
         event=event, user=None, email="mail@example.com", invitation_token="tok"
     )
-    table = SpeakerTable([speaker], event=event, user=UserFactory.build())
-
-    assert table.render_invite_status(speaker, speaker.invitation_sent) == "Invited"
-
-
-@pytest.mark.django_db
-def test_speaker_table_render_invite_status_pending_with_date(event):
-    speaker = SpeakerFactory(
+    dated = SpeakerFactory(
         event=event,
         user=None,
         email="mail@example.com",
-        invitation_token="tok",
-        invitation_sent=timezone.now(),
+        invitation_token="tok2",
+        invitation_sent=sent,
     )
-    table = SpeakerTable([speaker], event=event, user=UserFactory.build())
+    user = UserFactory.build()
+    table = SpeakerTable([plain, pending, dated], event=event, user=user)
+    eventless = SpeakerTable([dated], user=user)
 
-    result = table.render_invite_status(speaker, speaker.invitation_sent)
-
-    assert result.startswith("Invited ")
-    assert result != "Invited"
-
-
-@pytest.mark.django_db
-def test_speaker_table_render_invite_status_without_event_skips_tz_conversion():
-    event = EventFactory()
-    speaker = SpeakerFactory(
-        event=event,
-        user=None,
-        email="mail@example.com",
-        invitation_token="tok",
-        invitation_sent=timezone.now(),
+    assert table.render_invite_status(plain, plain.invitation_sent) == "—"
+    assert table.render_invite_status(pending, pending.invitation_sent) == "Invited"
+    assert table.render_invite_status(dated, dated.invitation_sent) == (
+        f"Invited {date_format(sent.astimezone(event.tz), 'SHORT_DATE_FORMAT')}"
     )
-    table = SpeakerTable([speaker], user=UserFactory.build())
-
-    result = table.render_invite_status(speaker, speaker.invitation_sent)
-
-    assert result.startswith("Invited ")
+    assert eventless.render_invite_status(dated, dated.invitation_sent) == (
+        f"Invited {date_format(sent, 'SHORT_DATE_FORMAT')}"
+    )
 
 
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    ("profile_kwargs", "expected"),
-    (({"user": None, "email": "mail@example.com"}, "Managed"), ({}, "Self-managed")),
-    ids=("managed", "self-managed"),
-)
-def test_speaker_table_render_speaker_type(event, profile_kwargs, expected):
-    speaker = SpeakerFactory(event=event, **profile_kwargs)
-    table = SpeakerTable([speaker], event=event, user=UserFactory.build())
-
-    assert table.render_speaker_type(speaker) == expected
-
-
-@pytest.mark.django_db
 def test_speaker_table_email_ordering_matches_effective_email():
     event = EventFactory()
     override = SpeakerFactory(
@@ -163,7 +112,6 @@ def test_speaker_table_email_ordering_matches_effective_email():
     assert list(ordered) == [override, managed, account]
 
 
-@pytest.mark.django_db
 def test_speaker_table_locale_ordering_matches_effective_locale():
     event = EventFactory(locales=["en", "de"], locale="en")
     de_managed = SpeakerFactory(event=event, user=None, locale="de")
@@ -178,7 +126,6 @@ def test_speaker_table_locale_ordering_matches_effective_locale():
     assert list(ordered) == [de_managed, en_account]
 
 
-@pytest.mark.django_db
 def test_speaker_table_invite_status_ordering_uses_pending_invitations_only():
     event = EventFactory()
     early = SpeakerFactory(
@@ -213,7 +160,6 @@ def test_speaker_table_invite_status_ordering_uses_pending_invitations_only():
     assert retracted in list(ordered)
 
 
-@pytest.mark.django_db
 def test_speaker_table_name_ordering_matches_display_name():
     event = EventFactory()
     account = SpeakerFactory(event=event, name="", user=UserFactory(name="Anna"))
@@ -229,11 +175,13 @@ def test_speaker_table_name_ordering_matches_display_name():
     assert list(ordered) == [account, managed, override]
 
 
-@pytest.mark.django_db
-def test_speaker_table_speaker_type_ordering():
-    event = EventFactory()
+def test_speaker_table_speaker_type_render_and_ordering(event):
     self_managed = SpeakerFactory(event=event)
-    managed = SpeakerFactory(event=event, user=None)
+    managed = SpeakerFactory(event=event, user=None, email="mail@example.com")
+    table = SpeakerTable([self_managed, managed], event=event, user=UserFactory.build())
+
+    assert table.render_speaker_type(managed) == "Managed"
+    assert table.render_speaker_type(self_managed) == "Self-managed"
 
     column = SpeakerTable.base_columns["speaker_type"]
     ordered, modified = column.order(
@@ -244,7 +192,6 @@ def test_speaker_table_speaker_type_ordering():
     assert list(ordered) == [managed, self_managed]
 
 
-@pytest.mark.django_db
 def test_speaker_table_has_email_ordering():
     event = EventFactory()
     reachable = SpeakerFactory(event=event, user=None, email="mail@example.com")

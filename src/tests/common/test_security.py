@@ -115,7 +115,7 @@ def test_assert_session_not_expired_rejects_session_without_timestamps():
 
 
 @pytest.mark.parametrize("keep_logged_in", (True, False))
-def test_session_login_sets_long_session_flag(keep_logged_in):
+def test_session_login_sets_flag_and_timestamps(keep_logged_in):
     user = UserFactory()
     request = _login_request()
 
@@ -123,13 +123,6 @@ def test_session_login_sets_long_session_flag(keep_logged_in):
 
     assert request.session["pretalx_auth_long_session"] is keep_logged_in
     assert request.user == user
-
-
-def test_session_login_records_both_timestamps():
-    request = _login_request()
-
-    session_login(request, UserFactory())
-
     assert request.session["pretalx_auth_login_time"] == pytest.approx(
         int(time.time()), abs=2
     )

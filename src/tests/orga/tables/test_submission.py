@@ -18,7 +18,7 @@ from tests.factories import (
 )
 from tests.utils import make_orga_user, make_request
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 @pytest.fixture
@@ -27,10 +27,11 @@ def event():
 
 
 @pytest.mark.parametrize(
-    ("use_tracks", "expected"),
+    ("feature_flags", "kwargs", "default_columns", "exclude"),
     (
         (
-            False,
+            {"use_tracks": False},
+            {"can_view_speakers": True, "has_update_permission": True},
             [
                 "indicator",
                 "title",
@@ -39,9 +40,11 @@ def event():
                 "state",
                 "is_featured",
             ],
+            ["requires_signup", "attendee_signup_count"],
         ),
         (
-            True,
+            {"use_tracks": True, "attendee_signup": True},
+            {"can_view_speakers": True, "has_update_permission": True},
             [
                 "indicator",
                 "title",
@@ -51,286 +54,147 @@ def event():
                 "state",
                 "is_featured",
             ],
+            [],
+        ),
+        (
+            {"use_tracks": False},
+            {},
+            [
+                "indicator",
+                "title",
+                "speakers",
+                "submission_type",
+                "state",
+                "is_featured",
+            ],
+            [
+                "speakers",
+                "is_featured",
+                "actions",
+                "requires_signup",
+                "attendee_signup_count",
+            ],
+        ),
+        (
+            {"use_tracks": False},
+            {"has_update_permission": True},
+            [
+                "indicator",
+                "title",
+                "speakers",
+                "submission_type",
+                "state",
+                "is_featured",
+            ],
+            ["speakers", "requires_signup", "attendee_signup_count"],
         ),
     ),
+    ids=(
+        "all-permissions",
+        "tracks-and-signup",
+        "no-permissions",
+        "update-without-speakers",
+    ),
 )
-@pytest.mark.django_db
-def test_submission_table_default_columns(use_tracks, expected):
-    event = EventFactory(feature_flags={"use_tracks": use_tracks})
-    if use_tracks:
+def test_submission_table_columns(feature_flags, kwargs, default_columns, exclude):
+    event = EventFactory(feature_flags=feature_flags)
+    if feature_flags.get("use_tracks"):
         TrackFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    table = SubmissionTable(
-        [submission], event=event, user=UserFactory.build(), can_view_speakers=True
-    )
-
-    assert table.default_columns == expected
-
-
-@pytest.mark.parametrize("can_view_speakers", (True, False))
-@pytest.mark.django_db
-def test_submission_table_speakers_excluded_by_permission(event, can_view_speakers):
-    submission = SubmissionFactory(event=event)
-    table = SubmissionTable(
-        [submission],
-        event=event,
-        user=UserFactory.build(),
-        can_view_speakers=can_view_speakers,
-    )
-
-    assert ("speakers" in table.exclude) != can_view_speakers
-
-
-@pytest.mark.parametrize("has_update_permission", (True, False))
-@pytest.mark.django_db
-def test_submission_table_actions_excluded_by_permission(event, has_update_permission):
-    submission = SubmissionFactory(event=event)
-    table = SubmissionTable(
-        [submission],
-        event=event,
-        user=UserFactory.build(),
-        has_update_permission=has_update_permission,
-    )
-
-    assert ("is_featured" in table.exclude) != has_update_permission
-    assert ("actions" in table.exclude) != has_update_permission
-
-
-@pytest.mark.django_db
-def test_submission_table_render_content_locale(event):
     submission = SubmissionFactory(event=event, content_locale="en")
+
     table = SubmissionTable(
-        [submission], event=event, user=UserFactory.build(), can_view_speakers=True
+        [submission], event=event, user=UserFactory.build(), **kwargs
     )
 
-    result = table.render_content_locale(submission)
-
-    assert result == submission.get_content_locale_display()
-
-
-@pytest.mark.django_db
-def test_submission_table_set_columns_keeps_indicator_first(event):
-    submission = SubmissionFactory(event=event)
-    table = SubmissionTable(
-        [submission], event=event, user=UserFactory.build(), can_view_speakers=True
-    )
-
+    assert table.default_columns == default_columns
+    assert table.exclude == exclude
+    assert table.render_content_locale(submission) == "English"
     table._set_columns(["title", "state", "indicator"])
-
     assert table.sequence[0] == "indicator"
 
 
-@pytest.mark.parametrize(
-    ("flag_enabled", "excluded"),
-    ((False, True), (True, False)),
-    ids=("disabled", "enabled"),
-)
-@pytest.mark.django_db
-def test_submission_table_requires_signup_column_visibility(flag_enabled, excluded):
-    event = EventFactory(feature_flags={"attendee_signup": flag_enabled})
-    submission = SubmissionFactory(event=event)
-
-    table = SubmissionTable([submission], event=event, user=UserFactory.build())
-
-    assert ("requires_signup" in table.exclude) is excluded
-
-
-@pytest.mark.django_db
-def test_review_table_render_median_score(event):
-    table = ReviewTable([], event=event, user=UserFactory.build())
-
-    assert table.render_median_score(3.456) == "3.5"
-
-
-@pytest.mark.django_db
-def test_review_table_render_mean_score(event):
-    table = ReviewTable([], event=event, user=UserFactory.build())
-
-    assert table.render_mean_score(2.0) == "2.0"
-
-
-@pytest.mark.django_db
-def test_review_table_render_user_score(event):
-    table = ReviewTable([], event=event, user=UserFactory.build())
-
-    assert table.render_user_score(4.789) == "4.8"
-
-
-@pytest.mark.django_db
-def test_review_table_render_content_locale(event):
+def test_review_table_render_scores(event):
     submission = SubmissionFactory(event=event, content_locale="en")
     table = ReviewTable([], event=event, user=UserFactory.build())
 
-    result = table.render_content_locale(submission)
-
-    assert result == submission.get_content_locale_display()
-
-
-@pytest.mark.parametrize(
-    ("aggregate_method", "excluded", "included"),
-    (("median", "mean_score", "median_score"), ("mean", "median_score", "mean_score")),
-)
-@pytest.mark.django_db
-def test_review_table_excludes_opposite_aggregate_score(
-    event, aggregate_method, excluded, included
-):
-    table = ReviewTable(
-        [],
-        event=event,
-        user=UserFactory.build(),
-        can_see_all_reviews=True,
-        aggregate_method=aggregate_method,
-    )
-
-    assert excluded in table.exclude
-    assert included not in table.exclude
-
-
-@pytest.mark.django_db
-def test_review_table_excludes_both_scores_when_cannot_see_reviews(event):
-    table = ReviewTable(
-        [], event=event, user=UserFactory.build(), can_see_all_reviews=False
-    )
-
-    assert "median_score" in table.exclude
-    assert "mean_score" in table.exclude
-
-
-@pytest.mark.parametrize("is_reviewer", (True, False))
-@pytest.mark.django_db
-def test_review_table_user_score_excluded_by_reviewer_status(event, is_reviewer):
-    table = ReviewTable(
-        [], event=event, user=UserFactory.build(), is_reviewer=is_reviewer
-    )
-
-    assert ("user_score" in table.exclude) != is_reviewer
-
-
-@pytest.mark.parametrize("can_view_speakers", (True, False))
-@pytest.mark.django_db
-def test_review_table_speakers_excluded_by_permission(event, can_view_speakers):
-    table = ReviewTable(
-        [], event=event, user=UserFactory.build(), can_view_speakers=can_view_speakers
-    )
-
-    assert ("speakers" in table.exclude) != can_view_speakers
-
-
-@pytest.mark.django_db
-def test_review_table_default_columns_minimal():
-    event = EventFactory(feature_flags={"use_tracks": False})
-    table = ReviewTable(
-        [],
-        event=event,
-        user=UserFactory.build(),
-        can_see_all_reviews=False,
-        is_reviewer=False,
-        can_view_speakers=False,
-    )
-
-    assert table.default_columns == ["review_count", "title", "state"]
+    assert table.render_median_score(3.456) == "3.5"
+    assert table.render_mean_score(2.0) == "2.0"
+    assert table.render_user_score(4.789) == "4.8"
+    assert table.render_content_locale(submission) == "English"
 
 
 @pytest.mark.parametrize(
-    ("aggregate_method", "expected_first", "excluded"),
-    (("median", "median_score", "mean_score"), ("mean", "mean_score", "median_score")),
+    ("use_tracks", "kwargs", "default_columns", "exclude", "extra_columns"),
+    (
+        (
+            False,
+            {},
+            ["review_count", "title", "state"],
+            ["median_score", "mean_score", "user_score", "speakers"],
+            [],
+        ),
+        (
+            True,
+            {"can_see_all_reviews": True, "aggregate_method": "median"},
+            ["median_score", "review_count", "title", "track", "state"],
+            ["mean_score", "user_score", "speakers"],
+            [],
+        ),
+        (
+            False,
+            {
+                "can_see_all_reviews": True,
+                "aggregate_method": "mean",
+                "independent_categories": True,
+                "can_accept_submissions": True,
+            },
+            ["mean_score", "independent_score_{cat}", "review_count", "title", "state"],
+            ["median_score", "user_score", "speakers"],
+            ["independent_score_{cat}", "actions"],
+        ),
+        (
+            False,
+            {"is_reviewer": True, "can_view_speakers": True},
+            ["user_score", "review_count", "title", "speakers", "state"],
+            ["median_score", "mean_score"],
+            [],
+        ),
+        (
+            False,
+            {"is_reviewer": True},
+            ["user_score", "review_count", "title", "state"],
+            ["median_score", "mean_score", "speakers"],
+            [],
+        ),
+    ),
+    ids=(
+        "minimal",
+        "median-with-tracks",
+        "mean-independent-actions",
+        "reviewer-with-speakers",
+        "reviewer-without-speakers",
+    ),
 )
-@pytest.mark.django_db
-def test_review_table_default_columns_aggregate_method(
-    event, aggregate_method, expected_first, excluded
+def test_review_table_columns(
+    use_tracks, kwargs, default_columns, exclude, extra_columns
 ):
-    table = ReviewTable(
-        [],
-        event=event,
-        user=UserFactory.build(),
-        can_see_all_reviews=True,
-        aggregate_method=aggregate_method,
-    )
-
-    assert table.default_columns[0] == expected_first
-    assert excluded not in table.default_columns
-
-
-@pytest.mark.django_db
-def test_review_table_default_columns_with_user_score(event):
-    table = ReviewTable(
-        [],
-        event=event,
-        user=UserFactory.build(),
-        is_reviewer=True,
-        can_see_all_reviews=False,
-    )
-
-    assert "user_score" in table.default_columns
-
-
-@pytest.mark.django_db
-def test_review_table_default_columns_with_speakers(event):
-    table = ReviewTable(
-        [], event=event, user=UserFactory.build(), can_view_speakers=True
-    )
-
-    assert "speakers" in table.default_columns
-
-
-@pytest.mark.parametrize("use_tracks", (True, False))
-@pytest.mark.django_db
-def test_review_table_default_columns_tracks(use_tracks):
     event = EventFactory(feature_flags={"use_tracks": use_tracks})
     if use_tracks:
         TrackFactory(event=event)
-    table = ReviewTable([], event=event, user=UserFactory.build())
-
-    assert ("track" in table.default_columns) == use_tracks
-
-
-@pytest.mark.django_db
-def test_review_table_default_columns_with_independent_categories(event):
     cat = ReviewScoreCategoryFactory(event=event)
-    table = ReviewTable(
-        [],
-        event=event,
-        user=UserFactory.build(),
-        can_see_all_reviews=True,
-        independent_categories=[cat],
-        aggregate_method="mean",
-    )
+    if kwargs.get("independent_categories"):
+        kwargs["independent_categories"] = [cat]
+    base_columns = list(ReviewTable.base_columns)
 
-    assert f"independent_score_{cat.pk}" in table.default_columns
+    table = ReviewTable([], event=event, user=UserFactory.build(), **kwargs)
 
-
-@pytest.mark.django_db
-def test_review_table_adds_independent_score_columns(event):
-    cat = ReviewScoreCategoryFactory(event=event)
-    table = ReviewTable(
-        [], event=event, user=UserFactory.build(), independent_categories=[cat]
-    )
-
-    column_names = list(table.columns.names())
-    assert f"independent_score_{cat.pk}" in column_names
+    assert table.default_columns == [c.format(cat=cat.pk) for c in default_columns]
+    assert table.exclude == exclude
+    assert [name for name in table.columns.names() if name not in base_columns] == [
+        c.format(cat=cat.pk) for c in extra_columns
+    ]
 
 
-@pytest.mark.django_db
-def test_review_table_adds_actions_column_when_can_accept(event):
-    table = ReviewTable(
-        [], event=event, user=UserFactory.build(), can_accept_submissions=True
-    )
-
-    column_names = list(table.columns.names())
-    assert "actions" in column_names
-
-
-@pytest.mark.django_db
-def test_review_table_no_actions_column_when_cannot_accept(event):
-    table = ReviewTable(
-        [], event=event, user=UserFactory.build(), can_accept_submissions=False
-    )
-
-    column_names = list(table.columns.names())
-    assert "actions" not in column_names
-
-
-@pytest.mark.django_db
 def test_review_table_get_independent_score_returns_none_without_categories(event):
     submission = SubmissionFactory(event=event)
     table = ReviewTable([], event=event, user=UserFactory.build())
@@ -341,15 +205,18 @@ def test_review_table_get_independent_score_returns_none_without_categories(even
 @pytest.mark.parametrize(
     ("aggregate_method", "expected"), (("mean", 2.3), ("median", 1))
 )
-@pytest.mark.django_db
 def test_review_table_get_independent_score_with_reviews(
     event, aggregate_method, expected
 ):
     cat = ReviewScoreCategoryFactory(event=event)
+    other_cat = ReviewScoreCategoryFactory(event=event)
     submission = SubmissionFactory(event=event)
     for value in (1, 1, 5):
         review = ReviewFactory(submission=submission)
-        review.scores.add(ReviewScoreFactory(category=cat, value=value))
+        review.scores.add(
+            ReviewScoreFactory(category=cat, value=value),
+            ReviewScoreFactory(category=other_cat, value=3),
+        )
 
     table = ReviewTable(
         [submission],
@@ -359,12 +226,11 @@ def test_review_table_get_independent_score_with_reviews(
         independent_categories=[cat],
         aggregate_method=aggregate_method,
     )
-    score = table.get_independent_score(submission, cat.pk)
 
-    assert score == expected
+    assert table.get_independent_score(submission, cat.pk) == expected
+    assert table._scores_cache == {submission.pk: {cat.pk: expected}}
 
 
-@pytest.mark.django_db
 def test_review_table_get_independent_score_user_only(event):
     cat = ReviewScoreCategoryFactory(event=event)
     submission = SubmissionFactory(event=event)
@@ -390,7 +256,6 @@ def test_review_table_get_independent_score_user_only(event):
     assert score == 7
 
 
-@pytest.mark.django_db
 def test_review_table_load_all_scores_empty_data(event):
     cat = ReviewScoreCategoryFactory(event=event)
     table = ReviewTable(
@@ -401,7 +266,6 @@ def test_review_table_load_all_scores_empty_data(event):
     assert table._scores_cache == {}
 
 
-@pytest.mark.django_db
 def test_review_table_get_independent_score_uses_cached_scores(event):
     cat = ReviewScoreCategoryFactory(event=event)
     submission = SubmissionFactory(event=event)
@@ -419,30 +283,6 @@ def test_review_table_get_independent_score_uses_cached_scores(event):
     assert score == 9.9
 
 
-@pytest.mark.django_db
-def test_review_table_load_all_scores_ignores_non_independent_categories(event):
-    cat = ReviewScoreCategoryFactory(event=event)
-    other_cat = ReviewScoreCategoryFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    review = ReviewFactory(submission=submission)
-    score_independent = ReviewScoreFactory(category=cat, value=5)
-    score_other = ReviewScoreFactory(category=other_cat, value=3)
-    review.scores.add(score_independent, score_other)
-
-    table = ReviewTable(
-        [submission],
-        event=event,
-        user=UserFactory.build(),
-        can_see_all_reviews=True,
-        independent_categories=[cat],
-    )
-    table._load_all_scores()
-
-    assert submission.pk in table._scores_cache
-    assert cat.pk in table._scores_cache[submission.pk]
-    assert other_cat.pk not in table._scores_cache[submission.pk]
-
-
 @pytest.mark.parametrize("table_class", (SubmissionTable, ReviewTable))
 @pytest.mark.parametrize(
     ("sort", "expected"),
@@ -455,7 +295,6 @@ def test_review_table_load_all_scores_ignores_non_independent_categories(event):
         ),
     ),
 )
-@pytest.mark.django_db
 def test_speakers_column_sorts_by_first_speaker_effective_name(
     event, table_class, sort, expected
 ):
@@ -487,7 +326,6 @@ def test_speakers_column_sorts_by_first_speaker_effective_name(
 
 
 @pytest.mark.parametrize("table_class", (SubmissionTable, ReviewTable))
-@pytest.mark.django_db
 def test_speakers_sort_ignored_when_speakers_hidden(event, table_class):
     first = SubmissionFactory(event=event, title="First")
     SpeakerRoleFactory(
