@@ -414,11 +414,13 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
     def form_valid(self, form):
         form.instance.event = self.request.event
         created = form.instance._state.adding
-        self.object = form.instance
         save_options = False
         if form.cleaned_data.get("variant") in ("choices", "multiple_choice"):
             changed_options = [
-                form.changed_data for form in self.formset if form.has_changed()
+                option_form
+                for option_form in self.formset
+                if option_form.has_changed()
+                and (option_form.instance.pk or not option_form["DELETE"].value())
             ]
             if form.cleaned_data.get("options") and changed_options:
                 messages.error(

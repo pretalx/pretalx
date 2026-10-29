@@ -803,6 +803,87 @@ def test_question_create_choice(client, event):
         assert q.options.count() == 2
 
 
+def test_question_create_choice_with_options_file_and_deleted_blank_rows(client, event):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+
+    response = client.post(
+        event.cfp.urls.new_speaker_question,
+        {
+            "question_0": "Pick one",
+            "variant": "choices",
+            "active": True,
+            "help_text_0": "",
+            "question_required": QuestionRequired.OPTIONAL,
+            "options": SimpleUploadedFile(
+                "opts.json", b'[{"en": "Option A"}, {"en": "Option B"}]'
+            ),
+            "form-TOTAL_FORMS": 2,
+            "form-INITIAL_FORMS": 0,
+            "form-0-id": "",
+            "form-0-answer_0": "",
+            "form-0-DELETE": "on",
+            "form-1-id": "",
+            "form-1-answer_0": "",
+            "form-1-DELETE": "on",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        question = event.questions.get()
+        assert {str(opt.answer) for opt in question.options.all()} == {
+            "Option A",
+            "Option B",
+        }
+
+
+@pytest.mark.parametrize(
+    "data",
+    (
+        {
+            "options": SimpleUploadedFile("opts.txt", b"Option A\nOption B"),
+            "form-TOTAL_FORMS": 1,
+            "form-INITIAL_FORMS": 0,
+            "form-0-id": "",
+            "form-0-answer_0": "Option C",
+        },
+        {
+            "form-TOTAL_FORMS": 1,
+            "form-INITIAL_FORMS": 1,
+            "form-0-id": "",
+            "form-0-answer_0": "",
+        },
+    ),
+    ids=("options_conflict", "invalid_formset"),
+)
+def test_question_create_choice_rejected_options_renders_form(client, event, data):
+    user = make_orga_user(
+        event, can_change_event_settings=True, can_change_submissions=True
+    )
+    client.force_login(user)
+
+    response = client.post(
+        event.cfp.urls.new_speaker_question,
+        {
+            "question_0": "Pick one",
+            "variant": "choices",
+            "active": True,
+            "help_text_0": "",
+            "question_required": QuestionRequired.OPTIONAL,
+            **data,
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert not event.questions.exists()
+
+
 def test_question_edit_choice_options(client, event, choice_question):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
