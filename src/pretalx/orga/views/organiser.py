@@ -165,9 +165,8 @@ class TeamView(OrgaCRUDView):
         except (ValidationError, IntegrityError) as exc:
             messages.error(self.request, str(exc))
             return self.form_invalid(form)
-        if warnings:
-            for warning in warnings:
-                messages.warning(self.request, warning)
+        for __, message in warnings:
+            messages.warning(self.request, message)
         return result
 
     def perform_delete(self):
@@ -181,9 +180,8 @@ class TeamView(OrgaCRUDView):
             warnings = check_access_permissions(self.request.organiser)
             messages.success(self.request, _("The team was removed."))
 
-        if warnings:
-            for warning in warnings:
-                messages.warning(self.request, warning)
+        for __, message in warnings:
+            messages.warning(self.request, message)
         return True
 
     @transaction.atomic
@@ -301,9 +299,8 @@ class TeamMemberDelete(TeamMemberMixin, ActionConfirmMixin, DetailView):
             messages.error(request, str(e))
             return redirect(self.action_back_url)
 
-        if warnings:
-            for warning in warnings:
-                messages.warning(request, warning)
+        for __, message in warnings:
+            messages.warning(request, message)
         return redirect(self.action_back_url)
 
 
