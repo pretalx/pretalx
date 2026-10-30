@@ -5,15 +5,15 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-07-07 15:20+0000\n"
-"PO-Revision-Date: 2025-04-08 14:25+0000\n"
-"Last-Translator: Tobias Kunze <r@rixx.de>\n"
+"PO-Revision-Date: 2026-10-29 01:49+0000\n"
+"Last-Translator: Hoi thao Khoa hoc <bantochuc@hoithaokhoahoc.vn>\n"
 "Language-Team: none\n"
 "Language: vi\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.9.2\n"
+"X-Generator: Weblate 2026.7\n"
 
 #: pretalx/agenda/phrases.py
 msgid "Thank you for your feedback!"
@@ -41,10 +41,8 @@ msgstr "Sửa hoặc xem các đề xuất tham luận"
 
 #: pretalx/agenda/templates/agenda/changelog.html
 #: pretalx/agenda/templates/agenda/schedule.html
-#, fuzzy
-#| msgid "Schedule update"
 msgid "Schedule changes"
-msgstr "Cập nhật lịch hội thảo"
+msgstr "Xem thay đổi lịch trình"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html
 msgid "We have new sessions!"
@@ -60,7 +58,7 @@ msgstr "Rất tiếc, các phiên sau đây bị huỷ:"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html
 msgid "Sadly, we had to cancel a session:"
-msgstr "Chúng tôi rất tiếc phải huỷ phiên: "
+msgstr "Chúng tôi rất tiếc phải hủy phiên:"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html
 msgid ""
@@ -141,50 +139,37 @@ msgstr "Hiện tại quý vị không thể đưa ra phản hồi cho phiên nà
 #: pretalx/agenda/templates/agenda/includes/signup.html
 #: pretalx/agenda/templates/agenda/session_block.html
 #: pretalx/agenda/views/schedule.py
-#, fuzzy
-#| msgid "Favourite this session"
 msgid "You are signed up for this session."
-msgstr "Đưa phiên này vào danh sách yêu thích"
+msgstr "Quý vị đã đăng ký dự phiên này."
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 #: pretalx/agenda/templates/agenda/session_block.html
 #: pretalx/agenda/views/schedule.py pretalx/submission/domain/signup.py
-#, fuzzy
-#| msgid "proposal is waiting for your review."
-#| msgid_plural "proposals are waiting for your review."
 msgid "This session is currently full."
-msgstr "bài đề xuất tham luận đang chờ quý vị bình duyệt."
+msgstr "Phiên này hiện đã hết chỗ."
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 msgid "This session requires attendees to sign up."
-msgstr ""
+msgstr "Phiên này yêu cầu đại biểu đăng ký tham dự."
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 #: pretalx/orga/templates/orga/includes/async_download.html
 #: pretalx/orga/templates/orga/includes/async_download_waiting.html
-#, fuzzy
-#| msgid "Download ZIP"
 msgid "Download"
-msgstr "Tải file ZIP"
+msgstr "Tải về"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
-#, fuzzy
-#| msgid "Cancel"
 msgid "Cancel signup"
-msgstr "Hủy"
+msgstr "Huỷ đăng ký"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
-#, fuzzy
-#| msgid "You can’t give feedback for this session at this time."
 msgid "You cannot sign up for this session with this account."
-msgstr "Hiện tại quý vị không thể đưa ra phản hồi cho phiên này."
+msgstr "Quý vị không thể đăng ký dự phiên này với tài khoản hiện tại."
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 #: pretalx/agenda/views/schedule.py
-#, fuzzy
-#| msgid "Signal"
 msgid "Sign up"
-msgstr "Tín hiệu"
+msgstr "Đăng ký"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html
@@ -195,11 +180,11 @@ msgstr "Tín hiệu"
 #: pretalx/orga/templates/orga/cfp/editor.html
 #: pretalx/orga/templates/orga/submission/speakers.html
 msgid "Close"
-msgstr ""
+msgstr "Đóng"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 msgid "Cancel your signup?"
-msgstr ""
+msgstr "Huỷ đăng ký?"
 
 #: pretalx/agenda/templates/agenda/includes/signup.html
 #, python-format
@@ -510,10 +495,8 @@ msgid "Your file upload could not be processed. Please try again."
 msgstr ""
 
 #: pretalx/cfp/flow/steps.py
-#, fuzzy
-#| msgid "Please enter at least one email address!"
 msgid "Please add at least one resource."
-msgstr "Vui lòng nhập ít nhất một địa chỉ email!"
+msgstr "Vui lòng nhập ít nhất một tài nguyên."
 
 #: pretalx/cfp/flow/steps.py
 msgid ""
@@ -671,22 +654,19 @@ msgid "Please select exactly {count} tags."
 msgstr ""
 
 #: pretalx/cfp/forms.py
-#, fuzzy, python-brace-format
-#| msgid "Please write between {min_length} and {max_length} words."
+#, python-brace-format
 msgid "Please select between {min} and {max} tags."
-msgstr "Vui lòng viết trong khoảng {min_length} đến {max_length} từ."
+msgstr "Vui lòng chọn từ {min} đến {max} từ khoá."
 
 #: pretalx/cfp/forms.py
-#, fuzzy, python-brace-format
-#| msgid "Please write at least {min_length} words."
+#, python-brace-format
 msgid "Please select at least {min} tags."
-msgstr "Vui lòng viết ít nhất {min_length} từ."
+msgstr "Vui lòng chọn ít nhất {min} từ khoá."
 
 #: pretalx/cfp/forms.py
-#, fuzzy, python-brace-format
-#| msgid "Please write at most {max_length} words."
+#, python-brace-format
 msgid "Please select at most {max} tags."
-msgstr "Vui lòng viết nhiều nhất {max_length} từ."
+msgstr "Vui lòng chọn nhiều nhất {max} từ khoá."
 
 #: pretalx/cfp/forms.py
 #, fuzzy, python-brace-format
@@ -808,7 +788,7 @@ msgstr "Vui lòng cung cấp một địa chỉ email hợp lệ."
 
 #: pretalx/cfp/phrases.py pretalx/orga/views/organiser.py
 msgid "The invitation has been sent."
-msgstr "Lời mời đã được gửi!"
+msgstr "Thư mời đã được gửi!"
 
 #: pretalx/cfp/phrases.py
 msgid "You are now part of this proposal! Please fill in your profile below."
@@ -840,10 +820,9 @@ msgstr ""
 "%(until_string)s ."
 
 #: pretalx/cfp/templates/cfp/event/cfp.html
-#, fuzzy, python-format
-#| msgid "This Call for Papers closed on %(deadline)s (%(timezone)s)."
+#, python-format
 msgid "Submissions open on %(opening)s (%(timezone)s)."
-msgstr "Thông báo Nộp bài đã hết hạn vào ngày %(deadline)s (%(timezone)s)."
+msgstr "Bài tham luận có thể nộp từ %(opening)s %(timezone)s."
 
 #: pretalx/cfp/templates/cfp/event/cfp.html
 #, fuzzy, python-format
@@ -1833,10 +1812,8 @@ msgid "Room modified"
 msgstr "Một kênh hội thảo đã được chỉnh sửa."
 
 #: pretalx/common/log.py
-#, fuzzy
-#| msgid "A track was deleted."
 msgid "Room deleted"
-msgstr "Một kênh hội thảo đã được xoá."
+msgstr "Phòng đã được xoá."
 
 #: pretalx/common/log.py
 #, fuzzy
@@ -1855,34 +1832,29 @@ msgid "The organiser {name} was deleted."
 msgstr "Ban Tổ chức {name} đã bị xoá."
 
 #: pretalx/common/log.py
-#, fuzzy, python-brace-format
-#| msgid "The access code has been sent."
+#, python-brace-format
 msgid "The access code has been sent to {email}."
-msgstr "Mã truy cập đã được gửi."
+msgstr "Mã truy cập đã được gửi tới {email}."
 
 #: pretalx/common/log.py
-#, fuzzy, python-brace-format
-#| msgid "The event was deactivated."
+#, python-brace-format
 msgid "The review phase “{name}” was activated."
-msgstr "Hội thảo này đã được tạm ngưng."
+msgstr "Bước bình duyệt \"{name}\" đã được kích hoạt."
 
 #: pretalx/common/log.py
-#, fuzzy, python-brace-format
-#| msgid "A session type was deleted."
+#, python-brace-format
 msgid "A speaker invitation was sent to {email}."
-msgstr "Một loại phiên hội thảo đã được xoá."
+msgstr "Thư mời diễn giả đã được gửi tới {email}."
 
 #: pretalx/common/log.py
-#, fuzzy, python-brace-format
-#| msgid "A session type was deleted."
+#, python-brace-format
 msgid "A speaker invitation to {email} was accepted."
-msgstr "Một loại phiên hội thảo đã được xoá."
+msgstr "Diễn giả có email {email} đã nhận lời."
 
 #: pretalx/common/log.py
-#, fuzzy, python-brace-format
-#| msgid "An invitation to the event orga was retracted."
+#, python-brace-format
 msgid "A speaker invitation to {email} was retracted."
-msgstr "Lời mời tham gia hội thảo orga đã được rút lại."
+msgstr "Thư mời diễn giả có email {email} đã được thu hồi."
 
 #: pretalx/common/log.py
 msgid "The CfP has been modified."
@@ -1931,10 +1903,8 @@ msgid "An invitation was retracted."
 msgstr "Một loại phiên hội thảo đã được xoá."
 
 #: pretalx/common/log.py
-#, fuzzy
-#| msgid "The invitation was sent!"
 msgid "An invitation was sent."
-msgstr "Lời mời đã được gửi!"
+msgstr "Thư mời đã được gửi!"
 
 #: pretalx/common/log.py
 msgid "The invitation to the review team was retracted."
@@ -2139,10 +2109,8 @@ msgid "A speaker was removed from the proposal."
 msgstr "Một diễn giả đã được bỏ ra khỏi đề xuất tham luận."
 
 #: pretalx/common/log.py
-#, fuzzy
-#| msgid "The invitation was sent!"
 msgid "A speaker invitation was sent."
-msgstr "Lời mời đã được gửi!"
+msgstr "Thư mời diễn giả đã được gửi."
 
 #: pretalx/common/log.py
 #, fuzzy
@@ -3921,10 +3889,8 @@ msgid "URL to a user’s list of proposals"
 msgstr "Đường dẫn tới danh mục các đề xuất tham luận của một tác giả"
 
 #: pretalx/mail/domain/context.py
-#, fuzzy
-#| msgid "URL to a user’s list of proposals"
 msgid "URL to a user’s private profile page."
-msgstr "Đường dẫn tới danh mục các đề xuất tham luận của một tác giả"
+msgstr "Đường dẫn tới hồ sơ cá nhân của người dùng."
 
 #: pretalx/mail/domain/context.py
 msgid "The general CfP deadline"
@@ -9257,7 +9223,7 @@ msgstr ""
 
 #: pretalx/settings.py
 msgid "Vietnamese"
-msgstr ""
+msgstr "Tiếng Việt"
 
 #: pretalx/settings.py
 msgid "Traditional Chinese (Taiwan)"
