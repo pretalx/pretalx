@@ -4,6 +4,7 @@ SPDX-FileCopyrightText: 2017-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
+{% load datetimerange %}
 {% load event_tags %}
 {% load i18n %}
 {% load orga_edit_link %}
@@ -29,15 +30,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <p>
                 <strong>
                     {% if cfp.before_opening %}
-                        {% blocktranslate with opening=cfp.opening|date:"SHORT_DATETIME_FORMAT" timezone=request.timezone trimmed %}
+                        {% blocktranslate with opening=cfp.opening|date:"SHORT_DATETIME_FORMAT" timezone=request.timezone|timezone_name trimmed %}
                             Submissions open on {{ opening }} ({{ timezone }}).
                         {% endblocktranslate %}
                     {% elif cfp.after_deadline %}
-                        {% blocktranslate with deadline=cfp.max_deadline|date:"SHORT_DATETIME_FORMAT" timezone=request.timezone trimmed %}
+                        {% blocktranslate with deadline=cfp.max_deadline|date:"SHORT_DATETIME_FORMAT" timezone=request.timezone|timezone_name trimmed %}
                             Submissions closed on {{ deadline }} ({{ timezone }}).
                         {% endblocktranslate %}
                     {% elif request.event.cfp.max_deadline %}
-                        {% blocktranslate with deadline=cfp.max_deadline|date:"SHORT_DATETIME_FORMAT" timezone=request.timezone until_string=cfp.max_deadline|timeuntil trimmed %}
+                        {% blocktranslate with deadline=cfp.max_deadline|date:"SHORT_DATETIME_FORMAT" timezone=request.timezone|timezone_name until_string=cfp.max_deadline|timeuntil trimmed %}
                             Submissions close on {{ deadline }} ({{ timezone }}), {{ until_string }} from now.
                         {% endblocktranslate %}
                     {% endif %}

@@ -55,6 +55,29 @@ def test_event_cfp_page_when_all_types_require_access_code(
     assert ("Submissions close on" in content) is show_deadline
 
 
+@pytest.mark.parametrize(
+    ("opening_days", "deadline_days"),
+    ((5, 10), (-10, -5), (-5, 5)),
+    ids=["before_opening", "after_deadline", "open"],
+)
+def test_event_cfp_page_deadline_shows_readable_timezone(
+    client, opening_days, deadline_days
+):
+    event = EventFactory(timezone="America/New_York")
+    with scopes_disabled():
+        event.cfp.opening = now() + dt.timedelta(days=opening_days)
+        event.cfp.deadline = now() + dt.timedelta(days=deadline_days)
+        event.cfp.settings["show_deadline"] = True
+        event.cfp.save()
+
+    response = client.get(f"/{event.slug}/cfp", follow=True)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "(America/New York)" in content
+    assert "America/New_York" not in content
+
+
 @pytest.mark.parametrize("with_code", (True, False), ids=["with_code", "without_code"])
 def test_event_startpage_submit_link_when_all_types_require_access_code(
     client, event, with_code

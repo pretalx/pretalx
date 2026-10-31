@@ -96,6 +96,10 @@ export const getLanguageName = (code, locale) => {
 	}
 }
 
+export function timezoneLabel (timezone) {
+	return timezone.replaceAll('_', ' ')
+}
+
 export function getAllTimezones () {
 	try {
 		return Intl.supportedValuesOf('timeZone')
