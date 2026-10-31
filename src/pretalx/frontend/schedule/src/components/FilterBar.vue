@@ -71,19 +71,19 @@ SPDX-License-Identifier: Apache-2.0
 	//- Right side: Timezone selector only
 	.timezone-container
 		template(v-if="!inEventTimezone")
-			bunt-select.timezone-select(ref="timezoneSelect", v-model="timezoneModel", name="timezone", :options="timezoneOptions", dropdownClass="timezone-dropdown", @blur="onTimezoneBlur")
+			bunt-select.timezone-select(ref="timezoneSelect", v-model="timezoneModel", name="timezone", :options="timezoneOptions", dropdownClass="timezone-dropdown", :filterByFunction="matchTimezone", @blur="onTimezoneBlur")
 				template(#default="{ option }")
 					.timezone-option
 						span.timezone-name {{ option.label }}
 						span.timezone-note(v-if="option.note") {{ option.note }}
 		template(v-else-if="scheduleTimezone")
-			.timezone-label {{ scheduleTimezone }}
+			.timezone-label {{ timezoneLabel(scheduleTimezone) }}
 </template>
 
 <script>
 import localize from '~/mixins/localize'
 import FilterPill from '~/components/FilterPill.vue'
-import { getAllTimezones } from '~/utils'
+import { getAllTimezones, timezoneLabel } from '~/utils'
 
 export default {
 	name: 'FilterBar',
@@ -246,13 +246,13 @@ export default {
 			const pin = (id, note) => {
 				if (!id || pinnedIds.has(id)) return
 				pinnedIds.add(id)
-				pinned.push({ id, label: id, note })
+				pinned.push({ id, label: timezoneLabel(id), note })
 			}
 			pin(this.scheduleTimezone, this.translationMessages.timezone_event || 'Event timezone')
 			pin(this.userTimezone, this.translationMessages.timezone_local || 'Your timezone')
 			const rest = getAllTimezones()
 				.filter(timezone => !pinnedIds.has(timezone))
-				.map(timezone => ({ id: timezone, label: timezone }))
+				.map(timezone => ({ id: timezone, label: timezoneLabel(timezone) }))
 			return pinned.concat(rest)
 		},
 		timezoneModel: {
@@ -271,6 +271,10 @@ export default {
 		}
 	},
 	methods: {
+		timezoneLabel,
+		matchTimezone (search, option, fuzzyFn) {
+			return fuzzyFn(search, option.id.toLowerCase()) || fuzzyFn(search, option.label.toLowerCase())
+		},
 		onTimezoneBlur () {
 			// Restore the label in case the select cleared it while it was open.
 			this.$refs.timezoneSelect?.selectValue(this.currentTimezone)
