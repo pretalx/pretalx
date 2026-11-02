@@ -22,7 +22,6 @@ from pretalx.person.domain.verification import (
     correct_unverified_email,
     parse_verification_token,
     pending_email_expired,
-    send_cooldown_remaining,
     send_verification_mail,
 )
 from pretalx.person.enums import EmailVerificationState
@@ -47,17 +46,9 @@ class GenericVerificationView(TemplateView):
     def get_verified_url(self):
         raise NotImplementedError
 
-    @cached_property
-    def cooldown(self):
-        return send_cooldown_remaining(self.request.user)
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.setdefault("form", EmailCorrectionForm(user=self.request.user))
-        context["cooldown"] = self.cooldown
-        context["acknowledged_submission"] = self.request.session.pop(
-            "verification_submission", None
-        )
         return context
 
     def post(self, request, *args, **kwargs):

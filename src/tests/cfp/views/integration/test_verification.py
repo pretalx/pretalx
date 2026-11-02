@@ -48,17 +48,15 @@ def test_verification_page_resends_mail_once_per_cooldown(client, event):
     assert {"password", "email"} <= set(response.context["form"].fields)
     assert "email-correction-dialog" in content
     assert not re.search(r"<dialog[^>]*\bopen", content)
-    assert response.context["cooldown"] == 0
 
-    response = client.post(_page_url(event), {"action": "resend"})
-    page = client.get(_page_url(event))
+    response = client.post(_page_url(event), {"action": "resend"}, follow=True)
 
-    assert response.status_code == 302
-    assert response.url == _page_url(event)
+    assert response.redirect_chain == [(_page_url(event), 302)]
+    assert [message.level_tag for message in response.context["messages"]] == [
+        "success"
+    ]
     assert [mail.to for mail in djmail.outbox] == [["pending-speaker@example.com"]]
     assert f"/{event.slug}/verify/" in djmail.outbox[0].body
-    assert page.context["cooldown"] > 0
-    assert "disabled" in page.content.decode()
 
     response = client.post(_page_url(event), {"action": "resend"}, follow=True)
 
@@ -96,25 +94,6 @@ def test_verification_page_redirects_proven_user_away(client, event, state):
     assert response.status_code == 302
     assert response.url == f"/{event.slug}/talk/ABCDEF/#signup"
     assert "verification_next" not in client.session
-
-
-@pytest.mark.parametrize("draft", (True, False))
-def test_verification_page_acknowledges_submission_once(client, event, draft):
-    user = _unverified_user()
-    client.force_login(user)
-    session = client.session
-    session["verification_submission"] = {"code": "ABCDEF", "draft": draft}
-    session.save()
-
-    response = client.get(_page_url(event))
-    second_response = client.get(_page_url(event))
-
-    assert response.context["acknowledged_submission"] == {
-        "code": "ABCDEF",
-        "draft": draft,
-    }
-    assert "alert-success" in response.content.decode()
-    assert second_response.context["acknowledged_submission"] is None
 
 
 def test_verification_page_wrong_address_corrects_with_password_and_kills_old_links(

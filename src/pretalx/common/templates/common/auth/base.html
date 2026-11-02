@@ -45,13 +45,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     alt="{% translate 'The event’s logo' %}"
                 >
             {% endif %}
-            <p>
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="card card-inverse card-{{ message.tags }} mb-3 text-center">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            </p>
+            <div class="auth-messages">
+                {% for message in messages %}
+                    {% #alert level=message.tags %}{{ message }}{% /alert %}
+                {% endfor %}
+            </div>
             <div class="card">
                 {% block content %}{% endblock content %}
             </div>

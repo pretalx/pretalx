@@ -19,6 +19,7 @@ from pretalx.cfp.flow.base import DedraftMixin, FormFlowStep
 from pretalx.common.security import session_login
 from pretalx.common.text.phrases import phrases
 from pretalx.person.domain.verification import finalize_registration
+from pretalx.person.enums import EmailVerificationState
 from pretalx.person.interfaces.forms import SpeakerProfileForm, UserForm
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.domain.queries.question import active_questions
@@ -264,21 +265,24 @@ class InfoStep(DedraftMixin, FormFlowStep):
                         resource.submission = submission
                         resource.save()
 
-        if draft:
-            messages.success(
-                self.request,
-                _(
-                    "Your draft was saved. You can continue to edit it as long as the CfP is open."
-                ),
+        message = _(
+            "Congratulations, you’ve submitted your proposal! You can continue to make changes to it "
+            "up to the submission deadline, and you will be notified of any changes or questions."
+        )
+        if request.user.email_verification_state == EmailVerificationState.UNVERIFIED:
+            if draft:
+                message = _(
+                    "Your draft has been saved. Confirm your email address to continue."
+                )
+            else:
+                message = _(
+                    "Congratulations, you’ve submitted your proposal! Confirm your email address to continue."
+                )
+        elif draft:
+            message = _(
+                "Your draft was saved. You can continue to edit it as long as the CfP is open."
             )
-        else:
-            messages.success(
-                self.request,
-                _(
-                    "Congratulations, you’ve submitted your proposal! You can continue to make changes to it "
-                    "up to the submission deadline, and you will be notified of any changes or questions."
-                ),
-            )
+        messages.success(self.request, message)
 
         request.submission = submission
 

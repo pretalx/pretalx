@@ -15,18 +15,5 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock scripts %}
 
 {% block content %}
-    {% if acknowledged_submission %}
-        <div class="alert alert-success">
-            {% if acknowledged_submission.draft %}
-                {% blocktranslate trimmed %}
-                    Your draft has been saved. You can continue editing it at any time.
-                {% endblocktranslate %}
-            {% else %}
-                {% blocktranslate trimmed %}
-                    Your proposal has been submitted successfully.
-                {% endblocktranslate %}
-            {% endif %}
-        </div>
-    {% endif %}
     {% include "common/auth/verification_content.html" %}
 {% endblock content %}
