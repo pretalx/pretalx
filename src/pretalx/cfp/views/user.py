@@ -261,6 +261,7 @@ class SubmissionsListView(LoggedInEventPageMixin, ListView):
         return (
             self.request.event.submissions.filter(speakers__user=self.request.user)
             .select_related("submission_type")
+            .with_current_slots(self.request.event)
             .annotate(feedback_count=Count("feedback", distinct=True))
         )
 

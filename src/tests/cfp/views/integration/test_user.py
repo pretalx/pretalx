@@ -20,6 +20,7 @@ from pretalx.person.domain.verification import (
     parse_verification_token,
 )
 from pretalx.person.enums import EmailVerificationState
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.enums import AttendeeSignupStates
 from pretalx.submission.models import Submission, SubmissionInvitation, SubmissionStates
 from pretalx.submission.signals import before_submission_state_change
@@ -83,25 +84,52 @@ def _edit_form_data(submission, **overrides):
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
-def test_submissions_list_view_shows_submissions(
+def test_submissions_list_view_with_scheduled_submissions(
     client, event, item_count, django_assert_num_queries
 ):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
-        submissions = SubmissionFactory.create_batch(
-            item_count, event=event, state=SubmissionStates.SUBMITTED
+        slots = [
+            TalkSlotFactory(
+                submission=SubmissionFactory(
+                    event=event, state=SubmissionStates.CONFIRMED
+                ),
+                is_visible=True,
+            )
+            for _ in range(item_count)
+        ]
+        future_slot = TalkSlotFactory(
+            submission=SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED),
+            start=event.datetime_from + dt.timedelta(days=1),
+            end=event.datetime_from + dt.timedelta(days=1, hours=1),
         )
-        for sub in submissions:
-            sub.speakers.add(speaker)
+        hidden_slot = TalkSlotFactory(
+            submission=SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+        )
+        unscheduled = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+        for submission in [slot.submission for slot in slots] + [
+            future_slot.submission,
+            hidden_slot.submission,
+            unscheduled,
+        ]:
+            submission.speakers.add(speaker)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
     client.force_login(speaker.user)
 
-    with django_assert_num_queries(8):
+    with django_assert_num_queries(9):
         response = client.get(event.urls.user_submissions, follow=True)
 
     assert response.status_code == 200
     content = response.content.decode()
-    for sub in submissions:
-        assert sub.title in content
+    for slot in slots:
+        assert str(slot.room.name) in content
+        assert slot.submission.urls.feedback in content
+    assert str(future_slot.room.name) in content
+    assert future_slot.submission.urls.feedback not in content
+    assert str(hidden_slot.room.name) not in content
+    assert hidden_slot.submission.urls.feedback in content
+    assert unscheduled.title in content
+    assert unscheduled.urls.feedback not in content
 
 
 @pytest.mark.parametrize("view", ("list", "detail"))

@@ -64,6 +64,17 @@ class SubmissionQuerySet(models.QuerySet):
     def with_cfp_page_data(self):
         return self.select_related("submission_type", "track", "access_code")
 
+    def with_current_slots(self, event):
+        if not event.current_schedule:
+            return self
+        return self.prefetch_related(
+            models.Prefetch(
+                "slots",
+                queryset=event.current_schedule.talks.select_related("room"),
+                to_attr="_prefetched_current_slots",
+            )
+        )
+
 
 class SubmissionManager(models.Manager.from_queryset(SubmissionQuerySet)):
     def get_queryset(self):
@@ -523,6 +534,9 @@ class Submission(GenerateCode, PretalxModel):
 
         Note that this slot is not guaranteed to be visible.
         """
+        prefetched = getattr(self, "_prefetched_current_slots", None)
+        if prefetched is not None:
+            return prefetched[0] if prefetched else None
         return (
             self.event.current_schedule.talks.filter(submission=self)
             .select_related("room", "submission", "submission__event")
@@ -535,6 +549,9 @@ class Submission(GenerateCode, PretalxModel):
     def current_slots(self):
         if not self.event.current_schedule:
             return None
+        prefetched = getattr(self, "_prefetched_current_slots", None)
+        if prefetched is not None:
+            return [slot for slot in prefetched if slot.is_visible]
         return self.event.current_schedule.talks.filter(
             submission=self, is_visible=True
         ).select_related("room", "submission", "submission__event")
