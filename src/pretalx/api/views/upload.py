@@ -61,10 +61,11 @@ class UploadView(APIView):
             raise ValidationError("No file has been submitted.")
         if file_obj.size > settings.FILE_UPLOAD_DEFAULT_LIMIT:
             raise ValidationError(str(SizeFileInput.get_size_warning()))
-        content_type = file_obj.content_type.split(";")[0]  # ignore e.g. "; charset=…"
+        # ignore e.g. "; charset=…"
+        content_type = file_obj.content_type.split(";")[0].strip().lower()
         if not (allowed_extensions := self.allowed_types.get(content_type)):
             raise ValidationError("Content type is not allowed.")
-        if not any(file_obj.name.endswith(ext) for ext in allowed_extensions):
+        if not any(file_obj.name.lower().endswith(ext) for ext in allowed_extensions):
             raise ValidationError(
                 f'File name "{file_obj.name}" has an invalid extension for type "{content_type}"'
             )

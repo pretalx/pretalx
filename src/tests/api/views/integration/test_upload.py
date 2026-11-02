@@ -9,24 +9,31 @@ from pretalx.common.models.file import CachedFile
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-def test_upload_pdf_creates_cached_file(client, orga_write_token):
+@pytest.mark.parametrize(
+    ("filename", "content_type"),
+    (("file.pdf", "application/pdf"), ("FILE.PDF", "Application/PDF ; charset=binary")),
+    ids=("lower_case", "mixed_case"),
+)
+def test_upload_pdf_creates_cached_file(
+    client, orga_write_token, filename, content_type
+):
     assert CachedFile.objects.count() == 0
 
     response = client.post(
         "/api/upload/",
-        data={"name": "file.pdf", "file_field": ContentFile(b"fake pdf content")},
+        data={"name": filename, "file_field": ContentFile(b"fake pdf content")},
         headers={
             "Authorization": f"Token {orga_write_token.token}",
-            "Content-Disposition": 'attachment; filename="file.pdf"',
-            "Content-Type": "application/pdf",
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Type": content_type,
         },
     )
 
-    assert response.status_code == 201
+    assert response.status_code == 201, response.data
     assert response.data["id"].startswith("file:")
     assert CachedFile.objects.count() == 1
     cf = CachedFile.objects.first()
-    assert cf.filename == "file.pdf"
+    assert cf.filename == filename
     assert cf.content_type == "application/pdf"
 
 
