@@ -158,8 +158,9 @@ def test_e2e_new_user_submission_with_questions(
         response, final_url = _post_profile(client, profile_url)
     assert final_url == f"/{cfp_event.slug}/verify/"
     assert "/me/submissions/" in response.redirect_chain[-2][0]
-    content = response.content.decode()
-    assert "Your proposal has been submitted successfully." in content
+    assert [str(message) for message in response.context["messages"]] == [
+        "Congratulations, you’ve submitted your proposal! Confirm your email address to continue."
+    ]
 
     sub = _assert_submission(cfp_event, question=submission_question)
     user = _assert_speaker(sub)
@@ -452,8 +453,9 @@ def test_e2e_draft_anonymous_register_lands_on_verification_page_with_ack(
     response, final_url = _register_user(client, user_url)
 
     assert final_url == f"/{cfp_event.slug}/verify/"
-    content = response.content.decode()
-    assert "Your draft has been saved." in content
+    assert [str(message) for message in response.context["messages"]] == [
+        "Your draft has been saved. Confirm your email address to continue."
+    ]
     with scope(event=cfp_event):
         draft = Submission.all_objects.filter(state=SubmissionStates.DRAFT).last()
         assert draft.title == "Registered Draft"

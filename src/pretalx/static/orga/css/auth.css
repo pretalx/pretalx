@@ -23,6 +23,12 @@ body {
   margin-bottom: 20px;
 }
 
+.auth-messages {
+  margin: 1rem 0;
+  width: 26rem;
+  max-width: calc(100vw - 2rem);
+}
+
 .card {
   padding: 20px;
   width: 26rem;
