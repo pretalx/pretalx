@@ -30,7 +30,7 @@
     "vue": "^3.5.43"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.15",
+    "@biomejs/biome": "^2.6.4",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@vitejs/plugin-vue": "^6.0.10",
     "eslint": "^10.13.0",
