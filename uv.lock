@@ -1546,7 +1546,7 @@ requires-dist = [
     { name = "pillow", specifier = "~=13.0.0" },
     { name = "polib", marker = "extra == 'dev'" },
     { name = "psycopg2-binary", marker = "extra == 'postgres'", specifier = "~=2.9.0" },
-    { name = "publicsuffixlist", specifier = "~=1.0.0" },
+    { name = "publicsuffixlist", specifier = ">=1.0,<1.2" },
     { name = "pytest", marker = "extra == 'dev'" },
     { name = "pytest-cov", marker = "extra == 'dev'" },
     { name = "pytest-django", marker = "extra == 'dev'" },
@@ -1627,11 +1627,11 @@ wheels = [
 
 [[package]]
 name = "publicsuffixlist"
-version = "1.0.2.20261002"
+version = "1.1.2.20261029"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/d3/16/3a3112778a55dcd3a11b7baf982439606ddcc41b5b1efe70a265a355032e/publicsuffixlist-1.0.2.20261002.tar.gz", hash = "sha256:3d814ff5eb0ca4bb8a2c9d7e9fd029485a9cd76110a7f37dad39b5936e8764cc", size = 109307, upload-time = "2026-10-02T09:39:31.66Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/63/70/7806415516fe4c0efb3dd4afc9177eecd09bf9b63d005df04d984ad0101b/publicsuffixlist-1.1.2.20261029.tar.gz", hash = "sha256:6788d95d24c0c3e6f24715ea375dab77b1cf0c7fa1483c1de48718bc24b2f05e", size = 106544, upload-time = "2026-10-29T09:49:14.178Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d8/9c/d9e75cf0ace0ab72ddbb6dda7d66b703c1f88682f351ab487dab1e5a8bb2/publicsuffixlist-1.0.2.20261002-py2.py3-none-any.whl", hash = "sha256:b8e159190c24b16420f58d7c2c21c02cfb24ab05b501331260485b8b32a57c1f", size = 109043, upload-time = "2026-10-02T09:39:30.129Z" },
+    { url = "https://files.pythonhosted.org/packages/03/63/9a50a89e68e659ff54fb4306feae361c803c9fc0192626d4f6dd10080d91/publicsuffixlist-1.1.2.20261029-py3-none-any.whl", hash = "sha256:e5d2987a68feafeef66a78de9f5955a4640cb4ef4b531f12c6a5282ddb9e1e47", size = 109301, upload-time = "2026-10-29T09:49:12.736Z" },
 ]
 
 [[package]]
