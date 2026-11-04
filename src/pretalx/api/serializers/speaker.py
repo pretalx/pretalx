@@ -39,7 +39,7 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.event and not self.event.cfp.request_avatar:
-            self.fields.pop("avatar_url")
+            self.fields.pop("avatar_url", None)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

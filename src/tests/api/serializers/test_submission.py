@@ -428,6 +428,28 @@ def test_submission_serializer_init_fields_follow_event_and_cfp(event_kwargs, ex
     } == expected
 
 
+@pytest.mark.parametrize(
+    ("flex_kwargs", "present", "absent"),
+    (
+        ({"fields": ["code"]}, "code", "submission_type"),
+        ({"omit": ["track"]}, "submission_type", "track"),
+    ),
+    ids=("fields", "omit"),
+)
+def test_submission_serializer_sparse_fields_skip_trimmed_querysets(
+    flex_kwargs, present, absent
+):
+    event = EventFactory(feature_flags={"use_tracks": True})
+    submission = SubmissionFactory(event=event)
+
+    serializer = SubmissionSerializer(
+        submission, context={"request": make_api_request(event)}, **flex_kwargs
+    )
+
+    assert present in serializer.data
+    assert absent not in serializer.data
+
+
 def test_submission_serializer_fields():
     submission = SubmissionFactory()
     request = make_api_request(submission.event)
