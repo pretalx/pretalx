@@ -207,8 +207,10 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         super().__init__(*args, **kwargs)
         if not self.event:
             return
-        self.fields["submission_type"].queryset = self.event.submission_types.all()
-        self.fields["track"].queryset = self.event.tracks.all()
+        if "submission_type" in self.fields:
+            self.fields["submission_type"].queryset = self.event.submission_types.all()
+        if "track" in self.fields:
+            self.fields["track"].queryset = self.event.tracks.all()
         if not self.event.get_feature_flag("use_tracks"):
             self.fields.pop("track", None)
         request_require_fields = [

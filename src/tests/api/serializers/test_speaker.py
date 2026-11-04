@@ -88,6 +88,17 @@ def test_speaker_serializer_to_representation_display_name(
     assert serializer.data["name"] == expected
 
 
+def test_speaker_serializer_sparse_fields_without_avatar_url():
+    event = EventFactory(cfp__fields={"avatar": {"visibility": "do_not_ask"}})
+    speaker = SpeakerFactory(event=event)
+
+    serializer = SpeakerSerializer(
+        speaker, fields=["code", "name"], context=make_context(event=event)
+    )
+
+    assert set(serializer.data) == {"code", "name"}
+
+
 def test_speaker_serializer_submissions_and_answers_empty_without_context():
     event = EventFactory()
     speaker = SpeakerFactory(event=event)
