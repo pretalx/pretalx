@@ -3,18 +3,19 @@
 import datetime as dt
 
 import pytest
-from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django_scopes import scope
 
 from pretalx.mail.models import QueuedMail
 from pretalx.schedule.domain.release import (
+    ScheduleReleaseError,
     apply_signup_capacity_changes,
     apply_signup_capacity_defaults,
     freeze_schedule,
     guess_schedule_version,
     unfreeze_schedule,
 )
+from pretalx.schedule.models import Schedule
 from pretalx.schedule.models.slot import SlotType
 from pretalx.schedule.signals import schedule_release
 from pretalx.submission.models import SubmissionStates
@@ -119,31 +120,38 @@ def test_freeze_schedule_releases_visible_copy_and_keeps_blockers_in_wip(
 
 
 @pytest.mark.parametrize(
-    ("name", "exception", "match"),
+    ("name", "match"),
     (
-        ("wip", ValueError, "reserved name"),
-        ("latest", ValueError, "reserved name"),
-        ("", ValueError, "without a version name"),
-        ("200 km/h", ValidationError, None),
+        ("wip", "not a valid version name"),
+        (" Latest ", "not a valid version name"),
+        ("", "without a version name"),
+        ("200 km/h", "not a valid version name"),
+        ("..", "not a valid version name"),
     ),
-    ids=["wip", "latest", "empty", "slash"],
+    ids=["wip", "latest_case_and_space", "empty", "slash", "dotdot"],
 )
-def test_freeze_schedule_rejects_invalid_name(event, name, exception, match):
-    with scope(event=event), pytest.raises(exception, match=match):
+def test_freeze_schedule_rejects_invalid_name(event, name, match):
+    with scope(event=event), pytest.raises(ScheduleReleaseError, match=match):
         freeze_schedule(event.wip_schedule, name)
 
     with scope(event=event):
         assert event.wip_schedule.version is None
 
 
-def test_freeze_schedule_rejects_frozen_schedule_and_duplicate_version(event):
+def test_freeze_schedule_rejects_released_schedule_and_duplicate_version(event):
     with scope(event=event):
-        released, _ = freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+        stale = event.wip_schedule
+        _, new_wip = freeze_schedule(
+            Schedule.objects.select_related("event").get(pk=stale.pk),
+            "v1",
+            notify_speakers=False,
+        )
 
-        with pytest.raises(ValueError, match="already versioned"):
-            freeze_schedule(released, "v2")
+        with pytest.raises(ScheduleReleaseError, match="already versioned"):
+            freeze_schedule(stale, "v2", notify_speakers=False)
+        assert event.schedules.count() == 2
         with pytest.raises(IntegrityError):
-            freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+            freeze_schedule(new_wip, "v1", notify_speakers=False)
 
 
 def test_freeze_schedule_with_notify_speakers():

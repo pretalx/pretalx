@@ -3,6 +3,7 @@
 import datetime as dt
 
 import pytest
+from django.contrib.messages.storage.fallback import FallbackStorage
 from django.utils import translation
 
 from pretalx.orga.views.schedule import (
@@ -10,11 +11,15 @@ from pretalx.orga.views.schedule import (
     RoomView,
     RoomVisibilityView,
     ScheduleExportView,
+    ScheduleReleaseView,
     ScheduleView,
     TalkUpdate,
     serialize_break,
     serialize_slot,
 )
+from pretalx.schedule.domain.release import freeze_schedule
+from pretalx.schedule.interfaces.forms import ScheduleReleaseForm
+from pretalx.schedule.models import Schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     RoomFactory,
@@ -192,3 +197,28 @@ def test_room_visibility_view_requires_perform_action(event):
 
     with pytest.raises(NotImplementedError):
         view.perform_action()
+
+
+def test_schedule_release_view_reports_concurrent_release_as_form_error(event):
+    request = make_request(event, user=make_orga_user(event), method="post")
+    request._messages = FallbackStorage(request)
+    stale = event.wip_schedule
+    freeze_schedule(
+        Schedule.objects.select_related("event").get(pk=stale.pk),
+        "v1",
+        notify_speakers=False,
+    )
+    view = make_view(ScheduleReleaseView, request)
+    form = ScheduleReleaseForm(
+        data={"version": "v2", "comment": "", "notify_speakers": False},
+        event=event,
+        locales=event.locales,
+    )
+    assert form.is_valid(), form.errors
+
+    response = view.form_valid(form)
+
+    assert response.status_code == 200
+    assert form.errors == {"version": ["This schedule version was already released."]}
+    assert event.schedules.filter(version="v2").count() == 0
+    assert list(request._messages) == []

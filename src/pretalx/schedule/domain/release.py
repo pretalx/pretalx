@@ -4,6 +4,7 @@
 from contextlib import suppress
 
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models import Min, Q
 from django.db.utils import DatabaseError
@@ -16,7 +17,7 @@ from pretalx.schedule.domain.slot import copy_slot
 from pretalx.schedule.enums import SlotType
 from pretalx.schedule.models import Schedule, TalkSlot
 from pretalx.schedule.signals import schedule_release
-from pretalx.schedule.validators.schedule import validate_version_characters
+from pretalx.schedule.validators.schedule import validate_schedule_version
 from pretalx.submission.domain.queries.submission import annotate_requires_signup
 from pretalx.submission.enums import SubmissionStates
 from pretalx.submission.models import Submission
@@ -39,20 +40,34 @@ def guess_schedule_version(event):
     return ""
 
 
+class ScheduleReleaseError(ValueError):
+    pass
+
+
 def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=None):
     """Freeze a schedule as a new version."""
 
-    if name in ("wip", "latest"):
-        raise ValueError(f'Cannot use reserved name "{name}" for schedule version.')
-    if schedule.version:
-        raise ValueError(
-            f'Cannot freeze schedule version: already versioned as "{schedule.version}".'
-        )
     if not name:
-        raise ValueError("Cannot create schedule version without a version name.")
-    validate_version_characters(name)
+        raise ScheduleReleaseError(
+            "Cannot create schedule version without a version name."
+        )
+    try:
+        validate_schedule_version(name)
+    except ValidationError as exc:
+        raise ScheduleReleaseError(
+            f'Cannot use "{name}" as schedule version: not a valid version name.'
+        ) from exc
 
     with transaction.atomic():
+        released_as = (
+            Schedule.objects.select_for_update()
+            .values_list("version", flat=True)
+            .get(pk=schedule.pk)
+        )
+        if released_as:
+            raise ScheduleReleaseError(
+                f'Cannot freeze schedule version: already versioned as "{released_as}".'
+            )
         schedule.version = name
         schedule.comment = comment
         schedule.published = now()

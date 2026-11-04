@@ -71,8 +71,16 @@ def test_schedule_release_form_init_after_release():
             },
         ),
         ("", {"version": ["This field is required."]}),
+        (
+            "WIP",
+            {
+                "version": [
+                    "This version name is reserved, please choose a different one."
+                ]
+            },
+        ),
     ),
-    ids=["valid", "duplicate_case_insensitive", "slash", "required"],
+    ids=["valid", "duplicate_case_insensitive", "slash", "required", "reserved"],
 )
 def test_schedule_release_form_clean_version(version, errors):
     event = EventFactory()

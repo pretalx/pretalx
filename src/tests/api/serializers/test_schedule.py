@@ -101,8 +101,8 @@ def test_schedule_serializer_get_slots_expanded():
 
 @pytest.mark.parametrize(
     ("version", "valid"),
-    (("v2", True), ("v1", False), ("200 km/h", False)),
-    ids=["new_version", "duplicate_case_insensitive", "slash"],
+    (("v2", True), ("v1", False), ("200 km/h", False), (" Latest ", False)),
+    ids=["new_version", "duplicate_case_insensitive", "slash", "reserved"],
 )
 def test_schedule_release_serializer_validate_version(version, valid):
     event = EventFactory()

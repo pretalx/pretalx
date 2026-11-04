@@ -5,8 +5,10 @@ from django.db.models import Prefetch
 from django.http import Http404, HttpResponse
 from django.urls import reverse
 from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from pretalx.api.documentation import (
@@ -29,7 +31,7 @@ from pretalx.api.views.mixins import PretalxViewSetMixin
 from pretalx.common.exporter import get_schedule_exporter_content
 from pretalx.schedule.domain.ical import get_slot_ical
 from pretalx.schedule.domain.queries.schedule import get_schedule, public_talk_slots
-from pretalx.schedule.domain.release import freeze_schedule
+from pretalx.schedule.domain.release import ScheduleReleaseError, freeze_schedule
 from pretalx.schedule.interfaces.responses import CalendarResponse
 from pretalx.schedule.models import Schedule, TalkSlot
 from pretalx.submission.domain.queries.submission import sorted_speakers_prefetch
@@ -177,13 +179,18 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
         version_name = serializer.validated_data.get("version")
         comment = serializer.validated_data.get("comment")
 
-        schedule, _ = freeze_schedule(
-            wip_schedule,
-            name=version_name,
-            user=request.user,
-            notify_speakers=False,
-            comment=comment,
-        )
+        try:
+            schedule, _new_wip = freeze_schedule(
+                wip_schedule,
+                name=version_name,
+                user=request.user,
+                notify_speakers=False,
+                comment=comment,
+            )
+        except ScheduleReleaseError as exc:
+            raise ValidationError(
+                {"version": [_("This schedule version was already released.")]}
+            ) from exc
 
         response_serializer = ScheduleSerializer(
             schedule, context=self.get_serializer_context()
