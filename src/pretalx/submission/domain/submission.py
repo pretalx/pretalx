@@ -601,7 +601,7 @@ def _collect_content_fields(submission):
         name = str(label) if label else str(meta.verbose_name or meta.name)
         yield name, display(value)
     for answer in submission.answers.select_related("question").order_by(
-        "question__position"
+        "question__position", "question_id"
     ):
         if answer.question.variant == "boolean":
             value = answer.boolean_answer
