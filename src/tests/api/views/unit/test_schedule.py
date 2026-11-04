@@ -3,9 +3,14 @@
 import pytest
 from django.http import Http404
 from django_scopes import scope
+from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import JSONParser
+from rest_framework.request import Request
+from rest_framework.test import APIRequestFactory
 
 from pretalx.api.views.schedule import ScheduleViewSet, TalkSlotViewSet
 from pretalx.schedule.domain.release import freeze_schedule
+from pretalx.schedule.models import Schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import ScheduleFactory, SubmissionFactory, TalkSlotFactory
 from tests.utils import make_api_request, make_view, refresh
@@ -112,3 +117,27 @@ def test_talk_slot_viewset_get_queryset_public_sees_visible_current_slots(
     assert visible.schedule_id == event.current_schedule.pk
     no_event_view = make_view(TalkSlotViewSet, make_api_request())
     assert list(no_event_view.get_queryset()) == []
+
+
+def test_schedule_viewset_release_reports_concurrent_release_as_400(event, orga_user):
+    django_request = APIRequestFactory().post("/", {"version": "v2"}, format="json")
+    django_request.event = event
+    request = Request(django_request, parsers=[JSONParser()])
+    request.user = orga_user
+    stale = event.wip_schedule
+    freeze_schedule(
+        Schedule.objects.select_related("event").get(pk=stale.pk),
+        "v1",
+        notify_speakers=False,
+    )
+    view = make_view(ScheduleViewSet, request, event=event.slug)
+    view.format_kwarg = None
+    view.action = "release"
+
+    with scope(event=event), pytest.raises(ValidationError) as excinfo:
+        view.release(request, event.slug)
+
+    assert excinfo.value.detail == {
+        "version": ["This schedule version was already released."]
+    }
+    assert event.schedules.filter(version="v2").count() == 0

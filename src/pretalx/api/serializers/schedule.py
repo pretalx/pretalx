@@ -19,8 +19,8 @@ from pretalx.api.versions import register_serializer
 from pretalx.schedule.models import Schedule, TalkSlot
 from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
 from pretalx.schedule.validators.schedule import (
+    validate_schedule_version,
     validate_unique_version,
-    validate_version_characters,
 )
 
 
@@ -69,7 +69,7 @@ class ScheduleSerializer(ScheduleListSerializer):
 @register_serializer()
 class ScheduleReleaseSerializer(PretalxSerializer):
     version = serializers.CharField(
-        required=True, validators=[validate_version_characters]
+        required=True, validators=[validate_schedule_version]
     )
     comment = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
