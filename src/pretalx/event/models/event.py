@@ -728,6 +728,7 @@ class EventExtraLink(OrderedModel, PretalxModel):
     )
     label = I18nCharField(max_length=200, verbose_name=_("Link text"))
     url = models.URLField(verbose_name=_("Link URL"))
+    new_tab = models.BooleanField(default=True, verbose_name=_("Open in a new tab"))
     role = models.CharField(
         max_length=6,
         choices=(("footer", "Footer"), ("header", "Header")),
@@ -735,3 +736,6 @@ class EventExtraLink(OrderedModel, PretalxModel):
     )
 
     objects = ScopedManager(event="event")
+
+    def serialize(self):
+        return {"label": self.label, "url": self.url, "new_tab": self.new_tab}

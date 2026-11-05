@@ -403,7 +403,7 @@ class EventExtraLinkForm(PretalxI18nModelForm):
 
     class Meta:
         model = EventExtraLink
-        fields = ["label", "url"]
+        fields = ["label", "url", "new_tab"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -7,7 +7,7 @@ footer_link = EventPluginSignal()
 """
 This signal allows you to add links to the footer of an event page. You are
 expected to return a dictionary containing the keys ``label`` and ``url``, and
-optionally ``cssclass``.
+optionally ``cssclass`` (default: empty) and ``new_tab`` (default: ``True``).
 
 As with all plugin signals, the ``sender`` keyword argument will contain the event.
 Additionally, the signal will be called with the ``request`` it is processing.

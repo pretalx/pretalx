@@ -22,7 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% /alert %}
         {% endif %}
         {% for form in formset %}
-            <div data-formset-form class="resource-card mb-2">
+            <div data-formset-form class="formset-card mb-2">
                 <div class="sr-only">
                     {{ form.id }}
                     {{ form.DELETE }}
@@ -70,7 +70,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <!-- djangofmt:ignore -->
         <script type="form-template" data-formset-empty-form="link">
             {% escapescript %}
-                <div data-formset-form class="resource-card mb-2">
+                <div data-formset-form class="formset-card mb-2">
                 <div class="sr-only">
                 {{ formset.empty_form.id }}
                 {{ formset.empty_form.DELETE }}
@@ -82,7 +82,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <!-- djangofmt:ignore -->
         <script type="form-template" data-formset-empty-form="file">
             {% escapescript %}
-                <div data-formset-form class="resource-card mb-2">
+                <div data-formset-form class="formset-card mb-2">
                 <div class="sr-only">
                 {{ formset.empty_form.id }}
                 {{ formset.empty_form.DELETE }}

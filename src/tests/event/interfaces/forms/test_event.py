@@ -894,10 +894,11 @@ def test_baseeventextralinkformset_save_new_sets_role(
     formset.save()
 
     link = EventExtraLink.objects.get(event=event)
-    assert (str(link.label), link.url, link.role) == (
+    assert (str(link.label), link.url, link.role, link.new_tab) == (
         label,
         "https://example.com/new",
         expected_role,
+        False,
     )
 
 
