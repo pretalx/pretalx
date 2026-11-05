@@ -10,10 +10,12 @@ from django.contrib.messages import get_messages
 from django.core.cache import cache
 from django_scopes import scopes_disabled
 
+from pretalx.common.models import ActivityLog
 from pretalx.mail.enums import QueuedMailStates
-from pretalx.submission.models import SubmissionStates
+from pretalx.submission.models import Answer, SubmissionStates
 from pretalx.submission.models.question import QuestionRequired, QuestionVariant
 from tests.factories import (
+    AnswerFactory,
     EventFactory,
     QuestionFactory,
     ReviewFactory,
@@ -1077,6 +1079,9 @@ def test_review_delete_post(client, event):
         speaker = SpeakerFactory(event=event)
         submission.speakers.add(speaker)
         review = ReviewFactory(submission=submission, user=reviewer)
+        answer = AnswerFactory(
+            review=review, question=QuestionFactory(event=event, target="reviewer")
+        )
         delete_url = review.urls.delete
         assert submission.reviews.count() == 1
     client.force_login(reviewer)
@@ -1089,6 +1094,11 @@ def test_review_delete_post(client, event):
     assert response.status_code == 200
     with scopes_disabled():
         assert submission.reviews.count() == 0
+        assert not Answer.objects.filter(pk=answer.pk).exists()
+        log = ActivityLog.objects.select_related("person").get()
+    assert log.action_type == "pretalx.submission.review.delete"
+    assert log.person == reviewer
+    assert log.is_orga_action is True
 
 
 def test_review_dashboard_post_bulk_no_permission(client, event):

@@ -7,7 +7,7 @@ import pytest
 from django_scopes import scopes_disabled
 
 from pretalx.submission.domain.review import update_review_score
-from pretalx.submission.models import QuestionVariant, Review
+from pretalx.submission.models import Answer, QuestionVariant, Review
 from pretalx.submission.models.question import QuestionRequired
 from tests.factories import (
     AnswerFactory,
@@ -489,6 +489,9 @@ def test_reviewviewset_update_and_delete_own(
         )
         review.scores.add(review_score_negative)
         update_review_score(review)
+        answer = AnswerFactory(
+            review=review, question__event=event, question__target="reviewer"
+        )
     url = event.api_urls.reviews + f"{review.pk}/"
     headers = {"Authorization": f"Token {review_token.token}"}
 
@@ -528,6 +531,7 @@ def test_reviewviewset_update_and_delete_own(
     assert response.status_code == 204, response.text
     with scopes_disabled():
         assert not Review.objects.filter(pk=review.pk).exists()
+        assert not Answer.objects.filter(pk=answer.pk).exists()
 
 
 def test_reviewviewset_update_other_review_returns_403(

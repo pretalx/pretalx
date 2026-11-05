@@ -4,6 +4,7 @@
 import itertools
 
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 
@@ -18,6 +19,14 @@ def create_or_update_review(*, submission, user, text, scores=()):
     review.scores.set(scores)
     update_review_score(review)
     return review
+
+
+def delete_review(review, *, person=None):
+    with transaction.atomic():
+        # Delete one by one so files get cleaned up.
+        for answer in review.answers.all():
+            answer.delete(skip_log=True)
+        review.delete(log_kwargs={"person": person, "orga": True})
 
 
 def update_review_score(review):

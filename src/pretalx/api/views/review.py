@@ -18,6 +18,7 @@ from pretalx.api.filters.review import ReviewFilter
 from pretalx.api.serializers.review import ReviewSerializer, ReviewWriteSerializer
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.submission.domain.queries.submission import submissions_for_user
+from pretalx.submission.domain.review import delete_review
 from pretalx.submission.enums import SubmissionContext
 from pretalx.submission.models import Answer, Review, Submission
 
@@ -158,6 +159,9 @@ class ReviewViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
                 ]
             )
         return queryset
+
+    def perform_destroy(self, instance):
+        delete_review(instance, person=self.request.user)
 
     def get_serializer_context(self):
         result = super().get_serializer_context()

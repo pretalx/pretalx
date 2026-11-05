@@ -55,6 +55,7 @@ from pretalx.submission.domain.queries.submission import (
     reviewable_submissions_for_user,
     unreviewed_submissions_for_user,
 )
+from pretalx.submission.domain.review import delete_review
 from pretalx.submission.domain.submission import (
     send_state_mail,
     set_pending_state,
@@ -870,8 +871,7 @@ class ReviewSubmissionDelete(
         return self.submission.orga_urls.reviews
 
     def post(self, request, *args, **kwargs):
-        self.object.answers.all().delete()
-        self.object.delete(log_kwargs={"person": self.request.user, "orga": True})
+        delete_review(self.object, person=self.request.user)
         messages.success(request, _("The review has been deleted."))
         return redirect(self.submission.orga_urls.reviews)
 
