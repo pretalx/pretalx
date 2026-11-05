@@ -12,14 +12,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
     <div data-formset-body>
         {% for form in formset %}
-            <div class="row formset-row" data-formset-form>
+            <div class="formset-card mb-2" data-formset-form>
                 <div class="sr-only">{{ form.id }} {{ form.DELETE }}</div>
-                <div class="col-md-5">
-                    {{ form.non_field_errors }} {{ form.label.as_field_group }}
+                {{ form.non_field_errors }}
+                <div class="row">
+                    <div class="col-md-6">{{ form.label.as_field_group }}</div>
+                    <div class="col-md-6">{{ form.url.as_field_group }}</div>
                 </div>
-                <div class="col-md-5">{{ form.url.as_field_group }}</div>
-                <div class="col-md-2 text-right flip">
-                    <button type="button" class="btn btn-danger" data-formset-delete-button>
+                <div class="formset-card-actions d-flex justify-content-between align-items-center">
+                    {{ form.new_tab.as_field_group }}
+                    <button type="button" class="btn btn-danger btn-sm" data-formset-delete-button>
                         <i class="fa fa-trash"></i>
                     </button>
                 </div>
@@ -30,20 +32,22 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <!-- djangofmt:ignore -->
     <script type="form-template" data-formset-empty-form>
     {% escapescript %}
-      <div class="row formset-row" data-formset-form>
+      <div class="formset-card mb-2" data-formset-form>
       <div class="sr-only">
       {{ formset.empty_form.id }}
       {{ formset.empty_form.DELETE }}
       </div>
-      <div class="col-md-5">
+      <div class="row">
+      <div class="col-md-6">
       {{ formset.empty_form.label.as_field_group }}
       </div>
-      <div class="col-md-5">
+      <div class="col-md-6">
       {{ formset.empty_form.url.as_field_group }}
       </div>
-      <div class="col-md-2 text-right flip">
-
-      <button type="button" class="btn btn-danger" data-formset-delete-button>
+      </div>
+      <div class="formset-card-actions d-flex justify-content-between align-items-center">
+      {{ formset.empty_form.new_tab.as_field_group }}
+      <button type="button" class="btn btn-danger btn-sm" data-formset-delete-button>
       <i class="fa fa-trash"></i></button>
       </div>
       </div>

@@ -59,18 +59,14 @@ def event_links(request):
         return {}
 
     footer_links = [
-        {"label": link.label, "url": link.url}
-        for link in event.extra_links.all()
-        if link.role == "footer"
+        link.serialize() for link in event.extra_links.all() if link.role == "footer"
     ]
     for _receiver, response in footer_link.send_robust(event, request=request):
         if isinstance(response, list):
             footer_links += response
 
     header_links = [
-        {"label": link.label, "url": link.url}
-        for link in event.extra_links.all()
-        if link.role == "header"
+        link.serialize() for link in event.extra_links.all() if link.role == "header"
     ]
 
     head = join_html_responses(html_head.send_robust(event, request=request))

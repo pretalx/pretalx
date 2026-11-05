@@ -33,8 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <a
             {% if footer.cssclass %}class="{{ footer.cssclass }}"{% endif %}
             href="{% safelink footer.url %}"
-            target="_blank"
-            rel="noopener"
+            {% if footer.new_tab is not False %}target="_blank" rel="noopener"{% endif %}
         >{{ footer.label }}</a>
     {% endfor %}
 </footer>

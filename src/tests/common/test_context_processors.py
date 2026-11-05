@@ -174,7 +174,11 @@ def test_event_links_includes_extra_links_with_event_and_scope():
         event=event, label="Footer", url="https://footer.example.com", role="footer"
     )
     EventExtraLinkFactory(
-        event=event, label="Header", url="https://header.example.com", role="header"
+        event=event,
+        label="Header",
+        url="https://header.example.com",
+        role="header",
+        new_tab=False,
     )
 
     request = rf.get("/some/page/")
@@ -184,10 +188,10 @@ def test_event_links_includes_extra_links_with_event_and_scope():
     result = event_links(request)
 
     assert result["footer_links"] == [
-        {"label": "Footer", "url": "https://footer.example.com"}
+        {"label": "Footer", "url": "https://footer.example.com", "new_tab": True}
     ]
     assert result["header_links"] == [
-        {"label": "Header", "url": "https://header.example.com"}
+        {"label": "Header", "url": "https://header.example.com", "new_tab": False}
     ]
 
 

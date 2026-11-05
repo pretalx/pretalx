@@ -542,3 +542,13 @@ input[type="number"] {
     gap: 10px;
   }
 }
+
+.formset-card {
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 1rem;
+
+  .formset-card-actions .form-group {
+    margin-bottom: 0;
+  }
+}

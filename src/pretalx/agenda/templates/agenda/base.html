@@ -65,7 +65,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </a>
     {% endif %}
     {% for link in header_links %}
-        <a href="{% safelink link.url %}" target="_blank" rel="noopener" class="header-tab">
+        <a
+            href="{% safelink link.url %}"
+            {% if link.new_tab %}target="_blank" rel="noopener"{% endif %}
+            class="header-tab"
+        >
             <i class="fa fa-link"></i> {{ link.label }}
         </a>
     {% endfor %}
