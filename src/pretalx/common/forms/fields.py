@@ -26,6 +26,7 @@ from django.forms import (
 )
 from django.forms import DateTimeField as DjangoDateTimeField
 from django.utils.dateparse import parse_datetime
+from django.utils.functional import lazy
 from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 
@@ -79,7 +80,7 @@ class NewPasswordField(CharField):
         validator = _get_strictest_min_length_validator()
         self.widget.attrs["minlength"] = validator.min_length
         if not self.help_text:
-            self.help_text = validator.get_help_text()
+            self.help_text = lazy(validator.get_help_text, str)()
 
 
 class NewPasswordConfirmationField(CharField):

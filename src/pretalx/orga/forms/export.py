@@ -7,7 +7,7 @@ from django import forms
 from django.http import HttpResponse
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import ngettext as _n
+from django.utils.translation import ngettext_lazy as _n
 from django.utils.translation import pgettext_lazy
 from i18nfield.utils import I18nJSONEncoder
 
