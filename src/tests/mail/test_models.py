@@ -5,7 +5,7 @@ import smtplib
 import pytest
 from django_scopes import scope, scopes_disabled
 
-from pretalx.mail.enums import QueuedMailStates
+from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.mail.models import QueuedMail
 from tests.factories import MailTemplateFactory, QueuedMailFactory, SpeakerFactory
 
@@ -15,6 +15,36 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 def test_mail_template_log_parent_is_event(event):
     template = MailTemplateFactory(event=event)
     assert template.log_parent == event
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("state", "error", "expected"),
+    (
+        (QueuedMailStates.SENDING, False, "Sending"),
+        (QueuedMailStates.SENT, False, "Sent"),
+        (QueuedMailStates.DRAFT, True, "Failed"),
+        (QueuedMailStates.DRAFT, False, "Draft"),
+    ),
+)
+def test_queued_mail_get_state_display(state, error, expected):
+    mail = QueuedMailFactory(state=state)
+    if error:
+        mail.error_data = {"error": "boom"}
+
+    assert str(mail.get_state_display()) == expected
+
+
+@pytest.mark.parametrize(
+    ("role", "expected"),
+    (
+        (None, "Custom email"),
+        (MailTemplateRoles.NEW_SUBMISSION, "Acknowledge proposal submission"),
+    ),
+)
+def test_mail_template_get_role_display(event, role, expected):
+    template = MailTemplateFactory.build(event=event, role=role)
+    assert str(template.get_role_display()) == expected
 
 
 @pytest.mark.parametrize(

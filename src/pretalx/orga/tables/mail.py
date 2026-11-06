@@ -28,7 +28,6 @@ class MailTemplateTable(PretalxTable):
         linkify=lambda record: record.urls.edit,
         template_name="orga/includes/mail_template_role.html",
         context_object_name="template",
-        extra_context={"show_custom": True},
         verbose_name=_("Template"),
     )
     subject = SortableColumn(order_by=Lower(Translate("subject")))

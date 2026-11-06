@@ -18,10 +18,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     >{% translate "Schedule update" context "email template: schedule change notification" %}</span>
 {% elif template.role == "question.reminder" %}
     <span class="badge color-warning">{% translate "Custom fields reminder" %}</span>
-{% elif template.role %}
-    <span class="badge color-info">{{ template.get_role_display }}</span>
-{% elif show_custom %}
+{% else %}
     <span
-        class="badge color-secondary"
-    >{% translate "Custom email" context "email template: custom/user-created" %}</span>
+        class="badge {% if template.role %}color-info{% else %}color-secondary{% endif %}"
+    >{{ template.get_role_display }}</span>
 {% endif %}
