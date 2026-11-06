@@ -7,7 +7,6 @@ import random
 from django.template.loader import get_template
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.text.phrases import phrases
 
@@ -108,17 +107,6 @@ def back_button(href):
 
 def send_button():
     return Button(label=phrases.base.send)
-
-
-def api_buttons(event):
-    return [
-        LinkButton(
-            href="https://docs.pretalx.org/api/",
-            color="secondary",
-            label=_("Documentation"),
-        ),
-        LinkButton(href=event.api_urls.base, label=_("Go to API")),
-    ]
 
 
 def _channel_luminance(c):

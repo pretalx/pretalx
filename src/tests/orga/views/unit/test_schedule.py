@@ -10,7 +10,6 @@ from pretalx.orga.views.schedule import (
     QuickScheduleView,
     RoomView,
     RoomVisibilityView,
-    ScheduleExportView,
     ScheduleReleaseView,
     ScheduleView,
     TalkUpdate,
@@ -45,17 +44,6 @@ def test_schedule_view_get_context_data_gettext_language(event, locale, expected
         context = view.get_context_data()
 
     assert context["gettext_language"] == expected
-
-
-def test_schedule_export_view_exporters_excludes_speaker_group(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(ScheduleExportView, request)
-
-    exporters = view.exporters()
-
-    assert exporters
-    assert {exporter.group for exporter in exporters} == {"submission"}
 
 
 def test_serialize_break(event):

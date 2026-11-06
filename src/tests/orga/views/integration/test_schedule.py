@@ -7,10 +7,8 @@ from uuid import uuid4
 import pytest
 from django.contrib.messages import constants as message_constants
 from django.contrib.messages import get_messages
-from django.core.files.base import ContentFile
 from django_scopes import scopes_disabled
 
-from pretalx.common.models.file import CachedFile
 from pretalx.event.models import Event
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
@@ -19,11 +17,8 @@ from pretalx.schedule.models import Room, Schedule, TalkSlot
 from pretalx.schedule.models.slot import SlotType
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
-    AnswerFactory,
     AttendeeSignupFactory,
     AvailabilityFactory,
-    CachedFileFactory,
-    QuestionFactory,
     RoomFactory,
     SpeakerFactory,
     SubmissionFactory,
@@ -812,132 +807,6 @@ def test_schedule_view_with_all_rooms_hidden_shows_configure_notice(client, even
     content = response.content.decode()
     assert "once you have configured some rooms" in content
     assert 'id="app"' not in content
-
-
-def test_schedule_export(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        submission.speakers.add(speaker)
-        question = QuestionFactory(
-            event=event, question="Dietary needs", target="submission"
-        )
-        AnswerFactory(question=question, submission=submission, answer="Vegan")
-    client.force_login(user)
-    data = {"title": "on", "speaker_ids": "on", f"question_{question.id}": "on"}
-
-    response = client.post(
-        event.orga_urls.schedule_export,
-        data={"target": "rejected", "title": "on", "export_format": "json"},
-    )
-    assert response.status_code == 302
-    assert response.url == event.orga_urls.schedule_export
-    messages = list(get_messages(response.wsgi_request))
-    assert [message.level for message in messages] == [message_constants.WARNING]
-    assert str(messages[0]) == "No data to be exported"
-
-    response = client.post(
-        event.orga_urls.schedule_export,
-        data={**data, "target": "all", "export_format": "csv"},
-    )
-    assert response.status_code == 200
-    assert "<!doctype" in response.content.decode().strip().lower()
-
-    response = client.post(
-        event.orga_urls.schedule_export,
-        data={
-            **data,
-            "target": "all",
-            "export_format": "csv",
-            "data_delimiter": "comma",
-        },
-    )
-    assert response.status_code == 200
-    # CSV exports start with a UTF-8 BOM so Excel detects the encoding.
-    assert response.content.decode("utf-8-sig") == (
-        f"ID,Proposal title,Speaker IDs,Dietary needs\r\n"
-        f"{submission.code},{submission.title},{speaker.code},Vegan\r\n"
-    )
-    assert response.content.startswith(b"\xef\xbb\xbf")
-
-    response = client.post(
-        event.orga_urls.schedule_export,
-        data={**data, "target": "all", "export_format": "json"},
-    )
-    assert response.status_code == 200
-    assert json.loads(response.content.decode()) == [
-        {
-            "ID": submission.code,
-            "Proposal title": submission.title,
-            "Speaker IDs": [speaker.code],
-            "Dietary needs": "Vegan",
-        }
-    ]
-
-
-def test_schedule_export_trigger(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    response = client.post(event.orga_urls.schedule_export_trigger)
-    assert response.status_code == 302
-    assert response.url == event.orga_urls.schedule_export_download
-
-    with scopes_disabled():
-        cached_file = CachedFileFactory()
-        event.cache.set("schedule_export_cached_file", str(cached_file.id), None)
-
-    response = client.post(event.orga_urls.schedule_export_trigger)
-    assert response.status_code == 302
-    with scopes_disabled():
-        assert not CachedFile.objects.filter(id=cached_file.id).exists()
-        assert event.cache.get("schedule_export_cached_file") is None
-
-
-def test_schedule_export_download(client, published_talk_slot):
-    event = published_talk_slot.submission.event
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    response = client.get(
-        event.orga_urls.schedule_export_download, data={"cached_file": "nonexistent"}
-    )
-    assert response.status_code == 302
-    assert response.url == event.orga_urls.schedule_export
-    messages = list(get_messages(response.wsgi_request))
-    assert [message.level for message in messages] == [message_constants.ERROR]
-
-    response = client.get(event.orga_urls.schedule_export_download, follow=True)
-    assert response.status_code == 200
-    with scopes_disabled():
-        filenames = list(CachedFile.objects.values_list("filename", flat=True))
-    assert filenames == [f"{event.slug}_schedule.zip"]
-
-    with scopes_disabled():
-        stale_file = CachedFileFactory()
-    fresh_event = Event.objects.get(pk=event.pk)
-    fresh_event.cache.set("schedule_export_cached_file", str(stale_file.id), None)
-    assert fresh_event.cache.get("schedule_export_cached_file") == str(stale_file.id)
-
-    response = client.get(event.orga_urls.schedule_export_download, follow=True)
-    assert response.status_code == 200
-
-
-def test_schedule_export_download_serves_cached_file(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-        cached_file = CachedFileFactory(session_key="somebody-elses-session")
-        cached_file.file.save("test.zip", ContentFile(b"fake zip content"))
-        event.cache.set("schedule_export_cached_file", str(cached_file.id), None)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.schedule_export_download)
-
-    assert response.status_code == 200
-    assert response["Content-Type"] == "application/zip"
 
 
 def test_talk_update_patch_returns_signup_warning(client, event):

@@ -107,10 +107,11 @@ How do we create speaker tickets with pretix?
     As there is no direct integration between pretix and pretalx yet (some details
     here `on GitHub`_), the best way to send pretix vouchers to all your pretalx
     speakers is to use the pretalx CSV export.
-    Select all accepted and confirmed speakers, and export the name and email
-    field. You can then use the bulk voucher form in pretix with the exported
-    CSV file directly – you can find more information on the bulk voucher
-    sending workflow in the `pretix documentation`_.
+    Filter the speaker list to accepted and confirmed speakers, open “Export”
+    in the table toolbar, and pick the name and email columns. You can then use
+    the bulk voucher form in pretix with the exported CSV file directly – you can
+    find more information on the bulk voucher sending workflow in the `pretix
+    documentation`_.
 
 
 .. _less secure app: https://support.google.com/accounts/answer/6010255

@@ -409,7 +409,7 @@ SPDX-FileContributor: Raphael Michel
                                     </button>
                                 </span>
                                 <div
-                                    class="collapse in{% if 'submissions.' in url_name|slice:':13' %} show{% endif %}"
+                                    class="collapse in{% if url_name|slice:':12' == 'submissions.' and url_name != 'submissions.statistics' %} show{% endif %}"
                                     id="collapseSubmissions"
                                 >
                                     <a
@@ -424,26 +424,12 @@ SPDX-FileContributor: Raphael Michel
                                     >
                                         <span>{% translate "Tags" %}</span>
                                     </a>
-                                    <a
-                                        href="{{ request.event.orga_urls.stats }}"
-                                        class="nav-link nav-link-second-level{% if 'submissions.statistics' in url_name %} active{% endif %}"
-                                    >
-                                        <span>{% translate "Statistics" %}</span>
-                                    </a>
                                     {% if request.event|get_feature_flag:"use_feedback" %}
                                         <a
                                             href="{{ request.event.orga_urls.feedback }}"
                                             class="nav-link nav-link-second-level{% if 'submissions.feedback' in url_name %} active{% endif %}"
                                         >
                                             <span>{% translate "Feedback" %}</span>
-                                        </a>
-                                    {% endif %}
-                                    {% if can_change_settings %}
-                                        <a
-                                            href="{{ request.event.orga_urls.schedule_export }}"
-                                            class="nav-link nav-link-second-level"
-                                        >
-                                            <span>{% translate "Export" context "noun: data export" %}</span>
                                         </a>
                                     {% endif %}
                                 </div>
@@ -485,12 +471,6 @@ SPDX-FileContributor: Raphael Michel
                                             class="nav-link nav-link-second-level{% if 'reviews.assign' in url_name %} active{% endif %}"
                                         >
                                             <span>{% translate "Assign reviewers" %}</span>
-                                        </a>
-                                        <a
-                                            href="{% url 'orga:reviews.export' event=request.event.slug %}"
-                                            class="nav-link nav-link-second-level{% if 'reviews.export' in url_name %} active{% endif %}"
-                                        >
-                                            <span>{% translate "Export reviews" %}</span>
                                         </a>
                                     </div>
                                 </div>
@@ -543,14 +523,6 @@ SPDX-FileContributor: Raphael Michel
                                                 <span>{% translate "Speaker Information" %}</span>
                                             </a>
                                         {% endif %}
-                                        {% if can_change_settings %}
-                                            <a
-                                                href="{{ request.event.orga_urls.speakers }}export/"
-                                                class="nav-link nav-link-second-level{% if 'speakers.export' in url_name %} active{% endif %}"
-                                            >
-                                                <span>{% translate "Export" context "noun: data export" %}</span>
-                                            </a>
-                                        {% endif %}
                                     </div>
                                 </div>
                             {% endif %}
@@ -600,15 +572,53 @@ SPDX-FileContributor: Raphael Michel
                                     >
                                         <span>{% translate "Rooms" %}</span>
                                     </a>
-                                    <a
-                                        href="{{ request.event.orga_urls.schedule_export }}"
-                                        class="nav-link nav-link-second-level{% if 'schedule.export' in url_name %} active{% endif %}"
-                                    >
-                                        <span>{% translate "Export" context "noun: data export" %}</span>
-                                    </a>
                                 </div>
                             </div>
-
+                        {% endif %}
+                        {% if can_see_orga_area %}
+                            <div class="nav-fold">
+                                <span class="has-children">
+                                    <a
+                                        class="nav-link nav-link-inner"
+                                        href="{% if can_change_settings %}{{ request.event.orga_urls.exports }}{% else %}{{ request.event.orga_urls.stats }}{% endif %}"
+                                    >
+                                        <i class="fa fa-database"></i>
+                                        <span class="sidebar-text">{% translate "Data" %}</span>
+                                    </a>
+                                    <button
+                                        type="button"
+                                        class="arrow nav-link font-text"
+                                        data-toggle="collapse"
+                                        data-target="#collapseData"
+                                        aria-controls="collapseData"
+                                        aria-expanded="false"
+                                        aria-label='{% translate "Toggle" %}'
+                                    >
+                                        <i class="fa fa-angle-down"></i>
+                                    </button>
+                                </span>
+                                <div
+                                    class="collapse in{% if url_name|slice:':8' == 'exports.' or url_name == 'submissions.statistics' %} show{% endif %}"
+                                    id="collapseData"
+                                >
+                                    <a
+                                        href="{{ request.event.orga_urls.stats }}"
+                                        class="nav-link nav-link-second-level{% if url_name == 'submissions.statistics' %} active{% endif %}"
+                                    >
+                                        <span>{% translate "Statistics" %}</span>
+                                    </a>
+                                    {% if can_change_settings %}
+                                        <a
+                                            href="{{ request.event.orga_urls.exports }}"
+                                            class="nav-link nav-link-second-level{% if url_name|slice:':8' == 'exports.' %} active{% endif %}"
+                                        >
+                                            <span>{% translate "Data exports" %}</span>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if can_see_orga_exclusive %}
                             <div class="nav-fold">
                                 <span class="has-children">
                                     <a

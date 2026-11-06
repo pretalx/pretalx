@@ -8,18 +8,21 @@ from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import View
+from django.views.generic import TemplateView, View
 from django_context_decorator import context
 
+from pretalx.agenda.tasks import task_export_schedule_html
+from pretalx.common.exporter import get_schedule_exporters
 from pretalx.common.forms.exports import TableExportForm
 from pretalx.common.models.exports import TableExport
+from pretalx.common.models.file import CachedFile
 from pretalx.common.tables.export import (
     get_exportable_table,
     get_exportable_tables,
     get_table_serializer,
 )
 from pretalx.common.tasks import task_export_table
-from pretalx.common.ui import Button
+from pretalx.common.ui import Button, LinkButton
 from pretalx.common.views.generic import OrgaCRUDView
 from pretalx.common.views.mixins import AsyncFileDownloadMixin, EventPermissionRequired
 from pretalx.common.views.redirect import allowed_next_url
@@ -215,4 +218,82 @@ class TableExportRun(ExportDownloadMixin, EventPermissionRequired, View):
         if not can_export(table_class, request.event, request.user):
             raise Http404
         self.export_config = self.table_export.config
+        return self.handle_async_download(request)
+
+
+class MoreExportsView(EventPermissionRequired, TemplateView):
+    template_name = "orga/exports/more.html"
+    permission_required = "event.update_event"
+
+    @cached_property
+    def schedule(self):
+        return self.request.event.current_schedule or self.request.event.wip_schedule
+
+    @cached_property
+    def exporters(self):
+        return get_schedule_exporters(self.request, schedule=self.schedule)
+
+    @context
+    @cached_property
+    def available_exporters(self):
+        return [exporter for exporter in self.exporters if exporter.is_available]
+
+    @context
+    @cached_property
+    def unavailable_exporters(self):
+        return [exporter for exporter in self.exporters if not exporter.is_available]
+
+    @context
+    @cached_property
+    def zip_buttons(self):
+        return [
+            Button(label=_("Regenerate Export"), color="secondary"),
+            LinkButton(
+                href=self.request.event.orga_urls.html_export_download,
+                color="primary",
+                label=_("Download ZIP"),
+            ),
+        ]
+
+
+class HtmlExportTriggerView(EventPermissionRequired, View):
+    permission_required = "event.update_event"
+
+    def post(self, request, event):
+        cached_file_id = request.event.cache.get("schedule_export_cached_file")
+        if cached_file_id:
+            CachedFile.objects.filter(id=cached_file_id).delete()
+            request.event.cache.delete("schedule_export_cached_file")
+        return redirect(request.event.orga_urls.html_export_download)
+
+
+class HtmlExportDownloadView(AsyncFileDownloadMixin, EventPermissionRequired, View):
+    permission_required = "event.update_event"
+
+    def get_error_redirect_url(self):
+        return self.request.event.orga_urls.more_exports
+
+    def get_async_download_filename(self):
+        return f"{self.request.event.slug}_schedule.zip"
+
+    def start_async_task(self, cached_file):
+        result = task_export_schedule_html.apply_async(
+            kwargs={
+                "event_id": self.request.event.id,
+                "cached_file_id": str(cached_file.id),
+            }
+        )
+        self.request.event.cache.set(
+            "schedule_export_cached_file", str(cached_file.id), None
+        )
+        return result
+
+    def get(self, request, event):
+        if "async_id" not in request.GET and "cached_file" not in request.GET:
+            cached_file_id = request.event.cache.get("schedule_export_cached_file")
+            if cached_file_id:
+                cached_file = CachedFile.objects.filter(id=cached_file_id).first()
+                if cached_file and cached_file.file:
+                    return self._serve_cached_file(request, cached_file)
+                request.event.cache.delete("schedule_export_cached_file")
         return self.handle_async_download(request)

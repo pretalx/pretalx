@@ -585,6 +585,101 @@ def test_export_control_absent_on_per_object_and_non_event_tables(client, event)
     assert "table-export-form" not in teams.content.decode()
 
 
+def test_old_export_urls_are_gone(client, event):
+    with scopes_disabled():
+        orga = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(orga)
+
+    statuses = [
+        client.get(event.orga_urls.base + path).status_code
+        for path in ("speakers/export/", "reviews/export/", "schedule/export/")
+    ]
+
+    assert statuses == [404, 404, 404]
+
+
+def test_more_exports_page_lists_exporters(client, event):
+    with scopes_disabled():
+        orga = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(orga)
+
+    response = client.get(event.orga_urls.more_exports)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "XML (frab compatible)" in content
+    assert "schedule/export/schedule.xml" not in content
+    assert "schedule/export/speakers.csv" in content
+    assert event.orga_urls.html_export_trigger in content
+    assert event.orga_urls.exports in content
+    assert "first released schedule version" in content
+    assert "Authorization: Token" not in content
+
+
+def test_html_export_trigger_drops_cached_file(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+
+    without_file = client.post(event.orga_urls.html_export_trigger)
+    with scopes_disabled():
+        cached_file = CachedFileFactory()
+        event.cache.set("schedule_export_cached_file", str(cached_file.id), None)
+    response = client.post(event.orga_urls.html_export_trigger)
+
+    assert without_file.status_code == 302
+    assert without_file.url == event.orga_urls.html_export_download
+    assert response.status_code == 302
+    assert response.url == event.orga_urls.html_export_download
+    with scopes_disabled():
+        assert not CachedFile.objects.filter(id=cached_file.id).exists()
+        assert event.cache.get("schedule_export_cached_file") is None
+
+
+def test_html_export_download_after_release(client, published_talk_slot):
+    event = published_talk_slot.submission.event
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(user)
+
+    more_exports = client.get(event.orga_urls.more_exports).content.decode()
+    unknown = client.get(
+        event.orga_urls.html_export_download, data={"cached_file": "nonexistent"}
+    )
+    response = client.get(event.orga_urls.html_export_download, follow=True)
+    with scopes_disabled():
+        filenames = list(CachedFile.objects.values_list("filename", flat=True))
+        stale_file = CachedFileFactory()
+    event.cache.set("schedule_export_cached_file", str(stale_file.id), None)
+    after_stale = client.get(event.orga_urls.html_export_download, follow=True)
+
+    assert "schedule/export/schedule.xml" in more_exports
+    assert "first released schedule version" not in more_exports
+    assert unknown.status_code == 302
+    assert unknown.url == event.orga_urls.more_exports
+    assert [message.level for message in get_messages(unknown.wsgi_request)] == [
+        message_constants.ERROR
+    ]
+    assert response.status_code == 200
+    assert filenames == [f"{event.slug}_schedule.zip"]
+    assert after_stale.status_code == 200
+    assert event.cache.get("schedule_export_cached_file") != str(stale_file.id)
+
+
+def test_html_export_download_serves_cached_file(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_event_settings=True)
+        cached_file = CachedFileFactory()
+        cached_file.file.save("test.zip", ContentFile(b"fake zip content"))
+        event.cache.set("schedule_export_cached_file", str(cached_file.id), None)
+    client.force_login(user)
+
+    response = client.get(event.orga_urls.html_export_download)
+
+    assert response.status_code == 200
+    assert response["Content-Type"] == "application/zip"
+
+
 def test_table_exports_are_scoped_to_their_event(client):
     event = EventFactory()
     other = EventFactory(organiser=event.organiser)

@@ -12,10 +12,9 @@ from django.views.generic import DetailView, FormView, ListView, View
 from django_context_decorator import context
 
 from pretalx.common.exceptions import SendMailException
-from pretalx.common.exporter import get_schedule_exporters
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
-from pretalx.common.ui import api_buttons, delete_link
+from pretalx.common.ui import delete_link
 from pretalx.common.views.generic import (
     CreateOrUpdateView,
     HistoryTabMixin,
@@ -30,7 +29,6 @@ from pretalx.common.views.mixins import (
 )
 from pretalx.common.views.redirect import get_next_url
 from pretalx.mail.enums import QueuedMailStates
-from pretalx.orga.forms.export import SpeakerExportForm
 from pretalx.orga.forms.submission import AddSpeakerForm
 from pretalx.orga.tables.speaker import SpeakerInformationTable, SpeakerTable
 from pretalx.person.domain.profile import (
@@ -442,45 +440,3 @@ class SpeakerInformationView(OrgaCRUDView):
         if self.action != "list":
             return _("Speaker Information Note")
         return _("Speaker Information Notes")
-
-
-class SpeakerExport(EventPermissionRequired, FormView):
-    permission_required = "event.update_event"
-    template_name = "orga/speaker/export.html"
-    form_class = SpeakerExportForm
-
-    def get_form_kwargs(self):
-        result = super().get_form_kwargs()
-        result["event"] = self.request.event
-        return result
-
-    @cached_property
-    def schedule(self):
-        return self.request.event.current_schedule or self.request.event.wip_schedule
-
-    @context
-    def exporters(self):
-        return [
-            exporter
-            for exporter in get_schedule_exporters(self.request, schedule=self.schedule)
-            if exporter.group == "speaker"
-        ]
-
-    @context
-    def tablist(self):
-        return {
-            "custom": _("CSV/JSON exports"),
-            "general": _("More exports"),
-            "api": _("API"),
-        }
-
-    @context
-    def api_buttons(self):
-        return api_buttons(self.request.event)
-
-    def form_valid(self, form):
-        result = form.export_data()
-        if not result:
-            messages.warning(self.request, phrases.orga.no_data_to_export)
-            return redirect(self.request.path)
-        return result

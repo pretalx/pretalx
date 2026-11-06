@@ -5,7 +5,6 @@ from django_scopes import scope
 
 from pretalx.orga.views.speaker import (
     SpeakerDetail,
-    SpeakerExport,
     SpeakerInformationView,
     SpeakerList,
     SpeakerToggleArrived,
@@ -180,47 +179,6 @@ def test_speaker_list_get_table_data(event):
     assert result[0] == speaker
 
 
-def test_speaker_list_short_questions(event):
-    user = make_orga_user(event, can_change_submissions=True)
-    short_q = QuestionFactory(
-        event=event, target=QuestionTarget.SPEAKER, variant=QuestionVariant.STRING
-    )
-    QuestionFactory(
-        event=event, target=QuestionTarget.SPEAKER, variant=QuestionVariant.TEXT
-    )
-    QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.STRING
-    )
-
-    request = make_request(event, user=user)
-    request.GET = query_dict()
-    view = make_view(SpeakerList, request)
-
-    result = list(view.short_questions)
-
-    assert result == [short_q]
-
-
-@pytest.mark.parametrize(
-    ("user_kwargs", "expected"),
-    (
-        ({"can_change_submissions": True}, True),
-        ({"can_change_submissions": False, "is_reviewer": True}, False),
-    ),
-    ids=("orga", "reviewer"),
-)
-def test_speaker_list_get_table_kwargs_update_permission(event, user_kwargs, expected):
-    user = make_orga_user(event, **user_kwargs)
-
-    request = make_request(event, user=user)
-    request.GET = query_dict()
-    view = make_view(SpeakerList, request)
-
-    kwargs = view.get_table_kwargs()
-
-    assert kwargs["has_update_permission"] is expected
-
-
 def test_speaker_view_mixin_get_object(event):
     user = make_orga_user(event, can_change_submissions=True)
     speaker = SpeakerFactory(event=event)
@@ -301,16 +259,3 @@ def test_speaker_information_view_get_queryset(event):
     result = list(view.get_queryset())
 
     assert result == [info1, info2]
-
-
-def test_speaker_export_exporters_limited_to_speaker_group(event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    request = make_request(event, user=user)
-    view = make_view(SpeakerExport, request)
-
-    result = view.exporters()
-
-    assert {exporter.identifier for exporter in result} == {
-        "speakers.csv",
-        "speaker-questions.csv",
-    }

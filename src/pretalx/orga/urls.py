@@ -489,11 +489,6 @@ urlpatterns = [
                     name="speakers.create",
                 ),
                 path(
-                    "speakers/export/",
-                    speaker.SpeakerExport.as_view(),
-                    name="speakers.export",
-                ),
-                path(
                     "speakers/api/search/",
                     speaker.SpeakerSearch.as_view(),
                     name="speakers.search",
@@ -565,11 +560,6 @@ urlpatterns = [
                     name="reviews.assign",
                 ),
                 path(
-                    "reviews/export/",
-                    review.ReviewExport.as_view(),
-                    name="reviews.export",
-                ),
-                path(
                     "settings/", event.EventDetail.as_view(), name="settings.event.view"
                 ),
                 path(
@@ -631,19 +621,19 @@ urlpatterns = [
                     name="exports.run",
                 ),
                 path(
-                    "schedule/export/",
-                    schedule.ScheduleExportView.as_view(),
-                    name="schedule.export",
+                    "exports/more/",
+                    exports.MoreExportsView.as_view(),
+                    name="exports.more",
                 ),
                 path(
-                    "schedule/export/trigger",
-                    schedule.ScheduleExportTriggerView.as_view(),
-                    name="schedule.export.trigger",
+                    "exports/more/html/trigger",
+                    exports.HtmlExportTriggerView.as_view(),
+                    name="exports.html.trigger",
                 ),
                 path(
-                    "schedule/export/download",
-                    schedule.ScheduleExportDownloadView.as_view(),
-                    name="schedule.export.download",
+                    "exports/more/html/download",
+                    exports.HtmlExportDownloadView.as_view(),
+                    name="exports.html.download",
                 ),
                 path(
                     "schedule/release",
