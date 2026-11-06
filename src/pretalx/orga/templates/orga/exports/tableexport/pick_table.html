@@ -1,0 +1,33 @@
+{% extends "orga/base.html" %}
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+
+{% block extra_title %}{{ generic_title }} ::
+{% endblock extra_title %}
+
+{% block content %}
+    {% #page_heading %}
+    {{ generic_title }}
+    {% /page_heading %}
+
+    <form method="get">
+        <div class="form-group row">
+            <label class="col-md-3 col-form-label" for="id_table">{% translate "Table" %}</label>
+            <div class="col-md-9">
+                <select name="table" id="id_table" class="form-control" required>
+                    {% for value, label in export_table_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <small class="form-text text-muted">
+                    {% translate "Pick the data you want to export. You can configure fields, filters and the file format in the next step." %}
+                </small>
+            </div>
+        </div>
+        {% include "orga/includes/submit_row.html" with submit_buttons=next_buttons %}
+    </form>
+{% endblock content %}

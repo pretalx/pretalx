@@ -984,7 +984,7 @@ def test_async_download_start_task_eager_mode(event, settings):
     request.GET = {}
     view = EagerDownload()
     view.request = request
-    response = view._start_task(request)
+    response = view.start_async_download(request)
     assert "attachment" in response["Content-Disposition"]
 
 

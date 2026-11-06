@@ -18,6 +18,7 @@ def featured_filters(context):
 
 
 class FilteredTable(PretalxTable):
+    default_columns = ()
     filters = staticmethod(featured_filters)
 
     class Meta:
@@ -26,7 +27,7 @@ class FilteredTable(PretalxTable):
 
 
 class ModellessTable(PretalxTable):
-    pass
+    default_columns = ()
 
 
 def test_declared_filters_are_built_fresh_and_bound_to_the_context():

@@ -3,6 +3,7 @@
 
 import zoneinfo
 
+from .exports import TableExport
 from .file import CachedFile
 from .log import ActivityLog
 from .settings import GlobalSettings
@@ -12,4 +13,4 @@ TIMEZONE_CHOICES = [
 ]
 
 
-__all__ = ["ActivityLog", "CachedFile", "GlobalSettings"]
+__all__ = ["ActivityLog", "CachedFile", "GlobalSettings", "TableExport"]

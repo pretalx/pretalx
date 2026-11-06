@@ -11,6 +11,7 @@ from pretalx.orga.views import (
     cfp,
     dashboard,
     event,
+    exports,
     mails,
     organiser,
     person,
@@ -615,6 +616,14 @@ urlpatterns = [
                 ),
                 path(
                     "schedule/", schedule.ScheduleView.as_view(), name="schedule.main"
+                ),
+                *exports.TableExportView.get_urls(
+                    url_base="exports", url_name="exports", namespace="orga"
+                ),
+                path(
+                    "exports/<int:pk>/run/",
+                    exports.TableExportRun.as_view(),
+                    name="exports.run",
                 ),
                 path(
                     "schedule/export/",

@@ -252,3 +252,38 @@ def test_table_preferences_form_default_columns(
 
     assert form.default_columns == expected
     assert form.default_columns_json == expected_json
+
+
+def test_table_preferences_form_export_mode_swaps_column_sets():
+    title = FakeColumn("Title")
+    secret = FakeColumn("Secret", visible=False)
+    secret.export_only = True
+    marker = FakeColumn("Marker")
+    marker.exclude_from_export = True
+    table = FakeTable(
+        columns={
+            "title": title,
+            "code": FakeColumn("ID"),
+            "secret": secret,
+            "marker": marker,
+            "actions": FakeColumn("Actions"),
+        },
+        exempt_columns=("actions",),
+        current_ordering=[{"column": "title", "direction": "asc"}],
+    )
+
+    ui_form = TablePreferencesForm(table=table)
+    export_form = TablePreferencesForm(
+        table=table, export=True, selected=["secret", "title"], ordering=["-title"]
+    )
+
+    assert [c["name"] for c in ui_form.shown_columns] == ["title", "code", "marker"]
+    assert [c["name"] for c in ui_form.hidden_columns] == []
+    assert [c["name"] for c in export_form.shown_columns] == ["secret", "title"]
+    assert [c["name"] for c in export_form.hidden_columns] == []
+    assert export_form.sort_levels == [
+        {"column": "title", "direction": "desc", "numeric": False}
+    ]
+    assert ui_form.sort_levels == [
+        {"column": "title", "direction": "asc", "numeric": False}
+    ]
