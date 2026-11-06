@@ -38,7 +38,6 @@ from pretalx.person.domain.profile import (
     send_speaker_invite,
     shred_speaker_profile,
 )
-from pretalx.person.domain.queries.profile import annotate_speaker_submission_counts
 from pretalx.person.domain.user import reset_password
 from pretalx.person.interfaces.forms import (
     SpeakerInformationForm,
@@ -46,14 +45,12 @@ from pretalx.person.interfaces.forms import (
     SpeakerProfileForm,
 )
 from pretalx.person.models import SpeakerInformation, SpeakerProfile
-from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.queries.speaker import speakers_for_user
 from pretalx.submission.domain.queries.submission import (
     search_speakers,
     submissions_for_user,
 )
 from pretalx.submission.interfaces.forms import QuestionsForm
-from pretalx.submission.models import QuestionTarget, QuestionVariant
 from pretalx.submission.models.submission import SubmissionStates
 
 
@@ -63,51 +60,13 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
     table_class = SpeakerTable
     permission_required = "person.orga_list_speakerprofile"
 
-    def get_filter_options(self):
-        return {
-            "filter_arrival": self.request.event.submitters.filter(
-                has_arrived=True
-            ).exists()
-        }
-
     def get_queryset(self):
-        # Reviewers do not need speakers without submissions
-        include_bare = self.request.user.has_perm(
-            "submission.orga_update_submission", self.request.event
-        )
-        submissions = submissions_for_user(self.request.event, self.request.user)
-        qs = annotate_speaker_submission_counts(
-            speakers_for_user(
-                self.request.event,
-                self.request.user,
-                submissions=submissions,
-                include_bare=include_bare,
-            ),
-            event=self.request.event,
-            submissions=submissions,
-        )
+        qs = super().get_queryset()
         qs = self.filter_queryset(qs)
         return qs.order_by("id").distinct().order_by(Lower("effective_name"), "pk")
 
     def get_table_data(self):
         return self.get_queryset()
-
-    @cached_property
-    def short_questions(self):
-        return questions_for_user(self.request.event, self.request.user).filter(
-            target=QuestionTarget.SPEAKER, variant__in=QuestionVariant.short_answers
-        )
-
-    def get_table_kwargs(self):
-        result = super().get_table_kwargs()
-        result["has_arrived_permission"] = self.request.user.has_perm(
-            "person.mark_arrived_speakerprofile", self.request.event
-        )
-        result["has_update_permission"] = self.request.user.has_perm(
-            "person.update_speakerprofile", self.request.event
-        )
-        result["short_questions"] = list(self.short_questions)
-        return result
 
 
 class SpeakerCreate(EventPermissionRequired, FormView):

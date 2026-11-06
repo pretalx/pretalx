@@ -12,15 +12,7 @@ from dateutil import rrule
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from django.db.models import (
-    Count,
-    OuterRef,
-    Q,
-    Subquery,
-    Value,
-    prefetch_related_objects,
-)
-from django.db.models.functions import Coalesce
+from django.db.models import Q, prefetch_related_objects
 from django.forms.models import BaseModelFormSet, inlineformset_factory
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -61,7 +53,7 @@ from pretalx.orga.forms.submission import (
     RemoveSpeakerForm,
     SubmissionStateChangeForm,
 )
-from pretalx.orga.tables.feedback import FeedbackTable
+from pretalx.orga.tables.feedback import FeedbackTable, SubmissionFeedbackTable
 from pretalx.orga.tables.signup import AttendeeSignupTable
 from pretalx.orga.tables.submission import SubmissionTable, TagTable
 from pretalx.person.domain.profile import (
@@ -72,12 +64,9 @@ from pretalx.person.models import SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
 from pretalx.submission.domain.cfp import cfp_deadlines
 from pretalx.submission.domain.invitation import retract_invitation
-from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.queries.submission import (
-    annotate_assigned_reviews,
     annotate_confirmed_signup_count,
     annotate_requires_signup,
-    annotate_submission_count,
     submissions_for_user,
 )
 from pretalx.submission.domain.submission import (
@@ -101,8 +90,6 @@ from pretalx.submission.interfaces.forms import (
 )
 from pretalx.submission.models import (
     Feedback,
-    QuestionTarget,
-    QuestionVariant,
     Resource,
     Submission,
     SubmissionComment,
@@ -110,7 +97,6 @@ from pretalx.submission.models import (
     SubmissionStates,
     Tag,
 )
-from pretalx.submission.models.resource import active_resource_filter
 from pretalx.submission.models.submission import SpeakerRole
 from pretalx.submission.rules import (
     has_reviewer_access,
@@ -207,25 +193,8 @@ class ReviewerSubmissionFilter:
     def is_only_reviewer(self):
         return is_only_reviewer(self.request.user, self.request.event)
 
-    @cached_property
-    def limit_tracks(self):
-        if self.is_only_reviewer:
-            return self.request.user.get_reviewer_tracks(self.request.event)
-
     def get_queryset(self):
-        queryset = (
-            submissions_for_user(self.request.event, self.request.user)
-            .select_related(
-                "track__event",
-                "track__event__cfp",
-                "submission_type__event",
-                "submission_type__event__cfp",
-            )
-            .with_sorted_speakers()
-        )
-        return annotate_assigned_reviews(
-            queryset, self.request.event, self.request.user
-        )
+        return SubmissionTable.base_queryset(self.request.event, self.request.user)
 
 
 class SubmissionStateChange(SubmissionViewMixin, ConfirmDialogMixin, FormView):
@@ -805,95 +774,31 @@ class SubmissionListMixin(ReviewerSubmissionFilter, Filterable, OrgaTableMixin):
 
     def get_filter_options(self):
         return {
-            "can_view_speakers": self.request.user.has_perm(
-                "person.orga_list_speakerprofile", self.request.event
-            )
-            or self.request.user.has_perm(
-                "person.reviewer_list_speakerprofile", self.request.event
-            ),
             "usable_states": self.usable_states,
             "default_states": self.default_states,
-            "limit_tracks": self.limit_tracks,
         }
 
     def get_filterable_queryset(self):
-        return super().get_queryset().order_by("-id")
+        return self.table_class.prepare_queryset(
+            super().get_queryset().order_by("-id"),
+            event=self.request.event,
+            user=self.request.user,
+        )
 
     def _get_base_queryset(self):
         return self.filter_queryset(self.get_filterable_queryset())
 
     def get_queryset(self):
-        # We have to count via subqueries to avoid only counting speakers
-        # matched by the search terms
-        speaker_count = (
-            SpeakerRole.objects.filter(submission=OuterRef("pk"))
-            .order_by()
-            .values("submission")
-            .annotate(count=Count("pk"))
-            .values("count")
+        return self.table_class.augment_queryset(
+            self._get_base_queryset().order_by("id"),
+            event=self.request.event,
+            user=self.request.user,
         )
-        queryset = (
-            self._get_base_queryset()
-            .order_by("id")
-            .distinct()
-            .select_related("event", "event__cfp")
-            .annotate(
-                speaker_count=Coalesce(Subquery(speaker_count), Value(0)),
-                invitation_count=Count("invitations", distinct=True),
-                resource_count=Count(
-                    "resources",
-                    filter=active_resource_filter("resources__"),
-                    distinct=True,
-                ),
-            )
-        )
-        if self.request.event.get_feature_flag("attendee_signup"):
-            queryset = annotate_confirmed_signup_count(
-                annotate_requires_signup(queryset)
-            )
-        return queryset
-
-    @context
-    @cached_property
-    def short_questions(self):
-        return questions_for_user(self.request.event, self.request.user).filter(
-            target=QuestionTarget.SUBMISSION, variant__in=QuestionVariant.short_answers
-        )
-
-    def get_table_kwargs(self):
-        kwargs = super().get_table_kwargs()
-        can_change_submission = self.request.user.has_perm(
-            "submission.orga_update_submission", self.request.event
-        )
-
-        exclude = []
-        if not self.show_tracks:
-            exclude.append("track")
-        if not self.show_submission_types:
-            exclude.append("submission_type")
-
-        kwargs.update(
-            {
-                "can_view_speakers": self.request.user.has_perm(
-                    "person.orga_list_speakerprofile", self.request.event
-                ),
-                "has_update_permission": can_change_submission,
-                "has_delete_permission": can_change_submission,
-                "short_questions": self.short_questions,
-                "exclude": exclude,
-            }
-        )
-        return kwargs
 
     @context
     @cached_property
     def show_tracks(self):
         return self.request.event.has_active_tracks
-
-    @context
-    @cached_property
-    def show_submission_types(self):
-        return self.request.event.submission_types.count() > 1
 
 
 class SubmissionList(SubmissionListMixin, EventPermissionRequired, ListView):
@@ -917,7 +822,7 @@ class FeedbackList(SubmissionViewMixin, OrgaTableMixin, ListView):
     template_name = "orga/submission/feedback_list.html"
     context_object_name = "feedback"
     permission_required = "submission.view_feedback_submission"
-    table_class = FeedbackTable
+    table_class = SubmissionFeedbackTable
 
     def get_queryset(self):
         return (
@@ -925,11 +830,6 @@ class FeedbackList(SubmissionViewMixin, OrgaTableMixin, ListView):
             .select_related("talk__event", "speaker", "speaker__user")
             .order_by("-created", "-pk")
         )
-
-    def get_table_kwargs(self):
-        kwargs = super().get_table_kwargs()
-        kwargs["include_talk"] = False
-        return kwargs
 
     @context
     @cached_property
@@ -1304,14 +1204,6 @@ class AllFeedbacksList(EventPermissionRequired, OrgaTableMixin, ListView):
     permission_required = "submission.orga_list_submission"
     table_class = FeedbackTable
 
-    def get_queryset(self):
-        submissions = submissions_for_user(self.request.event, self.request.user)
-        return (
-            Feedback.objects.filter(talk__in=submissions)
-            .select_related("talk__event", "speaker", "speaker__user")
-            .order_by("-created", "-pk")
-        )
-
 
 class TagView(OrgaCRUDView):
     model = Tag
@@ -1319,9 +1211,6 @@ class TagView(OrgaCRUDView):
     table_class = TagTable
     template_namespace = "orga/submission"
     create_button_label = _("New tag")
-
-    def get_queryset(self):
-        return annotate_submission_count(self.request.event.tags.order_by("tag", "pk"))
 
     def get_generic_title(self, instance=None):
         if instance:

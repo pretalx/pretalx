@@ -8,14 +8,17 @@ from django.utils import timezone
 from django.utils.formats import date_format
 
 from pretalx.orga.tables.speaker import SpeakerInformationTable, SpeakerTable
+from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.person.models import SpeakerProfile
 from tests.factories import (
     EventFactory,
     SpeakerFactory,
     SpeakerInformationFactory,
+    SubmissionFactory,
     TrackFactory,
     UserFactory,
 )
+from tests.utils import make_orga_user
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -60,7 +63,9 @@ def test_speaker_table_email_and_locale_use_effective_values(
 ):
     event = EventFactory(locales=["en", "de"], locale="en")
     speaker = SpeakerFactory(event=event, **profile_kwargs)
-    table = SpeakerTable([speaker], event=event, user=UserFactory.build())
+    table = SpeakerTable(
+        [speaker], event=event, user=UserFactory.build(), has_update_permission=True
+    )
 
     row = table.rows[0]
 
@@ -204,3 +209,25 @@ def test_speaker_table_has_email_ordering():
 
     assert modified is True
     assert list(ordered) == [unreachable, reachable]
+
+
+@pytest.mark.django_db
+def test_speaker_table_filter_options_reflect_arrivals(event):
+    orga = make_orga_user(event, can_change_submissions=True)
+    assert SpeakerTable.get_filter_options(event, orga) == {"filter_arrival": False}
+
+    arrived = SpeakerFactory(event=event, has_arrived=True)
+    SubmissionFactory(event=event).speakers.add(arrived)
+
+    assert SpeakerTable.get_filter_options(event, orga) == {"filter_arrival": True}
+
+
+def test_speaker_table_base_queryset_hides_bare_profiles_from_reviewers(event):
+    orga = make_orga_user(event, can_change_submissions=True)
+    reviewer = make_orga_user(event, is_reviewer=True, can_change_submissions=False)
+    bare = SpeakerFactory(event=event, origin=SpeakerProfileOrigin.ORGA)
+    speaker = SpeakerFactory(event=event)
+    SubmissionFactory(event=event).speakers.add(speaker)
+
+    assert set(SpeakerTable.base_queryset(event, orga)) == {bare, speaker}
+    assert set(SpeakerTable.base_queryset(event, reviewer)) == {speaker}

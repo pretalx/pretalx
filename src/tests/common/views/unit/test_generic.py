@@ -19,6 +19,7 @@ from pretalx.common.exceptions import SendMailException
 from pretalx.common.forms.mixins import PretalxI18nModelForm
 from pretalx.common.models import ActivityLog
 from pretalx.common.signals import EventPluginSignal
+from pretalx.common.tables.table import PretalxTable
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.generic import (
     CreateOrUpdateView,
@@ -30,6 +31,7 @@ from pretalx.common.views.generic import (
     OrgaCRUDView,
     OrgaTableMixin,
 )
+from pretalx.orga.tables.submission import TagTable
 from pretalx.submission.models import Tag
 from tests.factories import ActivityLogFactory, TagFactory, UserFactory
 from tests.utils import make_orga_user, make_request
@@ -1054,6 +1056,25 @@ def test_orga_crud_view_without_event_or_organiser(event):
 
     assert view.get_reverse_kwargs("list") == {}
     assert not {"event", "organiser"} & set(view.get_form_kwargs())
+
+
+class _TableWithoutBaseQueryset(PretalxTable):
+    default_columns = ()
+
+
+@pytest.mark.parametrize(
+    ("table_class", "annotated"),
+    ((None, False), (_TableWithoutBaseQueryset, False), (TagTable, True)),
+    ids=("no_table", "table_without_base_queryset", "table_with_base_queryset"),
+)
+def test_orga_crud_view_get_queryset(event, table_class, annotated):
+    view = _make_orga_crud_view(event, make_orga_user(event))
+    view.table_class = table_class
+
+    qs = view.get_queryset()
+
+    assert qs.model is Tag
+    assert ("submission_count" in qs.query.annotations) is annotated
 
 
 def test_orga_crud_view_form_valid_without_event_skips_event_assignment(event):

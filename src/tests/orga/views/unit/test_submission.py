@@ -26,11 +26,10 @@ from pretalx.orga.views.submission import (
     serialize_pie_chart_data,
 )
 from pretalx.schedule.domain.release import freeze_schedule
-from pretalx.submission.models import QuestionTarget, QuestionVariant, SubmissionStates
+from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     EventFactory,
     FeedbackFactory,
-    QuestionFactory,
     ResourceFactory,
     SpeakerFactory,
     SubmissionCommentFactory,
@@ -202,15 +201,6 @@ def test_submission_list_properties(event):
     SubmissionFactory(event=event, state=SubmissionStates.REJECTED)
     SubmissionFactory(event=event, state=SubmissionStates.CANCELED)
     SubmissionFactory(event=event, state=SubmissionStates.WITHDRAWN)
-    short_q = QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.STRING
-    )
-    QuestionFactory(
-        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.TEXT
-    )
-    QuestionFactory(
-        event=event, target=QuestionTarget.SPEAKER, variant=QuestionVariant.STRING
-    )
     request = make_request(event, user=user)
     request.GET = query_dict()
     view = make_view(SubmissionList, request)
@@ -218,16 +208,6 @@ def test_submission_list_properties(event):
 
     assert view.pending_changes == 1
     assert set(view.get_queryset()) == {submitted, confirmed}
-    assert view.show_submission_types is False
-    assert list(view.short_questions) == [short_q]
-    assert "submission_type" in view.get_table_kwargs()["exclude"]
-
-    SubmissionTypeFactory(event=event)
-    with_types = make_view(SubmissionList, request)
-    with_types.object_list = []
-
-    assert with_types.show_submission_types is True
-    assert "submission_type" not in with_types.get_table_kwargs()["exclude"]
 
 
 def test_submission_list_annotates_resource_count(event):
@@ -299,20 +279,6 @@ def test_submission_list_and_stats_show_tracks(use_tracks, track_count, expected
 
     assert make_view(SubmissionList, request).show_tracks is expected
     assert make_view(SubmissionStats, request).show_tracks is expected
-
-
-@pytest.mark.parametrize("track_count", (1, 2))
-def test_submission_list_show_tracks_with_limit_tracks(track_count):
-    event = EventFactory(feature_flags={"use_tracks": True})
-    user = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
-    tracks = [TrackFactory(event=event) for _ in range(track_count)]
-    team = user.teams.first()
-    team.limit_tracks.add(*tracks)
-
-    request = make_request(event, user=user)
-    view = make_view(SubmissionList, request)
-
-    assert view.show_tracks is True
 
 
 def test_feedback_list_queryset(event):

@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 import django_tables2 as tables
 import pytest
 from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import ImproperlyConfigured
 from django.db.models.functions import Lower
 from django.template import Context
 from django.test import RequestFactory
@@ -35,6 +36,7 @@ from pretalx.common.tables import (
 )
 from pretalx.common.tables.columns import _cached_template
 from pretalx.person.models import SpeakerProfile
+from pretalx.submission.enums import QuestionTarget
 from pretalx.submission.models import Review, Submission
 from tests.factories import (
     AnswerFactory,
@@ -48,6 +50,7 @@ pytestmark = pytest.mark.unit
 
 
 class SimpleTable(PretalxTable):
+    default_columns = ("title", "code")
     title = tables.Column()
     code = tables.Column()
 
@@ -57,6 +60,7 @@ class SimpleTable(PretalxTable):
 
 
 class SimpleTableWithHidden(PretalxTable):
+    default_columns = ("title", "code")
     title = tables.Column()
     code = tables.Column()
     internal = tables.Column(visible=False)
@@ -67,6 +71,7 @@ class SimpleTableWithHidden(PretalxTable):
 
 
 class SortableTestTable(PretalxTable):
+    default_columns = ("title", "code")
     title = SortableColumn(order_by=Lower("title"))
     code = tables.Column()
 
@@ -76,6 +81,7 @@ class SortableTestTable(PretalxTable):
 
 
 class DragsortTestTable(DragsortTable):
+    default_columns = ("title",)
     title = tables.Column()
 
     class Meta:
@@ -87,6 +93,7 @@ class DragsortTestTable(DragsortTable):
 
 
 class QuestionTestTable(QuestionColumnMixin, PretalxTable):
+    default_columns = ("title",)
     title = tables.Column()
 
     class Meta:
@@ -95,6 +102,8 @@ class QuestionTestTable(QuestionColumnMixin, PretalxTable):
 
 
 class SpeakerQuestionTestTable(QuestionColumnMixin, PretalxTable):
+    default_columns = ("name",)
+    question_target = QuestionTarget.SPEAKER
     name = tables.Column()
 
     class Meta:
@@ -178,6 +187,7 @@ def test_pretalx_table_set_columns_shows_valid_selection_in_order():
 
 def test_pretalx_table_exempt_columns_are_pinned_and_never_selectable():
     class TableWithPkAndActions(PretalxTable):
+        default_columns = ("title",)
         pk = tables.Column()
         title = tables.Column()
         actions = tables.Column()
@@ -257,6 +267,7 @@ def test_pretalx_table_merge_ordering(new, saved, expected):
 
 def test_pretalx_table_is_model_field():
     class NoMetaTable(PretalxTable):
+        default_columns = ()
         title = tables.Column()
 
     table = SimpleTable([])
@@ -283,6 +294,7 @@ def test_pretalx_table_apply_ordering_by_model_field(event):
 @pytest.mark.django_db
 def test_pretalx_table_apply_ordering_skips_unorderable_columns(event):
     class ComputedColumnTable(PretalxTable):
+        default_columns = ("title", "computed")
         title = tables.Column()
         computed = tables.Column(order_by=())
 
@@ -316,6 +328,7 @@ def test_pretalx_table_apply_ordering_with_function_order_column(event):
 @pytest.mark.django_db
 def test_pretalx_table_apply_ordering_with_bound_column_order_by(event):
     class AccessorTable(PretalxTable):
+        default_columns = ("title", "code", "negated")
         title = tables.Column(order_by=())
         code = tables.Column(order_by=("code",))
         negated = tables.Column(accessor="title", order_by=("-title",))
@@ -376,10 +389,23 @@ def test_pretalx_table_configuration_form_only_with_hidden_or_default_columns():
             model = Submission
             fields = ("title", "code")
 
-    assert SimpleTable([]).configuration_form is None
+    class EmptyDefaultsTable(SimpleTable):
+        default_columns = ()
+
+    assert EmptyDefaultsTable([]).configuration_form is None
     hidden = SimpleTableWithHidden([])
     assert hidden.configuration_form.table is hidden
     assert DefaultColumnsTable([]).configuration_form is not None
+    DefaultColumnsTable.configurable = False
+    assert DefaultColumnsTable([]).configuration_form is None
+
+
+def test_pretalx_table_requires_default_columns():
+    class UndeclaredTable(PretalxTable):
+        title = tables.Column()
+
+    with pytest.raises(ImproperlyConfigured, match="UndeclaredTable"):
+        UndeclaredTable([])
 
 
 @pytest.mark.django_db
@@ -1001,10 +1027,10 @@ def test_question_column_mixin_get_question_columns(event):
     q2 = QuestionFactory(event=event, question="T-shirt size")
     table = QuestionTestTable([])
 
-    table.short_questions = None
+    table.questions = None
     assert table._get_question_columns() == []
 
-    table.short_questions = [q1, q2]
+    table.questions = [q1, q2]
     columns = table._get_question_columns()
 
     assert [name for name, _ in columns] == [f"question_{q1.id}", f"question_{q2.id}"]
@@ -1022,8 +1048,7 @@ def test_question_column_mixin_get_answer_for_question_loads_cache_once(
     a1 = AnswerFactory(question=question, submission=sub1, answer="First")
     a2 = AnswerFactory(question=question, submission=sub2, answer="Second")
     qs = Submission.objects.filter(pk__in=[sub1.pk, sub2.pk])
-    table = QuestionTestTable(qs)
-    table.short_questions = [question]
+    table = QuestionTestTable(qs, questions=[question])
 
     with django_assert_num_queries(3):
         result1 = table.get_answer_for_question(sub1, question.id)
@@ -1037,11 +1062,11 @@ def test_question_column_mixin_get_answer_for_question_loads_cache_once(
 @pytest.mark.django_db
 def test_question_column_mixin_get_answer_without_questions_or_records(event):
     table = QuestionTestTable([])
-    table.short_questions = None
+    table.questions = None
 
     assert table.get_answer_for_question(SimpleNamespace(pk=1), 999) is None
 
-    table.short_questions = [QuestionFactory(event=event)]
+    table.questions = [QuestionFactory(event=event)]
     table._load_all_answers()
 
     assert table._answers_cache == {}
@@ -1056,8 +1081,7 @@ def test_question_column_mixin_speaker_answer(event):
     )
     qs = SpeakerProfile.objects.filter(pk=speaker.pk)
 
-    table = SpeakerQuestionTestTable(qs)
-    table.short_questions = [question]
+    table = SpeakerQuestionTestTable(qs, questions=[question])
 
     assert table.get_answer_for_question(speaker, question.id) == answer
 
@@ -1115,8 +1139,7 @@ def test_question_column_render_creates_context_when_missing(event):
     unanswered = SubmissionFactory(event=event)
     AnswerFactory(question=question, submission=answered, answer="Context test")
     qs = Submission.objects.filter(pk__in=[answered.pk, unanswered.pk])
-    table = QuestionTestTable(qs)
-    table.short_questions = [question]
+    table = QuestionTestTable(qs, questions=[question])
     request = RequestFactory().get("/")
     request.user = AnonymousUser()
     table.request = request
@@ -1134,8 +1157,7 @@ def test_question_column_render_reuses_existing_context(event):
     submission = SubmissionFactory(event=event)
     AnswerFactory(question=question, submission=submission, answer="Reuse ctx")
     qs = Submission.objects.filter(pk=submission.pk)
-    table = QuestionTestTable(qs)
-    table.short_questions = [question]
+    table = QuestionTestTable(qs, questions=[question])
     request = RequestFactory().get("/")
     request.user = AnonymousUser()
     table.request = request
@@ -1167,3 +1189,21 @@ def test_question_column_ordering_uses_review_answers(event):
 
     assert keys == [f"_question_{question.pk}_answer"]
     assert "review_id" in str(queryset.query)
+
+
+@pytest.mark.django_db
+def test_question_column_mixin_review_model():
+
+    class TestTable(QuestionColumnMixin, PretalxTable):
+        default_columns = ("text",)
+        question_target = QuestionTarget.REVIEWER
+        text = tables.Column()
+
+        class Meta:
+            model = Review
+            fields = ("text",)
+
+    table = TestTable([])
+
+    assert table._question_model == "review"
+    assert table._get_answer_filter_field() == "review_id__in"

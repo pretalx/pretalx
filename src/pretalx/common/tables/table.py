@@ -4,33 +4,47 @@
 from contextlib import suppress
 
 import django_tables2 as tables
-from django.core.exceptions import FieldDoesNotExist
+from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured
 from django.utils.functional import cached_property
 from django_tables2.utils import OrderBy, OrderByTuple, segment
 
 from pretalx.common.forms.tables import MAX_SORT_LEVELS, TablePreferencesForm
 from pretalx.common.tables.columns import QuestionColumn
-from pretalx.person.models import SpeakerProfile
+from pretalx.submission.domain.queries.question import questions_for_user
+from pretalx.submission.enums import QuestionTarget, QuestionVariant
 from pretalx.submission.models import Answer
 
 
 class QuestionColumnMixin:
     """Mixin for tables that display QuestionColumns with answer caching."""
 
-    def __init__(self, *args, **kwargs):
+    question_target = QuestionTarget.SUBMISSION
+
+    def __init__(self, *args, questions=None, **kwargs):
+        event = kwargs.get("event")
+        user = kwargs.get("user")
+        if questions is None:
+            questions = self.get_questions(event, user)
+        self.questions = list(questions)
+        kwargs.setdefault("extra_columns", []).extend(self._get_question_columns())
         super().__init__(*args, **kwargs)
-        if self.Meta.model == SpeakerProfile:
-            self._question_model = "speaker"
-        else:
-            self._question_model = "submission"
+        self._question_model = self.question_target.answer_field
+
+    @classmethod
+    def get_questions(cls, event, user):
+        if not event or not user or not user.pk:
+            return []
+        return questions_for_user(event, user).filter(
+            target=cls.question_target, variant__in=QuestionVariant.short_answers
+        )
 
     def _get_question_columns(self):
         """Build list of question columns for extra_columns parameter."""
         extra_columns = []
-        if not getattr(self, "short_questions", None):
+        if not getattr(self, "questions", None):
             return extra_columns
 
-        for question in self.short_questions:
+        for question in self.questions:
             column_name = f"question_{question.id}"
             extra_columns.append(
                 (
@@ -47,7 +61,7 @@ class QuestionColumnMixin:
         query the first time any question column is rendered. This is efficient
         because django-tables2 only renders visible columns.
         """
-        if not getattr(self, "short_questions", None):
+        if not getattr(self, "questions", None):
             return None
 
         if not hasattr(self, "_answers_cache"):
@@ -55,8 +69,7 @@ class QuestionColumnMixin:
         return self._answers_cache.get(record.pk, {}).get(question_id)
 
     def _get_answer_filter_field(self):
-        model = "speaker" if self._question_model == "speaker" else "submission"
-        return f"{model}_id__in"
+        return f"{self._question_model}_id__in"
 
     def _load_all_answers(self):
         try:
@@ -71,18 +84,19 @@ class QuestionColumnMixin:
             self._answers_cache = {}
             return
 
+        questions = [
+            column.column.question
+            for column in self.columns
+            if isinstance(column.column, QuestionColumn)
+        ]
         filter_field = self._get_answer_filter_field()
         answers = (
-            Answer.objects.filter(
-                **{filter_field: record_ids}, question__in=self.short_questions
-            )
+            Answer.objects.filter(**{filter_field: record_ids}, question__in=questions)
             .select_related("question")
             .prefetch_related("options")
         )
         self._answers_cache = {}
-        cache_key = (
-            "speaker_id" if self._question_model == "speaker" else "submission_id"
-        )
+        cache_key = f"{self._question_model}_id"
         for answer in answers:
             answer_key = getattr(answer, cache_key, None)
             self._answers_cache.setdefault(answer_key, {})[answer.question_id] = answer
@@ -104,26 +118,70 @@ class BaseTable(tables.Table):
 class PretalxTable(BaseTable):
     exempt_columns = ("pk", "actions")
     filters = None
+    # Permissions used when view does not pass has_update_permission/has_delete_permission
+    update_permission = "update"
+    delete_permission = "delete"
+    filter_options = {}  # Filter options always used in FilterContext
+    default_columns = None  # Can't save preferences: is outside an event context
+    configurable = True
 
     def __init__(
         self,
         *args,
         event=None,
         user=None,
-        has_update_permission=False,
-        has_delete_permission=False,
+        has_update_permission=None,
+        has_delete_permission=None,
         filterset=None,
         **kwargs,
     ):
         self.event = event
         self.user = user
-        self.has_update_permission = has_update_permission
-        self.has_delete_permission = has_delete_permission
         self.filterset = filterset
         self._ordering_applied = False
+        if has_update_permission is None:
+            has_update_permission = self.has_event_permission(self.update_permission)
+        if has_delete_permission is None:
+            has_delete_permission = self.has_event_permission(self.delete_permission)
+        self.has_update_permission = has_update_permission
+        self.has_delete_permission = has_delete_permission
+        if self.default_columns is None:
+            raise ImproperlyConfigured(
+                f"{type(self).__name__} must declare default_columns."
+            )
         super().__init__(*args, **kwargs)
         if not self._order_by:
             self._reflect_data_ordering()
+
+    def has_event_permission(self, permission):
+        if not permission or not self.event or not self.user or not self.user.pk:
+            return False
+        if "." not in permission:
+            model = getattr(getattr(self, "Meta", None), "model", None)
+            if not model or not hasattr(model, "get_perm"):
+                return False
+            permission = model.get_perm(permission)
+        return self.user.has_perm(permission, self.event)
+
+    @classmethod
+    def get_filter_options(cls, event, user):
+        return dict(cls.filter_options)
+
+    @classmethod
+    def base_queryset(cls, event, user):
+        """Correct base queryset given the event and user (for permissions!), before
+        filters and ordering. Used in views and exports."""
+        raise NotImplementedError
+
+    @classmethod
+    def prepare_queryset(cls, queryset, *, event, user):
+        """Add annotations needed for filters to apply."""
+        return queryset
+
+    @classmethod
+    def augment_queryset(cls, queryset, *, event, user):
+        """Add annotations and prefetches."""
+        return queryset
 
     def _reflect_data_ordering(self):
         """Make sure sort order is shown in table headers."""
@@ -219,7 +277,9 @@ class PretalxTable(BaseTable):
 
     @cached_property
     def configuration_form(self):
-        has_default_columns = getattr(self, "default_columns", None)
+        if not self.configurable:
+            return None
+        has_default_columns = self.default_columns
         has_hidden_columns = len(self.available_columns) > 0
 
         if not (has_default_columns or has_hidden_columns):
@@ -400,7 +460,7 @@ class PretalxTable(BaseTable):
 
         if override_columns:
             columns = override_columns
-        columns = columns or getattr(self, "default_columns", None) or self.Meta.fields
+        columns = columns or self.default_columns
         self._set_columns(columns)
 
         if ordering:

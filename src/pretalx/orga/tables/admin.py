@@ -15,6 +15,18 @@ from pretalx.person.models import User
 
 
 class AdminUserTable(PretalxTable):
+    default_columns = (
+        "name",
+        "email",
+        "locale",
+        "teams",
+        "events",
+        "submission_count",
+        "created",
+        "last_login",
+        "pw_reset_time",
+    )
+
     primary_column = "name"
 
     name = TemplateColumn(

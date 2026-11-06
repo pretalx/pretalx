@@ -2,17 +2,24 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
+from django.http import QueryDict
 from django_scopes import scope
 
+from pretalx.common.tables.filters import FilterContext, TableFilterSet
 from pretalx.orga.tables.submission import ReviewTable, SubmissionTable
+from pretalx.submission.enums import SubmissionStates
+from pretalx.submission.interfaces.filters import review_list_filters
 from tests.factories import (
     EventFactory,
+    QuestionFactory,
     ReviewFactory,
     ReviewScoreCategoryFactory,
     ReviewScoreFactory,
     SpeakerFactory,
     SpeakerRoleFactory,
     SubmissionFactory,
+    SubmissionTypeFactory,
+    TagFactory,
     TrackFactory,
     UserFactory,
 )
@@ -40,7 +47,13 @@ def event():
                 "state",
                 "is_featured",
             ],
-            ["requires_signup", "attendee_signup_count"],
+            [
+                "track",
+                "submission_type",
+                "tags",
+                "requires_signup",
+                "attendee_signup_count",
+            ],
         ),
         (
             {"use_tracks": True, "attendee_signup": True},
@@ -54,7 +67,7 @@ def event():
                 "state",
                 "is_featured",
             ],
-            [],
+            ["submission_type", "tags"],
         ),
         (
             {"use_tracks": False},
@@ -68,6 +81,9 @@ def event():
                 "is_featured",
             ],
             [
+                "track",
+                "submission_type",
+                "tags",
                 "speakers",
                 "is_featured",
                 "actions",
@@ -86,7 +102,14 @@ def event():
                 "state",
                 "is_featured",
             ],
-            ["speakers", "requires_signup", "attendee_signup_count"],
+            [
+                "track",
+                "submission_type",
+                "tags",
+                "speakers",
+                "requires_signup",
+                "attendee_signup_count",
+            ],
         ),
     ),
     ids=(
@@ -130,14 +153,22 @@ def test_review_table_render_scores(event):
             False,
             {},
             ["review_count", "title", "state"],
-            ["median_score", "mean_score", "user_score", "speakers"],
+            [
+                "track",
+                "submission_type",
+                "tags",
+                "median_score",
+                "mean_score",
+                "user_score",
+                "speakers",
+            ],
             [],
         ),
         (
             True,
             {"can_see_all_reviews": True, "aggregate_method": "median"},
             ["median_score", "review_count", "title", "track", "state"],
-            ["mean_score", "user_score", "speakers"],
+            ["submission_type", "tags", "mean_score", "user_score", "speakers"],
             [],
         ),
         (
@@ -149,21 +180,35 @@ def test_review_table_render_scores(event):
                 "can_accept_submissions": True,
             },
             ["mean_score", "independent_score_{cat}", "review_count", "title", "state"],
-            ["median_score", "user_score", "speakers"],
+            [
+                "track",
+                "submission_type",
+                "tags",
+                "median_score",
+                "user_score",
+                "speakers",
+            ],
             ["independent_score_{cat}", "actions"],
         ),
         (
             False,
             {"is_reviewer": True, "can_view_speakers": True},
             ["user_score", "review_count", "title", "speakers", "state"],
-            ["median_score", "mean_score"],
+            ["track", "submission_type", "tags", "median_score", "mean_score"],
             [],
         ),
         (
             False,
             {"is_reviewer": True},
             ["user_score", "review_count", "title", "state"],
-            ["median_score", "mean_score", "speakers"],
+            [
+                "track",
+                "submission_type",
+                "tags",
+                "median_score",
+                "mean_score",
+                "speakers",
+            ],
             [],
         ),
     ),
@@ -349,3 +394,100 @@ def test_speakers_sort_ignored_when_speakers_hidden(event, table_class):
         titles = [row.record.title for row in table.rows]
 
     assert titles == ["First", "Second"]
+
+
+def test_submission_table_self_constructs_from_event_and_user(event):
+    orga = make_orga_user(event, can_change_submissions=True)
+    reviewer = make_orga_user(event, is_reviewer=True, can_change_submissions=False)
+    question = QuestionFactory(event=event, target="submission", variant="string")
+    SubmissionTypeFactory(event=event)
+
+    orga_table = SubmissionTable([], event=event, user=orga)
+    reviewer_table = SubmissionTable([], event=event, user=reviewer)
+    overridden = SubmissionTable(
+        [], event=event, user=orga, has_update_permission=False, questions=[]
+    )
+
+    assert orga_table.has_update_permission is True
+    assert orga_table.can_view_speakers is True
+    assert f"question_{question.pk}" in orga_table.columns.names()
+    assert "submission_type" not in orga_table.exclude
+    assert "track" in orga_table.exclude
+    assert reviewer_table.has_update_permission is False
+    assert {"is_featured", "actions"} <= set(reviewer_table.exclude)
+    assert overridden.has_update_permission is False
+    assert overridden.questions == []
+
+
+@pytest.mark.parametrize("table_class", (SubmissionTable, ReviewTable))
+def test_submission_tables_column_flags_default_from_event(event, table_class):
+    orga = make_orga_user(event, can_change_submissions=True)
+    context = FilterContext(event=event, user=orga)
+    filterset = TableFilterSet(
+        review_list_filters(context), data=QueryDict("tags=1"), context=context
+    )
+    kwargs = {"event": event, "user": orga, "filterset": filterset}
+
+    without_tags = table_class([], **kwargs)
+    TagFactory(event=event)
+    with_tags = table_class([], **kwargs)
+    overridden = table_class(
+        [], show_tags=False, show_tracks=True, show_submission_types=True, **kwargs
+    )
+
+    assert "tags" not in without_tags.columns.names()
+    assert {"track", "submission_type"} & set(without_tags.columns.names()) == set()
+    assert "tags" in with_tags.columns.names()
+    assert "tags" not in overridden.columns.names()
+    assert {"track", "submission_type"} <= set(overridden.columns.names())
+
+
+def test_submission_table_filter_options(event):
+    orga = make_orga_user(event, can_change_submissions=True)
+    reviewer = make_orga_user(event, is_reviewer=True, can_change_submissions=False)
+    track = TrackFactory(event=event)
+    reviewer.teams.filter(is_reviewer=True).first().limit_tracks.add(track)
+
+    orga_options = SubmissionTable.get_filter_options(event, orga)
+    reviewer_options = SubmissionTable.get_filter_options(event, reviewer)
+
+    assert orga_options == {
+        "default_states": SubmissionStates.active_states,
+        "can_view_speakers": True,
+    }
+    assert set(reviewer_options["limit_tracks"]) == {track.pk}
+
+
+def test_review_table_self_constructs_from_event_and_user(event):
+    orga = make_orga_user(event, can_change_submissions=True)
+    category = ReviewScoreCategoryFactory(event=event, is_independent=True)
+    submission = SubmissionFactory(event=event)
+    ReviewFactory(submission=submission, user=orga)
+
+    table = ReviewTable([submission], event=event, user=orga)
+
+    assert table.can_see_all_reviews is True
+    assert table.is_reviewer is True
+    assert table.aggregate_method == "median"
+    assert table.independent_categories == [category]
+    assert table.request_user == orga
+    assert list(table.submissions_reviewed) == [submission.pk]
+    assert "tags" in table.exclude
+    assert table.can_accept_submissions is True
+    assert "actions" in table.columns.names()
+
+
+def test_submission_tables_without_event_or_user_fall_back():
+    assert SubmissionTable.get_can_view_speakers(None, None) is False
+    assert ReviewTable.get_can_see_all_reviews(None, None) is False
+    assert ReviewTable.get_filter_options(None, None) == {
+        "usable_states": ReviewTable.usable_states,
+        "can_view_speakers": False,
+    }
+
+    table = ReviewTable([], event=None, user=None)
+
+    assert table.aggregate_method == "mean"
+    assert table.independent_categories == []
+    assert table.is_reviewer is False
+    assert list(table.submissions_reviewed) == []
