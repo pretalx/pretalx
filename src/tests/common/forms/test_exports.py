@@ -30,8 +30,9 @@ def _data(**overrides):
 def test_export_form_builds_config_from_toolbar_submission(event):
     user = make_orga_user(event, can_change_submissions=True)
     data = _data(
-        filters="?state=accepted&sort=-title&page=3",
+        filters="?state=accepted&sort=state&page=3",
         columns=["title", "abstract", "indicator", "bogus"],
+        ordering=["-title"],
         csv_list_delimiter="comma",
     )
 
@@ -96,25 +97,21 @@ def test_export_form_preselects_list_defaults_only_without_stored_config(
     assert form.filterset.values["state"] == preselected
 
 
-@pytest.mark.parametrize(
-    ("filters", "ordering"),
-    (("sort=state", ["state", "-created"]), ("state=accepted", ["title", "-created"])),
-    ids=("live_sort_merged_with_preference", "preference_without_live_sort"),
-)
-def test_export_form_ordering_from_list_url_and_saved_preference(
-    event, filters, ordering
-):
+def test_export_form_ordering_from_live_table(event):
     user = make_orga_user(event, can_change_submissions=True)
-    user.get_event_preferences(event).set(
-        "tables.SubmissionTable.ordering", ["title", "-created"], commit=True
+    table = SubmissionTable(
+        SubmissionTable.base_queryset(event, user).none(),
+        event=event,
+        user=user,
+        order_by=["-created", "bogus"],
     )
 
-    form = TableExportForm(
-        data=_data(filters=filters), event=event, user=user, table_class=SubmissionTable
-    )
+    form = table.export_form
 
-    assert form.is_valid()
-    assert form.ordering == ordering
+    assert form.ordering == ["-created"]
+    assert form.columns_form.sort_levels == [
+        {"column": "created", "direction": "desc", "numeric": False}
+    ]
 
 
 def test_export_form_columns_fall_back_to_preferences_then_defaults(event):
@@ -140,35 +137,40 @@ def test_export_form_columns_fall_back_to_preferences_then_defaults(event):
         (["en", "de"], "csv", None, None),
         (["en", "de"], "csv", "", None),
         (["en", "de"], "csv", "fr", None),
+        (["en", "de"], "csv", "__all__", None),
         (
             ["en", "de"],
             "csv",
             "de",
             {"locale": "de", "delimiter": "", "list_delimiter": ""},
         ),
-        (["en", "de"], "json", None, {}),
-        (["en", "de"], "json", "", {}),
-        (["en", "de"], "json", "de", {}),
+        (["en", "de"], "json", None, None),
+        (["en", "de"], "json", "", None),
+        (["en", "de"], "json", "fr", None),
+        (["en", "de"], "json", "__all__", {"locale": "__all__"}),
+        (["en", "de"], "json", "de", {"locale": "de"}),
         (["en"], "csv", None, {"delimiter": "", "list_delimiter": ""}),
+        (["en"], "json", None, {}),
     ),
 )
-def test_export_form_requires_locale_only_for_chosen_localized_format(
+def test_export_form_requires_locale_for_chosen_format(
     locales, serializer, locale, options
 ):
     event = EventFactory(locales=locales)
     user = make_orga_user(event, can_change_submissions=True)
+    field = f"{serializer}_locale"
 
     form = TableExportForm(
-        data=_data(serializer=serializer, csv_locale=locale),
+        data=_data(serializer=serializer, **{field: locale}),
         event=event,
         user=user,
         table_class=SubmissionTable,
     )
 
-    assert ("csv_locale" in form.fields) is (len(locales) > 1)
+    assert ({"csv_locale", "json_locale"} <= set(form.fields)) is (len(locales) > 1)
     if options is None:
         assert not form.is_valid()
-        assert list(form.errors) == ["csv_locale"]
+        assert list(form.errors) == [field]
     else:
         assert form.is_valid(), form.errors
         assert form.serializer_options == options
@@ -287,12 +289,16 @@ def test_export_form_initial_state_from_instance():
         {"column": "created", "direction": "desc", "numeric": False}
     ]
     assert form.fields["csv_locale"].initial == "de"
+    assert form.fields["json_locale"].initial == "de"
     assert form.fields["csv_list_delimiter"].initial == "comma"
     assert form.filterset.is_set("state")
     assert unsaved.fields["csv_locale"].initial == "en"
     assert unsaved.fields["csv_locale"].required
+    assert unsaved.fields["json_locale"].initial == "__all__"
     assert saved.fields["csv_locale"].initial == "en"
+    assert saved.fields["json_locale"].initial == "__all__"
     assert stale.fields["csv_locale"].initial == "en"
+    assert stale.fields["json_locale"].initial == "__all__"
 
 
 def test_export_form_uses_given_table_for_the_picker(event):
@@ -306,7 +312,7 @@ def test_export_form_uses_given_table_for_the_picker(event):
         event=event, user=user, table_class=SubmissionTable, table=table
     )
     without_user = TableExportForm(
-        data=_data(filters="sort=title"),
+        data=_data(filters="sort=state", ordering=["title"]),
         event=event,
         user=None,
         table_class=SubmissionTable,

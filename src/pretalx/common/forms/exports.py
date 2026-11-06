@@ -6,7 +6,11 @@ from django.http import QueryDict
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.forms.tables import TablePreferencesForm
-from pretalx.common.forms.widgets import SegmentedRadioSelect
+from pretalx.common.forms.widgets import (
+    EnhancedSelect,
+    EnhancedSelectMultiple,
+    SegmentedRadioSelect,
+)
 from pretalx.common.models.exports import TableExport
 from pretalx.common.tables.export import (
     build_filterset,
@@ -101,6 +105,13 @@ class TableExportForm(forms.ModelForm):
         )
 
     @property
+    def media(self):
+        media = super().media
+        if self.filterset:
+            media += forms.Media(EnhancedSelectMultiple.Media)
+        return media
+
+    @property
     def option_bound_fields(self):
         return [
             (identifier, self[name]) for identifier, name in self.option_field_names
@@ -150,19 +161,13 @@ class TableExportForm(forms.ModelForm):
         return [name for name in columns if name in offered]
 
     def _get_ordering(self):
-        saved = None
         if self.is_bound and "ordering" in self.data:
             ordering = self.data.getlist("ordering")
-        elif self.from_list_url:
-            # Get ordering from passed querystring
-            if self.preferences:
-                saved = self.preferences.get(f"tables.{self.table.name}.ordering")
-            ordering = (
-                self.filter_data.getlist(self.table.prefixed_order_by_field) or saved
-            )
-        else:
+        elif self.instance.pk:
             ordering = list(self.instance.ordering or [])
-        return self.table.resolve_ordering(ordering, saved)
+        else:
+            ordering = list(self.initial.get("ordering") or [])
+        return self.table.resolve_ordering(ordering)
 
     @property
     def filters(self):
@@ -187,3 +192,17 @@ class TableExportForm(forms.ModelForm):
         self.instance.filters = self.filters
         self.instance.serializer_options = self.serializer_options
         return super().save(commit=commit)
+
+
+class TablePickerForm(forms.Form):
+    table = forms.ChoiceField(
+        label=_("Table"),
+        widget=EnhancedSelect,
+        help_text=_(
+            "Pick the data you want to export. You can configure fields, filters and the file format in the next step."
+        ),
+    )
+
+    def __init__(self, *args, choices, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["table"].choices = choices

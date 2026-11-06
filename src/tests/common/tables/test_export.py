@@ -16,6 +16,7 @@ from pretalx.common.signals import (
     register_table_serializers,
 )
 from pretalx.common.tables.export import (
+    ALL_LOCALES,
     CSVSerializer,
     ExportError,
     JSONSerializer,
@@ -43,6 +44,7 @@ from tests.factories import (
     ReviewFactory,
     RoomFactory,
     SpeakerFactory,
+    SpeakerInformationFactory,
     SubmissionFactory,
     SubmissionTypeFactory,
     SubmitterAccessCodeFactory,
@@ -95,20 +97,29 @@ def test_table_serializers_offer_csv_and_json(event):
 @pytest.mark.parametrize(
     ("locales", "has_locale"), ((["en"], False), (["en", "de"], True))
 )
-def test_csv_serializer_offers_locale_only_with_several_languages(locales, has_locale):
+def test_serializers_offer_locale_only_with_several_languages(locales, has_locale):
     event = EventFactory(locales=locales, locale="en")
 
-    fields = CSVSerializer.option_fields(event)
+    csv_fields = CSVSerializer.option_fields(event)
+    json_fields = JSONSerializer.option_fields(event)
 
-    assert ("locale" in fields) is has_locale
-    assert list(fields) == (["locale"] if has_locale else []) + [
+    assert list(csv_fields) == (["locale"] if has_locale else []) + [
         "delimiter",
         "list_delimiter",
     ]
+    assert list(json_fields) == (["locale"] if has_locale else [])
     assert CSVSerializer.default_options(event).get("locale") == (
         "en" if has_locale else None
     )
-    assert "locale" not in JSONSerializer.option_fields(event)
+    assert JSONSerializer.default_options(event).get("locale") == (
+        ALL_LOCALES if has_locale else None
+    )
+    if has_locale:
+        assert [value for value, _label in csv_fields["locale"].choices] == locales
+        assert [value for value, _label in json_fields["locale"].choices] == [
+            ALL_LOCALES,
+            *locales,
+        ]
 
 
 def test_table_serializers_add_plugin_formats_without_replacing_core(
@@ -165,6 +176,8 @@ def test_exportable_tables_add_plugin_tables_without_replacing_core(
         "RoomTable",
         "SubmissionQuestionTable",
         "SpeakerQuestionTable",
+        "ReviewerQuestionTable",
+        "SpeakerInformationTable",
         "PluginTable",
     ]
     assert tables["SubmissionTable"] is SubmissionTable
@@ -184,6 +197,8 @@ def test_exportable_table_base_querysets_scope_to_the_event(event):
         "TagTable": {TagFactory(event=event)},
         "RoomTable": {RoomFactory(event=event)},
         "SpeakerQuestionTable": {QuestionFactory(event=event, target="speaker")},
+        "ReviewerQuestionTable": {QuestionFactory(event=event, target="reviewer")},
+        "SpeakerInformationTable": {SpeakerInformationFactory(event=event)},
     }
     FeedbackFactory(talk=SubmissionFactory(event=other))
     SubmitterAccessCodeFactory(event=other)
@@ -191,6 +206,8 @@ def test_exportable_table_base_querysets_scope_to_the_event(event):
     TagFactory(event=other)
     RoomFactory(event=other)
     QuestionFactory(event=other, target="speaker")
+    QuestionFactory(event=other, target="reviewer")
+    SpeakerInformationFactory(event=other)
     tables = get_exportable_tables(event)
 
     for name, rows in expected.items():
@@ -246,6 +263,86 @@ def test_export_keeps_columns_hidden_from_the_column_picker(event):
 
     assert rows[0] == ["ID", "Status", "Subject"]
     assert rows[1] == [str(mail.pk), "draft", "Hello"]
+
+
+def test_export_reviewer_question_table(event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    reviewer_question = QuestionFactory(
+        event=event, target="reviewer", question="Confidence", variant="number"
+    )
+    QuestionFactory(event=event, target="submission", question="Diet")
+    config = _config(
+        table="ReviewerQuestionTable", columns=["question", "variant", "active"]
+    )
+
+    rows = _csv_rows(_render(event, user, config))
+
+    assert rows == [
+        ["ID", "Custom field", "Field type", "Active"],
+        [str(reviewer_question.pk), "Confidence", "number", "Yes"],
+    ]
+
+
+def test_export_speaker_information_table(event):
+    user = make_orga_user(event, can_change_submissions=True)
+    track = TrackFactory(event=event, name="Security")
+    submission_type = SubmissionTypeFactory(event=event, name="Workshop")
+    information = SpeakerInformationFactory(
+        event=event, title="Slides", text="Upload them.", target_group="confirmed"
+    )
+    information.limit_tracks.add(track)
+    information.limit_types.add(submission_type)
+    information.resource.save("template.odp", ContentFile(b"slides"))
+    SpeakerInformationFactory(event=event, title="Bare")
+    config = _config(
+        table="SpeakerInformationTable",
+        columns=["title", "text", "target_group", "limit_tracks", "limit_types"],
+        serializer_options={"list_delimiter": "comma"},
+    )
+
+    rows = _csv_rows(_render(event, user, config))
+    json_rows = json.loads(
+        _render(
+            event,
+            user,
+            {**config, "columns": ["resource", "limit_tracks"], "serializer": "json"},
+        )
+    )
+
+    assert rows == [
+        [
+            "ID",
+            "Title",
+            "Text",
+            "Target group",
+            "Limit to tracks",
+            "Limit to proposal types",
+        ],
+        [
+            str(information.pk),
+            "Slides",
+            "Upload them.",
+            "Only confirmed speakers",
+            "Security",
+            "Workshop",
+        ],
+        [
+            str(information.pk + 1),
+            "Bare",
+            "Important information for speakers.",
+            "All accepted speakers",
+            "",
+            "",
+        ],
+    ]
+    assert json_rows == [
+        {
+            "ID": information.pk,
+            "resource": settings.SITE_URL + information.resource.url,
+            "limit_tracks": ["Security"],
+        },
+        {"ID": information.pk + 1, "resource": None, "limit_tracks": None},
+    ]
 
 
 def test_export_csv_keeps_columns_with_colliding_headers(event):
@@ -521,24 +618,35 @@ def test_export_csv_headers_follow_locale(event_locale, export_locale):
     ids=("track_name", "submission_type"),
 )
 @pytest.mark.parametrize(
-    "locales",
-    (["en", "de"], ["de"]),
-    ids=("multilingual_event", "single_language_event"),
+    ("locales", "locale", "flat"),
+    (
+        (["en", "de"], ALL_LOCALES, None),
+        (["en", "de"], None, None),
+        (["de"], None, None),
+        (["en", "de"], "de", "de"),
+        (["en", "de"], "fr", "en"),
+    ),
+    ids=(
+        "all_languages",
+        "missing_key_stays_structured",
+        "single_language_event",
+        "chosen_language",
+        "unknown_language_falls_back_to_event",
+    ),
 )
-def test_export_json_keeps_structured_i18n(config, column, structured, locales):
-    event = EventFactory(locales=locales, locale=locales[-1])
+def test_export_json_i18n_values(config, column, structured, locales, locale, flat):
+    event = EventFactory(locales=locales, locale=locales[0])
     user = make_orga_user(event, can_change_submissions=True)
     TrackFactory(event=event, name={"en": "Science", "de": "Wissenschaft"})
     submission_type = SubmissionTypeFactory(
         event=event, name={"en": "Talk", "de": "Vortrag"}, default_duration=30
     )
     SubmissionFactory(event=event, submission_type=submission_type)
+    options = {} if locale is None else {"locale": locale}
 
-    export = json.loads(
-        _render(event, user, {**config, "serializer_options": {"locale": "de"}})
-    )
+    export = json.loads(_render(event, user, {**config, "serializer_options": options}))
 
-    assert export[0][column] == structured
+    assert export[0][column] == (structured[flat] if flat else structured)
 
 
 @pytest.mark.parametrize("item_count", (1, 3))

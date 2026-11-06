@@ -28,6 +28,9 @@ class ExportError(Exception):
     pass
 
 
+ALL_LOCALES = "__all__"
+
+
 class TableSerializer:
     """Turns a configured table into file content of one format."""
 
@@ -36,6 +39,7 @@ class TableSerializer:
     extension = None
     content_type = None
     options = {}
+    all_locales = False
 
     def __init__(self, event, options=None):
         self.event = event
@@ -43,38 +47,40 @@ class TableSerializer:
 
     @classmethod
     def option_fields(cls, event):
-        return {name: factory(event) for name, factory in cls.options.items()}
+        fields = {}
+        if len(event.locales) > 1:
+            choices = list(event.named_locales)
+            if cls.all_locales:
+                choices.insert(0, (ALL_LOCALES, _("All languages")))
+            fields["locale"] = forms.ChoiceField(
+                label=_("Language"),
+                choices=choices,
+                initial=ALL_LOCALES if cls.all_locales else event.locale,
+            )
+        return {
+            **fields,
+            **{name: factory(event) for name, factory in cls.options.items()},
+        }
 
     @classmethod
     def default_options(cls, event):
         return {name: field.initial for name, field in cls.option_fields(event).items()}
 
+    @cached_property
+    def locale(self):
+        locale = self.options.get("locale")
+        if locale in self.event.locales:
+            return locale
+        if self.all_locales and locale in (None, ALL_LOCALES):
+            return None
+        return self.event.locale
+
     def export(self, table, file):
-        with translation.override(self.event.locale):
+        with translation.override(self.locale or self.event.locale):
             self.render(table, file)
 
     def render(self, table, file):
         raise NotImplementedError
-
-
-class LocalizedTableSerializer(TableSerializer):
-    @classmethod
-    def option_fields(cls, event):
-        fields = {}
-        if len(event.locales) > 1:
-            fields["locale"] = forms.ChoiceField(
-                label=_("Language"), choices=event.named_locales, initial=event.locale
-            )
-        return {**fields, **super().option_fields(event)}
-
-    @cached_property
-    def locale(self):
-        locale = self.options.get("locale")
-        return locale if locale in self.event.locales else self.event.locale
-
-    def export(self, table, file):
-        with translation.override(self.locale):
-            self.render(table, file)
 
 
 def _localize_datetime(value):
@@ -94,7 +100,7 @@ def text_writer(file, *, newline=None):
         text.detach()
 
 
-class CSVSerializer(LocalizedTableSerializer):
+class CSVSerializer(TableSerializer):
     identifier = "csv"
     verbose_name = _("CSV")
     extension = "csv"
@@ -151,10 +157,11 @@ class JSONSerializer(TableSerializer):
     verbose_name = _("JSON")
     extension = "json"
     content_type = "application/json"
+    all_locales = True
 
     def format_value(self, value):
         if isinstance(value, LazyI18nString):
-            return value
+            return str(value) if self.locale else value
         if isinstance(value, (list, tuple, set)):
             return [self.format_value(entry) for entry in value]
         if isinstance(value, dt.datetime):

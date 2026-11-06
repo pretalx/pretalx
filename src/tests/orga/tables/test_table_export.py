@@ -17,7 +17,7 @@ def test_table_export_table_renders_summary_and_table_name(event):
         ordering=["title"],
     )
     stale = TableExportFactory(event=event, table="GoneTable", columns=[])
-    table = TableExportTable([export, stale], event=event, user=UserFactory.build())
+    table = TableExportTable([export, stale], event=event, user=UserFactory())
 
     assert table.render_table(export) == "Sessions"
     assert table.render_serializer("csv") == "CSV"
@@ -26,3 +26,26 @@ def test_table_export_table_renders_summary_and_table_name(event):
     assert "2" in table.render_summary(export)
     assert table.render_summary(stale).count(",") == 0
     assert table.exportable is False
+
+
+@pytest.mark.parametrize(
+    ("filters", "expected"),
+    (
+        ({"state": ["submitted", "accepted", "confirmed"]}, ""),
+        ({"state": ["accepted", "submitted", "confirmed"], "track": [1]}, "1 filters"),
+        ({"state": ["accepted"]}, "1 filters"),
+    ),
+    ids=("defaults_only", "default_plus_one", "changed_default"),
+)
+def test_table_export_summary_counts_only_non_default_filters(
+    event, filters, expected, django_assert_num_queries
+):
+    export = TableExportFactory(event=event, filters=filters)
+    other = TableExportFactory(event=event, filters=filters)
+    table = TableExportTable([export, other], event=event, user=UserFactory())
+
+    with django_assert_num_queries(1):
+        summary = table.render_summary(export)
+        table.render_summary(other)
+
+    assert summary == f"2 columns, {expected}".rstrip(", ")

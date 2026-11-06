@@ -454,3 +454,33 @@ def test_question_scope_without_tracks_or_query():
 
     assert facet_names(filterset) == ["role", "submission_type"]
     assert filterset.is_active is False
+
+
+@pytest.mark.parametrize(
+    ("selected", "expected"),
+    (
+        ("False", {"no"}),
+        ("True&False", {"yes", "no"}),
+        ("True&__answered__", {"yes", "no"}),
+        ("False&__unanswered__", {"no", "none"}),
+        ("__answered__&__unanswered__", {"yes", "no", "none"}),
+    ),
+)
+def test_question_filter_unions_boolean_choices(selected, expected):
+    event = EventFactory()
+    question = QuestionFactory(
+        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.BOOLEAN
+    )
+    yes = SubmissionFactory(event=event, title="yes")
+    AnswerFactory(question=question, submission=yes, answer="True")
+    no = SubmissionFactory(event=event, title="no")
+    AnswerFactory(question=question, submission=no, answer="False")
+    SubmissionFactory(event=event, title="none")
+    param = f"question_{question.pk}"
+    query = "&".join(f"{param}={value}" for value in selected.split("&"))
+
+    narrowed = build([QuestionAnswerFilter(question=question)], query).filter(
+        event.submissions.all()
+    )
+
+    assert {submission.title for submission in narrowed} == expected

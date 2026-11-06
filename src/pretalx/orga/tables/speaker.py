@@ -28,6 +28,7 @@ from pretalx.common.tables import (
     TemplateColumn,
 )
 from pretalx.common.text.phrases import phrases
+from pretalx.common.urls import get_base_url
 from pretalx.person.domain.queries.profile import (
     REACHABLE_SPEAKER_FILTER,
     annotate_speaker_submission_counts,
@@ -41,11 +42,14 @@ from pretalx.submission.enums import QuestionTarget
 
 class SpeakerInformationTable(PretalxTable):
     primary_column = "title"
+    export_name = _("Speaker information notes")
+    export_permission = "person.list_speakerinformation"
     title = SortableColumn(
         linkify=lambda record: record.orga_urls.edit,
         verbose_name=_("Title"),
         order_by=Lower(Translate("title")),
     )
+    text = Column(orderable=False, export_only=True)
     resource = tables.Column(
         linkify=lambda record: record.resource.url if record.resource else None
     )
@@ -62,8 +66,27 @@ class SpeakerInformationTable(PretalxTable):
         if not self.event.has_active_tracks:
             self.exclude.append("limit_tracks")
 
+    @classmethod
+    def base_queryset(cls, event, user):
+        return (
+            event.information.all()
+            .prefetch_related("limit_tracks", "limit_types")
+            .order_by("pk")
+        )
+
     def render_resource(self, record):
         return mark_safe('<i class="fa fa-file-o"></i>')
+
+    def value_resource(self, record):
+        if not record.resource:
+            return None
+        return get_base_url(self.event) + record.resource.url
+
+    def value_limit_tracks(self, record):
+        return [track.name for track in record.limit_tracks.all()]
+
+    def value_limit_types(self, record):
+        return [submission_type.name for submission_type in record.limit_types.all()]
 
     @property
     def default_columns(self):
@@ -74,7 +97,14 @@ class SpeakerInformationTable(PretalxTable):
 
     class Meta:
         model = SpeakerInformation
-        fields = ("title", "target_group", "limit_tracks", "limit_types", "resource")
+        fields = (
+            "title",
+            "text",
+            "target_group",
+            "limit_tracks",
+            "limit_types",
+            "resource",
+        )
 
 
 class SpeakerTable(QuestionColumnMixin, PretalxTable):

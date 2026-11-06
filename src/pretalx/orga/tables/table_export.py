@@ -7,7 +7,13 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.models.exports import TableExport
 from pretalx.common.tables import ActionsColumn, PretalxTable
-from pretalx.common.tables.export import get_table_serializers
+from pretalx.common.tables.export import build_filterset, get_table_serializers
+
+
+def _as_values(value):
+    if isinstance(value, (list, tuple, set, frozenset)):
+        return sorted(str(entry) for entry in value)
+    return [str(value)]
 
 
 class TableExportTable(PretalxTable):
@@ -23,7 +29,7 @@ class TableExportTable(PretalxTable):
     actions = ActionsColumn(
         actions={
             "run": {
-                "title": _("Run export"),
+                "title": _("Download data"),
                 "icon": "download",
                 "url": "urls.run",
                 "color": "primary",
@@ -44,10 +50,37 @@ class TableExportTable(PretalxTable):
         serializer = self.serializers.get(value)
         return serializer.verbose_name if serializer else value
 
+    @cached_property
+    def filter_defaults(self):
+        return {}
+
+    def get_filter_defaults(self, table_class):
+        if table_class is None:
+            return {}
+        if table_class.__name__ not in self.filter_defaults:
+            filterset = build_filterset(table_class, self.event, self.user, {})
+            defaults = {}
+            for table_filter in filterset.filters.values() if filterset else ():
+                initial = table_filter.get_initial()
+                if initial is not None:
+                    defaults[table_filter.param] = _as_values(initial)
+            self.filter_defaults[table_class.__name__] = defaults
+        return self.filter_defaults[table_class.__name__]
+
+    def count_filters(self, record):
+        if not record.filters:
+            return 0
+        defaults = self.get_filter_defaults(record.table_class)
+        return sum(
+            1
+            for param, values in record.filters.items()
+            if _as_values(values) != defaults.get(param)
+        )
+
     def render_summary(self, record):
         parts = [_("{count} columns").format(count=len(record.columns or []))]
-        if record.filters:
-            parts.append(_("{count} filters").format(count=len(record.filters)))
+        if filter_count := self.count_filters(record):
+            parts.append(_("{count} filters").format(count=filter_count))
         if record.ordering:
             parts.append(_("sorted"))
         return ", ".join(str(part) for part in parts)

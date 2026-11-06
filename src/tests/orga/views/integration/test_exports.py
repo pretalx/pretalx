@@ -90,6 +90,31 @@ def test_table_export_list_requires_settings_permission(client, event):
     assert event.orga_urls.more_exports in content
 
 
+def test_table_export_saved_exports_need_settings_permission(client, event):
+    with scopes_disabled():
+        reviewer = _reviewer(event)
+        export = TableExportFactory(event=event, name="Reviews", table="ReviewTable")
+    client.force_login(reviewer)
+    create_url = event.orga_urls.new_export + "?table=ReviewTable"
+    payload = {"name": "Planted", "columns": ["title"], "serializer": "csv"}
+
+    responses = {
+        "pick_table": client.get(event.orga_urls.new_export),
+        "create_form": client.get(create_url),
+        "create": client.post(create_url, data=payload),
+        "edit_form": client.get(export.urls.edit),
+        "edit": client.post(export.urls.edit, data=payload),
+        "delete": client.post(export.urls.delete),
+        "run": client.get(export.urls.run),
+    }
+
+    assert {
+        name: response.status_code for name, response in responses.items()
+    } == dict.fromkeys(responses, 404)
+    with scopes_disabled():
+        assert list(TableExport.objects.values_list("name", flat=True)) == ["Reviews"]
+
+
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_table_export_list_query_count(
     client, event, item_count, django_assert_num_queries
@@ -236,6 +261,7 @@ def test_table_export_update_covers_full_configuration(client, event):
             "ordering": ["state"],
             "state": ["rejected"],
             "serializer": "json",
+            "json_locale": "de",
         },
     )
 
@@ -248,7 +274,7 @@ def test_table_export_update_covers_full_configuration(client, event):
         assert export.ordering == ["state"]
         assert export.filters == {"state": ["rejected"]}
         assert export.serializer == "json"
-        assert export.serializer_options == {}
+        assert export.serializer_options == {"locale": "de"}
         log = ActivityLog.objects.get(
             action_type="pretalx.table_export.update", object_id=export.pk
         )

@@ -11,8 +11,8 @@ RENAMES = {
     "QuestionTable-reviews": "ReviewerQuestionTable",
 }
 COLUMN_RENAMES = {
-    "OutboxMailTable": {"template_info": "template_role"},
-    "SentMailTable": {"template_info": "template_role"},
+    "OutboxMailTable": {"template_info": "template_role", "status_display": "state"},
+    "SentMailTable": {"template_info": "template_role", "status_display": "state"},
 }
 
 

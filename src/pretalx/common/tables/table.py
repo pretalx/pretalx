@@ -216,14 +216,16 @@ class PretalxTable(BaseTable):
     def export_form(self):
         from pretalx.common.forms.exports import TableExportForm  # noqa: PLC0415 -- circular import
 
-        name = _("{table} export").format(table=self.export_name)
         return TableExportForm(
             event=self.event,
             user=self.user,
             table_class=type(self),
             table=self,
             can_save=self.can_save_export,
-            initial={"name": name},
+            initial={
+                "name": str(self.export_name),
+                "ordering": list(self.order_by or []),
+            },
         )
 
     def _is_export_only(self, name):

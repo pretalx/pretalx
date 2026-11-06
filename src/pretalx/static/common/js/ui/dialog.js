@@ -45,6 +45,8 @@ const setupModals = (container) => {
         if (!outerDialogElement) return
         element.addEventListener("click", (ev) => {
             ev.preventDefault()
+            const dropdown = element.closest("details.dropdown")
+            if (dropdown) dropdown.open = false
             outerDialogElement.showModal()
         })
     })

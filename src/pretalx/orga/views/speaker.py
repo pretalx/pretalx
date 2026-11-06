@@ -424,13 +424,6 @@ class SpeakerInformationView(OrgaCRUDView):
     context_object_name = "information"
     create_button_label = _("New speaker information")
 
-    def get_queryset(self):
-        return (
-            self.request.event.information.all()
-            .prefetch_related("limit_tracks", "limit_types")
-            .order_by("pk")
-        )
-
     def get_permission_required(self):
         permission_map = {"detail": "orga_detail"}
         permission = permission_map.get(self.action, self.action)

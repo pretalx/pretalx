@@ -34,6 +34,7 @@
       "setupExportFormatFields",
       "setupModals",
       "setupSortSection",
+      "writeHiddenList",
       // Vendored libraries
       "ApexCharts",
       "Choices",
