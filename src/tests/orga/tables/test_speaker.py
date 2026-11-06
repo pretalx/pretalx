@@ -7,9 +7,14 @@ import pytest
 from django.utils import timezone
 from django.utils.formats import date_format
 
-from pretalx.orga.tables.speaker import SpeakerInformationTable, SpeakerTable
+from pretalx.orga.tables.speaker import (
+    SpeakerInformationTable,
+    SpeakerOrgaTable,
+    SpeakerTable,
+)
 from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.person.models import SpeakerProfile
+from pretalx.submission.enums import SubmissionStates
 from tests.factories import (
     EventFactory,
     SpeakerFactory,
@@ -98,6 +103,9 @@ def test_speaker_table_render_invite_status(event):
     assert eventless.render_invite_status(dated, dated.invitation_sent) == (
         f"Invited {date_format(sent, 'SHORT_DATE_FORMAT')}"
     )
+    assert "speaker_type" not in [c.name for c in table.export_columns]
+    table.configure_export(["invite_status"])
+    assert [row[1:] for row in list(table.as_values())[1:]] == [[None], [None], [sent]]
 
 
 def test_speaker_table_email_ordering_matches_effective_email():
@@ -212,6 +220,26 @@ def test_speaker_table_has_email_ordering():
 
 
 @pytest.mark.django_db
+def test_speaker_table_hides_sensitive_columns_from_reviewers(event):
+    orga = make_orga_user(event, can_change_submissions=True)
+    reviewer = make_orga_user(event, is_reviewer=True, can_change_submissions=False)
+
+    orga_table = SpeakerTable([], event=event, user=orga)
+    reviewer_table = SpeakerTable([], event=event, user=reviewer)
+    explicit = SpeakerTable(
+        [], event=event, user=UserFactory.build(), has_arrived_permission=True
+    )
+
+    assert orga_table.has_arrived_permission is True
+    assert "email" not in orga_table.exclude
+    assert {"email", "has_email", "submission_ids", "submission_titles"} <= set(
+        reviewer_table.exclude
+    )
+    assert "biography" not in reviewer_table.exclude
+    assert explicit.has_arrived_permission is True
+
+
+@pytest.mark.django_db
 def test_speaker_table_filter_options_reflect_arrivals(event):
     orga = make_orga_user(event, can_change_submissions=True)
     assert SpeakerTable.get_filter_options(event, orga) == {"filter_arrival": False}
@@ -220,6 +248,43 @@ def test_speaker_table_filter_options_reflect_arrivals(event):
     SubmissionFactory(event=event).speakers.add(arrived)
 
     assert SpeakerTable.get_filter_options(event, orga) == {"filter_arrival": True}
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("state", "expected_arrived"),
+    ((SubmissionStates.SUBMITTED, None), (SubmissionStates.ACCEPTED, True)),
+    ids=("not_accepted", "accepted"),
+)
+def test_speaker_table_export_values(event, state, expected_arrived):
+    orga = make_orga_user(event, can_change_submissions=True)
+    speaker = SpeakerFactory(event=event, name="Ada", has_arrived=True)
+    submission = SubmissionFactory(event=event, title="Talk", state=state)
+    submission.speakers.add(speaker)
+    table = SpeakerTable(
+        SpeakerTable.base_queryset(event, orga), event=event, user=orga
+    )
+    table.configure_export(
+        ["name", "has_arrived", "submissions", "submission_ids", "submission_titles"]
+    )
+
+    rows = list(table.as_values())
+
+    assert rows[1] == [
+        speaker.code,
+        "Ada",
+        expected_arrived,
+        ["Talk"],
+        [submission.code],
+        ["Talk"],
+    ]
+
+
+@pytest.mark.django_db
+def test_speaker_orga_table_has_no_event_filter_options_or_sensitive_split():
+    assert SpeakerOrgaTable.get_filter_options(None, None) == {}
+    assert SpeakerOrgaTable.sensitive_columns == ()
+    assert "biography" not in SpeakerOrgaTable.base_columns
 
 
 def test_speaker_table_base_queryset_hides_bare_profiles_from_reviewers(event):

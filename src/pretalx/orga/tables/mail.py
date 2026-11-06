@@ -10,6 +10,8 @@ from pretalx.common.db import Translate
 from pretalx.common.language import LANGUAGE_NAMES
 from pretalx.common.tables import (
     ActionsColumn,
+    BooleanColumn,
+    Column,
     DateTimeColumn,
     PretalxTable,
     SortableColumn,
@@ -21,10 +23,16 @@ from pretalx.mail.interfaces.filters import queued_mail_filters
 from pretalx.mail.models import MailTemplate, QueuedMail
 
 
+def split_addresses(value):
+    return [address.strip() for address in (value or "").split(",") if address.strip()]
+
+
 class MailTemplateTable(PretalxTable):
     primary_column = "subject"
     default_columns = ("role", "subject")
     filter_options = {}
+    export_name = _("Email templates")
+    export_permission = "mail.list_mailtemplate"
 
     role = TemplateColumn(
         linkify=lambda record: record.urls.edit,
@@ -33,6 +41,7 @@ class MailTemplateTable(PretalxTable):
         verbose_name=_("Template"),
     )
     subject = SortableColumn(order_by=Lower(Translate("subject")))
+    text = Column(orderable=False, export_only=True)
     actions = ActionsColumn(
         actions={
             "send": {
@@ -53,6 +62,9 @@ class MailTemplateTable(PretalxTable):
     def base_queryset(cls, event, user):
         return event.mail_templates.exclude(is_auto_created=True).order_by("role", "pk")
 
+    def value_role(self, record):
+        return record.role or None
+
     class Meta:
         model = MailTemplate
         fields = ("role", "subject", "reply_to", "bcc", "actions")
@@ -66,6 +78,8 @@ class OutboxMailTable(PretalxTable):
     primary_column = "subject"
     exempt_columns = ("pk", "actions", "state")
     default_columns = ("subject", "to_recipients", "submissions", "template_role")
+    export_name = _("Outbox")
+    export_permission = "mail.list_queuedmail"
 
     @classmethod
     def base_queryset(cls, event, user):
@@ -85,6 +99,15 @@ class OutboxMailTable(PretalxTable):
         verbose_name=_("To"),
         order_by=(Lower("to_speakers__name"),),
     )
+    has_error = BooleanColumn(
+        verbose_name=_("Sending failed"), orderable=False, export_only=True
+    )
+    to_addresses = Column(
+        verbose_name=_("Recipient addresses"),
+        orderable=False,
+        export_only=True,
+        empty_values=(),
+    )
     submissions = TemplateColumn(
         template_name="orga/tables/columns/queued_mail_submissions.html",
         verbose_name=_("Proposals"),
@@ -96,6 +119,7 @@ class OutboxMailTable(PretalxTable):
         order_by=("template__role",),
     )
     locale = tables.Column(verbose_name=_("Language"))
+    text = Column(orderable=False, export_only=True)
     actions = ActionsColumn(
         verbose_name="",
         actions={
@@ -128,6 +152,45 @@ class OutboxMailTable(PretalxTable):
         self.sequence.remove("state")
         self.sequence.insert(0, "state")
 
+    def value_state(self, record):
+        return record.state
+
+    def value_locale(self, record):
+        return record.locale
+
+    def value_to_recipients(self, record):
+        recipients = [
+            speaker.get_display_name() for speaker in record.to_speakers.all()
+        ]
+        if record.to:
+            recipients.append(record.to)
+        return recipients
+
+    def value_to_addresses(self, record):
+        addresses = [
+            speaker.effective_email
+            for speaker in record.to_speakers.all()
+            if speaker.effective_email
+        ]
+        return addresses + split_addresses(record.to)
+
+    def value_reply_to(self, record):
+        return split_addresses(record.reply_to)
+
+    def value_cc(self, record):
+        return split_addresses(record.cc)
+
+    def value_bcc(self, record):
+        return split_addresses(record.bcc)
+
+    def value_submissions(self, record):
+        return [submission.title for submission in record.submissions.all()]
+
+    def value_template_role(self, record):
+        if record.template and record.template.role:
+            return record.template.role
+        return None
+
     def render_locale(self, value):
         if not value:
             return ""
@@ -139,6 +202,7 @@ class OutboxMailTable(PretalxTable):
             "state",
             "subject",
             "to_recipients",
+            "to_addresses",
             "reply_to",
             "cc",
             "bcc",
@@ -158,6 +222,7 @@ class SentMailTable(OutboxMailTable):
         "submissions",
         "template_role",
     )
+    export_name = _("Sent emails")
 
     @classmethod
     def base_queryset(cls, event, user):
@@ -169,6 +234,7 @@ class SentMailTable(OutboxMailTable):
         order_by=("computed_state",),
     )
     sent = DateTimeColumn()
+    has_error = None
     actions = None
 
     class Meta(OutboxMailTable.Meta):
@@ -177,6 +243,7 @@ class SentMailTable(OutboxMailTable):
             "state",
             "subject",
             "to_recipients",
+            "to_addresses",
             "reply_to",
             "cc",
             "bcc",

@@ -174,3 +174,41 @@ def test_question_table_accessible_question_ids_empty_without_list_permission(ev
     )
 
     assert table._accessible_question_ids == set()
+
+
+@pytest.mark.django_db
+def test_access_code_table_value_hooks(event):
+    track = TrackFactory(event=event, name="Science")
+    code = SubmitterAccessCodeFactory(event=event, maximum_uses=0, redeemed=3)
+    code.tracks.add(track)
+    code.submission_types.add(event.cfp.default_type)
+    limited = SubmitterAccessCodeFactory(event=event, maximum_uses=5)
+    table = SubmitterAccessCodeTable([code], event=event, user=UserFactory.build())
+
+    assert table.value_tracks(code) == ["Science"]
+    assert table.value_submission_types(code) == [event.cfp.default_type.name]
+    assert table.value_maximum_uses(code) is None
+    assert table.value_maximum_uses(limited) == 5
+    assert "uses" not in {column.name for column in table.export_columns}
+
+
+@pytest.mark.django_db
+def test_submission_type_table_value_name(event):
+    table = SubmissionTypeTable([], event=event, user=UserFactory.build())
+
+    assert table.value_name(event.cfp.default_type) == event.cfp.default_type.name
+
+
+@pytest.mark.django_db
+def test_question_table_value_question(event):
+    question = QuestionFactory(event=event, question="Diet", variant="number")
+    table = QuestionTable(
+        [question],
+        event=event,
+        user=UserFactory.build(),
+        target="sessions",
+        list_url=event.cfp.urls.questions,
+    )
+
+    assert table.value_question(question.question) == question.question
+    assert table.rows[0].get_cell_value("variant") == "number"

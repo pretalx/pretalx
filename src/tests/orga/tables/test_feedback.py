@@ -64,3 +64,11 @@ def test_feedback_table_speaker_column_uses_display_name(event):
             feedbacks[account],
             feedbacks[override],
         ]
+
+
+@pytest.mark.django_db
+def test_feedback_table_value_review_is_raw_text(event):
+    feedback = FeedbackFactory(talk__event=event, review="**bold**")
+    table = FeedbackTable([feedback], event=event, user=UserFactory.build())
+
+    assert table.value_review(feedback) == "**bold**"
