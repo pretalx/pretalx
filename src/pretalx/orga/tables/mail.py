@@ -16,6 +16,7 @@ from pretalx.common.tables import (
     SortableTemplateColumn,
     TemplateColumn,
 )
+from pretalx.mail.domain.queries import outbox_mails, sent_mails
 from pretalx.mail.interfaces.filters import queued_mail_filters
 from pretalx.mail.models import MailTemplate, QueuedMail
 
@@ -23,6 +24,7 @@ from pretalx.mail.models import MailTemplate, QueuedMail
 class MailTemplateTable(PretalxTable):
     primary_column = "subject"
     default_columns = ("role", "subject")
+    filter_options = {}
 
     role = TemplateColumn(
         linkify=lambda record: record.urls.edit,
@@ -47,6 +49,10 @@ class MailTemplateTable(PretalxTable):
         }
     )
 
+    @classmethod
+    def base_queryset(cls, event, user):
+        return event.mail_templates.exclude(is_auto_created=True).order_by("role", "pk")
+
     class Meta:
         model = MailTemplate
         fields = ("role", "subject", "reply_to", "bcc", "actions")
@@ -54,9 +60,16 @@ class MailTemplateTable(PretalxTable):
 
 class OutboxMailTable(PretalxTable):
     filters = staticmethod(queued_mail_filters)
+    filter_options = {"sent": False}
+    update_permission = "send"
+    delete_permission = "send"
     primary_column = "subject"
     exempt_columns = ("pk", "actions", "state")
     default_columns = ("subject", "to_recipients", "submissions", "template_role")
+
+    @classmethod
+    def base_queryset(cls, event, user):
+        return outbox_mails(event)
 
     state = SortableTemplateColumn(
         template_name="orga/tables/columns/queued_mail_status.html",
@@ -137,6 +150,7 @@ class OutboxMailTable(PretalxTable):
 
 
 class SentMailTable(OutboxMailTable):
+    filter_options = {"sent": True}
     default_columns = (
         "sent",
         "subject",
@@ -144,6 +158,10 @@ class SentMailTable(OutboxMailTable):
         "submissions",
         "template_role",
     )
+
+    @classmethod
+    def base_queryset(cls, event, user):
+        return sent_mails(event)
 
     state = SortableTemplateColumn(
         template_name="orga/tables/columns/sent_mail_status.html",

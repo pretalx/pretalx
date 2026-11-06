@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import django_tables2 as tables
+from django.db.models import Exists, OuterRef, Prefetch
 from django.utils.functional import cached_property
 from django.utils.html import format_html
 from django.utils.text import format_lazy
@@ -18,7 +19,11 @@ from pretalx.common.tables import (
     TemplateColumn,
 )
 from pretalx.common.text.phrases import phrases
-from pretalx.submission.domain.queries.question import questions_for_user
+from pretalx.submission.domain.queries.question import (
+    annotate_answer_count,
+    questions_for_user,
+)
+from pretalx.submission.domain.queries.submission import annotate_submission_count
 from pretalx.submission.enums import QuestionTarget
 from pretalx.submission.models import (
     Question,
@@ -89,6 +94,25 @@ class SubmitterAccessCodeTable(PretalxTable):
         if not self.event.has_active_tracks:
             self.exclude.append("tracks")
 
+    @classmethod
+    def base_queryset(cls, event, user):
+        return (
+            event.submitter_access_codes.all()
+            .prefetch_related(
+                Prefetch("tracks", queryset=Track.objects.select_related("event__cfp")),
+                Prefetch(
+                    "submission_types",
+                    queryset=SubmissionType.objects.select_related("event__cfp"),
+                ),
+            )
+            .annotate(
+                has_submissions=Exists(
+                    event.submissions.filter(access_code=OuterRef("pk"))
+                )
+            )
+            .order_by("valid_until")
+        )
+
     class Meta:
         model = SubmitterAccessCode
         fields = (
@@ -139,6 +163,10 @@ class TrackTable(DragsortTable):
         self.exclude = list(self.exclude)
         if not self.event.get_feature_flag("attendee_signup"):
             self.exclude.append("attendee_signup_required")
+
+    @classmethod
+    def base_queryset(cls, event, user):
+        return annotate_submission_count(event.tracks.order_by("position"))
 
     def get_dragsort_url(self):
         return self.event.cfp.urls.tracks
@@ -211,6 +239,14 @@ class SubmissionTypeTable(PretalxTable):
         if not self.event.get_feature_flag("attendee_signup"):
             self.exclude.append("attendee_signup_required")
 
+    @classmethod
+    def base_queryset(cls, event, user):
+        return annotate_submission_count(
+            event.submission_types.select_related("event__cfp__default_type").order_by(
+                "default_duration"
+            )
+        )
+
     class Meta:
         model = SubmissionType
         fields = (
@@ -252,6 +288,15 @@ class QuestionTable(DragsortTable):
     @classmethod
     def default_list_url(cls, event):
         return event.cfp.urls.questions
+
+    @classmethod
+    def base_queryset(cls, event, user):
+        return annotate_answer_count(
+            questions_for_user(event, user).filter(
+                target=QuestionTarget.from_slug(cls.target)
+            ),
+            event,
+        ).order_by("position")
 
     def get_dragsort_url(self):
         return f"{self.list_url}?target={self.target}"

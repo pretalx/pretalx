@@ -9,6 +9,7 @@ from django.utils.translation import ngettext_lazy as _n
 from pretalx.common.tables import DateTimeColumn, PretalxTable, SortableColumn
 from pretalx.common.templatetags.rich_text import render_markdown
 from pretalx.person.models.profile import speaker_name_expression
+from pretalx.submission.domain.queries.submission import submissions_for_user
 from pretalx.submission.models import Feedback
 
 
@@ -41,6 +42,14 @@ class FeedbackTable(PretalxTable):
         if not include_talk:
             self.exclude.append("talk")
 
+    @classmethod
+    def base_queryset(cls, event, user):
+        return (
+            Feedback.objects.filter(talk__in=submissions_for_user(event, user))
+            .select_related("talk__event", "speaker", "speaker__user")
+            .order_by("-created", "-pk")
+        )
+
     class Meta:
         model = Feedback
         fields = ()
@@ -50,3 +59,9 @@ class FeedbackTable(PretalxTable):
 
     def render_speaker(self, value):
         return value.get_display_name()
+
+
+class SubmissionFeedbackTable(FeedbackTable):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("include_talk", False)
+        super().__init__(*args, **kwargs)

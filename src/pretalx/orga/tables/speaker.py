@@ -27,10 +27,15 @@ from pretalx.common.tables import (
     TemplateColumn,
 )
 from pretalx.common.text.phrases import phrases
-from pretalx.person.domain.queries.profile import REACHABLE_SPEAKER_FILTER
+from pretalx.person.domain.queries.profile import (
+    REACHABLE_SPEAKER_FILTER,
+    annotate_speaker_submission_counts,
+)
 from pretalx.person.interfaces.filters import speaker_list_filters, user_speaker_filters
 from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
+from pretalx.submission.domain.queries.speaker import speakers_for_user
 from pretalx.submission.domain.queries.submission import submissions_for_user
+from pretalx.submission.enums import QuestionTarget
 
 
 class SpeakerInformationTable(PretalxTable):
@@ -74,8 +79,24 @@ class SpeakerInformationTable(PretalxTable):
 class SpeakerTable(QuestionColumnMixin, PretalxTable):
     primary_column = "name"
     filters = staticmethod(speaker_list_filters)
+    question_target = QuestionTarget.SPEAKER
+    # Only offered to users who may edit speakers; reviewers never see them.
+    sensitive_columns = ("email", "has_email")
 
     default_columns = ("name", "submissions", "has_arrived")
+
+    @classmethod
+    def base_queryset(cls, event, user):
+        # Reviewers do not need speakers without submissions
+        include_bare = user.has_perm("submission.orga_update_submission", event)
+        submissions = submissions_for_user(event, user)
+        return annotate_speaker_submission_counts(
+            speakers_for_user(
+                event, user, submissions=submissions, include_bare=include_bare
+            ),
+            event=event,
+            submissions=submissions,
+        )
 
     name = SortableTemplateColumn(
         verbose_name=_("Name"),
@@ -182,13 +203,22 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
         }
     )
 
-    def __init__(
-        self, *args, has_arrived_permission=False, short_questions=None, **kwargs
-    ):
-        self.short_questions = short_questions or []
-        kwargs.setdefault("extra_columns", []).extend(self._get_question_columns())
+    def __init__(self, *args, has_arrived_permission=None, **kwargs):
         super().__init__(*args, **kwargs)
+        if has_arrived_permission is None:
+            has_arrived_permission = self.has_event_permission("mark_arrived")
         self.has_arrived_permission = has_arrived_permission
+        self.exclude = list(self.exclude)
+        if not self.has_update_permission:
+            self.exclude += list(self.sensitive_columns)
+
+    @classmethod
+    def get_filter_options(cls, event, user):
+        options = super().get_filter_options(event, user)
+        options["filter_arrival"] = bool(
+            event and event.submitters.filter(has_arrived=True).exists()
+        )
+        return options
 
     def render_invite_status(self, record, value):
         if not record.has_pending_invitation:
@@ -234,6 +264,7 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
 
 class SpeakerOrgaTable(SpeakerTable):
     filters = staticmethod(user_speaker_filters)
+    sensitive_columns = ()
 
     name = SortableTemplateColumn(
         verbose_name=_("Name"),
@@ -243,8 +274,8 @@ class SpeakerOrgaTable(SpeakerTable):
     )
     email = tables.Column(linkify=lambda record: f"mailto:{record.email}")
 
-    # Set unavailable columns to `None` so that the configuration form
-    # won’t show up
+    configurable = False  # Has no event, so can't save preferences
+    # Unavailable columns are set to `None`.
     locale = None
     code = None
     submissions = None
@@ -253,7 +284,11 @@ class SpeakerOrgaTable(SpeakerTable):
     speaker_type = None
     has_email = None
     actions = None
-    default_columns = None
+    default_columns = ("name", "email", "submission_count", "accepted_submission_count")
+
+    @classmethod
+    def get_filter_options(cls, event, user):
+        return {}
 
     class Meta:
         model = User

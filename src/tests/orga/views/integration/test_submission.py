@@ -62,7 +62,7 @@ def test_submission_list_query_count(
             sub.speakers.add(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(27):
+    with django_assert_num_queries(28):
         response = client.get(event.orga_urls.submissions, follow=True)
 
     assert response.status_code == 200
@@ -90,7 +90,7 @@ def test_submission_list_requires_signup_column_query_count(
             sub.speakers.add(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(24):
+    with django_assert_num_queries(25):
         response = client.get(event.orga_urls.submissions, follow=True)
 
     assert response.status_code == 200

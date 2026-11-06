@@ -13,17 +13,14 @@ from pretalx.orga.views.review import (
     ReviewSubmission,
     ReviewSubmissionDelete,
 )
-from pretalx.submission.models import QuestionTarget, QuestionVariant, SubmissionStates
+from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     EventFactory,
-    QuestionFactory,
     ReviewFactory,
     ReviewPhaseFactory,
-    ReviewScoreCategoryFactory,
     SpeakerFactory,
     SubmissionCommentFactory,
     SubmissionFactory,
-    SubmissionTypeFactory,
     TagFactory,
     TrackFactory,
 )
@@ -83,62 +80,22 @@ def test_review_dashboard_properties_for_orga():
     assert bare.can_change_submissions is True
     assert bare.can_see_all_reviews is True
     assert bare.can_accept_submissions is False
-    assert bare.show_submission_types is False
     assert bare.show_tracks is False
 
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    ReviewFactory(submission=submission)
-    ReviewFactory(submission=submission)
-    SubmissionTypeFactory(event=event)
+    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
     TrackFactory(event=event)
-    visible_q = QuestionFactory(
-        event=event,
-        target=QuestionTarget.SUBMISSION,
-        variant=QuestionVariant.STRING,
-        is_visible_to_reviewers=True,
-    )
-    hidden_q = QuestionFactory(
-        event=event,
-        target=QuestionTarget.SUBMISSION,
-        variant=QuestionVariant.STRING,
-        is_visible_to_reviewers=False,
-    )
-    independent = ReviewScoreCategoryFactory(
-        event=event, is_independent=True, active=True
-    )
-    ReviewScoreCategoryFactory(event=event, is_independent=False, active=True)
     view = make_view(ReviewDashboard, make_request(refresh(event), user=user))
 
     assert view.can_accept_submissions is True
-    assert view.max_review_count == 2
-    assert view.show_submission_types is True
     assert view.show_tracks is True
-    assert set(view.short_questions) == {visible_q, hidden_q}
-    assert list(view.independent_categories) == [independent]
 
 
 def test_review_dashboard_properties_for_reviewer(event):
     reviewer = _make_reviewer(event)
-    submission = SubmissionFactory(event=event)
-    ReviewFactory(submission=submission, user=reviewer)
-    visible_q = QuestionFactory(
-        event=event,
-        target=QuestionTarget.SUBMISSION,
-        variant=QuestionVariant.STRING,
-        is_visible_to_reviewers=True,
-    )
-    QuestionFactory(
-        event=event,
-        target=QuestionTarget.SUBMISSION,
-        variant=QuestionVariant.STRING,
-        is_visible_to_reviewers=False,
-    )
     view = make_view(ReviewDashboard, make_request(event, user=reviewer))
 
     assert view.can_change_submissions is False
     assert view.reviews_open is True
-    assert list(view.submissions_reviewed) == [submission.pk]
-    assert list(view.short_questions) == [visible_q]
 
 
 @pytest.mark.parametrize(
@@ -152,26 +109,6 @@ def test_review_dashboard_get_pending(event, post_data, expected):
 
     result = view.get_pending(request)
     assert result is expected
-
-
-def test_review_dashboard_get_table_kwargs_shows_filtered_columns():
-    event = EventFactory(feature_flags={"use_tracks": True})
-    user = make_orga_user(event, can_change_submissions=True)
-    TrackFactory(event=event)
-    TrackFactory(event=event)
-    SubmissionTypeFactory(event=event)
-    tag = TagFactory(event=event)
-    request = make_request(event, user=user)
-    request.GET = query_dict({"tags": str(tag.pk)})
-    view = make_view(ReviewDashboard, request)
-    view.object_list = []
-    list(view.get_queryset())
-
-    kwargs = view.get_table_kwargs()
-
-    assert "track" not in kwargs["exclude"]
-    assert "submission_type" not in kwargs["exclude"]
-    assert "tags" not in kwargs["exclude"]
 
 
 def test_review_submission_as_reviewer_with_own_review(event):

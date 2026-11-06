@@ -57,7 +57,6 @@ from pretalx.schedule.domain.notifications import (
 from pretalx.schedule.domain.release import ScheduleReleaseError, freeze_schedule
 from pretalx.schedule.domain.room import (
     ROOM_IN_USE_ERROR,
-    annotate_room_usage,
     delete_room,
     hide_room,
     unhide_room,
@@ -571,11 +570,6 @@ class RoomView(OrderActionMixin, OrgaCRUDView):
     table_class = RoomTable
     template_namespace = "orga/schedule"
     create_button_label = _("New room")
-
-    def get_queryset(self):
-        return annotate_room_usage(
-            self.request.event.rooms.all(), event=self.request.event
-        )
 
     def get_permission_required(self):
         permission_map = {"list": "orga_list", "detail": "orga_detail"}

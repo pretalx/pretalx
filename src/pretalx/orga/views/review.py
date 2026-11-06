@@ -6,7 +6,7 @@ from collections import defaultdict
 from django import forms
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Count, F, Max
+from django.db.models import Count, F
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.functional import cached_property
@@ -43,14 +43,7 @@ from pretalx.orga.forms.submission import SubmissionStateChangeForm
 from pretalx.orga.tables.submission import ReviewTable
 from pretalx.orga.views.submission import SubmissionListMixin
 from pretalx.submission.domain.queries.question import questions_for_user
-from pretalx.submission.domain.queries.review import (
-    annotate_aggregate_scores,
-    annotate_review_count,
-    annotate_scored_review_count,
-    annotate_state_rank,
-    annotate_user_review_score,
-    review_view_submissions,
-)
+from pretalx.submission.domain.queries.review import review_view_submissions
 from pretalx.submission.domain.queries.submission import (
     reviewable_submissions_for_user,
     unreviewed_submissions_for_user,
@@ -63,13 +56,7 @@ from pretalx.submission.domain.submission import (
 )
 from pretalx.submission.interfaces.filters import submission_list_filters
 from pretalx.submission.interfaces.forms import QuestionsForm, ReviewForm, TagsForm
-from pretalx.submission.models import (
-    QuestionTarget,
-    QuestionVariant,
-    Review,
-    Submission,
-    SubmissionStates,
-)
+from pretalx.submission.models import Review, Submission, SubmissionStates
 from pretalx.submission.rules import is_speaker, reviews_are_open
 
 
@@ -80,34 +67,14 @@ class ReviewDashboard(
     permission_required = "submission.list_review"
     table_class = ReviewTable
     paginate_by = 250
-    usable_states = (
-        SubmissionStates.SUBMITTED,
-        SubmissionStates.ACCEPTED,
-        SubmissionStates.REJECTED,
-        SubmissionStates.CONFIRMED,
-    )
-
-    def get_filter_options(self):
-        return {
-            **super().get_filter_options(),
-            "max_review_count": self.max_review_count,
-        }
-
-    def get_filterable_queryset(self):
-        return annotate_review_count(super().get_filterable_queryset())
+    usable_states = ReviewTable.usable_states
 
     def get_queryset(self):
-        queryset = self._get_base_queryset().filter(state__in=self.usable_states)
-        queryset = annotate_scored_review_count(queryset)
-        queryset = annotate_state_rank(queryset)
-        queryset = annotate_user_review_score(queryset, self.request.user)
-
-        if self.can_see_all_reviews:
-            queryset = annotate_aggregate_scores(queryset)
-
-        queryset = queryset.select_related("track", "submission_type")
-        if self.show_tags:
-            queryset = queryset.prefetch_related("tags")
+        queryset = self.table_class.augment_queryset(
+            self._get_base_queryset().filter(state__in=self.usable_states),
+            event=self.request.event,
+            user=self.request.user,
+        )
 
         if not self.request.GET.get("sort"):
             if self.can_see_all_reviews:
@@ -149,87 +116,13 @@ class ReviewDashboard(
 
     @context
     @cached_property
-    def max_review_count(self):
-        return (
-            self.request.event.submissions.all()
-            .annotate(review_count=Count("reviews", distinct=True))
-            .aggregate(Max("review_count"))
-            .get("review_count__max")
-        )
-
-    @context
-    @cached_property
-    def submissions_reviewed(self):
-        return Review.objects.filter(
-            user=self.request.user, submission__event=self.request.event
-        ).values_list("submission_id", flat=True)
-
-    @context
-    @cached_property
-    def show_submission_types(self):
-        return self.request.event.submission_types.count() > 1
-
-    @context
-    @cached_property
-    def short_questions(self):
-        return questions_for_user(self.request.event, self.request.user).filter(
-            target=QuestionTarget.SUBMISSION, variant__in=QuestionVariant.short_answers
-        )
-
-    @context
-    @cached_property
-    def independent_categories(self):
-        return self.request.event.score_categories.filter(
-            is_independent=True, active=True
-        )
-
-    @context
-    @cached_property
-    def show_tracks(self):
-        return self.request.event.has_active_tracks
-
-    @cached_property
-    def show_tags(self):
-        return bool(self.filterset and self.filterset.is_set("tags"))
-
-    @context
-    @cached_property
     def reviews_open(self):
         return reviews_are_open(None, self.request.event)
 
     def get_table_kwargs(self):
-        """Pass additional kwargs to the ReviewTable."""
         kwargs = super().get_table_kwargs()
-
-        # Build exclude list for columns that shouldn't be shown
-        exclude = []
-        if not self.show_tracks:
-            exclude.append("track")
-        if not self.show_tags:
-            exclude.append("tags")
-        if not self.show_submission_types:
-            exclude.append("submission_type")
-
-        kwargs.update(
-            {
-                "can_see_all_reviews": self.can_see_all_reviews,
-                "is_reviewer": self.request.user.has_perm(
-                    "submission.create_review", self.request.event
-                )
-                or self.submissions_reviewed,
-                "can_view_speakers": self.request.user.has_perm(
-                    "person.reviewer_list_speakerprofile", self.request.event
-                ),
-                "can_accept_submissions": self.can_accept_submissions,
-                "independent_categories": self.independent_categories,
-                "short_questions": list(self.short_questions),
-                "aggregate_method": self.request.event.review_settings[
-                    "aggregate_method"
-                ],
-                "request_user": self.request.user,
-                "exclude": exclude,
-            }
-        )
+        kwargs["can_see_all_reviews"] = self.can_see_all_reviews
+        kwargs["can_accept_submissions"] = self.can_accept_submissions
         return kwargs
 
     def get_context_data(self, **kwargs):

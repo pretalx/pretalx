@@ -15,6 +15,7 @@ from pretalx.event.models import Team
 
 class TeamTable(PretalxTable):
     primary_column = "name"
+    default_columns = ("name", "member_count", "all_events", "is_reviewer")
 
     name = TemplateColumn(
         linkify=lambda record: record.orga_urls.base,

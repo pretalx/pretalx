@@ -5,7 +5,7 @@ import django_tables2 as tables
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import ActionsColumn, DragsortTable
-from pretalx.schedule.domain.room import ROOM_IN_USE_ERROR
+from pretalx.schedule.domain.room import ROOM_IN_USE_ERROR, annotate_room_usage
 from pretalx.schedule.models import Room
 
 
@@ -62,6 +62,10 @@ class RoomTable(DragsortTable):
             },
         }
     )
+
+    @classmethod
+    def base_queryset(cls, event, user):
+        return annotate_room_usage(event.rooms.all(), event=event)
 
     def get_dragsort_url(self):
         return self.event.orga_urls.room_settings

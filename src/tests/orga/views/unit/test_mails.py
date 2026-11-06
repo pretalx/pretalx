@@ -38,9 +38,6 @@ def test_outbox_and_sent_list_split_by_state(event):
 
     assert list(outbox.get_queryset()) == [draft]
     assert list(make_view(SentMail, request).get_queryset()) == [sent]
-    kwargs = outbox.get_table_kwargs()
-    assert kwargs["has_update_permission"] is True
-    assert kwargs["has_delete_permission"] is True
 
 
 @pytest.mark.parametrize("view_class", (OutboxList, SentMail))

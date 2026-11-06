@@ -71,11 +71,13 @@ class Filterable:
         return {}
 
     def get_filter_context(self):
-        return FilterContext(
-            event=getattr(self.request, "event", None),
-            user=getattr(self.request, "user", None),
-            **self.get_filter_options(),
-        )
+        event = getattr(self.request, "event", None)
+        user = getattr(self.request, "user", None)
+        options = {}
+        if table_class := getattr(self, "table_class", None):
+            options = table_class.get_filter_options(event, user)
+        options.update(self.get_filter_options())
+        return FilterContext(event=event, user=user, **options)
 
     @context
     @cached_property

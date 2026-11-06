@@ -5,9 +5,10 @@ import statistics
 from collections import defaultdict
 
 import django_tables2 as tables
-from django.db.models import F, OuterRef, Subquery
-from django.db.models.functions import Lower
+from django.db.models import Count, F, Max, OuterRef, Subquery, Value
+from django.db.models.functions import Coalesce, Lower
 from django.template.loader import render_to_string
+from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
@@ -26,11 +27,28 @@ from pretalx.common.tables import (
 )
 from pretalx.common.text.phrases import phrases
 from pretalx.person.models.profile import speaker_name_expression
+from pretalx.person.rules import is_only_reviewer
+from pretalx.submission.domain.queries.review import (
+    annotate_aggregate_scores,
+    annotate_review_count,
+    annotate_scored_review_count,
+    annotate_state_rank,
+    annotate_user_review_score,
+)
+from pretalx.submission.domain.queries.submission import (
+    annotate_assigned_reviews,
+    annotate_confirmed_signup_count,
+    annotate_requires_signup,
+    annotate_submission_count,
+    submissions_for_user,
+)
+from pretalx.submission.enums import SubmissionStates
 from pretalx.submission.interfaces.filters import (
     review_list_filters,
     submission_list_filters,
 )
 from pretalx.submission.models import Review, SpeakerRole, Submission, Tag
+from pretalx.submission.models.resource import active_resource_filter
 
 
 class SpeakersColumn(TemplateColumn):
@@ -49,10 +67,58 @@ class SpeakersColumn(TemplateColumn):
         return queryset, [order]
 
 
-class SubmissionTable(QuestionColumnMixin, PretalxTable):
+class SubmissionValuesMixin:
+    def __init__(
+        self,
+        *args,
+        show_tracks=None,
+        show_submission_types=None,
+        show_tags=None,
+        **kwargs,
+    ):
+        event = kwargs.get("event")
+        if show_tracks is None:
+            show_tracks = bool(event and event.has_active_tracks)
+        if show_submission_types is None:
+            show_submission_types = bool(event and event.submission_types.count() > 1)
+        if show_tags is None:
+            show_tags = bool(event and event.tags.exists())
+        self.show_tracks = show_tracks
+        self.show_submission_types = show_submission_types
+        self.show_tags = show_tags
+        super().__init__(*args, **kwargs)
+        self.exclude = list(self.exclude)
+        if not show_tracks:
+            self.exclude.append("track")
+        if not show_submission_types:
+            self.exclude.append("submission_type")
+        if not show_tags:
+            self.exclude.append("tags")
+
+    @classmethod
+    def get_can_view_speakers(cls, event, user):
+        if not event or not user or not user.pk:
+            return False
+        return user.has_perm("person.orga_list_speakerprofile", event) or user.has_perm(
+            "person.reviewer_list_speakerprofile", event
+        )
+
+    @classmethod
+    def get_filter_options(cls, event, user):
+        options = super().get_filter_options(event, user)
+        options["can_view_speakers"] = cls.get_can_view_speakers(event, user)
+        if user and user.pk and is_only_reviewer(user, event):
+            options["limit_tracks"] = user.get_reviewer_tracks(event)
+        return options
+
+
+class SubmissionTable(SubmissionValuesMixin, QuestionColumnMixin, PretalxTable):
     primary_column = "title"
     exempt_columns = ("pk", "actions", "indicator")
     filters = staticmethod(submission_list_filters)
+    filter_options = {"default_states": SubmissionStates.active_states}
+    update_permission = "orga_update"
+    delete_permission = "orga_update"
 
     indicator = TemplateColumn(
         verbose_name="",
@@ -153,20 +219,66 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
         }
     )
 
-    def __init__(self, *args, can_view_speakers=False, short_questions=None, **kwargs):
-        self.short_questions = short_questions or []
-        kwargs.setdefault("extra_columns", []).extend(self._get_question_columns())
+    def __init__(self, *args, can_view_speakers=None, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.exclude = list(self.exclude)
+        if can_view_speakers is None:
+            can_view_speakers = self.has_event_permission(
+                "person.orga_list_speakerprofile"
+            )
         self.can_view_speakers = can_view_speakers
+        self.exclude = list(self.exclude)
 
         if not can_view_speakers:
             self.exclude += ["speakers"]
-        if not kwargs.get("has_update_permission"):
+        if not self.has_update_permission:
             self.exclude += ["is_featured", "actions"]
         if not (self.event and self.event.get_feature_flag("attendee_signup")):
             self.exclude += ["requires_signup", "attendee_signup_count"]
+
+    @classmethod
+    def base_queryset(cls, event, user):
+        queryset = (
+            submissions_for_user(event, user)
+            .select_related(
+                "track__event",
+                "track__event__cfp",
+                "submission_type__event",
+                "submission_type__event__cfp",
+            )
+            .with_sorted_speakers()
+        )
+        return annotate_assigned_reviews(queryset, event, user)
+
+    @classmethod
+    def augment_queryset(cls, queryset, *, event, user):
+        # We have to count via subqueries to avoid only counting speakers
+        # matched by the search terms
+        speaker_count = (
+            SpeakerRole.objects.filter(submission=OuterRef("pk"))
+            .order_by()
+            .values("submission")
+            .annotate(count=Count("pk"))
+            .values("count")
+        )
+        queryset = (
+            queryset.distinct()
+            .select_related("event", "event__cfp")
+            .annotate(
+                speaker_count=Coalesce(Subquery(speaker_count), Value(0)),
+                invitation_count=Count("invitations", distinct=True),
+                resource_count=Count(
+                    "resources",
+                    filter=active_resource_filter("resources__"),
+                    distinct=True,
+                ),
+            )
+        )
+        if event.get_feature_flag("attendee_signup"):
+            queryset = annotate_confirmed_signup_count(
+                annotate_requires_signup(queryset)
+            )
+        return queryset
 
     @property
     def default_columns(self):
@@ -178,7 +290,7 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
             "state",
             "is_featured",
         ]
-        if self.event and self.event.has_active_tracks:
+        if self.show_tracks:
             columns.insert(3, "track")
         return columns
 
@@ -196,9 +308,18 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
         fields = ()
 
 
-class ReviewTable(QuestionColumnMixin, PretalxTable):
+class ReviewTable(SubmissionValuesMixin, QuestionColumnMixin, PretalxTable):
     primary_column = "title"
     filters = staticmethod(review_list_filters)
+    usable_states = (
+        SubmissionStates.SUBMITTED,
+        SubmissionStates.ACCEPTED,
+        SubmissionStates.REJECTED,
+        SubmissionStates.CONFIRMED,
+    )
+    filter_options = {"usable_states": usable_states}
+    update_permission = "orga_update"
+    delete_permission = "orga_update"
 
     median_score = tables.Column(
         verbose_name=_("Median"),
@@ -315,7 +436,7 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
         columns.extend(["review_count", "title"])
         if self.can_view_speakers:
             columns.append("speakers")
-        if self.event and self.event.has_active_tracks:
+        if self.show_tracks:
             columns.append("track")
         columns.append("state")
         return columns
@@ -323,39 +444,66 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
     def __init__(
         self,
         *args,
-        can_see_all_reviews=False,
-        is_reviewer=False,
-        can_view_speakers=False,
-        can_accept_submissions=False,
+        can_see_all_reviews=None,
+        is_reviewer=None,
+        can_view_speakers=None,
+        can_accept_submissions=None,
         independent_categories=None,
-        short_questions=None,
-        aggregate_method="mean",
+        aggregate_method=None,
         request_user=None,
         **kwargs,
     ):
+        event = kwargs.get("event")
+        user = kwargs.get("user")
+        self.request_user = request_user or user
+        has_user = bool(event and user and user.pk)
+        if aggregate_method is None:
+            aggregate_method = (
+                event.review_settings["aggregate_method"] if event else "mean"
+            )
+        if can_see_all_reviews is None:
+            can_see_all_reviews = self.get_can_see_all_reviews(event, user)
+        if is_reviewer is None:
+            is_reviewer = has_user and (
+                user.has_perm("submission.create_review", event)
+                or Review.objects.filter(user=user, submission__event=event).exists()
+            )
+        if can_view_speakers is None:
+            can_view_speakers = has_user and user.has_perm(
+                "person.reviewer_list_speakerprofile", event
+            )
+        if can_accept_submissions is None:
+            can_accept_submissions = (
+                has_user
+                and user.has_perm("submission.accept_or_reject_submission", event)
+                and event.submissions.filter(state=SubmissionStates.SUBMITTED).exists()
+            )
+        if independent_categories is None:
+            independent_categories = (
+                event.score_categories.filter(is_independent=True, active=True)
+                if event
+                else []
+            )
         self.aggregate_method = aggregate_method
         self.can_see_all_reviews = can_see_all_reviews
         self.is_reviewer = is_reviewer
         self.can_view_speakers = can_view_speakers
         self.can_accept_submissions = can_accept_submissions
-        self.independent_categories = independent_categories or []
-        self.short_questions = short_questions or []
-        self.request_user = request_user
+        self.independent_categories = list(independent_categories)
 
-        extra_columns = self._get_question_columns()
-        if self.independent_categories:
-            for category in self.independent_categories:
-                column_name = f"independent_score_{category.pk}"
-                extra_columns.append(
-                    (
-                        column_name,
-                        IndependentScoreColumn(
-                            verbose_name=category.name,
-                            category=category,
-                            attrs={"td": {"class": "numeric text-center"}},
-                        ),
-                    )
+        extra_columns = []
+        for category in self.independent_categories:
+            column_name = f"independent_score_{category.pk}"
+            extra_columns.append(
+                (
+                    column_name,
+                    IndependentScoreColumn(
+                        verbose_name=category.name,
+                        category=category,
+                        attrs={"td": {"class": "numeric text-center"}},
+                    ),
                 )
+            )
 
         if self.can_accept_submissions:
             header_html = render_to_string(
@@ -376,8 +524,6 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
         kwargs.setdefault("extra_columns", []).extend(extra_columns)
         super().__init__(*args, **kwargs)
 
-        self.exclude = list(self.exclude) if hasattr(self, "exclude") else []
-
         if self.can_see_all_reviews:
             if aggregate_method == "median":
                 self.exclude.append("mean_score")
@@ -391,6 +537,56 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
 
         if not self.can_view_speakers:
             self.exclude.append("speakers")
+
+        if "tags" not in self.exclude and not (
+            self.filterset and self.filterset.is_set("tags")
+        ):
+            self.exclude.append("tags")
+
+    @classmethod
+    def get_can_see_all_reviews(cls, event, user):
+        if not event or not user or not user.pk:
+            return False
+        return user.has_perm("submission.list_all_review", event)
+
+    @classmethod
+    def get_filter_options(cls, event, user):
+        options = super().get_filter_options(event, user)
+        if event:
+            options["max_review_count"] = (
+                event.submissions.all()
+                .annotate(review_count=Count("reviews", distinct=True))
+                .aggregate(Max("review_count"))
+                .get("review_count__max")
+            )
+        return options
+
+    @classmethod
+    def base_queryset(cls, event, user):
+        return SubmissionTable.base_queryset(event, user).filter(
+            state__in=cls.usable_states
+        )
+
+    @classmethod
+    def prepare_queryset(cls, queryset, *, event, user):
+        return annotate_review_count(queryset)
+
+    @classmethod
+    def augment_queryset(cls, queryset, *, event, user):
+        queryset = annotate_scored_review_count(queryset)
+        queryset = annotate_state_rank(queryset)
+        queryset = annotate_user_review_score(queryset, user)
+        if cls.get_can_see_all_reviews(event, user):
+            queryset = annotate_aggregate_scores(queryset)
+        return queryset.select_related("track", "submission_type")
+
+    @cached_property
+    def submissions_reviewed(self):
+        if not self.request_user or not self.request_user.pk:
+            return Review.objects.none()
+        return Review.objects.filter(
+            user=self.request_user, submission__event=self.event
+        ).values_list("submission_id", flat=True)
 
     def get_independent_score(self, submission, category_id):
         if not self.independent_categories:
@@ -472,6 +668,10 @@ class TagTable(PretalxTable):
     )
     is_public = BooleanColumn()
     actions = ActionsColumn(actions={"edit": {}, "delete": {}})
+
+    @classmethod
+    def base_queryset(cls, event, user):
+        return annotate_submission_count(event.tags.order_by("tag", "pk"))
 
     class Meta:
         model = Tag

@@ -33,7 +33,7 @@ from pretalx.mail.domain.preview import (
     render_preview_body,
     render_preview_subject,
 )
-from pretalx.mail.domain.queries import draft_mail_counts, outbox_mails, sent_mails
+from pretalx.mail.domain.queries import draft_mail_counts
 from pretalx.mail.domain.queue import copy_to_draft
 from pretalx.mail.domain.render import delivery_html, render_template_to_mail
 from pretalx.mail.domain.send import (
@@ -66,7 +66,7 @@ class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     permission_required = "mail.list_queuedmail"
 
     def get_queryset(self):
-        return self.filter_queryset(outbox_mails(self.request.event))
+        return self.filter_queryset(super().get_queryset())
 
     @context
     @cached_property
@@ -78,18 +78,6 @@ class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
         result["failed_count"] = draft_mail_counts(self.request.event)["failed_count"]
         return result
 
-    def get_filter_options(self):
-        return {"sent": False}
-
-    def get_table_kwargs(self):
-        kwargs = super().get_table_kwargs()
-        permission = self.request.user.has_perm(
-            "mail.send_queuedmail", self.request.event
-        )
-        kwargs["has_update_permission"] = permission
-        kwargs["has_delete_permission"] = permission
-        return kwargs
-
 
 class SentMail(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     model = QueuedMail
@@ -98,11 +86,8 @@ class SentMail(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     template_name = "orga/mails/sent_list.html"
     permission_required = "mail.list_queuedmail"
 
-    def get_filter_options(self):
-        return {"sent": True}
-
     def get_queryset(self):
-        return self.filter_queryset(sent_mails(self.request.event))
+        return self.filter_queryset(super().get_queryset())
 
     @context
     @cached_property
@@ -725,13 +710,6 @@ class MailTemplateView(OrgaCRUDView):
         "delete": phrases.base.deleted,
     }
     create_button_label = _("New custom template")
-
-    def get_queryset(self):
-        return (
-            self.request.event.mail_templates.all()
-            .exclude(is_auto_created=True)
-            .order_by("role", "pk")
-        )
 
     def get_generic_title(self, instance=None):
         if instance:

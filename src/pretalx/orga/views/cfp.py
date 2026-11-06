@@ -11,7 +11,6 @@ from django import forms
 from django.contrib import messages
 from django.core.exceptions import FieldDoesNotExist
 from django.db import transaction
-from django.db.models import Exists, OuterRef, Prefetch
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
@@ -69,7 +68,6 @@ from pretalx.submission.domain.queries.question import (
     question_scope_speakers,
     questions_for_user,
 )
-from pretalx.submission.domain.queries.submission import annotate_submission_count
 from pretalx.submission.domain.question import (
     delete_question,
     reorder_questions,
@@ -630,13 +628,6 @@ class SubmissionTypeView(OrderActionMixin, OrgaCRUDView):
     template_namespace = "orga/cfp"
     create_button_label = _("New type")
 
-    def get_queryset(self):
-        return annotate_submission_count(
-            self.request.event.submission_types.select_related(
-                "event__cfp__default_type"
-            ).order_by("default_duration")
-        )
-
     def get_permission_required(self):
         permission_map = {"list": "orga_list", "detail": "orga_detail"}
         permission = permission_map.get(self.action, self.action)
@@ -717,9 +708,6 @@ class TrackView(OrderActionMixin, OrgaCRUDView):
     template_namespace = "orga/cfp"
     create_button_label = _("New track")
 
-    def get_queryset(self):
-        return annotate_submission_count(self.request.event.tracks.order_by("position"))
-
     def get_permission_required(self):
         permission_map = {"list": "orga_list", "detail": "orga_view"}
         permission = permission_map.get(self.action, self.action)
@@ -764,24 +752,6 @@ class AccessCodeView(OrderActionMixin, OrgaCRUDView):
     lookup_field = "code"
     path_converter = "str"
     create_button_label = _("New access code")
-
-    def get_queryset(self):
-        return (
-            self.request.event.submitter_access_codes.all()
-            .prefetch_related(
-                Prefetch("tracks", queryset=Track.objects.select_related("event__cfp")),
-                Prefetch(
-                    "submission_types",
-                    queryset=SubmissionType.objects.select_related("event__cfp"),
-                ),
-            )
-            .annotate(
-                has_submissions=Exists(
-                    self.request.event.submissions.filter(access_code=OuterRef("pk"))
-                )
-            )
-            .order_by("valid_until")
-        )
 
     def get_generic_title(self, instance=None):
         if instance:
