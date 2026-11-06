@@ -17,6 +17,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.ui import color_dot
+from pretalx.submission.enums import QuestionTarget
 from pretalx.submission.models import Answer
 
 ROLE_ATTR_RE = re.compile(r'\s*role=(["\'])[^"\']*\1')
@@ -450,19 +451,11 @@ class QuestionColumn(TemplateColumn):
         super().__init__(*args, **kwargs)
 
     def apply_custom_ordering(self, queryset, is_descending):
-        """Apply annotation for ordering and return (queryset, order_keys).
-
-        Used by PretalxTable._apply_ordering() for multi-column sorting.
-        This method only annotates - it does NOT call order_by().
-        """
-        if hasattr(queryset.model, "user"):
-            answer_subquery = Answer.objects.filter(
-                speaker_id=OuterRef("pk"), question_id=self.question.id
-            ).values("answer")[:1]
-        else:
-            answer_subquery = Answer.objects.filter(
-                submission_id=OuterRef("pk"), question_id=self.question.id
-            ).values("answer")[:1]
+        """Apply annotation for ordering and return (queryset, order_keys)."""
+        answer_field = f"{QuestionTarget(self.question.target).answer_field}_id"
+        answer_subquery = Answer.objects.filter(
+            **{answer_field: OuterRef("pk")}, question_id=self.question.id
+        ).values("answer")[:1]
 
         annotation_name = f"_question_{self.question.id}_answer"
         queryset = queryset.annotate(**{annotation_name: Subquery(answer_subquery)})
@@ -470,7 +463,6 @@ class QuestionColumn(TemplateColumn):
         return queryset, [order_field]
 
     def order(self, queryset, is_descending):
-        """Apply ordering for single-column sorting (django-tables2 default mechanism)."""
         queryset, order_keys = self.apply_custom_ordering(queryset, is_descending)
         queryset = queryset.order_by(*order_keys)
         return queryset, True

@@ -491,11 +491,7 @@ class Answer(PretalxModel):
 
     @property
     def _target_field(self):
-        return {
-            QuestionTarget.SUBMISSION: "submission",
-            QuestionTarget.SPEAKER: "speaker",
-            QuestionTarget.REVIEWER: "review",
-        }[self.question.target]
+        return QuestionTarget(self.question.target).answer_field
 
     @property
     def target_object(self):

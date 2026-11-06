@@ -111,6 +111,14 @@ class QuestionTarget(models.TextChoices):
     def slug(self):
         return self.slugs[self.value]
 
+    answer_fields = nonmember(
+        {"submission": "submission", "speaker": "speaker", "reviewer": "review"}
+    )
+
+    @property
+    def answer_field(self):
+        return self.answer_fields[self.value]
+
     @classmethod
     def from_slug(cls, slug):
         for value, target_slug in cls.slugs.items():
