@@ -102,6 +102,10 @@ def read_config_files(config):
         config_files = [Path(config_file)]
         with config_files[0].open(encoding="utf-8") as fp:
             config.read_file(fp)
+    elif os.environ.get("PRETALX_SKIP_DEFAULT_CONFIG_FILES"):
+        # In tests, we do not want to pick up system config files unless
+        # specified via env var
+        config_files = []
     else:
         config_files = [
             Path(path)
@@ -109,7 +113,7 @@ def read_config_files(config):
                 [
                     Path("/etc/pretalx/pretalx.cfg"),
                     Path.home() / ".pretalx.cfg",
-                    Path("pretalx.cfg"),
+                    Path(__file__).parents[3] / "pretalx.cfg",
                 ],
                 encoding="utf-8",
             )

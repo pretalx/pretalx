@@ -46,6 +46,10 @@ from tests.utils import make_orga_user
 # assertions in those tests still need `with scopes_disabled():`.
 
 
+def pytest_report_header(config):
+    return f"database: {settings.DATABASES['default']['ENGINE']}"
+
+
 @pytest.hookimpl(hookwrapper=True)
 def pytest_fixture_setup(fixturedef, request):
     """Disable django-scopes during all fixture setup."""

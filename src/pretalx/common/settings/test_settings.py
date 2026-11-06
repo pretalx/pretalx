@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 tmpdir = tempfile.TemporaryDirectory()
 os.environ.setdefault("DATA_DIR", tmpdir.name)
+os.environ["PRETALX_SKIP_DEFAULT_CONFIG_FILES"] = "1"
 
 from pretalx.settings import *  # noqa: F403, E402 -- wildcard import intentional; import after settings setup
 

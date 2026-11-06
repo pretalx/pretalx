@@ -4,6 +4,7 @@ import configparser
 
 import pytest
 
+from pretalx.common.settings import config as config_module
 from pretalx.common.settings.config import (
     CONFIG,
     build_config,
@@ -59,13 +60,46 @@ def test_read_layer_env_overrides_defaults(monkeypatch):
     assert config.get("site", "url") == "https://example.com"
 
 
-def test_read_config_files_without_env_var(monkeypatch):
+def test_read_config_files_reads_source_tree_and_home_not_cwd(monkeypatch, tmp_path):
     monkeypatch.delenv("PRETALX_CONFIG_FILE", raising=False)
+    monkeypatch.delenv("PRETALX_SKIP_DEFAULT_CONFIG_FILES", raising=False)
+    src_dir = tmp_path / "src"
+    src_cfg = src_dir / "pretalx.cfg"
+    src_dir.mkdir()
+    src_cfg.write_text("[site]\nurl = https://src.example.com\n")
+    monkeypatch.setattr(
+        config_module, "__file__", str(src_dir / "pretalx/common/settings/config.py")
+    )
+    home_dir = tmp_path / "home"
+    home_cfg = home_dir / ".pretalx.cfg"
+    home_dir.mkdir()
+    home_cfg.write_text("[mail]\nhost = home.example.com\n")
+    monkeypatch.setattr(config_module.Path, "home", lambda: home_dir)
+    cwd = tmp_path / "cwd"
+    cwd.mkdir()
+    (cwd / "pretalx.cfg").write_text("[mail]\nfrom = cwd@example.com\n")
+    monkeypatch.chdir(cwd)
     config = configparser.RawConfigParser()
 
     config, config_files = read_config_files(config)
 
-    assert isinstance(config_files, list)
+    assert config.get("site", "url") == "https://src.example.com"
+    assert config.get("mail", "host") == "home.example.com"
+    assert not config.has_option("mail", "from")
+    assert config_files[-2:] == [home_cfg, src_cfg]
+
+
+def test_read_config_files_skip_flag_ignores_default_files(monkeypatch, tmp_path):
+    monkeypatch.delenv("PRETALX_CONFIG_FILE", raising=False)
+    monkeypatch.setenv("PRETALX_SKIP_DEFAULT_CONFIG_FILES", "1")
+    (tmp_path / ".pretalx.cfg").write_text("[mail]\nhost = home.example.com\n")
+    monkeypatch.setattr(config_module.Path, "home", lambda: tmp_path)
+    config = configparser.RawConfigParser()
+
+    config, config_files = read_config_files(config)
+
+    assert config_files == []
+    assert not config.has_section("mail")
 
 
 def test_read_config_files_with_env_var(monkeypatch, tmp_path):

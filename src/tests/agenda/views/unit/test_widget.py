@@ -26,18 +26,30 @@ def test_style_etag_is_style_version(event):
     assert result == event.style_version
 
 
-def test_widget_js_etag_returns_stable_checksum(event, django_assert_num_queries):
-    widget_module.WIDGET_JS_CHECKSUM = None
-    widget_module.WIDGET_JS_CONTENT = None
-
+@pytest.mark.parametrize(
+    ("debug", "served"),
+    ((False, b"/* old build */"), (True, b"/* new build */")),
+    ids=["cached", "debug_rereads"],
+)
+def test_widget_js_etag_caches_bundle_unless_debug(
+    event, monkeypatch, settings, tmp_path, django_assert_num_queries, debug, served
+):
+    settings.DEBUG = debug
+    monkeypatch.setattr(widget_module, "WIDGET_JS_CHECKSUM", None)
+    monkeypatch.setattr(widget_module, "WIDGET_JS_CONTENT", None)
+    bundle = tmp_path / "pretalx-schedule.min.js"
+    bundle.write_text("/* old build */")
+    monkeypatch.setattr(widget_module.finders, "find", lambda path: str(bundle))
     request = make_request(event)
 
     with django_assert_num_queries(0):
         first = widget_js_etag(request)
+        bundle.write_text("/* new build */")
         second = widget_js_etag(request)
 
     assert len(first) == 32  # MD5 hex digest length
-    assert first == second
+    assert (first == second) is not debug
+    assert served == widget_module.WIDGET_JS_CONTENT
 
 
 def test_widget_js_etag_missing_bundle_raises(event, monkeypatch):

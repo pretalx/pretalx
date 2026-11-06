@@ -244,10 +244,14 @@ Standard pytest flags all work:
   on CfP views? ``just test -k cfp_submit``.
 - ``just test --lf``: re-run only tests that failed last time.
 - ``just test -x``: stop at first failure.
-- ``just test --no-header -rN``: minimal output, useful when running the full
-  suite.
-- ``just test tests/schedule/``: run all tests for one app.
+- ``just test -rN``: leave out the short test summary at the end, useful
+  when running the full suite.
+- ``just test src/tests/schedule/``: run all tests for one app.
 - ``just test -m "not e2e"``: run all tests except for e2e tests.
+
+The test suite ignores all three implicit configuration files (``src/pretalx.cfg``,
+``~/.pretalx.cfg`` and ``/etc/pretalx/pretalx.cfg``). Set ``PRETALX_CONFIG_FILE``
+to use a configuration file when running tests.
 
 .. note:: For faster runs, ``just test-parallel`` uses multiple CPU cores (with
           an optional ``NUM`` parameter to specify the number of threads, or

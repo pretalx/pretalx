@@ -123,9 +123,15 @@ def test_widget_script_served_regardless_of_event(client, public_event_with_sche
     assert unknown.content == hidden.content
 
 
+@pytest.mark.parametrize(
+    ("debug", "cache_control"),
+    ((False, "public, max-age=300"), (True, "public, no-cache")),
+    ids=("production", "debug"),
+)
 def test_widget_script_returns_javascript_and_revalidates_with_etag(
-    client, public_event_with_schedule
+    client, public_event_with_schedule, settings, debug, cache_control
 ):
+    settings.DEBUG = debug
     event = public_event_with_schedule
     first = client.get(event.urls.schedule_widget_script)
 
@@ -138,13 +144,13 @@ def test_widget_script_returns_javascript_and_revalidates_with_etag(
 
     assert first.status_code == 200
     assert first["Content-Type"] == "text/javascript"
-    assert first["Cache-Control"] == "public, max-age=300"
+    assert first["Cache-Control"] == cache_control
     assert len(first.content) > 0
     assert response.status_code == 304
     assert response.content == b""
     # The 304 has to carry the cache headers, or clients drop out of the cache
     # window after their first revalidation.
-    assert response["Cache-Control"] == "public, max-age=300"
+    assert response["Cache-Control"] == cache_control
     assert stale.status_code == 200
     assert len(stale.content) > 0
 

@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`admin` pretalx now looks for the ``pretalx.cfg`` configuration file in the ``src`` directory, as documented, instead of in the current working directory. If you relied on a ``pretalx.cfg`` in the directory you start pretalx from, move it to ``/etc/pretalx/pretalx.cfg`` or point the ``PRETALX_CONFIG_FILE`` environment variable at it.
 - :feature:`orga` Organisers can now choose for each header and footer link whether it opens in a new tab.
 - :feature:`cfp` Submitting the last step of the proposal form twice, for example by double-clicking or by resending the form, now creates only one proposal.
 - :bug:`orga` Answers to date and date/time questions now show up in exports, in the answer log and when merging speaker profiles, and no longer trigger reminders about missing answers.
