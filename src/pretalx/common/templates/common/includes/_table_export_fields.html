@@ -3,18 +3,8 @@ SPDX-FileCopyrightText: 2026-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endcomment %}
 
-<div
-    class="table-export-fields"
-    data-multilang-formats="{{ form.multilang_formats|join:',' }}"
-    data-default-locale="{{ form.event.locale }}"
-    data-all-locales="{{ form.all_locales }}"
->
+<div class="table-export-fields">
     {{ form.serializer.as_field_group }}
-    {% if "locale" in form.fields %}
-        <div class="export-locale">
-            {{ form.locale.as_field_group }}
-        </div>
-    {% endif %}
     {% for format, field in form.option_bound_fields %}
         <div class="export-format-option" data-format="{{ format }}">
             {{ field.as_field_group }}

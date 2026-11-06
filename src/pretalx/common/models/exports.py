@@ -23,9 +23,6 @@ class TableExport(PretalxModel):
     filters = models.JSONField(default=dict, blank=True)
     serializer = models.CharField(max_length=20, verbose_name=_("Export format"))
     serializer_options = models.JSONField(default=dict, blank=True)
-    locale = models.CharField(
-        max_length=32, blank=True, default="", verbose_name=_("Language")
-    )
 
     log_prefix = "pretalx.table_export"
 
@@ -65,6 +62,5 @@ class TableExport(PretalxModel):
             "ordering": list(self.ordering or []),
             "filters": dict(self.filters or {}),
             "serializer": self.serializer,
-            "locale": self.locale or None,
             "serializer_options": dict(self.serializer_options or {}),
         }

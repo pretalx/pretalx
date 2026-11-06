@@ -17,7 +17,6 @@ def test_table_export_config_table_class_and_urls(event):
         ordering=["-title"],
         filters={"state": ["accepted"]},
         serializer_options={"list_delimiter": "comma"},
-        locale="",
     )
     stale = TableExportFactory(event=event, table="GoneTable")
 
@@ -30,7 +29,6 @@ def test_table_export_config_table_class_and_urls(event):
         "ordering": ["-title"],
         "filters": {"state": ["accepted"]},
         "serializer": "csv",
-        "locale": None,
         "serializer_options": {"list_delimiter": "comma"},
     }
     assert export.urls.edit == f"{event.orga_urls.exports}{export.pk}/"
