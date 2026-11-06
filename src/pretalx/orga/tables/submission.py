@@ -10,13 +10,16 @@ from django.db.models.functions import Coalesce, Lower
 from django.template.loader import render_to_string
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
+from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 from pretalx.common.db import Translate
 from pretalx.common.tables import (
     ActionsColumn,
     BooleanColumn,
     ColourColumn,
+    Column,
     DateTimeColumn,
     IndependentScoreColumn,
     PretalxTable,
@@ -26,8 +29,10 @@ from pretalx.common.tables import (
     TemplateColumn,
 )
 from pretalx.common.text.phrases import phrases
+from pretalx.common.urls import get_base_url
 from pretalx.person.models.profile import speaker_name_expression
 from pretalx.person.rules import is_only_reviewer
+from pretalx.schedule.models import TalkSlot
 from pretalx.submission.domain.queries.review import (
     annotate_aggregate_scores,
     annotate_review_count,
@@ -40,6 +45,7 @@ from pretalx.submission.domain.queries.submission import (
     annotate_confirmed_signup_count,
     annotate_requires_signup,
     annotate_submission_count,
+    current_slots_prefetch,
     submissions_for_user,
 )
 from pretalx.submission.enums import SubmissionStates
@@ -67,7 +73,18 @@ class SpeakersColumn(TemplateColumn):
         return queryset, [order]
 
 
+def _split_label(field, part):
+    label = TalkSlot._meta.get_field(field).verbose_name
+    if part == "date":
+        part_label = pgettext_lazy("date as in calendar date", "date")
+    else:
+        part_label = _("time")
+    return format_lazy("{} ({})", label, part_label)
+
+
 class SubmissionValuesMixin:
+    """Export values for the templated columns shared by submission-row tables."""
+
     def __init__(
         self,
         *args,
@@ -95,6 +112,59 @@ class SubmissionValuesMixin:
         if not show_tags:
             self.exclude.append("tags")
 
+    def column_prefetches(self, columns):
+        lookups = [name for name in ("tags", "resources") if name in columns]
+        slot_columns = {
+            "room",
+            "start",
+            "start_date",
+            "start_time",
+            "end",
+            "end_date",
+            "end_time",
+        }
+        if self.event and columns & slot_columns:
+            lookups.append(current_slots_prefetch(self.event))
+        return lookups
+
+    def _anonymisable(self, record, attribute):
+        if not self.can_view_speakers and record.is_anonymised:
+            return record.get_anonymised(attribute)
+        return getattr(record, attribute)
+
+    def value_title(self, record):
+        return self._anonymisable(record, "title")
+
+    def value_abstract(self, record):
+        return self._anonymisable(record, "abstract")
+
+    def value_description(self, record):
+        return self._anonymisable(record, "description")
+
+    def value_notes(self, record):
+        return self._anonymisable(record, "notes")
+
+    def value_speakers(self, record):
+        return [speaker.get_display_name() for speaker in record.sorted_speakers]
+
+    def value_state(self, record):
+        return record.state
+
+    def value_pending_state(self, record):
+        return record.pending_state
+
+    def value_content_locale(self, record):
+        return record.content_locale
+
+    def value_duration(self, record):
+        return record.get_duration()
+
+    def value_submission_type(self, record):
+        return record.submission_type.name
+
+    def value_tags(self, record):
+        return [tag.tag for tag in record.tags.all()]
+
     @classmethod
     def get_can_view_speakers(cls, event, user):
         if not event or not user or not user.pk:
@@ -119,6 +189,8 @@ class SubmissionTable(SubmissionValuesMixin, QuestionColumnMixin, PretalxTable):
     filter_options = {"default_states": SubmissionStates.active_states}
     update_permission = "orga_update"
     delete_permission = "orga_update"
+    export_name = phrases.schedule.sessions
+    export_permission = "submission.orga_list_submission"
 
     indicator = TemplateColumn(
         verbose_name="",
@@ -202,6 +274,60 @@ class SubmissionTable(SubmissionValuesMixin, QuestionColumnMixin, PretalxTable):
         verbose_name=_("Number of resources"),
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric text-center"}},
     )
+    slot_count = Column()
+    tags = TemplateColumn(
+        template_name="orga/tables/columns/review_tags.html",
+        verbose_name=_("Tags"),
+        orderable=False,
+        attrs={"td": {"class": "nowrap"}},
+    )
+    room = Column(accessor="slot__room__name", orderable=False)
+    start = DateTimeColumn(accessor="slot__local_start", orderable=False)
+    start_date = DateTimeColumn(
+        accessor="slot__local_start",
+        part="date",
+        verbose_name=_split_label("start", "date"),
+        orderable=False,
+    )
+    start_time = DateTimeColumn(
+        accessor="slot__local_start",
+        part="time",
+        verbose_name=_split_label("start", "time"),
+        orderable=False,
+    )
+    end = DateTimeColumn(accessor="slot__local_end", orderable=False)
+    end_date = DateTimeColumn(
+        accessor="slot__local_end",
+        part="date",
+        verbose_name=_split_label("end", "date"),
+        orderable=False,
+    )
+    end_time = DateTimeColumn(
+        accessor="slot__local_end",
+        part="time",
+        verbose_name=_split_label("end", "time"),
+        orderable=False,
+    )
+    abstract = Column(export_only=True)
+    description = Column(export_only=True)
+    notes = Column(export_only=True)
+    internal_notes = Column(export_only=True)
+    image = Column(
+        verbose_name=_("Image"), accessor="image_url", orderable=False, export_only=True
+    )
+    speaker_ids = Column(
+        verbose_name=_("Speaker IDs"),
+        orderable=False,
+        export_only=True,
+        empty_values=(),
+    )
+    speaker_emails = Column(
+        verbose_name=_("Speaker emails"),
+        orderable=False,
+        export_only=True,
+        empty_values=(),
+    )
+    resources = Column(verbose_name=_("Resources"), orderable=False, export_only=True)
     actions = ActionsColumn(
         actions={
             "edit": {"url": "orga_urls.edit"},
@@ -230,9 +356,11 @@ class SubmissionTable(SubmissionValuesMixin, QuestionColumnMixin, PretalxTable):
         self.exclude = list(self.exclude)
 
         if not can_view_speakers:
-            self.exclude += ["speakers"]
+            self.exclude += ["speakers", "speaker_ids"]
         if not self.has_update_permission:
-            self.exclude += ["is_featured", "actions"]
+            self.exclude += ["is_featured", "actions", "internal_notes"]
+        if not (self.has_update_permission and can_view_speakers):
+            self.exclude += ["speaker_emails"]
         if not (self.event and self.event.get_feature_flag("attendee_signup")):
             self.exclude += ["requires_signup", "attendee_signup_count"]
 
@@ -280,6 +408,25 @@ class SubmissionTable(SubmissionValuesMixin, QuestionColumnMixin, PretalxTable):
             )
         return queryset
 
+    def value_speaker_ids(self, record):
+        return [speaker.code for speaker in record.sorted_speakers]
+
+    def value_speaker_emails(self, record):
+        return [
+            speaker.effective_email
+            for speaker in record.sorted_speakers
+            if speaker.effective_email
+        ]
+
+    def value_image(self, value):
+        return get_base_url(self.event) + value
+
+    def value_resources(self, record):
+        return [resource.url for resource in record.public_resources if resource.url]
+
+    def value_is_featured(self, record):
+        return record.is_featured
+
     @property
     def default_columns(self):
         columns = [
@@ -320,6 +467,8 @@ class ReviewTable(SubmissionValuesMixin, QuestionColumnMixin, PretalxTable):
     filter_options = {"usable_states": usable_states}
     update_permission = "orga_update"
     delete_permission = "orga_update"
+    export_name = _("Review dashboard")
+    export_permission = "submission.list_review"
 
     median_score = tables.Column(
         verbose_name=_("Median"),
@@ -348,6 +497,11 @@ class ReviewTable(SubmissionValuesMixin, QuestionColumnMixin, PretalxTable):
 
     def render_user_score(self, value):
         return f"{value:.1f}"
+
+    def _raw_score(self, value):
+        return value
+
+    value_median_score = value_mean_score = value_user_score = _raw_score
 
     def render_content_locale(self, record):
         return record.get_content_locale_display()
@@ -417,6 +571,9 @@ class ReviewTable(SubmissionValuesMixin, QuestionColumnMixin, PretalxTable):
     created = DateTimeColumn()
     do_not_record = BooleanColumn(verbose_name=_("Do not record"))
     content_locale = tables.Column(verbose_name=_("Language"))
+    abstract = Column(export_only=True)
+    description = Column(export_only=True)
+    notes = Column(export_only=True)
 
     @property
     def default_columns(self):
@@ -516,6 +673,7 @@ class ReviewTable(SubmissionValuesMixin, QuestionColumnMixin, PretalxTable):
                         template_name="orga/tables/columns/review_actions.html",
                         verbose_name=mark_safe(header_html),  # noqa: S308  -- static icon markup
                         orderable=False,
+                        exclude_from_export=True,
                         attrs={"td": {"class": "nowrap"}},
                     ),
                 )
@@ -538,8 +696,10 @@ class ReviewTable(SubmissionValuesMixin, QuestionColumnMixin, PretalxTable):
         if not self.can_view_speakers:
             self.exclude.append("speakers")
 
-        if "tags" not in self.exclude and not (
-            self.filterset and self.filterset.is_set("tags")
+        if (
+            "tags" not in self.exclude
+            and not self.for_export
+            and not (self.filterset and self.filterset.is_set("tags"))
         ):
             self.exclude.append("tags")
 
@@ -587,6 +747,9 @@ class ReviewTable(SubmissionValuesMixin, QuestionColumnMixin, PretalxTable):
         return Review.objects.filter(
             user=self.request_user, submission__event=self.event
         ).values_list("submission_id", flat=True)
+
+    def value_review_count(self, record):
+        return record.review_nonnull_count
 
     def get_independent_score(self, submission, category_id):
         if not self.independent_categories:
@@ -654,6 +817,8 @@ class ReviewTable(SubmissionValuesMixin, QuestionColumnMixin, PretalxTable):
 class TagTable(PretalxTable):
     primary_column = "tag"
     default_columns = ("tag", "proposals")
+    export_name = _("Tags")
+    export_permission = "submission.list_tag"
 
     tag = ColourColumn(linkify=lambda record: record.urls.edit)
     color = ColourColumn()

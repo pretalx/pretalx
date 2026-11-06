@@ -19,6 +19,7 @@ from django.utils.translation import gettext_lazy as _
 from pretalx.common.db import Translate
 from pretalx.common.tables import (
     ActionsColumn,
+    Column,
     PretalxTable,
     QuestionColumnMixin,
     SortableBooleanColumn,
@@ -81,7 +82,9 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
     filters = staticmethod(speaker_list_filters)
     question_target = QuestionTarget.SPEAKER
     # Only offered to users who may edit speakers; reviewers never see them.
-    sensitive_columns = ("email", "has_email")
+    sensitive_columns = ("email", "has_email", "submission_ids", "submission_titles")
+    export_name = phrases.schedule.speakers
+    export_permission = "person.orga_list_speakerprofile"
 
     default_columns = ("name", "submissions", "has_arrived")
 
@@ -165,6 +168,7 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
         verbose_name=_("Speaker type"),
         accessor="is_managed",
         empty_values=(),
+        exclude_from_export=True,
         order_by={
             "speaker_type": Case(
                 When(user__isnull=True, then=Value(0)), default=Value(1)
@@ -182,6 +186,25 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
                 output_field=BooleanField(),
             )
         },
+    )
+    biography = Column(export_only=True)
+    avatar = Column(
+        verbose_name=_("Picture"),
+        accessor="get_avatar_url",
+        orderable=False,
+        export_only=True,
+    )
+    submission_ids = Column(
+        verbose_name=_("Proposal IDs"),
+        orderable=False,
+        export_only=True,
+        empty_values=(),
+    )
+    submission_titles = Column(
+        verbose_name=_("Proposal titles"),
+        orderable=False,
+        export_only=True,
+        empty_values=(),
     )
     actions = ActionsColumn(
         actions={
@@ -220,6 +243,28 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
         )
         return options
 
+    def value_name(self, record):
+        return record.get_display_name()
+
+    def value_has_arrived(self, record):
+        if not record.accepted_submission_count:
+            return None
+        return record.has_arrived
+
+    def column_prefetches(self, columns):
+        if columns & {"submission_ids", "submission_titles"}:
+            return ["submissions"]
+        return []
+
+    def value_submissions(self, record):
+        return [submission.title for submission in self.get_visible_submissions(record)]
+
+    def value_submission_ids(self, record):
+        return [submission.code for submission in record.submissions.all()]
+
+    def value_submission_titles(self, record):
+        return [submission.title for submission in record.submissions.all()]
+
     def render_invite_status(self, record, value):
         if not record.has_pending_invitation:
             return "—"
@@ -228,6 +273,11 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
         if self.event:
             value = value.astimezone(self.event.tz)
         return _("Invited {date}").format(date=date_format(value, "SHORT_DATE_FORMAT"))
+
+    def value_invite_status(self, record, value):
+        if not record.has_pending_invitation:
+            return None
+        return value
 
     def render_speaker_type(self, record):
         if record.is_managed:
@@ -265,6 +315,7 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
 class SpeakerOrgaTable(SpeakerTable):
     filters = staticmethod(user_speaker_filters)
     sensitive_columns = ()
+    export_permission = None
 
     name = SortableTemplateColumn(
         verbose_name=_("Name"),
@@ -283,6 +334,10 @@ class SpeakerOrgaTable(SpeakerTable):
     invite_status = None
     speaker_type = None
     has_email = None
+    biography = None
+    avatar = None
+    submission_ids = None
+    submission_titles = None
     actions = None
     default_columns = ("name", "email", "submission_count", "accepted_submission_count")
 

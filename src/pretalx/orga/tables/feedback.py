@@ -15,6 +15,8 @@ from pretalx.submission.models import Feedback
 
 class FeedbackTable(PretalxTable):
     primary_column = "talk"
+    export_name = _("Feedback")
+    export_permission = "submission.orga_list_submission"
 
     talk = SortableColumn(
         verbose_name=_n("Session", "Sessions", 1),
@@ -57,11 +59,16 @@ class FeedbackTable(PretalxTable):
     def render_review(self, record):
         return render_markdown(record.review or "")
 
+    def value_review(self, record):
+        return record.review
+
     def render_speaker(self, value):
         return value.get_display_name()
 
 
 class SubmissionFeedbackTable(FeedbackTable):
+    export_permission = None  # Scoped by object, not exportable
+
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("include_talk", False)
         super().__init__(*args, **kwargs)

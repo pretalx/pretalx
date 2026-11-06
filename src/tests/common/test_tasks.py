@@ -8,10 +8,17 @@ from django_scopes import scope
 
 from pretalx.common.tasks import (
     task_cleanup_file,
+    task_export_table,
     task_generate_thumbnails,
     task_process_image,
 )
-from tests.factories import ProfilePictureFactory, SubmissionFactory, UserFactory
+from tests.factories import (
+    CachedFileFactory,
+    ProfilePictureFactory,
+    SubmissionFactory,
+    UserFactory,
+)
+from tests.utils import make_orga_user
 
 pytestmark = pytest.mark.unit
 
@@ -141,3 +148,50 @@ def test_task_cleanup_file_with_empty_field_deletes_file_once_writable(make_imag
     )
 
     assert not Path(stored_path).exists()
+
+
+@pytest.mark.django_db
+def test_task_export_table_writes_cached_file(event):
+
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event, title="Exported")
+    cached_file = CachedFileFactory(filename="x.csv", content_type="text/csv")
+    config = {"table": "SubmissionTable", "columns": ["title"], "serializer": "csv"}
+
+    result = task_export_table(
+        event_id=event.pk,
+        user_id=user.pk,
+        cached_file_id=str(cached_file.id),
+        config=config,
+    )
+
+    cached_file.refresh_from_db()
+    assert result == str(cached_file.id)
+    content = cached_file.file.read().decode("utf-8-sig")
+    assert content == f"ID,Title\r\n{submission.code},Exported\r\n"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("event_missing", "config"),
+    (
+        (True, {"table": "SubmissionTable", "columns": [], "serializer": "csv"}),
+        (False, {"table": "NoSuchTable", "columns": [], "serializer": "csv"}),
+    ),
+    ids=("missing_event", "export_error"),
+)
+def test_task_export_table_returns_none_on_failure(event, event_missing, config):
+
+    user = make_orga_user(event, can_change_submissions=True)
+    cached_file = CachedFileFactory()
+
+    result = task_export_table(
+        event_id=0 if event_missing else event.pk,
+        user_id=user.pk,
+        cached_file_id=str(cached_file.id),
+        config=config,
+    )
+
+    cached_file.refresh_from_db()
+    assert result is None
+    assert not cached_file.file

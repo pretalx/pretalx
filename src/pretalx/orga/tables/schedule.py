@@ -12,6 +12,8 @@ from pretalx.schedule.models import Room
 class RoomTable(DragsortTable):
     primary_column = "name"
     default_columns = ("name",)
+    export_name = _("Rooms")
+    export_permission = "schedule.orga_list_room"
 
     name = tables.Column(
         linkify=lambda record: record.urls.settings_base,

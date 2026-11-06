@@ -35,6 +35,8 @@ from pretalx.submission.models import (
 
 class SubmitterAccessCodeTable(PretalxTable):
     primary_column = "code"
+    export_name = _("Access codes")
+    export_permission = "submission.list_submitteraccesscode"
     default_columns = ("code", "tracks", "submission_types", "valid_until", "uses")
 
     code = TemplateColumn(template_name="orga/tables/columns/copyable.html")
@@ -57,6 +59,7 @@ class SubmitterAccessCodeTable(PretalxTable):
         order_by="redeemed",
         empty_values=[""],
         initial_sort_descending=True,
+        exclude_from_export=True,
     )
     redeemed = tables.Column(
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
@@ -73,6 +76,17 @@ class SubmitterAccessCodeTable(PretalxTable):
 
     def render_maximum_uses(self, record):
         return record.maximum_uses or "∞"
+
+    def value_tracks(self, record):
+        return [track.name for track in record.tracks.all()]
+
+    def value_submission_types(self, record):
+        return [
+            submission_type.name for submission_type in record.submission_types.all()
+        ]
+
+    def value_maximum_uses(self, record):
+        return record.maximum_uses or None
 
     actions = ActionsColumn(
         actions={
@@ -129,6 +143,8 @@ class SubmitterAccessCodeTable(PretalxTable):
 
 class TrackTable(DragsortTable):
     primary_column = "name"
+    export_name = _("Tracks")
+    export_permission = "submission.orga_list_track"
     default_columns = ("name", "proposals", "requires_access_code")
 
     name = ColourColumn(
@@ -185,6 +201,8 @@ class TrackTable(DragsortTable):
 
 class SubmissionTypeTable(PretalxTable):
     primary_column = "name"
+    export_name = _("Session types")
+    export_permission = "submission.orga_list_submissiontype"
     default_columns = ("name", "proposals", "default_duration")
 
     name = TemplateColumn(
@@ -246,6 +264,9 @@ class SubmissionTypeTable(PretalxTable):
                 "default_duration"
             )
         )
+
+    def value_name(self, record):
+        return record.name
 
     class Meta:
         model = SubmissionType
@@ -315,6 +336,12 @@ class QuestionTable(DragsortTable):
             )
         return set()
 
+    def value_question(self, value):
+        return value
+
+    def value_variant(self, record):
+        return record.variant
+
     def render_question(self, record, value):
         # Can’t automatically linkify: We can only link to the detail view if
         # the user can see answers.
@@ -346,6 +373,10 @@ class QuestionTable(DragsortTable):
 
 class SubmissionQuestionTable(QuestionTable):
     target = QuestionTarget.SUBMISSION.slug
+    export_name = format_lazy(
+        "{} ({})", phrases.cfp.custom_fields, phrases.schedule.sessions
+    )
+    export_permission = "submission.orga_list_question"
 
 
 class ReviewerQuestionTable(QuestionTable):
@@ -358,3 +389,7 @@ class ReviewerQuestionTable(QuestionTable):
 
 class SpeakerQuestionTable(QuestionTable):
     target = QuestionTarget.SPEAKER.slug
+    export_name = format_lazy(
+        "{} ({})", phrases.cfp.custom_fields, phrases.schedule.speakers
+    )
+    export_permission = "submission.orga_list_question"
