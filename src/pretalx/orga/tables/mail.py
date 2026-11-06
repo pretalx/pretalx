@@ -55,10 +55,10 @@ class MailTemplateTable(PretalxTable):
 class OutboxMailTable(PretalxTable):
     filters = staticmethod(queued_mail_filters)
     primary_column = "subject"
-    exempt_columns = ("pk", "actions", "status_display")
-    default_columns = ("subject", "to_recipients", "submissions", "template_info")
+    exempt_columns = ("pk", "actions", "state")
+    default_columns = ("subject", "to_recipients", "submissions", "template_role")
 
-    status_display = SortableTemplateColumn(
+    state = SortableTemplateColumn(
         template_name="orga/tables/columns/queued_mail_status.html",
         verbose_name=pgettext_lazy("email delivery status", "Status"),
         order_by=("computed_state",),
@@ -77,8 +77,8 @@ class OutboxMailTable(PretalxTable):
         verbose_name=_("Proposals"),
         orderable=False,
     )
-    template_info = TemplateColumn(
-        template_name="orga/tables/columns/queued_mail_template_info.html",
+    template_role = TemplateColumn(
+        template_name="orga/tables/columns/queued_mail_template_role.html",
         verbose_name=_("Template"),
         order_by=("template__role",),
     )
@@ -112,8 +112,8 @@ class OutboxMailTable(PretalxTable):
 
     def _set_columns(self, selected_columns):
         super()._set_columns(selected_columns)
-        self.sequence.remove("status_display")
-        self.sequence.insert(0, "status_display")
+        self.sequence.remove("state")
+        self.sequence.insert(0, "state")
 
     def render_locale(self, value):
         if not value:
@@ -123,14 +123,14 @@ class OutboxMailTable(PretalxTable):
     class Meta:
         model = QueuedMail
         fields = (
-            "status_display",
+            "state",
             "subject",
             "to_recipients",
             "reply_to",
             "cc",
             "bcc",
             "submissions",
-            "template_info",
+            "template_role",
             "locale",
             "actions",
         )
@@ -142,10 +142,10 @@ class SentMailTable(OutboxMailTable):
         "subject",
         "to_recipients",
         "submissions",
-        "template_info",
+        "template_role",
     )
 
-    status_display = SortableTemplateColumn(
+    state = SortableTemplateColumn(
         template_name="orga/tables/columns/sent_mail_status.html",
         verbose_name=pgettext_lazy("email delivery status", "Status"),
         order_by=("computed_state",),
@@ -156,13 +156,13 @@ class SentMailTable(OutboxMailTable):
     class Meta(OutboxMailTable.Meta):
         fields = (
             "sent",
-            "status_display",
+            "state",
             "subject",
             "to_recipients",
             "reply_to",
             "cc",
             "bcc",
             "submissions",
-            "template_info",
+            "template_role",
             "locale",
         )

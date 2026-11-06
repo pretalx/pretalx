@@ -15,13 +15,13 @@ def event():
 
 
 @pytest.mark.django_db
-def test_outbox_mail_table_set_columns_moves_status_display_first(event):
+def test_outbox_mail_table_set_columns_moves_state_first(event):
     mail = QueuedMailFactory(event=event)
     table = OutboxMailTable([mail], event=event, user=UserFactory.build())
 
-    table._set_columns(["subject", "to_recipients", "status_display"])
+    table._set_columns(["subject", "to_recipients", "state"])
 
-    assert table.sequence[0] == "status_display"
+    assert table.sequence[0] == "state"
 
 
 @pytest.mark.django_db
