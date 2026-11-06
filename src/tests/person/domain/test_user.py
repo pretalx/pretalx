@@ -6,6 +6,8 @@ import re
 import pytest
 from django.contrib.contenttypes.models import ContentType
 from django.core import mail as djmail
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.utils import timezone
 
 from pretalx.common.domain.queries.log import actions_by
@@ -24,11 +26,14 @@ from pretalx.person.domain.user import (
 from pretalx.person.enums import EmailVerificationState
 from pretalx.person.models import ProfilePicture, SpeakerProfile, User, UserApiToken
 from pretalx.person.signals import delete_user as delete_user_signal
-from pretalx.submission.models import Answer
+from pretalx.submission.models import Answer, Feedback, Review
+from pretalx.submission.models.question import QuestionTarget, QuestionVariant
 from tests.factories import (
     AnswerFactory,
+    FeedbackFactory,
     ProfilePictureFactory,
     QuestionFactory,
+    ReviewFactory,
     SpeakerFactory,
     SubmissionFactory,
     TeamFactory,
@@ -195,7 +200,9 @@ def test_deactivate_user_sends_signal():
     assert received == [user]
 
 
-def test_shred_user_deletes_user_and_anonymises_its_traces():
+def test_shred_user_deletes_user_and_anonymises_its_traces(
+    django_capture_on_commit_callbacks,
+):
     user = UserFactory()
     user.log_action("pretalx.user.test")
     other_user = UserFactory()
@@ -206,10 +213,40 @@ def test_shred_user_deletes_user_and_anonymises_its_traces():
     assert token.logged_actions().count() == 1
     token_content_type = ContentType.objects.get_for_model(UserApiToken)
     user_pk, token_pk = user.pk, token.pk
+    review = ReviewFactory(user=user)
+    question = QuestionFactory(
+        event=review.submission.event,
+        target=QuestionTarget.REVIEWER,
+        variant=QuestionVariant.FILE,
+    )
+    answer = AnswerFactory(question=question, review=review, submission=None)
+    answer.answer_file.save("notes.pdf", ContentFile(b"notes"), save=True)
+    path = answer.answer_file.name
+    other_review = ReviewFactory(submission=review.submission, user=other_user)
+    other_answer = AnswerFactory(
+        question=question, review=other_review, submission=None
+    )
+    other_answer.answer_file.save("other.pdf", ContentFile(b"other"), save=True)
+    other_path = other_answer.answer_file.name
+    event = review.submission.event
+    feedback = FeedbackFactory(
+        talk=review.submission, speaker=SpeakerFactory(user=user, event=event)
+    )
+    other_feedback = FeedbackFactory(
+        talk=review.submission, speaker=SpeakerFactory(user=other_user, event=event)
+    )
 
-    shred_user(user)
+    with django_capture_on_commit_callbacks(execute=True):
+        shred_user(user)
 
     assert not User.objects.filter(pk=user_pk).exists()
+    assert not Feedback.objects.filter(pk=feedback.pk).exists()
+    assert Feedback.objects.filter(pk=other_feedback.pk).exists()
+    assert not Answer.objects.filter(pk=answer.pk).exists()
+    assert not default_storage.exists(path)
+    assert Answer.objects.filter(pk=other_answer.pk).exists()
+    assert Review.objects.filter(pk=other_review.pk).exists()
+    assert default_storage.exists(other_path)
     other_action.refresh_from_db()
     assert other_action.person is None
     assert not ActivityLog.objects.filter(

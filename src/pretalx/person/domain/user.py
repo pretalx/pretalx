@@ -24,7 +24,7 @@ from pretalx.mail.template_phrases import (
 from pretalx.person.enums import EmailVerificationState
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.person.signals import delete_user as delete_user_signal
-from pretalx.submission.models import Answer, Submission
+from pretalx.submission.models import Answer, Feedback, Submission
 
 
 def create_user(*, email, name="", password=None, **kwargs):
@@ -122,6 +122,11 @@ def shred_user(user):
         user.logged_actions().delete()
         actions_by(user).update(person=None)
         user.delete_files()
+        for answer in Answer.objects.filter(review__user=user).select_related(
+            "question", "review"
+        ):
+            answer.delete(skip_log=True)  # one by one so we delete answer files too
+        Feedback.objects.filter(speaker__user=user).delete()
         delete_user_signal.send(None, user=user, db_delete=True)
         user.delete()
 
