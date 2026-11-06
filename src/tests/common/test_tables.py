@@ -35,7 +35,7 @@ from pretalx.common.tables import (
 )
 from pretalx.common.tables.columns import _cached_template
 from pretalx.person.models import SpeakerProfile
-from pretalx.submission.models import Submission
+from pretalx.submission.models import Review, Submission
 from tests.factories import (
     AnswerFactory,
     QuestionFactory,
@@ -1155,3 +1155,15 @@ def test_cached_templates_are_dropped_when_a_file_changes():
     file_changed.send(sender=None, file_path=Path("anything.html"))
 
     assert _cached_template.cache_info().currsize == 0
+
+
+@pytest.mark.django_db
+def test_question_column_ordering_uses_review_answers(event):
+
+    question = QuestionFactory(event=event, target="reviewer")
+    column = QuestionColumn(question=question)
+
+    queryset, keys = column.apply_custom_ordering(Review.objects.all(), False)
+
+    assert keys == [f"_question_{question.pk}_answer"]
+    assert "review_id" in str(queryset.query)
