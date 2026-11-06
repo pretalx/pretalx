@@ -509,8 +509,13 @@ class AsyncFileDownloadMixin:
     Optional overrides:
     - async_download_expiry: timedelta for CachedFile expiry (default: 24 hours)
     - async_download_content_type: Content-Type for CachedFile (default: "application/zip")
+    - get_async_download_content_type(): per-request Content-Type
     - get_async_download_context(): Extra context for templates
     - get_async_waiting_template(): Template for waiting page
+
+    GET-driven views call ``handle_async_download``; views that start a task
+    from a POST body call ``start_async_download`` and land in the same GET
+    polling flow afterwards.
     """
 
     async_download_expiry = dt.timedelta(hours=24)
@@ -527,6 +532,9 @@ class AsyncFileDownloadMixin:
 
     def get_async_download_filename(self):
         raise NotImplementedError
+
+    def get_async_download_content_type(self):
+        return self.async_download_content_type
 
     def start_async_task(self, cached_file):
         raise NotImplementedError
@@ -555,13 +563,13 @@ class AsyncFileDownloadMixin:
         async_id = request.GET.get("async_id")
         if async_id:
             return self._check_task_status(request, async_id)
-        return self._start_task(request)
+        return self.start_async_download(request)
 
-    def _start_task(self, request):
+    def start_async_download(self, request):
         cached_file = CachedFile(
             expires=now() + self.async_download_expiry,
             filename=self.get_async_download_filename(),
-            content_type=self.async_download_content_type,
+            content_type=self.get_async_download_content_type(),
         )
         cached_file.bind_to_session(request, self.async_download_salt)
         cached_file.save()

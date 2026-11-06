@@ -437,9 +437,12 @@ class SearchFilter(TableFilter):
 
 
 class TableFilterSet:
-    def __init__(self, filters, data=None, context=None, form_id=""):
+    def __init__(
+        self, filters, data=None, context=None, form_id="", apply_initials=True
+    ):
         self.context = context or FilterContext()
         self.form_id = form_id
+        self.apply_initials = apply_initials
         self.data = QueryDict() if data is None else data
         self.filters = {}
         for table_filter in filters:
@@ -478,9 +481,17 @@ class TableFilterSet:
                 data[param] = str(value)
         self.data = data
 
+    def resolved_params(self):
+        self.values  # noqa: B018
+        return {
+            param: self.data.getlist(param)
+            for param in self.param_names
+            if param in self.data
+        }
+
     @cached_property
     def values(self):
-        if not self._has_any_param():
+        if self.apply_initials and not self._has_any_param():
             self._apply_initials()
         values = {}
         for name, table_filter in self.filters.items():

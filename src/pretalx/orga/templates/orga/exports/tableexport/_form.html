@@ -1,0 +1,78 @@
+{% extends "orga/generic/_form.html" %}
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load form_errors %}
+{% load i18n %}
+{% load static %}
+
+{% block scripts %}
+    {{ block.super }}
+    <script defer src="{% static 'orga/js/ui/exports.js' %}"></script>
+{% endblock scripts %}
+
+{% block form %}
+    <form method="post" id="table-export-form" class="table-export-form">
+        {% csrf_token %}
+        {% form_errors form %}
+
+        <fieldset>
+            <legend>{{ form.table.export_name }}</legend>
+            {{ form.name.as_field_group }}
+            <div class="table-export-picker" data-table-name="{{ form.table.name }}">
+                {% with picker=form.columns_form picker_headless=True %}
+                    {% #form_row label_id="export-columns-label" %}
+                    {% #slot label %}{% translate "Columns" %}{% /slot %}
+                    {% #slot field %}{% include "common/includes/_table_toolbar.html#column-picker" %}{% /slot %}
+                    {% /form_row %}
+                    {% if picker.sort_choices %}
+                        {% #form_row label_id="export-sort-label" %}
+                        {% #slot label %}{% translate "Sort" %}{% /slot %}
+                        {% #slot field %}{% include "common/includes/_table_toolbar.html#sort-section" %}{% /slot %}
+                        {% /form_row %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </fieldset>
+
+        {% if form.filterset and form.filterset.facets %}
+            <fieldset>
+                <legend>{% translate "Filters" %}</legend>
+                <div class="export-filters">
+                    {% if form.filterset.search %}
+                        <div class="form-group row">
+                            <label class="col-md-3 col-form-label" for="export-search">{{ phrases.base.search }}</label>
+                            <div class="col-md-9">
+                                <input
+                                    type="search"
+                                    id="export-search"
+                                    class="form-control"
+                                    name="{{ form.filterset.search.param }}"
+                                    value="{{ form.filterset.search_value.query }}"
+                                >
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% for bound in form.filterset.facets %}
+                        <div class="form-group row">
+                            <label
+                                class="col-md-3 col-form-label"
+                                for="id_filter_{{ bound.name }}"
+                            >{{ bound.label }}</label>
+                            <div class="col-md-9">{% include bound.template_name %}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </fieldset>
+        {% endif %}
+
+        <fieldset>
+            <legend>{% translate "Export settings" %}</legend>
+            {% include "common/includes/_table_export_fields.html" %}
+        </fieldset>
+
+        {% include "orga/includes/submit_row.html" %}
+    </form>
+{% endblock form %}

@@ -406,6 +406,8 @@ class Event(PretalxModel):
         room_settings = "{schedule}rooms/"
         new_room = "{room_settings}new/"
         schedule = "{base}schedule/"
+        exports = "{base}exports/"
+        new_export = "{exports}new/"
         schedule_export = "{schedule}export/"
         schedule_export_trigger = "{schedule_export}trigger"
         schedule_export_download = "{schedule_export}download"

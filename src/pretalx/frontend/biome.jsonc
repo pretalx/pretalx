@@ -30,7 +30,10 @@
       "scrollToField",
       "setBlockVisibility",
       "setButtonLoading",
+      "setupColumnPicker",
+      "setupExportFormatFields",
       "setupModals",
+      "setupSortSection",
       // Vendored libraries
       "ApexCharts",
       "Choices",

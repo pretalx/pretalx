@@ -33,3 +33,20 @@ class ActivityLogFactory(factory.django.DjangoModelFactory):
     def _create(cls, model_class, *args, **kwargs):
         with scopes_disabled():
             return super()._create(model_class, *args, **kwargs)
+
+
+class TableExportFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = "common.TableExport"
+
+    event = factory.SubFactory(EventFactory)
+    name = factory.Sequence(lambda n: f"Export {n}")
+    table = "SubmissionTable"
+    columns = factory.LazyFunction(lambda: ["title", "state"])
+    serializer = "csv"
+    locale = "en"
+
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        with scopes_disabled():
+            return super()._create(model_class, *args, **kwargs)

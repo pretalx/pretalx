@@ -22,13 +22,16 @@ class TablePreferencesForm(forms.Form):
         js = [forms.Script("orga/js/ui/dragsort.js", defer="")]
         css = {"all": ["orga/css/ui/dragsort.css"]}
 
-    def __init__(self, *args, table=None, **kwargs):
+    def __init__(
+        self, *args, table=None, export=False, selected=None, ordering=None, **kwargs
+    ):
         if not table:
             raise ValueError("No table provided to TablePreferencesForm")
 
         super().__init__(*args, **kwargs)
 
         self.table = table
+        self.export = export
         self.shown_columns = []
         self.hidden_columns = []
         self.sort_choices = []
@@ -39,14 +42,15 @@ class TablePreferencesForm(forms.Form):
         }
 
         for name, column in table.columns.items():
-            if name in table.exempt_columns:
+            if not self._is_configurable(name, column):
                 continue
             entry = {
                 "name": name,
                 "label": str(column.verbose_name),
                 "order": canonical[name],
             }
-            if column.visible:
+            shown = name in selected if selected is not None else column.visible
+            if shown:
                 self.shown_columns.append(entry)
             else:
                 self.hidden_columns.append(entry)
@@ -54,11 +58,24 @@ class TablePreferencesForm(forms.Form):
                 numeric[name] = is_numeric_column(column)
                 self.sort_choices.append({**entry, "numeric": numeric[name]})
 
+        if selected is not None:
+            position = {name: index for index, name in enumerate(selected)}
+            self.shown_columns.sort(key=lambda column: position[column["name"]])
         self.hidden_columns.sort(key=lambda column: column["order"])
         self.sort_choices.sort(key=lambda choice: choice["label"])
+        if ordering is None:
+            levels = table.current_ordering
+        else:
+            levels = [
+                {
+                    "column": field.removeprefix("-"),
+                    "direction": "desc" if field.startswith("-") else "asc",
+                }
+                for field in ordering
+            ]
         self.sort_levels = [
             {**level, "numeric": numeric[level["column"]]}
-            for level in table.current_ordering
+            for level in levels
             if level["column"] in numeric
         ][:MAX_SORT_LEVELS]
 
@@ -71,6 +88,15 @@ class TablePreferencesForm(forms.Form):
             or [column["name"] for column in self.shown_columns]
         )
         self.default_columns = [name for name in defaults if name in known]
+
+    def _is_configurable(self, name, column):
+        if name in self.table.exempt_columns:
+            return False
+        inner = getattr(column, "column", column)
+        if self.export:
+            exclude = getattr(inner, "exclude_from_export", False)
+            return not exclude and name != "code"
+        return not getattr(inner, "export_only", False)
 
     @property
     def default_columns_json(self):
