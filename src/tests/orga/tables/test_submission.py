@@ -445,14 +445,13 @@ def test_submission_table_self_constructs_from_event_and_user(event):
 @pytest.mark.parametrize("table_class", (SubmissionTable, ReviewTable))
 def test_submission_tables_column_flags_default_from_event(event, table_class):
     orga = make_orga_user(event, can_change_submissions=True)
+    without_tags = table_class([], event=event, user=orga)
+    tag = TagFactory(event=event)
     context = FilterContext(event=event, user=orga)
     filterset = TableFilterSet(
-        review_list_filters(context), data=QueryDict("tags=1"), context=context
+        review_list_filters(context), data=QueryDict(f"tags={tag.pk}"), context=context
     )
     kwargs = {"event": event, "user": orga, "filterset": filterset}
-
-    without_tags = table_class([], **kwargs)
-    TagFactory(event=event)
     with_tags = table_class([], **kwargs)
     overridden = table_class(
         [], show_tags=False, show_tracks=True, show_submission_types=True, **kwargs
