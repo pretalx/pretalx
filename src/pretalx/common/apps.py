@@ -10,7 +10,7 @@ class CommonConfig(AppConfig):
     name = "pretalx.common"
 
     def ready(self):
-        from . import checks, log, signals, update_check  # noqa: F401, PLC0415 -- app ready
+        from . import checks, log, receivers, signals, update_check  # noqa: F401, PLC0415 -- app ready
         from .ssrf import monkeypatch_urllib3_ssrf_protection  # noqa: PLC0415 -- app ready
 
         monkeypatch_urllib3_ssrf_protection()

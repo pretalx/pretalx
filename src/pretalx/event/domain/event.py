@@ -225,10 +225,13 @@ def copy_event_data(event, source, skip_attributes=None, teams=()):
         track_pks = team.limit_tracks.values_list("pk", flat=True)
         team.limit_tracks.add(*(track_map[pk] for pk in track_pks if pk in track_map))
 
+    tag_map = {}
     for tag in source.tags.all():
+        old_pk = tag.pk
         tag.pk = None
         tag.event = event
         tag.save()
+        tag_map[old_pk] = tag
 
     if not event.rooms.exists():
         # Rooms own availabilities (FK), and we shift each availability
@@ -291,7 +294,9 @@ def copy_event_data(event, source, skip_attributes=None, teams=()):
 
     event.score_categories.all().delete()
     # Score categories own scores (FK) and have a tracks m2m.
+    score_category_map = {}
     for score_category in source.score_categories.all():
+        old_pk = score_category.pk
         scores = list(score_category.scores.all())
         track_pks = list(score_category.limit_tracks.values_list("pk", flat=True))
         score_category.pk = None
@@ -302,6 +307,7 @@ def copy_event_data(event, source, skip_attributes=None, teams=()):
             score.pk = None
             score.category = score_category
             score.save()
+        score_category_map[old_pk] = score_category
 
     for sett in source.settings._objects.all():  # noqa: SLF001 -- hierarkey internal
         if sett.value.startswith("file://"):
@@ -323,6 +329,8 @@ def copy_event_data(event, source, skip_attributes=None, teams=()):
         question_map=question_map,
         track_map=track_map,
         submission_type_map=submission_type_map,
+        tag_map=tag_map,
+        score_category_map=score_category_map,
         speaker_information_map=information_map,
     )
     initialise_event(event)
