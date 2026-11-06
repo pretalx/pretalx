@@ -6,6 +6,7 @@ from contextlib import suppress
 import django_tables2 as tables
 from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured
 from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
 from django_tables2.utils import OrderBy, OrderByTuple, segment
 
 from pretalx.common.forms.tables import MAX_SORT_LEVELS, TablePreferencesForm
@@ -34,9 +35,7 @@ class QuestionColumnMixin:
     def get_questions(cls, event, user):
         if not event or not user or not user.pk:
             return []
-        return questions_for_user(event, user).filter(
-            target=cls.question_target, variant__in=QuestionVariant.short_answers
-        )
+        return questions_for_user(event, user).filter(target=cls.question_target)
 
     def _get_question_columns(self):
         """Build list of question columns for extra_columns parameter."""
@@ -49,7 +48,11 @@ class QuestionColumnMixin:
             extra_columns.append(
                 (
                     column_name,
-                    QuestionColumn(verbose_name=question.question, question=question),
+                    QuestionColumn(
+                        verbose_name=question.question,
+                        question=question,
+                        export_only=question.variant in QuestionVariant.long_answers,
+                    ),
                 )
             )
         return extra_columns
@@ -122,6 +125,8 @@ class PretalxTable(BaseTable):
     update_permission = "update"
     delete_permission = "delete"
     filter_options = {}  # Filter options always used in FilterContext
+    export_name = None
+    export_permission = None
     default_columns = None  # Can't save preferences: is outside an event context
     configurable = True
 
@@ -133,11 +138,13 @@ class PretalxTable(BaseTable):
         has_update_permission=None,
         has_delete_permission=None,
         filterset=None,
+        for_export=False,
         **kwargs,
     ):
         self.event = event
         self.user = user
         self.filterset = filterset
+        self.for_export = for_export
         self._ordering_applied = False
         if has_update_permission is None:
             has_update_permission = self.has_event_permission(self.update_permission)
@@ -182,6 +189,60 @@ class PretalxTable(BaseTable):
     def augment_queryset(cls, queryset, *, event, user):
         """Add annotations and prefetches."""
         return queryset
+
+    def column_prefetches(self, columns):
+        return []
+
+    def _prefetch_column_data(self):
+        queryset = getattr(self.data, "data", None)
+        if not hasattr(queryset, "prefetch_related"):
+            return
+        if lookups := self.column_prefetches({column.name for column in self.columns}):
+            self.data.data = queryset.prefetch_related(*lookups)
+
+    @property
+    def exportable(self):
+        return self.export_permission is not None
+
+    def _is_export_only(self, name):
+        return getattr(self.columns[name].column, "export_only", False)
+
+    @cached_property
+    def export_columns(self):
+        return [
+            column
+            for column in self.columns
+            if not column.column.exclude_from_export
+            and column.name not in ("pk", "actions", "code")
+        ]
+
+    def as_values(self, exclude_columns=None):
+        exclude_columns = set(exclude_columns or ())
+        columns = [c for c in self.export_columns if c.name not in exclude_columns]
+        yield [_("ID"), *(column.header for column in columns)]
+        for row in self.rows:
+            record = row.record
+            yield [
+                getattr(record, "code", None) or record.pk,
+                *(row.get_cell_value(column.name) for column in columns),
+            ]
+
+    def export_column_names(self):
+        return ["ID", *(column.name for column in self.export_columns)]
+
+    def configure_export(self, columns, ordering=None):
+        self.for_export = True
+        self._set_columns(columns or self.default_export_columns)
+        self._prefetch_column_data()
+        ordering = self._validate_ordering(list(ordering or []))
+        if ordering:
+            self.data.data = self._apply_ordering(self.data.data, ordering)
+            self._order_by = OrderByTuple(ordering)
+            self._ordering_applied = True
+
+    @property
+    def default_export_columns(self):
+        return list(self.default_columns)
 
     def _reflect_data_ordering(self):
         """Make sure sort order is shown in table headers."""
@@ -246,7 +307,11 @@ class PretalxTable(BaseTable):
     def _get_columns(self, visible=True):
         columns = []
         for name, column in self.columns.items():
-            if column.visible == visible and name not in self.exempt_columns:
+            if (
+                column.visible == visible
+                and name not in self.exempt_columns
+                and not self._is_export_only(name)
+            ):
                 columns.append((name, column.verbose_name))
         return columns
 
@@ -290,7 +355,10 @@ class PretalxTable(BaseTable):
     def _set_columns(self, selected_columns):
         available_column_names = self.columns.names()
         valid_selected_columns = [
-            c for c in selected_columns if c in available_column_names
+            c
+            for c in selected_columns
+            if c in available_column_names
+            and (self.for_export or not self._is_export_only(c))
         ]
         visible_columns = [*valid_selected_columns, *self.exempt_columns]
 
@@ -312,6 +380,7 @@ class PretalxTable(BaseTable):
         if "actions" in self.sequence:
             self.sequence.remove("actions")
             self.sequence.append("actions")
+        self.__dict__.pop("export_columns", None)
 
     def _get_sortable_column_names(self):
         return {
@@ -412,6 +481,10 @@ class PretalxTable(BaseTable):
         else:
             return True
 
+    def resolve_ordering(self, requested, saved=None):
+        """Merge a requested ordering with a saved one and drop unsortable columns."""
+        return self._validate_ordering(self._merge_ordering(requested, saved)) or []
+
     def _merge_ordering(self, new_ordering, saved_ordering):
         """Merge new column click ordering with saved multi-column ordering.
 
@@ -462,6 +535,7 @@ class PretalxTable(BaseTable):
             columns = override_columns
         columns = columns or self.default_columns
         self._set_columns(columns)
+        self._prefetch_column_data()
 
         if ordering:
             # Apply our custom ordering that handles multi-column sorting with

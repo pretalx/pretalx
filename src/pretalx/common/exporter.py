@@ -191,14 +191,23 @@ class BaseExporter:
         return mark_safe(ElementTree.tostring(image.get_image()).decode())  # noqa: S308  -- generated SVG from qrcode
 
 
-def render_csv(*, fieldnames, rows) -> str:
-    output = StringIO()
+def write_csv(file, *, fieldnames, rows, delimiter=","):
     # Prefix with a UTF-8 byte-order mark to help applications like Excel
     # figure out the file encoding.
-    output.write("﻿")
-    writer = csv.DictWriter(output, fieldnames=list(fieldnames))
-    writer.writeheader()
-    writer.writerows(rows)
+    file.write("﻿")
+    fieldnames = list(fieldnames)
+    writer = csv.writer(file, delimiter=delimiter)
+    writer.writerow(fieldnames)
+    for row in rows:
+        if isinstance(row, dict):
+            writer.writerow([row.get(field, "") for field in fieldnames])
+        else:
+            writer.writerow(row)
+
+
+def render_csv(*, fieldnames, rows) -> str:
+    output = StringIO()
+    write_csv(output, fieldnames=fieldnames, rows=rows)
     return output.getvalue()
 
 
