@@ -1,0 +1,23 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+{% load i18n %}
+
+<div role="tablist" class="mb-4">
+    <a
+        role="tab"
+        href="{{ request.event.orga_urls.exports }}"
+        aria-selected="{% if url_name == 'exports.more' %}false{% else %}true{% endif %}"
+    >
+        {% translate "Saved exports" %}
+    </a>
+    <a
+        role="tab"
+        href="{{ request.event.orga_urls.more_exports }}"
+        aria-selected="{% if url_name == 'exports.more' %}true{% else %}false{% endif %}"
+    >
+        {% translate "Other exports" %}
+    </a>
+</div>

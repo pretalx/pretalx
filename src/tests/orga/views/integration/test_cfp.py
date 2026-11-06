@@ -1117,10 +1117,10 @@ def test_question_file_download_rejects_foreign_cached_file(client, event):
         own_file = CachedFile.objects.exclude(pk=victim_file.pk).get()
 
     cross_view_response = client.get(
-        event.orga_urls.schedule_export_download, data={"cached_file": str(own_file.id)}
+        event.orga_urls.html_export_download, data={"cached_file": str(own_file.id)}
     )
     assert cross_view_response.status_code == 302
-    assert cross_view_response.url == event.orga_urls.schedule_export
+    assert cross_view_response.url == event.orga_urls.more_exports
 
     response = client.get(
         file_question.urls.download, data={"cached_file": str(own_file.id)}

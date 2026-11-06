@@ -7,8 +7,6 @@ import pytest
 from django import forms as django_forms
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.messages import constants as message_constants
-from django.contrib.messages import get_messages
 from django.core import mail as djmail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
@@ -746,81 +744,6 @@ def test_speaker_information_create_edit_and_delete(client, event):
     assert response.status_code == 200
     with scopes_disabled():
         assert list(event.information.all()) == [created]
-
-
-def test_speaker_export_empty_redirects(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-        speaker = SpeakerFactory(event=event)
-        sub = SubmissionFactory(event=event)
-        sub.speakers.add(speaker)
-    client.force_login(user)
-    export_url = event.orga_urls.speakers + "export/"
-
-    response = client.post(
-        export_url, data={"target": "accepted", "name": "on", "export_format": "json"}
-    )
-
-    assert response.status_code == 302
-    assert response.url == export_url
-    messages = list(get_messages(response.wsgi_request))
-    assert [message.level for message in messages] == [message_constants.WARNING]
-    assert str(messages[0]) == "No data to be exported"
-
-
-def test_speaker_export(client, event, talk_slot):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-        speaker = talk_slot.submission.speakers.select_related("user", "event").first()
-        submission = talk_slot.submission
-        question = QuestionFactory(
-            event=event, target="speaker", variant=QuestionVariant.CHOICES
-        )
-        option = AnswerOptionFactory(question=question, answer="very")
-        answer = AnswerFactory(
-            question=question, submission=submission, speaker=speaker
-        )
-        answer.options.set([option])
-        answer_string = answer.answer_string
-    client.force_login(user)
-    data = {
-        "target": "all",
-        "name": "on",
-        f"question_{question.pk}": "on",
-        "submission_ids": "on",
-    }
-
-    response = client.post(
-        event.orga_urls.speakers + "export/", data={**data, "export_format": "csv"}
-    )
-    assert response.status_code == 200
-    assert "<!doctype" in response.content.decode().strip().lower()
-
-    response = client.post(
-        event.orga_urls.speakers + "export/",
-        data={**data, "export_format": "csv", "data_delimiter": "comma"},
-    )
-    assert response.status_code == 200
-    expected = (
-        f"ID,Name,Proposal IDs,{question.question}\r\n"
-        f"{speaker.code},{speaker.get_display_name()},{submission.code},{answer_string}\r\n"
-    )
-    # CSV exports start with a UTF-8 BOM so Excel detects the encoding.
-    assert response.content.decode("utf-8-sig") == expected
-    assert response.content.startswith(b"\xef\xbb\xbf")
-
-    response = client.post(
-        event.orga_urls.speakers + "export/", data={**data, "export_format": "json"}
-    )
-    assert response.status_code == 200
-    assert json.loads(response.content.decode()) == [
-        {
-            "ID": speaker.code,
-            "Name": speaker.get_display_name(),
-            question.question: answer_string,
-            "Proposal IDs": [submission.code],
-        }
-    ]
 
 
 class _ExtraSpeakerForm(django_forms.Form):

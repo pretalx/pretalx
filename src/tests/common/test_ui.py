@@ -12,7 +12,6 @@ from pretalx.common.ui import (
     LinkButton,
     _channel_luminance,
     _relative_luminance,
-    api_buttons,
     back_button,
     delete_button,
     delete_link,
@@ -259,14 +258,3 @@ def test_generate_contrast_color_falls_back_when_no_candidate_clears():
         min(abs(result_hue - i / 12), 1 - abs(result_hue - i / 12)) for i in range(12)
     )
     assert min_dist < 30 / 360
-
-
-@pytest.mark.django_db
-def test_api_buttons_returns_docs_and_api_links(event):
-    buttons = api_buttons(event)
-
-    assert all(isinstance(b, LinkButton) for b in buttons)
-    assert [(b.href, b.color) for b in buttons] == [
-        ("https://docs.pretalx.org/api/", "secondary"),
-        (event.api_urls.base, "success"),
-    ]

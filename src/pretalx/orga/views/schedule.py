@@ -26,16 +26,12 @@ from django_context_decorator import context
 from i18nfield.strings import LazyI18nString
 from i18nfield.utils import I18nJSONEncoder
 
-from pretalx.agenda.tasks import task_export_schedule_html
-from pretalx.common.exporter import get_schedule_exporters
 from pretalx.common.language import get_current_language_information
-from pretalx.common.models.file import CachedFile
 from pretalx.common.text.phrases import phrases
-from pretalx.common.ui import Button, LinkButton, api_buttons, back_button
+from pretalx.common.ui import Button, back_button
 from pretalx.common.views.generic import OrgaCRUDView
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
-    AsyncFileDownloadMixin,
     EventPermissionRequired,
     OrderActionMixin,
     PermissionRequired,
@@ -47,7 +43,6 @@ from pretalx.mail.domain.placeholders import (
 )
 from pretalx.mail.domain.template import mail_template_by_role
 from pretalx.mail.enums import MailTemplateRoles
-from pretalx.orga.forms.export import ScheduleExportForm
 from pretalx.orga.tables.schedule import RoomTable
 from pretalx.schedule.domain.availability import merged_speaker_availabilities
 from pretalx.schedule.domain.notifications import (
@@ -96,106 +91,6 @@ class ScheduleView(EventPermissionRequired, TemplateView):
         result["gettext_language"] = path.replace("-", "_")
         result["has_visible_rooms"] = self.request.event.rooms.visible().exists()
         return result
-
-
-class ScheduleExportView(EventPermissionRequired, FormView):
-    template_name = "orga/schedule/export.html"
-    permission_required = "event.update_event"
-    form_class = ScheduleExportForm
-
-    def get_form_kwargs(self):
-        result = super().get_form_kwargs()
-        result["event"] = self.request.event
-        result["user"] = self.request.user
-        return result
-
-    @cached_property
-    def schedule(self):
-        return self.request.event.current_schedule or self.request.event.wip_schedule
-
-    @context
-    def exporters(self):
-        return [
-            exporter
-            for exporter in get_schedule_exporters(self.request, schedule=self.schedule)
-            if exporter.group != "speaker"
-        ]
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["zip_buttons"] = [
-            LinkButton(
-                href=self.request.event.orga_urls.schedule_export_download,
-                color="secondary",
-                label=_("Download ZIP"),
-            ),
-            Button(label=_("Regenerate Export")),
-        ]
-        context["api_buttons"] = api_buttons(self.request.event)
-        return context
-
-    @context
-    def tablist(self):
-        return {
-            "custom": _("CSV/JSON exports"),
-            "general": _("More exports"),
-            "api": _("API"),
-        }
-
-    def form_valid(self, form):
-        result = form.export_data()
-        if not result:
-            messages.warning(self.request, phrases.orga.no_data_to_export)
-            return redirect(self.request.path)
-        return result
-
-
-class ScheduleExportTriggerView(EventPermissionRequired, View):
-    permission_required = "event.update_event"
-
-    def post(self, request, event):
-        cached_file_id = request.event.cache.get("schedule_export_cached_file")
-        if cached_file_id:
-            CachedFile.objects.filter(id=cached_file_id).delete()
-            request.event.cache.delete("schedule_export_cached_file")
-        return redirect(request.event.orga_urls.schedule_export_download)
-
-
-class ScheduleExportDownloadView(AsyncFileDownloadMixin, EventPermissionRequired, View):
-    permission_required = "event.update_event"
-
-    def get_error_redirect_url(self):
-        return self.request.event.orga_urls.schedule_export
-
-    def get_async_download_filename(self):
-        return f"{self.request.event.slug}_schedule.zip"
-
-    def start_async_task(self, cached_file):
-        result = task_export_schedule_html.apply_async(
-            kwargs={
-                "event_id": self.request.event.id,
-                "cached_file_id": str(cached_file.id),
-            }
-        )
-        self.request.event.cache.set(
-            "schedule_export_cached_file", str(cached_file.id), None
-        )
-        return result
-
-    def get_async_waiting_template(
-        self,
-    ):  # pragma: no cover — only used during HTMX polling
-        return "orga/schedule/export_waiting.html"
-
-    def get(self, request, event):
-        if "async_id" not in request.GET and "cached_file" not in request.GET:
-            cached_file_id = request.event.cache.get("schedule_export_cached_file")
-            if cached_file_id:
-                cached_file = CachedFile.objects.filter(id=cached_file_id).first()
-                if cached_file and cached_file.file:
-                    return self._serve_cached_file(request, cached_file)
-                request.event.cache.delete("schedule_export_cached_file")
-        return self.handle_async_download(request)
 
 
 class ScheduleReleaseView(EventPermissionRequired, FormView):

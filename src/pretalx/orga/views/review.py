@@ -17,7 +17,7 @@ from django_context_decorator import context
 
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.text.phrases import phrases
-from pretalx.common.ui import Button, api_buttons
+from pretalx.common.ui import Button
 from pretalx.common.views.generic import CreateOrUpdateView, OrgaTableMixin
 from pretalx.common.views.helpers import is_htmx
 from pretalx.common.views.mixins import (
@@ -31,7 +31,6 @@ from pretalx.event.domain.queries.team import (
     event_reviewer_teams,
     user_reviewer_teams_in_event,
 )
-from pretalx.orga.forms.export import ReviewExportForm
 from pretalx.orga.forms.review import (
     BulkTagForm,
     DirectionForm,
@@ -956,31 +955,3 @@ class ReviewAssignmentImport(EventPermissionRequired, FormView):
         form.save()
         messages.success(self.request, _("The reviewers were assigned successfully."))
         return redirect(self.request.event.orga_urls.review_assignments)
-
-
-class ReviewExport(EventPermissionRequired, FormView):
-    permission_required = "event.update_event"
-    template_name = "orga/review/export.html"
-    form_class = ReviewExportForm
-
-    @context
-    def tablist(self):
-        return {"custom": _("CSV/JSON exports"), "api": _("API")}
-
-    def get_form_kwargs(self):
-        result = super().get_form_kwargs()
-        result["event"] = self.request.event
-        result["user"] = self.request.user
-        return result
-
-    def form_valid(self, form):
-        result = form.export_data()
-        if not result:
-            messages.warning(self.request, phrases.orga.no_data_to_export)
-            return redirect(self.request.path)
-        return result
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["api_buttons"] = api_buttons(self.request.event)
-        return context

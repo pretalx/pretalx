@@ -5,8 +5,6 @@ import json
 import tempfile
 
 import pytest
-from django.contrib.messages import constants as message_constants
-from django.contrib.messages import get_messages
 from django.core.cache import cache
 from django_scopes import scopes_disabled
 
@@ -879,45 +877,6 @@ def test_review_assignment_via_import(client, event):
     assert _assigned_count(other_submission) == 0
     with scopes_disabled():
         assert reviewer.assigned_reviews.count() == 1
-
-
-def test_review_export(client, event):
-    with scopes_disabled():
-        orga_user = make_orga_user(event, can_change_event_settings=True)
-        reviewer = _make_reviewer(event)
-        submission = SubmissionFactory(event=event)
-    client.force_login(orga_user)
-    export_url = event.orga_urls.reviews + "export/"
-
-    response = client.get(export_url)
-    assert response.status_code == 200
-    assert "api_buttons" in response.context
-
-    response = client.post(export_url, {"target": "all", "export_format": "json"})
-    assert response.status_code == 302
-    assert response.url == export_url
-    messages = list(get_messages(response.wsgi_request))
-    assert [message.level for message in messages] == [message_constants.WARNING]
-    assert str(messages[0]) == "No data to be exported"
-
-    with scopes_disabled():
-        ReviewFactory(submission=submission, user=reviewer, text="Good talk")
-    response = client.post(
-        export_url,
-        {
-            "target": "all",
-            "score": "on",
-            "text": "on",
-            "created": "on",
-            "user_name": "on",
-            "user_email": "on",
-            "submission_title": "on",
-            "submission_id": "on",
-            "export_format": "json",
-        },
-    )
-    assert response.status_code == 200
-    assert "Good talk" in response.content.decode()
 
 
 def test_bulk_review(client, event):

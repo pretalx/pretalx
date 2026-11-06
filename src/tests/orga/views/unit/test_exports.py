@@ -5,6 +5,7 @@ import pytest
 
 from pretalx.orga.views.exports import (
     AdhocTableExportRun,
+    MoreExportsView,
     TableExportRun,
     usable_export_tables,
 )
@@ -48,3 +49,30 @@ def test_table_export_run_filename_from_table_name(event):
     assert view.get_async_download_filename() == f"{event.slug}_sessions.csv"
     assert view.get_error_redirect_url() == event.orga_urls.base
     assert view.get_back_url() == event.orga_urls.base
+
+
+def test_more_exports_view_partitions_exporters_without_release(event):
+    user = make_orga_user(event, can_change_event_settings=True)
+    view = make_view(MoreExportsView, make_request(event, user=user))
+
+    available = {exporter.identifier for exporter in view.available_exporters}
+    unavailable = {exporter.identifier for exporter in view.unavailable_exporters}
+
+    assert "speakers.csv" in available
+    assert {"schedule.xml", "schedule.ics"} <= unavailable
+    assert not available & unavailable
+    assert [(button.label, button.color) for button in view.zip_buttons] == [
+        ("Regenerate Export", "secondary"),
+        ("Download ZIP", "primary"),
+    ]
+
+
+def test_more_exports_view_all_exporters_available_after_release(published_talk_slot):
+    event = published_talk_slot.submission.event
+    user = make_orga_user(event, can_change_event_settings=True)
+    view = make_view(MoreExportsView, make_request(event, user=user))
+
+    available = {exporter.identifier for exporter in view.available_exporters}
+
+    assert {"schedule.xml", "schedule.ics", "speakers.csv"} <= available
+    assert view.unavailable_exporters == []
