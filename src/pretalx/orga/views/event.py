@@ -84,7 +84,7 @@ from pretalx.event.interfaces.forms import (
 from pretalx.event.models import Event, TeamInvite
 from pretalx.mail.domain.smtp import mail_backend_for_event
 from pretalx.mail.interfaces.forms import MailSettingsForm
-from pretalx.orga.tables.cfp import QuestionTable
+from pretalx.orga.tables.cfp import ReviewerQuestionTable
 from pretalx.person.domain.verification import (
     finalize_registration,
     promote_on_invitation_match,
@@ -320,7 +320,7 @@ class EventReviewSettings(EventSettingsPermission, FormView):
     @cached_property
     def table(self):
         event = self.request.event
-        table = QuestionTable(
+        table = ReviewerQuestionTable(
             data=event.questions(manager="all_objects")
             .filter(target=QuestionTarget.REVIEWER)
             .annotate(answer_count=Count("answers"))
@@ -329,8 +329,6 @@ class EventReviewSettings(EventSettingsPermission, FormView):
             user=self.request.user,
             has_update_permission=True,
             has_delete_permission=True,
-            target=QuestionTarget.REVIEWER.slug,
-            list_url=event.orga_urls.review_questions,
         )
         table.configure(self.request)
         RequestConfig(self.request, paginate=False).configure(table)

@@ -6,6 +6,8 @@ from django.utils.html import format_html
 
 from pretalx.orga.tables.cfp import (
     QuestionTable,
+    ReviewerQuestionTable,
+    SpeakerQuestionTable,
     SubmissionTypeTable,
     SubmitterAccessCodeTable,
     TrackTable,
@@ -89,16 +91,21 @@ def test_table_attendee_signup_column_visibility(
 
 def test_question_table_name_and_dragsort_url_are_target_specific(event):
     question = QuestionFactory(event=event)
-    table = QuestionTable(
-        [question],
-        event=event,
-        user=UserFactory.build(),
-        target="speakers",
-        list_url=event.cfp.urls.questions,
+    table = ReviewerQuestionTable([question], event=event, user=UserFactory.build())
+    speaker_table = SpeakerQuestionTable(
+        [question], event=event, user=UserFactory.build()
     )
 
-    assert table.name == "QuestionTable-speakers"
-    assert table.attrs["dragsort-url"] == f"{event.cfp.urls.questions}?target=speakers"
+    assert table.name == "ReviewerQuestionTable"
+    assert (
+        table.attrs["dragsort-url"]
+        == f"{event.orga_urls.review_questions}?target=reviews"
+    )
+    assert speaker_table.name == "SpeakerQuestionTable"
+    assert (
+        speaker_table.attrs["dragsort-url"]
+        == f"{event.cfp.urls.questions}?target=speakers"
+    )
 
 
 def test_question_table_render_question_links_to_base_when_user_has_answer_access(

@@ -364,7 +364,7 @@ def test_question_list_separates_targets_into_tabs(client, event):
         event.cfp.urls.questions,
         headers={
             "HX-Request": "true",
-            "HX-Target": "table-content-QuestionTable-speakers",
+            "HX-Target": "table-content-SpeakerQuestionTable",
         },
     )
 

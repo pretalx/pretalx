@@ -111,7 +111,7 @@ def test_event_review_settings_question_table(event):
     table = view.table
 
     assert [row.record for row in table.rows] == [reviewer_question]
-    assert table.name == "QuestionTable-reviews"
+    assert table.name == "ReviewerQuestionTable"
     assert (
         table.attrs["dragsort-url"]
         == f"{event.orga_urls.review_questions}?target=reviews"

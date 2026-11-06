@@ -50,7 +50,8 @@ from pretalx.mail.enums import MailTemplateRoles
 from pretalx.orga.forms import CfPForm
 from pretalx.orga.forms.cfp import CfPFieldConfigForm, CfPSettingsForm, StepHeaderForm
 from pretalx.orga.tables.cfp import (
-    QuestionTable,
+    SpeakerQuestionTable,
+    SubmissionQuestionTable,
     SubmissionTypeTable,
     SubmitterAccessCodeTable,
     TrackTable,
@@ -204,14 +205,18 @@ class QuestionCreateChoice(EventPermissionRequired, TemplateView):
 class QuestionView(OrderActionMixin, OrgaCRUDView):
     model = Question
     form_class = QuestionOrgaForm
-    table_class = QuestionTable
+    table_class = SubmissionQuestionTable
     template_namespace = "orga/cfp"
     context_object_name = "question"
     detail_is_update = False
     edit_tab_label = _("Data")
     filter_table = "QuestionAnswers"
     create_button_label = _("New custom field")
-    list_target_slugs = (QuestionTarget.SUBMISSION.slug, QuestionTarget.SPEAKER.slug)
+    list_tables = {
+        table_class.target: table_class
+        for table_class in (SubmissionQuestionTable, SpeakerQuestionTable)
+    }
+    list_target_slugs = tuple(list_tables)
 
     def get_queryset(self):
         event = self.request.event
@@ -235,10 +240,8 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
         return self.reverse("choice")
 
     def _build_table(self, slug):
-        table = self.get_table_class()(
+        table = self.list_tables[slug](
             data=self.get_table_data().filter(target=QuestionTarget.from_slug(slug)),
-            target=slug,
-            list_url=self.reverse("list"),
             **self.get_table_kwargs(),
         )
         table.configure(self.request)

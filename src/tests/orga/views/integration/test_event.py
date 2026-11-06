@@ -1200,7 +1200,7 @@ def test_event_review_settings_page(client, event):
         event.orga_urls.review_settings,
         headers={
             "HX-Request": "true",
-            "HX-Target": "table-content-QuestionTable-reviews",
+            "HX-Target": "table-content-ReviewerQuestionTable",
         },
     )
     assert response.status_code == 200
