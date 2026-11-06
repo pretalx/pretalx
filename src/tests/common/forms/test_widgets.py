@@ -352,6 +352,8 @@ def test_select_multiple_with_count_optgroups_sorts_marks_and_skips_empty():
         ("Bravo (5)", True),
         ("Alpha (1)", False),
     ]
+    selected_empty = widget.optgroups("field", ["d"])[0][1]
+    assert ("Empty (0)", True) in [(o["label"], o["selected"]) for o in selected_empty]
 
 
 def _track(value, event_name, event_id):
