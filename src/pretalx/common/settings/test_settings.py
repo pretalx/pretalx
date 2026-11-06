@@ -29,16 +29,6 @@ SITE_HOST = (_site_url.hostname or "").lower()
 for directory in (BASE_DIR, DATA_DIR, LOG_DIR, MEDIA_ROOT, HTMLEXPORT_ROOT):
     directory.mkdir(parents=True, exist_ok=True)
 
-with suppress(ImportError):
-    import tests.dummy_app  # noqa: F401, E402 -- check if available; import after settings setup
-
-    INSTALLED_APPS.append("tests.dummy_app.PluginApp")
-
-with suppress(ImportError):
-    import tests.dummy_app_no_hooks  # noqa: F401, E402 -- check if available; import after settings setup
-
-    INSTALLED_APPS.append("tests.dummy_app_no_hooks.PluginApp")
-
 atexit.register(tmpdir.cleanup)
 
 MAIL_FROM = "orga@orga.org"
