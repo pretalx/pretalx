@@ -18,14 +18,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% endif %}
             {% include "common/includes/_table_toolbar.html" %}
         </div>
-        <div
-            id="table-content-{{ table.name }}"
-            class="table-content"
-            data-table-name="{{ table.name }}"
-            aria-live="polite"
-        >
-            {% partial table-content %}
-        </div>
+        {% block table-content %}
+            <div
+                id="table-content-{{ table.name }}"
+                class="table-content"
+                data-table-name="{{ table.name }}"
+                aria-live="polite"
+            >
+                {% partial table-content %}
+            </div>
+        {% endblock table-content %}
     </div>
 {% endblock table-wrapper %}
 

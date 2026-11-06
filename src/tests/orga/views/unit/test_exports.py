@@ -3,7 +3,11 @@
 
 import pytest
 
-from pretalx.orga.views.exports import TableExportRun, usable_export_tables
+from pretalx.orga.views.exports import (
+    AdhocTableExportRun,
+    TableExportRun,
+    usable_export_tables,
+)
 from tests.factories import TableExportFactory
 from tests.utils import make_orga_user, make_request, make_view
 
@@ -32,3 +36,15 @@ def test_table_export_run_filename_and_content_type(event):
     assert view.get_async_download_filename() == f"{event.slug}_cafe-talks.json"
     assert view.get_async_download_content_type() == "application/json"
     assert view.get_error_redirect_url() == event.orga_urls.exports
+
+
+def test_table_export_run_filename_from_table_name(event):
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user, method="post")
+    request.POST = {"table": "SubmissionTable"}
+    view = make_view(AdhocTableExportRun, request)
+    view.export_config = {"serializer": "csv"}
+
+    assert view.get_async_download_filename() == f"{event.slug}_sessions.csv"
+    assert view.get_error_redirect_url() == event.orga_urls.base
+    assert view.get_back_url() == event.orga_urls.base

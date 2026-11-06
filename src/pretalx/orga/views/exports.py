@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.contrib import messages
+from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
@@ -21,6 +22,7 @@ from pretalx.common.tasks import task_export_table
 from pretalx.common.ui import Button
 from pretalx.common.views.generic import OrgaCRUDView
 from pretalx.common.views.mixins import AsyncFileDownloadMixin, EventPermissionRequired
+from pretalx.common.views.redirect import allowed_next_url
 from pretalx.orga.tables.table_export import TableExportTable
 
 
@@ -144,6 +146,51 @@ class ExportDownloadMixin(AsyncFileDownloadMixin):
                 "config": self.export_config,
             }
         )
+
+
+class AdhocTableExportRun(ExportDownloadMixin, EventPermissionRequired, View):
+    permission_required = "event.orga_access_event"
+
+    def get_export_name(self):
+        return str(self.table_class.export_name)
+
+    @cached_property
+    def table_class(self):
+        return get_exportable_table(self.request.event, self.request.POST.get("table"))
+
+    def get_back_url(self):
+        return (
+            allowed_next_url(self.request.POST.get("next"))
+            or self.request.event.orga_urls.base
+        )
+
+    def get(self, request, *args, **kwargs):
+        if "async_id" in request.GET or "cached_file" in request.GET:
+            return self.handle_async_download(request)
+        return redirect(self.get_error_redirect_url())
+
+    def post(self, request, *args, **kwargs):
+        if not can_export(self.table_class, request.event, request.user):
+            raise Http404
+        form = TableExportForm(
+            data=request.POST,
+            event=request.event,
+            user=request.user,
+            table_class=self.table_class,
+            can_save=request.user.has_perm("event.update_event", request.event),
+        )
+        if not form.is_valid():
+            for error in form.errors.values():
+                messages.error(request, error[0])
+            return redirect(self.get_back_url())
+        if form.cleaned_data.get("save"):
+            with transaction.atomic():
+                table_export = form.save()
+                table_export.log_action(".create", person=request.user, orga=True)
+            messages.success(request, _("The export has been saved."))
+            return redirect(request.event.orga_urls.exports)
+        self.export_config = form.save(commit=False).config
+        return self.start_async_download(request)
 
 
 class TableExportRun(ExportDownloadMixin, EventPermissionRequired, View):

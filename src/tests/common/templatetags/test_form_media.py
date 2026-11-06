@@ -107,16 +107,23 @@ def test_form_media_base_js_precedes_dependent_scripts():
 
 
 @pytest.mark.parametrize(
-    ("configuration_form", "scripts"),
-    ((None, ["tables.js"]), (FormA(), ["tables.js", "form_a.js"])),
-    ids=("plain", "with_configuration_form"),
+    ("configuration_form", "exportable", "scripts"),
+    (
+        (None, False, ["tables.js"]),
+        (FormA(), False, ["tables.js", "form_a.js"]),
+        (None, True, ["tables.js", "form_a.js", "form_b.js"]),
+    ),
+    ids=("plain", "with_configuration_form", "exportable"),
 )
-def test_form_media_table_media(configuration_form, scripts):
+def test_form_media_table_media(configuration_form, exportable, scripts):
     class FakeTable:
         pass
 
     table = FakeTable()
     table.configuration_form = configuration_form
+    table.exportable = exportable
+    table.export_form = FormA()
+    table.export_form.columns_form = FormB()
 
     rendered = str(form_media(template.Context({"table": table}), table_media=True))
 

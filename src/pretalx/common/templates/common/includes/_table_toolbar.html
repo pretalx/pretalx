@@ -6,12 +6,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 {% load phrases %}
 
-{% if table.configuration_form or table.printable %}
+{% if table.configuration_form or table.printable or table.exportable %}
     <div class="d-flex justify-content-end mb-2 table-toolbar">
         {% if table.configuration_form %}
             <button
                 type="button"
-                class="btn btn-sm btn-secondary {% if table.printable %}mr-2{% endif %}"
+                class="btn btn-sm btn-secondary mr-2"
                 data-dialog-target="#table-preferences-{{ table.name }}"
             >
                 <i class="fa fa-cog"></i> {% translate "Table options" %}
@@ -25,8 +25,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 data-default-columns="{{ table.configuration_form.default_columns_json }}"
             >
                 <div class="dialog-body">
-                    {% partial column-picker %}
-                    {% if table.configuration_form.sort_choices %}{% partial sort-section %}{% endif %}
+                    {% with picker=table.configuration_form %}
+                        {% partial column-picker %}
+                        {% if picker.sort_choices %}{% partial sort-section %}{% endif %}
+                    {% endwith %}
                 </div>
                 <div class="dialog-footer">
                     <button type="button" class="btn btn-link mr-auto reset-preferences">
@@ -41,7 +43,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% if table.printable %}
             <button
                 type="button"
-                class="btn btn-sm btn-secondary table-print-btn"
+                class="btn btn-sm btn-secondary table-print-btn{% if table.exportable %} mr-2{% endif %}"
                 data-table-name="{{ table.name }}"
                 {% if table.configuration_form %}data-dialog-target="#table-print-{{ table.name }}"{% endif %}
             >
@@ -51,7 +53,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% #dialog id="table-print-"|add:table.name size="md" %}
                 {% #slot header %}{% translate "Print options" %}{% /slot %}
                 <div class="table-print-form" data-table-name="{{ table.name }}">
-                    <div class="dialog-body">{% partial column-picker %}</div>
+                    <div class="dialog-body">
+                        {% with picker=table.configuration_form %}{% partial column-picker %}{% endwith %}
+                    </div>
                     <div class="dialog-footer">
                         <button type="button" class="btn btn-secondary close-dialog">{{ phrases.base.cancel }}</button>
                         <button type="button" class="btn btn-primary print-now">
@@ -62,22 +66,69 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% /dialog %}
             {% endif %}
         {% endif %}
+        {% if table.exportable %}
+            <button
+                type="button"
+                class="btn btn-sm btn-secondary"
+                data-dialog-target="#table-export-{{ table.name }}"
+            >
+                <i class="fa fa-download"></i> {% translate "Export" context "noun: data export" %}
+            </button>
+            {% #dialog id="table-export-"|add:table.name size="md" %}
+            {% #slot header %}{% translate "Export" context "noun: data export" %}{% /slot %}
+            <form
+                method="post"
+                action="{{ table.export_url }}"
+                class="table-export-form"
+                data-table-name="{{ table.name }}"
+            >
+                {% csrf_token %}
+                <input type="hidden" name="table" value="{{ table.name }}">
+                <input type="hidden" name="filters" value="">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <div class="dialog-body">
+                    {% with picker=table.export_form.columns_form %}{% partial column-picker %}{% endwith %}
+                    <div class="mt-3">
+                        {% include "common/includes/_table_export_fields.html" with form=table.export_form %}
+                    </div>
+                    {% if table.can_save_export %}
+                        <div class="export-save">
+                            {{ table.export_form.save.as_field_group }}
+                        </div>
+                        <div class="export-save-fields" hidden>
+                            {{ table.export_form.name.as_field_group }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="dialog-footer">
+                    <button type="button" class="btn btn-secondary close-dialog">{{ phrases.base.cancel }}</button>
+                    <button type="submit" class="btn btn-primary export-now">
+                        <span class="export-now-run"><i class="fa fa-download"></i>
+                            {% translate "Export" context "noun: data export" %}</span>
+                        <span class="export-now-save" hidden><i class="fa fa-save"></i> {{ phrases.base.save }}</span>
+                    </button>
+                </div>
+            </form>
+            {% /dialog %}
+        {% endif %}
     </div>
 {% endif %}
 
 {% partialdef column-picker %}
     <div class="column-picker">
-        <div class="column-picker-header">
-            {% translate "Columns" %}
-        </div>
+        {% if not picker_headless %}
+            <div class="column-picker-header">
+                {% translate "Columns" %}
+            </div>
+        {% endif %}
         <div class="column-picker-shown" dragsort-url="">
-            {% for column in table.configuration_form.shown_columns %}{% partial column-row %}{% endfor %}
+            {% for column in picker.shown_columns %}{% partial column-row %}{% endfor %}
         </div>
         <div class="column-picker-header">
             {% translate "Hidden" %}
         </div>
         <div class="column-picker-hidden">
-            {% for column in table.configuration_form.hidden_columns %}{% partial column-chip %}{% endfor %}
+            {% for column in picker.hidden_columns %}{% partial column-chip %}{% endfor %}
         </div>
         <template class="column-row-template">{% with column="" %}{% partial column-row %}{% endwith %}</template>
         <template class="column-chip-template">{% with column="" %}{% partial column-chip %}{% endwith %}</template>
@@ -118,10 +169,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endpartialdef column-chip %}
 
 {% partialdef sort-section %}
-    <div class="sort-section" data-max-levels="{{ table.configuration_form.max_sort_levels }}">
-        <div class="sort-section-header">{% translate "Sort" %}</div>
+    <div class="sort-section" data-max-levels="{{ picker.max_sort_levels }}">
+        {% if not picker_headless %}<div class="sort-section-header">{% translate "Sort" %}</div>{% endif %}
         <div class="sort-levels">
-            {% for level in table.configuration_form.sort_levels %}{% partial sort-level %}{% endfor %}
+            {% for level in picker.sort_levels %}{% partial sort-level %}{% endfor %}
         </div>
         <button
             type="button"
@@ -139,7 +190,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <div class="sort-level" {% if level.numeric %}data-numeric{% endif %}>
         <select class="form-control sort-column" aria-label="{% translate 'Sort by' %}">
             <option value="">---------</option>
-            {% for choice in table.configuration_form.sort_choices %}
+            {% for choice in picker.sort_choices %}
                 <option
                     value="{{ choice.name }}"
                     {% if choice.numeric %}data-numeric="1"{% endif %}

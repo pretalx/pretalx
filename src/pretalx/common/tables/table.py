@@ -204,6 +204,28 @@ class PretalxTable(BaseTable):
     def exportable(self):
         return self.export_permission is not None
 
+    @property
+    def export_url(self):
+        return self.event.orga_urls.export_run
+
+    @cached_property
+    def can_save_export(self):
+        return self.has_event_permission("event.update_event")
+
+    @cached_property
+    def export_form(self):
+        from pretalx.common.forms.exports import TableExportForm  # noqa: PLC0415 -- circular import
+
+        name = _("{table} export").format(table=self.export_name)
+        return TableExportForm(
+            event=self.event,
+            user=self.user,
+            table_class=type(self),
+            table=self,
+            can_save=self.can_save_export,
+            initial={"name": name},
+        )
+
     def _is_export_only(self, name):
         return getattr(self.columns[name].column, "export_only", False)
 

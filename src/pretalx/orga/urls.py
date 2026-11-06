@@ -621,6 +621,11 @@ urlpatterns = [
                     url_base="exports", url_name="exports", namespace="orga"
                 ),
                 path(
+                    "exports/run/",
+                    exports.AdhocTableExportRun.as_view(),
+                    name="exports.table",
+                ),
+                path(
                     "exports/<int:pk>/run/",
                     exports.TableExportRun.as_view(),
                     name="exports.run",
