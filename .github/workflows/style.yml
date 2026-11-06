@@ -32,7 +32,8 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - uses: extractions/setup-just@v4
+      - name: Install just
+        run: uv tool install rust-just
       - parallel:
           - name: Check for unresolved string markers
             run: just marker-check
@@ -52,6 +53,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - uses: extractions/setup-just@v4
+      - name: Install just
+        run: uv tool install rust-just
       - name: Run REUSE
         run: just reuse
