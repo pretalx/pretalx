@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2023-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import datetime as dt
 import re
 from functools import cache
 from urllib.parse import quote
@@ -11,12 +12,14 @@ from django.db.models.lookups import Transform
 from django.dispatch import receiver
 from django.template import Context, Template
 from django.template.loader import get_template
+from django.utils import timezone as dj_timezone
 from django.utils.autoreload import file_changed
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.ui import color_dot
+from pretalx.common.urls import get_base_url
 from pretalx.submission.enums import QuestionTarget
 from pretalx.submission.models import Answer
 
@@ -115,20 +118,35 @@ class FunctionOrderMixin:
         return (queryset, True)
 
 
-class SortableColumn(FunctionOrderMixin, tables.Column):
+class ExportFlagMixin:
+    def __init__(self, *args, export_only=False, **kwargs):
+        self.export_only = export_only
+        super().__init__(*args, **kwargs)
+
+
+class Column(ExportFlagMixin, tables.Column):
+    pass
+
+
+class SortableColumn(FunctionOrderMixin, Column):
     pass
 
 
 class ColourColumn(SortableColumn):
     def render(self, value, record):
         if hasattr(value, "color"):
-            color, label = value.color, value.name
+            color, label = value.color, str(value)
         else:
             color, label = record.color, value
         return color_dot(color=color, label=label)
 
+    def value(self, value):
+        if hasattr(value, "color"):
+            return str(value)
+        return value
 
-class TemplateColumn(tables.TemplateColumn):
+
+class TemplateColumn(ExportFlagMixin, tables.TemplateColumn):
     """
     Overrides the default django-tables2 TemplateColumn.
     Changes:
@@ -248,6 +266,7 @@ class ActionsColumn(tables.Column):
     }
 
     def __init__(self, *args, actions=None, **kwargs):
+        kwargs.setdefault("exclude_from_export", True)
         super().__init__(*args, **kwargs)
         self.orderable = False
 
@@ -397,7 +416,7 @@ class ActionsColumn(tables.Column):
         return mark_safe(html)  # noqa: S308  -- built from escaped URLs and static markup
 
 
-class BooleanColumn(tables.Column):
+class BooleanColumn(Column):
     TRUE_MARK = mark_safe('<i class="fa fa-check"></i>')  # noqa: S308  -- static icon markup
     FALSE_MARK = mark_safe('<i class="fa fa-times"></i>')  # noqa: S308  -- static icon markup
     EMPTY_MARK = mark_safe('<span class="text-muted">&mdash;</span>')
@@ -408,25 +427,48 @@ class BooleanColumn(tables.Column):
             return self.EMPTY_MARK
         return self.TRUE_MARK if value else self.FALSE_MARK
 
+    def value(self, value):
+        if value is None:
+            return None
+        return bool(value)
+
 
 class SortableBooleanColumn(FunctionOrderMixin, BooleanColumn):
     pass
 
 
-class DateTimeColumn(tables.DateTimeColumn):
+class DateTimeColumn(ExportFlagMixin, tables.DateTimeColumn):
     timezone = None
     placeholder = mark_safe("&mdash;")
+
+    def __init__(self, *args, part=None, **kwargs):
+        self.part = part  # date or time if only one should be shown
+        super().__init__(*args, **kwargs)
+
+    def _localize(self, value, table):
+        if value and table and (event := getattr(table, "event", None)):
+            value = value.astimezone(event.tz)
+        return value
 
     def render(self, record, table, value, bound_column, **kwargs):
         if not value:
             return self.placeholder
-        if value and table and (event := getattr(table, "event", None)):
-            value = value.astimezone(event.tz)
+        value = self._localize(value, table)
+        if self.part == "date":
+            return value.date().isoformat()
+        if self.part == "time":
+            return value.time().strftime("%H:%M")
         return f"{value.date().isoformat()} {value.time().strftime('%H:%M')}"
 
-    def value(self, value):
-        if value:
-            return value.isoformat()
+    def value(self, value, table):
+        if not value:
+            return None
+        value = self._localize(value, table)
+        if self.part == "date":
+            return value.date()
+        if self.part == "time":
+            return value.time().replace(microsecond=0)
+        return value
 
 
 class QuestionColumn(TemplateColumn):
@@ -480,8 +522,33 @@ class QuestionColumn(TemplateColumn):
         table.context["answer"] = answer
         return super().render(record, table, value, bound_column, **kwargs)
 
+    def value(self, record, table, **kwargs):
+        answer = table.get_answer_for_question(record, self.question.id)
+        if not answer:
+            return None
+        variant = answer.question.variant
+        if variant == "multiple_choice":
+            return [str(option.answer) for option in answer.options.all()]
+        if variant == "boolean":
+            return answer.boolean_answer
+        if variant == "file":
+            if not answer.answer_file:
+                return None
+            return get_base_url(table.event) + answer.answer_file.url
+        if variant in ("date", "datetime"):
+            try:
+                value = dt.datetime.fromisoformat(str(answer.answer))
+            except ValueError:
+                return answer.answer_string or None
+            if variant == "date":
+                return value.date()
+            if dj_timezone.is_naive(value):
+                value = value.replace(tzinfo=table.event.tz)
+            return value
+        return answer.answer_string or None
 
-class IndependentScoreColumn(tables.Column):
+
+class IndependentScoreColumn(Column):
     empty_values = ()  # Always call render, even if no value from accessor
     placeholder = mark_safe("&mdash;")
 
@@ -493,3 +560,6 @@ class IndependentScoreColumn(tables.Column):
     def render(self, record, table, **kwargs):
         score = table.get_independent_score(record, self.category.pk)
         return score if score is not None else self.placeholder
+
+    def value(self, record, table, **kwargs):
+        return table.get_independent_score(record, self.category.pk)
