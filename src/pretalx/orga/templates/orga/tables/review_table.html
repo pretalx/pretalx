@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 
-{% block table-wrapper %}
+{% block table-content %}
     <form method="post" autocomplete="off">
         {% csrf_token %}
         {{ block.super }}
@@ -39,4 +39,4 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </span>
         </div>
     </form>
-{% endblock table-wrapper %}
+{% endblock table-content %}

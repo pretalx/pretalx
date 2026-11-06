@@ -169,9 +169,11 @@ const initHeaderRadios = () => {
 }
 
 const resetReviewSelection = () => {
-    document.querySelectorAll(".review-table input[type=radio]").forEach((radio) => {
-        radio.checked = false
-    })
+    document
+        .querySelectorAll(".review-table .action-row input[type=radio]")
+        .forEach((radio) => {
+            radio.checked = false
+        })
     document
         .querySelectorAll(".review-table .unmark-radio.active")
         .forEach((element) => {

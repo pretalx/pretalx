@@ -82,6 +82,8 @@ def form_media(
             media += DEFAULT_TABLE_MEDIA
             if getattr(table, "configuration_form", None):
                 media += table.configuration_form.media
+            if getattr(table, "exportable", False):
+                media += table.export_form.media + table.export_form.columns_form.media
     if extra_js:
         media += forms.Media(
             js=[forms.Script(js, defer="") for js in extra_js.split(",")]

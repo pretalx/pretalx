@@ -500,6 +500,61 @@ const setupExportFormatFields = (root) => {
     sync()
 }
 
+const currentFilterQuery = () => {
+    const params = new URLSearchParams(window.location.search)
+    for (const name of ["page", "print", "paginate"]) params.delete(name)
+    return params.toString()
+}
+
+const setupExportModal = (form) => {
+    if (form.dataset.tableOptionsBound) return
+    form.dataset.tableOptionsBound = "1"
+
+    const dialog = form.closest("dialog")
+    const picker = setupColumnPicker(form)
+    const baseline = picker.getColumns()
+    const exportButton = form.querySelector(".export-now")
+    const saveCheckbox = form.querySelector("input[name=save]")
+    const nameFields = form.querySelector(".export-save-fields")
+    const nameInput = form.querySelector("input[name=name]")
+    setupExportFormatFields(form)
+
+    const syncDisabled = bindColumnGuard(form, picker, exportButton)
+    dialog.addEventListener("close", () => {
+        picker.setColumns(baseline)
+        syncDisabled()
+    })
+
+    // The name is only asked for (and required) when the export gets saved.
+    const syncSave = () => {
+        const saving = Boolean(saveCheckbox?.checked)
+        if (nameFields) nameFields.hidden = !saving
+        if (nameInput) nameInput.required = saving
+        exportButton.querySelector(".export-now-run").hidden = saving
+        exportButton.querySelector(".export-now-save").hidden = !saving
+    }
+    saveCheckbox?.addEventListener("change", syncSave)
+    syncSave()
+
+    form.addEventListener("submit", () => {
+        form.querySelector("input[name=filters]").value = currentFilterQuery()
+        form.querySelectorAll("input[type=hidden][name=columns]").forEach((input) =>
+            input.remove(),
+        )
+        picker.getColumns().forEach((column) => {
+            const input = document.createElement("input")
+            input.type = "hidden"
+            input.name = "columns"
+            input.value = column
+            form.appendChild(input)
+        })
+    })
+}
+
+const handleTableExport = (root = document) => {
+    root.querySelectorAll("dialog .table-export-form").forEach(setupExportModal)
+}
+
 // Track whether we should scroll after swap (set before swap, used after)
 let pendingScrollTarget = null
 
@@ -554,3 +609,4 @@ document.addEventListener("htmx:responseError", (event) => {
 onReady(handleTablePreferences)
 onReady(handleTableHtmx)
 onReady(() => handleTablePrint())
+onReady(() => handleTableExport())

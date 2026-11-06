@@ -408,6 +408,7 @@ class Event(PretalxModel):
         schedule = "{base}schedule/"
         exports = "{base}exports/"
         new_export = "{exports}new/"
+        export_run = "{exports}run/"
         schedule_export = "{schedule}export/"
         schedule_export_trigger = "{schedule_export}trigger"
         schedule_export_download = "{schedule_export}download"

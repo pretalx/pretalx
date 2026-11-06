@@ -18,6 +18,7 @@ from django.utils.autoreload import file_changed
 from django.utils.safestring import SafeString
 from django_tables2.utils import OrderByTuple
 
+from pretalx.common.forms.exports import TableExportForm
 from pretalx.common.forms.tables import MAX_SORT_LEVELS
 from pretalx.common.tables import (
     ActionsColumn,
@@ -36,6 +37,7 @@ from pretalx.common.tables import (
     get_icon,
 )
 from pretalx.common.tables.columns import _cached_template
+from pretalx.orga.tables.submission import SubmissionTable
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.enums import QuestionTarget
 from pretalx.submission.models import Review, Submission, Track
@@ -654,6 +656,7 @@ def test_sortable_column_order(event):
 @pytest.mark.django_db
 def test_template_column_renders_template_code_into_cells(event):
     class TplTable(PretalxTable):
+        default_columns = ("title",)
         title = TemplateColumn(template_code="{{ record.title }}")
         empty = TemplateColumn(template_code="{{ nothing }}")
         custom_empty = TemplateColumn(template_code="{{ nothing }}", placeholder="")
@@ -693,6 +696,7 @@ def test_template_column_renders_template_code_into_cells(event):
 @pytest.mark.django_db
 def test_template_column_with_template_name(event):
     class TplTable(PretalxTable):
+        default_columns = ("answer_col",)
         answer_col = TemplateColumn(template_name="common/question_answer.html")
 
         class Meta:
@@ -717,6 +721,7 @@ def test_template_column_with_template_name(event):
 @pytest.mark.django_db
 def test_template_column_escapes_inside_an_unescaped_page(event):
     class TplTable(PretalxTable):
+        default_columns = ("title",)
         title = TemplateColumn(
             template_name="orga/tables/columns/submission_title.html"
         )
@@ -1172,36 +1177,6 @@ def test_cached_templates_are_dropped_when_a_file_changes():
     assert _cached_template.cache_info().currsize == 0
 
 
-@pytest.mark.django_db
-def test_question_column_ordering_uses_review_answers(event):
-
-    question = QuestionFactory(event=event, target="reviewer")
-    column = QuestionColumn(question=question)
-
-    queryset, keys = column.apply_custom_ordering(Review.objects.all(), False)
-
-    assert keys == [f"_question_{question.pk}_answer"]
-    assert "review_id" in str(queryset.query)
-
-
-@pytest.mark.django_db
-def test_question_column_mixin_review_model():
-
-    class TestTable(QuestionColumnMixin, PretalxTable):
-        default_columns = ("text",)
-        question_target = QuestionTarget.REVIEWER
-        text = tables.Column()
-
-        class Meta:
-            model = Review
-            fields = ("text",)
-
-    table = TestTable([])
-
-    assert table._question_model == "review"
-    assert table._get_answer_filter_field() == "review_id__in"
-
-
 @pytest.mark.parametrize(
     ("part", "value", "expected_value", "expected_render"),
     (
@@ -1237,34 +1212,6 @@ def test_datetime_column_value_and_render_in_event_timezone(
 
     assert col.value(value, table) == expected_value
     assert col.render(None, table, value, None) == expected_render
-
-
-@pytest.mark.parametrize(
-    ("value", "expected"),
-    ((None, None), ("", False), ("x", True), (0, False), (1, True)),
-)
-def test_boolean_column_value(value, expected):
-    assert BooleanColumn().value(value) == expected
-
-
-def test_colour_column_value_uses_label():
-    col = ColourColumn()
-
-    assert col.value(Track(color="#fff", name="Track")) == "Track"
-    assert col.value("#abc") == "#abc"
-
-
-@pytest.mark.django_db
-def test_independent_score_column_value(event):
-    category = SimpleNamespace(pk=3, name="Novelty")
-    col = IndependentScoreColumn(category=category)
-    table = SimpleNamespace(get_independent_score=lambda record, pk: 4.5)
-
-    assert col.value(record=None, table=table) == 4.5
-
-
-def test_actions_column_is_excluded_from_export():
-    assert ActionsColumn(actions={"edit": {}}).exclude_from_export is True
 
 
 @pytest.mark.django_db
@@ -1381,3 +1328,76 @@ def test_pretalx_table_has_event_permission(event):
     assert real.has_event_permission(None) is False
     assert no_event.has_update_permission is False
     assert no_model.has_update_permission is False
+
+
+@pytest.mark.django_db
+def test_pretalx_table_export_properties(event):
+
+    orga = make_orga_user(event, can_change_event_settings=True)
+    plain = ExportTestTable([], event=event, user=orga)
+    exportable = SubmissionTable([], event=event, user=orga)
+
+    assert plain.exportable is False
+    assert exportable.exportable is True
+    assert exportable.export_url == event.orga_urls.export_run
+    assert exportable.can_save_export is True
+    assert isinstance(exportable.export_form, TableExportForm)
+    assert "Sessions" in exportable.export_form.initial["name"]
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    ((None, None), ("", False), ("x", True), (0, False), (1, True)),
+)
+def test_boolean_column_value(value, expected):
+    assert BooleanColumn().value(value) == expected
+
+
+def test_colour_column_value_uses_label():
+    col = ColourColumn()
+
+    assert col.value(Track(color="#fff", name="Track")) == "Track"
+    assert col.value("#abc") == "#abc"
+
+
+@pytest.mark.django_db
+def test_question_column_mixin_review_model():
+
+    class TestTable(QuestionColumnMixin, PretalxTable):
+        default_columns = ("text",)
+        question_target = QuestionTarget.REVIEWER
+        text = tables.Column()
+
+        class Meta:
+            model = Review
+            fields = ("text",)
+
+    table = TestTable([])
+
+    assert table._question_model == "review"
+    assert table._get_answer_filter_field() == "review_id__in"
+
+
+@pytest.mark.django_db
+def test_question_column_ordering_uses_review_answers(event):
+
+    question = QuestionFactory(event=event, target="reviewer")
+    column = QuestionColumn(question=question)
+
+    queryset, keys = column.apply_custom_ordering(Review.objects.all(), False)
+
+    assert keys == [f"_question_{question.pk}_answer"]
+    assert "review_id" in str(queryset.query)
+
+
+@pytest.mark.django_db
+def test_independent_score_column_value(event):
+    category = SimpleNamespace(pk=3, name="Novelty")
+    col = IndependentScoreColumn(category=category)
+    table = SimpleNamespace(get_independent_score=lambda record, pk: 4.5)
+
+    assert col.value(record=None, table=table) == 4.5
+
+
+def test_actions_column_is_excluded_from_export():
+    assert ActionsColumn(actions={"edit": {}}).exclude_from_export is True

@@ -14,6 +14,7 @@ from django_scopes import scopes_disabled
 
 from pretalx.common.models import ActivityLog, CachedFile
 from pretalx.common.models.exports import TableExport
+from pretalx.orga.views.exports import AdhocTableExportRun
 from pretalx.submission.enums import SubmissionStates
 from tests.factories import (
     CachedFileFactory,
@@ -364,6 +365,224 @@ def test_table_export_list_hides_tables_the_user_may_not_see(client, event):
     assert "Mail queue dump" not in content
     assert "Vanished report" not in content
     assert client.get(mail_dump.urls.run).status_code == 404
+
+
+def test_table_export_run_from_toolbar(client, event):
+    with scopes_disabled():
+        reviewer = _reviewer(event)
+        speaker = SpeakerFactory(event=event, name="Ada")
+        accepted = SubmissionFactory(
+            event=event, title="Accepted", state=SubmissionStates.ACCEPTED
+        )
+        accepted.speakers.add(speaker)
+        SubmissionFactory(
+            event=event, title="Rejected", state=SubmissionStates.REJECTED
+        )
+    client.force_login(reviewer)
+
+    response = client.post(
+        event.orga_urls.export_run,
+        data={
+            "table": "ReviewTable",
+            "filters": "state=accepted&sort=-title",
+            "columns": ["title", "speakers"],
+            "serializer": "csv",
+            "locale": "en",
+            "csv_list_delimiter": "comma",
+            "save": "on",
+            "name": "Mine",
+        },
+    )
+
+    as_json = client.post(
+        event.orga_urls.export_run,
+        data={
+            "table": "ReviewTable",
+            "filters": "state=accepted",
+            "columns": ["title", "speakers"],
+            "serializer": "json",
+            "locale": "*",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response["Content-Type"] == "text/csv"
+    assert (
+        _content(response) == f"ID,Title,Speakers\r\n{accepted.code},Accepted,Ada\r\n"
+    )
+    assert as_json["Content-Type"] == "application/json"
+    assert json.loads(_content(as_json)) == [
+        {"ID": accepted.code, "title": "Accepted", "speakers": ["Ada"]}
+    ]
+    with scopes_disabled():
+        assert not TableExport.objects.exists()
+
+
+def test_table_export_save_from_toolbar_creates_new_export_each_time(client, event):
+    with scopes_disabled():
+        orga = make_orga_user(event, can_change_event_settings=True)
+    client.force_login(orga)
+    data = {
+        "table": "SubmissionTable",
+        "filters": "state=accepted",
+        "columns": ["title"],
+        "serializer": "csv",
+        "locale": "en",
+        "csv_list_delimiter": "newline",
+        "save": "1",
+        "name": "Accepted",
+        "next": event.orga_urls.submissions,
+    }
+
+    first = client.post(event.orga_urls.export_run, data=data)
+    second = client.post(
+        event.orga_urls.export_run, data={**data, "columns": ["title", "state"]}
+    )
+
+    assert first.status_code == 302
+    assert first.url == event.orga_urls.exports
+    assert second.status_code == 302
+    with scopes_disabled():
+        exports = list(TableExport.objects.filter(event=event).order_by("pk"))
+        assert [export.name for export in exports] == ["Accepted", "Accepted"]
+        assert [export.columns for export in exports] == [["title"], ["title", "state"]]
+        assert exports[0].filters == {"state": ["accepted"]}
+        actions = list(
+            ActivityLog.objects.filter(
+                object_id__in=[export.pk for export in exports]
+            ).values_list("action_type", flat=True)
+        )
+    assert actions == ["pretalx.table_export.create", "pretalx.table_export.create"]
+
+
+@pytest.mark.parametrize(
+    "data",
+    ({"table": "OutboxMailTable"}, {"table": "NoSuchTable"}),
+    ids=("unpermitted_table", "unknown_table"),
+)
+def test_table_export_run_404s_without_permission(client, event, data):
+    with scopes_disabled():
+        reviewer = _reviewer(event)
+    client.force_login(reviewer)
+
+    response = client.post(
+        event.orga_urls.export_run, data={"serializer": "csv", "locale": "en", **data}
+    )
+
+    assert response.status_code == 404
+    with scopes_disabled():
+        assert not TableExport.objects.exists()
+
+
+@pytest.mark.parametrize(
+    ("next_url", "target"),
+    (("{submissions}", "submissions"), ("https://evil.example/", "base")),
+    ids=("own_page", "foreign_host"),
+)
+def test_table_export_run_invalid_form_redirects_back_with_error(
+    client, event, next_url, target
+):
+    with scopes_disabled():
+        orga = make_orga_user(event, can_change_submissions=True)
+    client.force_login(orga)
+
+    response = client.post(
+        event.orga_urls.export_run,
+        data={
+            "table": "SubmissionTable",
+            "serializer": "xml",
+            "next": next_url.format(submissions=event.orga_urls.submissions),
+        },
+    )
+
+    assert response.status_code == 302
+    assert response.url == getattr(event.orga_urls, target)
+    messages = list(get_messages(response.wsgi_request))
+    assert [message.level for message in messages] == [message_constants.ERROR]
+
+
+def test_table_export_run_get_without_task_redirects(client, event):
+    with scopes_disabled():
+        orga = make_orga_user(event, can_change_event_settings=True)
+        reviewer = _reviewer(event)
+    client.force_login(orga)
+    orga_response = client.get(event.orga_urls.export_run)
+    client.force_login(reviewer)
+    reviewer_response = client.get(event.orga_urls.export_run)
+
+    assert orga_response.status_code == 302
+    assert orga_response.url == event.orga_urls.exports
+    assert reviewer_response.status_code == 302
+    assert reviewer_response.url == event.orga_urls.base
+
+
+def test_table_export_run_polls_cached_file(client, event):
+    with scopes_disabled():
+        orga = make_orga_user(event, can_change_submissions=True)
+    client.force_login(orga)
+    salt = f"{AdhocTableExportRun.__module__}.{AdhocTableExportRun.__qualname__}"
+    with scopes_disabled():
+        cached_file = CachedFileFactory(
+            filename="talks.csv",
+            content_type="text/csv",
+            session_key=f"{client.session.session_key}!{salt}",
+        )
+        cached_file.file.save("talks.csv", ContentFile(b"ID,Title\r\n"))
+
+    response = client.get(f"{event.orga_urls.export_run}?cached_file={cached_file.id}")
+
+    assert response.status_code == 200
+    assert _content(response) == "ID,Title\r\n"
+
+
+def test_list_views_offer_export_control_by_permission(client, event):
+    with scopes_disabled():
+        orga = make_orga_user(event, can_change_event_settings=True)
+        reviewer = _reviewer(event)
+    client.force_login(orga)
+    orga_pages = {
+        url_attr: client.get(getattr(event.orga_urls, url_attr)).content.decode()
+        for url_attr in ("submissions", "speakers", "reviews", "outbox", "feedback")
+    }
+    client.force_login(reviewer)
+    reviewer_content = client.get(event.orga_urls.reviews).content.decode()
+
+    assert all("table-export-form" in content for content in orga_pages.values())
+    orga_content = orga_pages["submissions"]
+    assert 'data-column="abstract"' in orga_content
+    assert "export-save" in orga_content
+    assert f'href="{event.orga_urls.exports}"' in orga_content
+    assert event.orga_urls.more_exports not in orga_content
+    assert "Export reviews" not in orga_content
+    assert "speakers/export/" not in orga_content
+    assert "table-export-form" in reviewer_content
+    assert 'data-column="duration"' in reviewer_content
+    assert 'data-column="internal_notes"' not in reviewer_content
+    assert "export-save" not in reviewer_content
+    assert event.orga_urls.more_exports not in reviewer_content
+    assert f'href="{event.orga_urls.exports}"' not in reviewer_content
+    assert f'href="{event.orga_urls.stats}"' in reviewer_content
+
+
+def test_export_control_absent_on_per_object_and_non_event_tables(client, event):
+    with scopes_disabled():
+        orga = make_orga_user(
+            event, can_change_event_settings=True, can_change_teams=True
+        )
+        submission = SubmissionFactory(event=event)
+        submission.speakers.add(SpeakerFactory(event=event))
+    client.force_login(orga)
+    teams_url = reverse(
+        "orga:organiser.teams.list", kwargs={"organiser": event.organiser.slug}
+    )
+
+    feedback = client.get(submission.orga_urls.feedback, follow=True)
+    teams = client.get(teams_url)
+
+    assert feedback.status_code == 200
+    assert "table-export-form" not in feedback.content.decode()
+    assert teams.status_code == 200
+    assert "table-export-form" not in teams.content.decode()
 
 
 def test_table_exports_are_scoped_to_their_event(client):
