@@ -16,10 +16,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 def _data(**overrides):
     data = QueryDict(mutable=True)
-    data.update({"serializer": "csv", "locale": "en"})
+    data.update({"serializer": "csv"})
     for key, value in overrides.items():
         if value is None:
-            data.pop(key)
+            data.pop(key, None)
         elif isinstance(value, list):
             data.setlist(key, value)
         else:
@@ -46,7 +46,6 @@ def test_export_form_builds_config_from_toolbar_submission(event):
         "ordering": ["-title"],
         "filters": {"state": ["accepted"]},
         "serializer": "csv",
-        "locale": None,
         "serializer_options": {"delimiter": "", "list_delimiter": "comma"},
     }
 
@@ -136,37 +135,43 @@ def test_export_form_columns_fall_back_to_preferences_then_defaults(event):
 
 
 @pytest.mark.parametrize(
-    ("locales", "serializer", "locale", "valid"),
+    ("locales", "serializer", "locale", "options"),
     (
-        (["en", "de"], "csv", "", False),
-        (["en", "de"], "csv", "*", False),
-        (["en", "de"], "csv", "en", True),
-        (["en", "de"], "json", "", False),
-        (["en", "de"], "json", "*", True),
-        (["en", "de"], "json", "en", True),
-        (["en"], "csv", None, True),
-        (["en"], "json", None, True),
+        (["en", "de"], "csv", None, None),
+        (["en", "de"], "csv", "", None),
+        (["en", "de"], "csv", "fr", None),
+        (
+            ["en", "de"],
+            "csv",
+            "de",
+            {"locale": "de", "delimiter": "", "list_delimiter": ""},
+        ),
+        (["en", "de"], "json", None, {}),
+        (["en", "de"], "json", "", {}),
+        (["en", "de"], "json", "de", {}),
+        (["en"], "csv", None, {"delimiter": "", "list_delimiter": ""}),
     ),
 )
-def test_export_form_locale_required_for_non_multilang_formats(
-    locales, serializer, locale, valid
+def test_export_form_requires_locale_only_for_chosen_localized_format(
+    locales, serializer, locale, options
 ):
     event = EventFactory(locales=locales)
     user = make_orga_user(event, can_change_submissions=True)
 
     form = TableExportForm(
-        data=_data(serializer=serializer, locale=locale),
+        data=_data(serializer=serializer, csv_locale=locale),
         event=event,
         user=user,
         table_class=SubmissionTable,
     )
 
-    assert form.is_valid() is valid
-    if not valid:
-        assert "locale" in form.errors
-    if len(locales) == 1:
-        assert "locale" not in form.fields
-        assert form.save(commit=False).locale == ""
+    assert ("csv_locale" in form.fields) is (len(locales) > 1)
+    if options is None:
+        assert not form.is_valid()
+        assert list(form.errors) == ["csv_locale"]
+    else:
+        assert form.is_valid(), form.errors
+        assert form.serializer_options == options
 
 
 def test_export_form_reads_filter_widgets_when_no_querystring(event):
@@ -193,7 +198,6 @@ def test_export_form_saves_full_configuration(event):
             filters="state=accepted",
             columns=["title"],
             serializer="json",
-            locale="*",
         ),
         event=event,
         user=user,
@@ -203,7 +207,6 @@ def test_export_form_saves_full_configuration(event):
 
     assert form.is_valid(), form.errors
     export = form.save(commit=False)
-    assert export.config["locale"] is None
     export.save()
 
     export = TableExport.objects.get(pk=export.pk)
@@ -212,7 +215,6 @@ def test_export_form_saves_full_configuration(event):
     assert export.columns == ["title"]
     assert export.filters == {"state": ["accepted"]}
     assert export.serializer == "json"
-    assert export.locale == ""
     assert export.serializer_options == {}
 
 
@@ -261,10 +263,10 @@ def test_export_form_initial_state_from_instance():
         ordering=["-created"],
         filters={"state": ["accepted"]},
         serializer="csv",
-        serializer_options={"list_delimiter": "comma"},
-        locale="de",
+        serializer_options={"list_delimiter": "comma", "locale": "de"},
     )
-    structured = TableExportFactory(event=event, serializer="json", locale="")
+    structured = TableExportFactory(event=event, serializer="json")
+    outdated = TableExportFactory(event=event, serializer_options={"locale": "fr"})
 
     form = TableExportForm(
         instance=export, event=event, user=user, table_class=SubmissionTable
@@ -272,6 +274,9 @@ def test_export_form_initial_state_from_instance():
     unsaved = TableExportForm(event=event, user=user, table_class=SubmissionTable)
     saved = TableExportForm(
         instance=structured, event=event, user=user, table_class=SubmissionTable
+    )
+    stale = TableExportForm(
+        instance=outdated, event=event, user=user, table_class=SubmissionTable
     )
 
     assert [column["name"] for column in form.columns_form.shown_columns] == [
@@ -281,12 +286,13 @@ def test_export_form_initial_state_from_instance():
     assert form.columns_form.sort_levels == [
         {"column": "created", "direction": "desc", "numeric": False}
     ]
-    assert form.fields["locale"].initial == "de"
+    assert form.fields["csv_locale"].initial == "de"
     assert form.fields["csv_list_delimiter"].initial == "comma"
     assert form.filterset.is_set("state")
-    assert unsaved.fields["locale"].initial == "*"
-    assert unsaved.fields["locale"].required
-    assert saved.fields["locale"].initial == "*"
+    assert unsaved.fields["csv_locale"].initial == "en"
+    assert unsaved.fields["csv_locale"].required
+    assert saved.fields["csv_locale"].initial == "en"
+    assert stale.fields["csv_locale"].initial == "en"
 
 
 def test_export_form_uses_given_table_for_the_picker(event):

@@ -471,28 +471,11 @@ const handleTablePrint = (root = document) => {
 const setupExportFormatFields = (root) => {
     const fields = root.querySelector(".table-export-fields")
     if (!fields) return
-    const multilang = (fields.dataset.multilangFormats || "").split(",")
-    const defaultLocale = fields.dataset.defaultLocale || ""
-    const allLocales = fields.dataset.allLocales
-    const locale = fields.querySelector(".export-locale select")
-    const allLocalesOption = Array.from(locale?.options || []).find(
-        (option) => option.value === allLocales,
-    )
-    let chosen = Boolean(locale) && locale.value !== allLocales
-    locale?.addEventListener("change", () => {
-        chosen = true
-    })
     const sync = () => {
         const format = fields.querySelector("input[name=serializer]:checked")?.value
         fields.querySelectorAll(".export-format-option").forEach((option) => {
             option.hidden = option.dataset.format !== format
         })
-        if (locale) {
-            const needsLocale = !multilang.includes(format)
-            if (allLocalesOption) allLocalesOption.hidden = needsLocale
-            if (!chosen) locale.value = needsLocale ? defaultLocale : allLocales
-            if (needsLocale && locale.value === allLocales) locale.selectedIndex = 1
-        }
     }
     fields
         .querySelectorAll("input[name=serializer]")

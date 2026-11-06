@@ -32,7 +32,6 @@ class Migration(migrations.Migration):
                 ("filters", models.JSONField(default=dict)),
                 ("serializer", models.CharField(max_length=20)),
                 ("serializer_options", models.JSONField(default=dict)),
-                ("locale", models.CharField(default="", max_length=32)),
                 (
                     "event",
                     models.ForeignKey(

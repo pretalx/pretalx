@@ -16,11 +16,9 @@ from pretalx.common.tables.export import (
 
 
 class TableExportForm(forms.ModelForm):
-    all_locales = "*"
-
     class Meta:
         model = TableExport
-        fields = ("name", "serializer", "locale")
+        fields = ("name", "serializer")
 
     def __init__(
         self,
@@ -63,28 +61,20 @@ class TableExportForm(forms.ModelForm):
             widget=SegmentedRadioSelect,
             initial=self.instance.serializer or "csv",
         )
-        if len(event.locales) > 1:
-            self.fields["locale"] = forms.ChoiceField(
-                label=_("Language"),
-                choices=[
-                    (self.all_locales, _("All languages (structured data)")),
-                    *event.named_locales,
-                ],
-                initial=self.instance.locale or self.all_locales,
-            )
-        else:
-            del self.fields["locale"]
-        self.multilang_formats = [
-            identifier
-            for identifier, serializer in self.serializers.items()
-            if serializer.multilang
-        ]
+        posted_serializer = self.fields["serializer"].widget.value_from_datadict(
+            self.data, self.files, self.add_prefix("serializer")
+        )
         self.option_field_names = []
+        options = self.instance.serializer_options or {}
         for serializer in self.serializers.values():
-            options = self.instance.serializer_options or {}
-            for name, field in serializer.option_fields().items():
-                if name in options:
-                    field.initial = options[name]
+            for name, field in serializer.option_fields(event).items():
+                saved = options.get(name)
+                if saved is not None and (
+                    not isinstance(field, forms.ChoiceField) or field.valid_value(saved)
+                ):
+                    field.initial = saved
+                if self.is_bound and serializer.identifier != posted_serializer:
+                    field.required = False
                 field_name = f"{serializer.identifier}_{name}"
                 self.fields[field_name] = field
                 self.option_field_names.append((serializer.identifier, field_name))
@@ -180,32 +170,13 @@ class TableExportForm(forms.ModelForm):
             return {}
         return self.filterset.resolved_params()
 
-    def clean(self):
-        data = super().clean()
-        serializer = data.get("serializer")
-        if (
-            serializer
-            and serializer not in self.multilang_formats
-            and data.get("locale") == self.all_locales
-        ):
-            self.add_error(
-                "locale", _("This export format needs a language for its content.")
-            )
-        return data
-
-    @property
-    def stored_locale(self):
-        locale = self.cleaned_data.get("locale")
-        return "" if locale in (None, self.all_locales) else locale
-
     @property
     def serializer_options(self):
-        serializer = self.serializers.get(self.cleaned_data.get("serializer"))
-        if not serializer:
-            return {}
+        serializer = self.cleaned_data.get("serializer")
         return {
-            name: self.cleaned_data.get(f"{serializer.identifier}_{name}")
-            for name in serializer.options
+            name.removeprefix(f"{identifier}_"): self.cleaned_data.get(name)
+            for identifier, name in self.option_field_names
+            if identifier == serializer
         }
 
     def save(self, commit=True):
@@ -215,5 +186,4 @@ class TableExportForm(forms.ModelForm):
         self.instance.ordering = self.ordering
         self.instance.filters = self.filters
         self.instance.serializer_options = self.serializer_options
-        self.instance.locale = self.stored_locale
         return super().save(commit=commit)

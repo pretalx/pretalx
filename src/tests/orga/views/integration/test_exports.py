@@ -137,7 +137,6 @@ def test_table_export_create_from_scratch(client, event):
             "ordering": ["-title"],
             "state": ["accepted"],
             "serializer": "csv",
-            "locale": "en",
             "csv_list_delimiter": "comma",
         },
     )
@@ -180,7 +179,6 @@ def test_table_export_create_for_view_less_review_table(client, event):
             "name": "Reviews",
             "columns": ["submission_title", "score", "user_name"],
             "serializer": "json",
-            "locale": "*",
         },
     )
 
@@ -210,7 +208,7 @@ def test_table_export_create_needs_a_usable_table(client, event):
     without_table = client.post(event.orga_urls.new_export, data={"name": "x"})
     planted = client.post(
         event.orga_urls.new_export + "?table=SubmissionTable",
-        data={"name": "Planted", "serializer": "csv", "locale": "en"},
+        data={"name": "Planted", "serializer": "csv"},
     )
 
     assert unpermitted.status_code == 404
@@ -238,7 +236,6 @@ def test_table_export_update_covers_full_configuration(client, event):
             "ordering": ["state"],
             "state": ["rejected"],
             "serializer": "json",
-            "locale": "en",
         },
     )
 
@@ -251,7 +248,7 @@ def test_table_export_update_covers_full_configuration(client, event):
         assert export.ordering == ["state"]
         assert export.filters == {"state": ["rejected"]}
         assert export.serializer == "json"
-        assert export.locale == "en"
+        assert export.serializer_options == {}
         log = ActivityLog.objects.get(
             action_type="pretalx.table_export.update", object_id=export.pk
         )
@@ -387,7 +384,6 @@ def test_table_export_run_from_toolbar(client, event):
             "filters": "state=accepted&sort=-title",
             "columns": ["title", "speakers"],
             "serializer": "csv",
-            "locale": "en",
             "csv_list_delimiter": "comma",
             "save": "on",
             "name": "Mine",
@@ -401,7 +397,6 @@ def test_table_export_run_from_toolbar(client, event):
             "filters": "state=accepted",
             "columns": ["title", "speakers"],
             "serializer": "json",
-            "locale": "*",
         },
     )
 
@@ -427,7 +422,6 @@ def test_table_export_save_from_toolbar_creates_new_export_each_time(client, eve
         "filters": "state=accepted",
         "columns": ["title"],
         "serializer": "csv",
-        "locale": "en",
         "csv_list_delimiter": "newline",
         "save": "1",
         "name": "Accepted",
@@ -466,7 +460,7 @@ def test_table_export_run_404s_without_permission(client, event, data):
     client.force_login(reviewer)
 
     response = client.post(
-        event.orga_urls.export_run, data={"serializer": "csv", "locale": "en", **data}
+        event.orga_urls.export_run, data={"serializer": "csv", **data}
     )
 
     assert response.status_code == 404

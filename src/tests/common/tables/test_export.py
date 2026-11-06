@@ -62,7 +62,6 @@ def _config(**overrides):
         "ordering": [],
         "filters": {},
         "serializer": "csv",
-        "locale": "en",
         "serializer_options": {},
     }
     config.update(overrides)
@@ -86,13 +85,30 @@ def test_table_serializers_offer_csv_and_json(event):
     }
     assert get_table_serializer(event, "csv") is CSVSerializer
     assert get_table_serializer(event, "xlsx") is None
-    assert CSVSerializer.multilang is False
-    assert JSONSerializer.multilang is True
-    assert CSVSerializer.default_options() == {
+    assert CSVSerializer.default_options(event) == {
         "delimiter": ",",
         "list_delimiter": "newline",
     }
-    assert JSONSerializer.default_options() == {}
+    assert JSONSerializer.default_options(event) == {}
+
+
+@pytest.mark.parametrize(
+    ("locales", "has_locale"), ((["en"], False), (["en", "de"], True))
+)
+def test_csv_serializer_offers_locale_only_with_several_languages(locales, has_locale):
+    event = EventFactory(locales=locales, locale="en")
+
+    fields = CSVSerializer.option_fields(event)
+
+    assert ("locale" in fields) is has_locale
+    assert list(fields) == (["locale"] if has_locale else []) + [
+        "delimiter",
+        "list_delimiter",
+    ]
+    assert CSVSerializer.default_options(event).get("locale") == (
+        "en" if has_locale else None
+    )
+    assert "locale" not in JSONSerializer.option_fields(event)
 
 
 def test_table_serializers_add_plugin_formats_without_replacing_core(
@@ -479,37 +495,37 @@ def test_export_csv_headers_follow_locale(event_locale, export_locale):
     user = make_orga_user(event, can_change_submissions=True)
     SubmissionFactory(event=event)
 
-    content = _render(event, user, _config(columns=["title"], locale=export_locale))
+    content = _render(
+        event,
+        user,
+        _config(columns=["title"], serializer_options={"locale": export_locale}),
+    )
 
     assert _csv_rows(content)[0] == ["ID", "Titel"]
 
 
 @pytest.mark.parametrize(
-    ("config", "column", "structured", "localized"),
+    ("config", "column", "structured"),
     (
         (
             {"table": "TrackTable", "columns": ["name"], "serializer": "json"},
             "name",
             {"en": "Science", "de": "Wissenschaft"},
-            "Wissenschaft",
         ),
         (
             _config(columns=["submission_type"], serializer="json"),
             "submission_type",
             {"en": "Talk", "de": "Vortrag"},
-            "Vortrag",
         ),
     ),
     ids=("track_name", "submission_type"),
 )
 @pytest.mark.parametrize(
-    ("locales", "flattened"),
-    ((["en", "de"], False), (["de"], True)),
+    "locales",
+    (["en", "de"], ["de"]),
     ids=("multilingual_event", "single_language_event"),
 )
-def test_export_json_keeps_structured_i18n_without_locale(
-    config, column, structured, localized, locales, flattened
-):
+def test_export_json_keeps_structured_i18n(config, column, structured, locales):
     event = EventFactory(locales=locales, locale=locales[-1])
     user = make_orga_user(event, can_change_submissions=True)
     TrackFactory(event=event, name={"en": "Science", "de": "Wissenschaft"})
@@ -518,11 +534,11 @@ def test_export_json_keeps_structured_i18n_without_locale(
     )
     SubmissionFactory(event=event, submission_type=submission_type)
 
-    structured_export = json.loads(_render(event, user, {**config, "locale": None}))
-    localized_export = json.loads(_render(event, user, {**config, "locale": "de"}))
+    export = json.loads(
+        _render(event, user, {**config, "serializer_options": {"locale": "de"}})
+    )
 
-    assert structured_export[0][column] == (localized if flattened else structured)
-    assert localized_export[0][column] == localized
+    assert export[0][column] == structured
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
@@ -545,7 +561,7 @@ def test_export_slot_columns_need_no_query_per_row(
     freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
     unscheduled = SubmissionFactory(event=event)
     event = refresh(event)
-    config = _config(columns=columns, serializer="json", locale="en")
+    config = _config(columns=columns, serializer="json")
 
     with django_assert_num_queries(query_count):
         data = json.loads(_render(event, user, config))
@@ -632,14 +648,14 @@ def test_export_rejects_bad_configuration(event, config, message):
         "json_fallback_str",
     ),
 )
-def test_serializer_format_value(serializer_class, value, expected):
-    serializer = serializer_class(table=None, locale="en")
+def test_serializer_format_value(event, serializer_class, value, expected):
+    serializer = serializer_class(event)
 
     assert serializer.format_value(value) == expected
 
 
 @pytest.mark.parametrize("serializer_class", (CSVSerializer, JSONSerializer))
-def test_serializer_render_keeps_file_open_when_writing_fails(serializer_class):
+def test_serializer_render_keeps_file_open_when_writing_fails(event, serializer_class):
     class FailingTable:
         def as_values(self):
             yield ["a"]
@@ -658,7 +674,7 @@ def test_serializer_render_keeps_file_open_when_writing_fails(serializer_class):
     file = io.BytesIO()
 
     with pytest.raises(ValueError, match="boom"):
-        FailingSerializer(table=FailingTable()).render(file)
+        FailingSerializer(event).export(FailingTable(), file)
 
     assert not file.closed
     assert file.getvalue()

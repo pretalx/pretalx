@@ -44,7 +44,6 @@ class TableExportFactory(factory.django.DjangoModelFactory):
     table = "SubmissionTable"
     columns = factory.LazyFunction(lambda: ["title", "state"])
     serializer = "csv"
-    locale = "en"
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):

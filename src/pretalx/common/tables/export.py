@@ -11,6 +11,7 @@ from decimal import Decimal
 from django import forms
 from django.http import QueryDict
 from django.utils import timezone, translation
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from i18nfield.strings import LazyI18nString
 from i18nfield.utils import I18nJSONEncoder
@@ -28,35 +29,52 @@ class ExportError(Exception):
 
 
 class TableSerializer:
-    """Turns a configured table into file content of one format.
-
-    ``multilang`` formats can carry structured i18n values and make the
-    locale optional; the others need a locale to flatten them. ``options``
-    maps option names to form field factories for the export forms.
-    """
+    """Turns a configured table into file content of one format."""
 
     identifier = None
     verbose_name = None
     extension = None
     content_type = None
-    multilang = False
     options = {}
 
-    def __init__(self, table, *, locale=None, options=None):
-        self.table = table
-        self.locale = locale
-        self.options = {**self.default_options(), **(options or {})}
+    def __init__(self, event, options=None):
+        self.event = event
+        self.options = {**self.default_options(event), **(options or {})}
 
     @classmethod
-    def default_options(cls):
-        return {name: field().initial for name, field in cls.options.items()}
+    def option_fields(cls, event):
+        return {name: factory(event) for name, factory in cls.options.items()}
 
     @classmethod
-    def option_fields(cls):
-        return {name: field() for name, field in cls.options.items()}
+    def default_options(cls, event):
+        return {name: field.initial for name, field in cls.option_fields(event).items()}
 
-    def render(self, file):
+    def export(self, table, file):
+        with translation.override(self.event.locale):
+            self.render(table, file)
+
+    def render(self, table, file):
         raise NotImplementedError
+
+
+class LocalizedTableSerializer(TableSerializer):
+    @classmethod
+    def option_fields(cls, event):
+        fields = {}
+        if len(event.locales) > 1:
+            fields["locale"] = forms.ChoiceField(
+                label=_("Language"), choices=event.named_locales, initial=event.locale
+            )
+        return {**fields, **super().option_fields(event)}
+
+    @cached_property
+    def locale(self):
+        locale = self.options.get("locale")
+        return locale if locale in self.event.locales else self.event.locale
+
+    def export(self, table, file):
+        with translation.override(self.locale):
+            self.render(table, file)
 
 
 def _localize_datetime(value):
@@ -76,19 +94,19 @@ def text_writer(file, *, newline=None):
         text.detach()
 
 
-class CSVSerializer(TableSerializer):
+class CSVSerializer(LocalizedTableSerializer):
     identifier = "csv"
     verbose_name = _("CSV")
     extension = "csv"
     content_type = "text/csv"
     options = {
-        "delimiter": lambda: forms.ChoiceField(
+        "delimiter": lambda event: forms.ChoiceField(
             label=_("Field separator"),
             choices=((",", _("Comma")), (";", _("Semicolon")), ("\t", _("Tab"))),
             initial=",",
             required=False,
         ),
-        "list_delimiter": lambda: forms.ChoiceField(
+        "list_delimiter": lambda event: forms.ChoiceField(
             label=_("List separator"),
             help_text=_(
                 "How multiple values in one cell are separated, for example several speakers of one session."
@@ -116,8 +134,8 @@ class CSVSerializer(TableSerializer):
             return value.isoformat()
         return str(value)
 
-    def render(self, file):
-        rows = self.table.as_values()
+    def render(self, table, file):
+        rows = table.as_values()
         headers = [str(header) for header in next(rows)]
         with text_writer(file, newline="") as text:
             write_csv(
@@ -133,11 +151,10 @@ class JSONSerializer(TableSerializer):
     verbose_name = _("JSON")
     extension = "json"
     content_type = "application/json"
-    multilang = True
 
     def format_value(self, value):
         if isinstance(value, LazyI18nString):
-            return str(value) if self.locale else value
+            return value
         if isinstance(value, (list, tuple, set)):
             return [self.format_value(entry) for entry in value]
         if isinstance(value, dt.datetime):
@@ -150,9 +167,9 @@ class JSONSerializer(TableSerializer):
             return value
         return str(value)
 
-    def render(self, file):
-        names = self.table.export_column_names()
-        rows = self.table.as_values()
+    def render(self, table, file):
+        names = table.export_column_names()
+        rows = table.as_values()
         next(rows)
         with text_writer(file) as text:
             text.write("[")
@@ -255,14 +272,7 @@ def render_export(event, user, config, file):
     serializer_class = get_table_serializer(event, config.get("serializer"))
     if serializer_class is None:
         raise ExportError("unknown format")
-    locale = config.get("locale") or None
-    if locale and locale not in event.locales:
-        locale = None
-    if not locale and (not serializer_class.multilang or len(event.locales) <= 1):
-        locale = event.locale
-    with timezone.override(event.tz), translation.override(locale or event.locale):
+    serializer = serializer_class(event, options=config.get("serializer_options"))
+    with timezone.override(event.tz):
         table = build_export_table(event, user, config)
-        serializer = serializer_class(
-            table, locale=locale, options=config.get("serializer_options")
-        )
-        serializer.render(file)
+        serializer.export(table, file)
