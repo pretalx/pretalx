@@ -6,7 +6,7 @@ const isVisible = (element) => {
     return (
         !element.hidden &&
         !element.classList.contains("d-none") &&
-        !element.style.display === "none"
+        element.style.display !== "none"
     )
 }
 
@@ -77,6 +77,9 @@ const initSelect = (element) => {
         if (isVisible(label)) {
             showPlaceholder = label.textContent !== element.title
         }
+    }
+    if (!showPlaceholder) {
+        element.removeAttribute("title")
     }
     const realPlaceholder = element.getAttribute("placeholder")
     showPlaceholder = showPlaceholder || (realPlaceholder && realPlaceholder.length > 0)

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
+from freezegun import freeze_time
 
 from pretalx.orga.views.exports import (
     AdhocTableExportRun,
@@ -9,7 +10,7 @@ from pretalx.orga.views.exports import (
     TableExportRun,
     usable_export_tables,
 )
-from tests.factories import TableExportFactory
+from tests.factories import EventFactory, TableExportFactory
 from tests.utils import make_orga_user, make_request, make_view
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -24,17 +25,30 @@ def test_usable_export_tables_follow_permissions(event):
 
     assert "OutboxMailTable" in orga_names
     assert "OutboxMailTable" not in reviewer_names
+    assert "SpeakerInformationTable" in orga_names
+    assert "SpeakerInformationTable" not in reviewer_names
+    assert "ReviewerQuestionTable" not in orga_names
+    assert "ReviewerQuestionTable" in {
+        cls.__name__
+        for cls in usable_export_tables(
+            event, make_orga_user(event, can_change_event_settings=True)
+        )
+    }
     assert {"ReviewTable", "ReviewExportTable", "SubmissionTable"} <= reviewer_names
 
 
-def test_table_export_run_filename_and_content_type(event):
+def test_table_export_run_filename_and_content_type():
+    event = EventFactory(timezone="Europe/Berlin")
     user = make_orga_user(event, can_change_event_settings=True)
     export = TableExportFactory(event=event, name="Café Talks!", serializer="json")
     request = make_request(event, user=user)
     view = make_view(TableExportRun, request, pk=export.pk)
     view.export_config = export.config
 
-    assert view.get_async_download_filename() == f"{event.slug}_cafe-talks.json"
+    with freeze_time("2026-11-06 13:05:00"):
+        filename = view.get_async_download_filename()
+
+    assert filename == f"{event.slug}_cafe-talks_2026-11-06_14-05.json"
     assert view.get_async_download_content_type() == "application/json"
     assert view.get_error_redirect_url() == event.orga_urls.exports
 
@@ -46,7 +60,10 @@ def test_table_export_run_filename_from_table_name(event):
     view = make_view(AdhocTableExportRun, request)
     view.export_config = {"serializer": "csv"}
 
-    assert view.get_async_download_filename() == f"{event.slug}_sessions.csv"
+    with freeze_time("2026-11-06 13:05:00"):
+        filename = view.get_async_download_filename()
+
+    assert filename == f"{event.slug}_sessions_2026-11-06_13-05.csv"
     assert view.get_error_redirect_url() == event.orga_urls.base
     assert view.get_back_url() == event.orga_urls.base
 

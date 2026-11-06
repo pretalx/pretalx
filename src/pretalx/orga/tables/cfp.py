@@ -381,6 +381,9 @@ class SubmissionQuestionTable(QuestionTable):
 
 class ReviewerQuestionTable(QuestionTable):
     target = QuestionTarget.REVIEWER.slug
+    export_name = format_lazy("{} ({})", phrases.cfp.custom_fields, _("Reviews"))
+    export_permission = "event.update_event"
+    exportable = False  # Would render inside another form
 
     @classmethod
     def default_list_url(cls, event):

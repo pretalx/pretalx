@@ -3,6 +3,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+.table-toolbar .btn-split {
+  display: inline-flex;
+  align-items: stretch;
+
+  > .btn {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  > details.dropdown {
+    display: flex;
+    height: auto;
+
+    summary.btn {
+      align-items: center;
+      margin-left: -1px;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+  }
+}
+
 .column-picker {
   border: 1px solid var(--color-border-softer);
   border-radius: var(--radius-card);
@@ -24,6 +45,7 @@
 }
 
 .sort-section-header {
+  margin-top: 20px;
   padding-bottom: 8px;
 }
 
@@ -113,10 +135,6 @@ body.dragging .column-picker .dragsort-handle {
 .column-chip-plus {
   color: var(--color-primary-text);
   font-weight: 700;
-}
-
-.sort-section {
-  margin-top: 20px;
 }
 
 .sort-level {

@@ -43,6 +43,19 @@ const setupTableHtmx = (tableContent) => {
     }
 }
 
+const writeHiddenList = (form, name, values) => {
+    form.querySelectorAll(`input[type=hidden][name="${name}"]`).forEach((el) =>
+        el.remove(),
+    )
+    values.forEach((value) => {
+        const input = document.createElement("input")
+        input.type = "hidden"
+        input.name = name
+        input.value = value
+        form.appendChild(input)
+    })
+}
+
 const setupColumnPicker = (root) => {
     const picker = root.querySelector(".column-picker")
     const shown = picker.querySelector(".column-picker-shown")
@@ -495,7 +508,8 @@ const setupExportModal = (form) => {
 
     const dialog = form.closest("dialog")
     const picker = setupColumnPicker(form)
-    const baseline = picker.getColumns()
+    const sort = setupSortSection(form)
+    const baseline = { columns: picker.getColumns(), ordering: sort.getOrdering() }
     const exportButton = form.querySelector(".export-now")
     const saveCheckbox = form.querySelector("input[name=save]")
     const nameFields = form.querySelector(".export-save-fields")
@@ -504,7 +518,8 @@ const setupExportModal = (form) => {
 
     const syncDisabled = bindColumnGuard(form, picker, exportButton)
     dialog.addEventListener("close", () => {
-        picker.setColumns(baseline)
+        picker.setColumns(baseline.columns)
+        sort.setOrdering(baseline.ordering)
         syncDisabled()
     })
 
@@ -513,24 +528,14 @@ const setupExportModal = (form) => {
         const saving = Boolean(saveCheckbox?.checked)
         if (nameFields) nameFields.hidden = !saving
         if (nameInput) nameInput.required = saving
-        exportButton.querySelector(".export-now-run").hidden = saving
-        exportButton.querySelector(".export-now-save").hidden = !saving
     }
     saveCheckbox?.addEventListener("change", syncSave)
     syncSave()
 
     form.addEventListener("submit", () => {
         form.querySelector("input[name=filters]").value = currentFilterQuery()
-        form.querySelectorAll("input[type=hidden][name=columns]").forEach((input) =>
-            input.remove(),
-        )
-        picker.getColumns().forEach((column) => {
-            const input = document.createElement("input")
-            input.type = "hidden"
-            input.name = "columns"
-            input.value = column
-            form.appendChild(input)
-        })
+        writeHiddenList(form, "columns", picker.getColumns())
+        writeHiddenList(form, "ordering", sort.getOrdering())
     })
 }
 

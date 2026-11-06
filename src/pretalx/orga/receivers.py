@@ -6,6 +6,7 @@ from django.dispatch import receiver
 from pretalx.agenda.signals import html_above_session_pages, html_below_session_pages
 from pretalx.common.signals import register_exportable_tables
 from pretalx.orga.tables.cfp import (
+    ReviewerQuestionTable,
     SpeakerQuestionTable,
     SubmissionQuestionTable,
     SubmissionTypeTable,
@@ -16,7 +17,7 @@ from pretalx.orga.tables.feedback import FeedbackTable
 from pretalx.orga.tables.mail import MailTemplateTable, OutboxMailTable, SentMailTable
 from pretalx.orga.tables.review import ReviewExportTable
 from pretalx.orga.tables.schedule import RoomTable
-from pretalx.orga.tables.speaker import SpeakerTable
+from pretalx.orga.tables.speaker import SpeakerInformationTable, SpeakerTable
 from pretalx.orga.tables.submission import ReviewTable, SubmissionTable, TagTable
 
 
@@ -62,4 +63,6 @@ def register_core_exportable_tables(sender, **kwargs):
         RoomTable,
         SubmissionQuestionTable,
         SpeakerQuestionTable,
+        ReviewerQuestionTable,
+        SpeakerInformationTable,
     ]

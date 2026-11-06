@@ -7,13 +7,14 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.text import slugify
+from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView, View
 from django_context_decorator import context
 
 from pretalx.agenda.tasks import task_export_schedule_html
 from pretalx.common.exporter import get_schedule_exporters
-from pretalx.common.forms.exports import TableExportForm
+from pretalx.common.forms.exports import TableExportForm, TablePickerForm
 from pretalx.common.models.exports import TableExport
 from pretalx.common.models.file import CachedFile
 from pretalx.common.tables.export import (
@@ -82,12 +83,24 @@ class TableExportView(OrgaCRUDView):
             )
         ]
 
+    @context
+    @cached_property
+    def table_picker_form(self):
+        if self.export_table_class:
+            return None
+        return TablePickerForm(choices=self.export_table_choices)
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["user"] = self.request.user
         kwargs["table_class"] = self.export_table_class
         kwargs["require_name"] = True
         kwargs["form_id"] = "table-export-form"
+        if self.action == "create" and self.export_table_class:
+            kwargs["initial"] = {
+                **(kwargs.get("initial") or {}),
+                "name": str(self.export_table_class.export_name),
+            }
         return kwargs
 
     def get_form(self, instance, data=None, files=None, **kwargs):
@@ -130,7 +143,10 @@ class ExportDownloadMixin(AsyncFileDownloadMixin):
 
     def get_async_download_filename(self):
         name = slugify(self.get_export_name()) or "export"
-        return f"{self.request.event.slug}_{name}.{self.serializer.extension}"
+        timestamp = localtime(timezone=self.request.event.tz).strftime("%Y-%m-%d_%H-%M")
+        return (
+            f"{self.request.event.slug}_{name}_{timestamp}.{self.serializer.extension}"
+        )
 
     def get_async_download_content_type(self):
         return self.serializer.content_type
