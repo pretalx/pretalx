@@ -55,6 +55,7 @@ def test_exporter_identity_from_schedule():
     assert str(exporter) == "test-export.json"
     assert exporter.quoted_identifier == quote("test-export.json")
     assert exporter.get_timestamp() == now().strftime("-%Y-%m-%d-%H-%M")
+    assert exporter.group == "submission"
 
 
 @pytest.mark.django_db

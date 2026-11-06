@@ -35,7 +35,7 @@ Exporters
 
 .. automodule:: pretalx.common.signals
    :no-index:
-   :members: register_data_exporters
+   :members: register_data_exporters, register_table_serializers, register_exportable_tables
 
 
 Organiser area

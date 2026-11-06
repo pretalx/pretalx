@@ -240,6 +240,22 @@ subclass of pretalx.common.exporter.BaseExporter
 
 As with all event plugin signals, the ``sender`` keyword argument will contain the event.
 """
+register_table_serializers = EventPluginSignal()
+"""
+Use this signal to register additional formats for table exports. Receivers must
+return a subclass of ``pretalx.common.tables.export.TableSerializer``.
+
+As with all event plugin signals, the ``sender`` keyword argument will contain the event.
+"""
+register_exportable_tables = EventPluginSignal()
+"""
+Register tables available for use in saved table exports. Receivers must return
+a list of subclasses of ``pretalx.common.tables.PretalxTable`` that implement at
+least ``export_permission``, ``export_name`` and ``base_queryset``.
+The class name is used as the table's identity, so it must be unique.
+
+As with all event plugin signals, the ``sender`` keyword argument will contain the event.
+"""
 activitylog_display = EventPluginSignal()
 """
 To display an instance of the ``ActivityLog`` model to a human user,

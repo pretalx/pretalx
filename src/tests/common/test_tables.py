@@ -46,6 +46,7 @@ from tests.factories import (
     SubmissionFactory,
     UserFactory,
 )
+from tests.utils import make_orga_user
 
 pytestmark = pytest.mark.unit
 
@@ -1264,3 +1265,119 @@ def test_independent_score_column_value(event):
 
 def test_actions_column_is_excluded_from_export():
     assert ActionsColumn(actions={"edit": {}}).exclude_from_export is True
+
+
+@pytest.mark.django_db
+def test_question_column_mixin_skips_hidden_question_columns(event):
+    class TestTable(QuestionColumnMixin, PretalxTable):
+        default_columns = ("title",)
+        title = tables.Column()
+
+        class Meta:
+            model = Submission
+            fields = ("title",)
+
+    shown = QuestionFactory(event=event, variant="string")
+    long_answer = QuestionFactory(event=event, variant="text")
+    submission = SubmissionFactory(event=event)
+    AnswerFactory(question=shown, submission=submission, answer="vegan")
+    AnswerFactory(question=long_answer, submission=submission, answer="a long story")
+    qs = Submission.objects.filter(pk=submission.pk)
+
+    table = TestTable(qs, questions=[shown, long_answer])
+    table._set_columns(["title", f"question_{shown.id}", f"question_{long_answer.id}"])
+
+    assert table.get_answer_for_question(submission, shown.id).answer == "vegan"
+    assert table.get_answer_for_question(submission, long_answer.id) is None
+
+
+class ExportTestTable(PretalxTable):
+    default_columns = ("title", "code", "secret", "marker")
+    update_permission = "orga_update"
+    delete_permission = "orga_update"
+    title = tables.Column()
+    code = tables.Column()
+    secret = Column(export_only=True)
+    marker = tables.Column(exclude_from_export=True)
+    actions = tables.Column()
+
+    class Meta:
+        model = Submission
+        fields = ("title", "code", "secret", "marker", "actions")
+
+
+@pytest.mark.django_db
+def test_pretalx_table_as_values_prepends_id_and_skips_code_and_excluded(event):
+    submission = SubmissionFactory(event=event, title="Talk")
+    table = ExportTestTable([submission], event=event)
+    table.configure_export(["title", "code", "secret", "marker", "actions"])
+
+    rows = list(table.as_values())
+
+    assert table.export_column_names() == ["ID", "title", "secret"]
+    assert [str(cell) for cell in rows[0]] == ["ID", "Title", "Secret"]
+    assert rows[1] == [submission.code, "Talk", None]
+
+
+@pytest.mark.django_db
+def test_pretalx_table_as_values_falls_back_to_pk_without_code():
+    class PlainTable(PretalxTable):
+        default_columns = ("name",)
+        name = tables.Column()
+
+        class Meta:
+            model = SpeakerProfile
+            fields = ("name",)
+
+    table = PlainTable([SimpleNamespace(pk=7, name="x")])
+    table.configure_export(["name"])
+
+    assert list(table.as_values())[1] == [7, "x"]
+
+
+@pytest.mark.django_db
+def test_pretalx_table_export_only_columns_stay_hidden_outside_export():
+    table = ExportTestTable([])
+
+    table._set_columns(["secret", "title"])
+    hidden = [name for name, _ in table.available_columns]
+    shown = [name for name, _ in table.selected_columns]
+
+    assert shown == ["title"]
+    assert "secret" not in hidden
+    assert table.columns["secret"].visible is False
+
+
+@pytest.mark.django_db
+def test_pretalx_table_configure_export_uses_default_columns_and_ordering(event):
+    SubmissionFactory(event=event, title="B")
+    SubmissionFactory(event=event, title="A")
+    table = ExportTestTable(Submission.objects.filter(event=event), event=event)
+
+    table.configure_export([], ordering=["title", "bogus"])
+
+    assert table.export_column_names() == ["ID", "title", "secret"]
+    assert [row[1] for row in list(table.as_values())[1:]] == ["A", "B"]
+
+
+@pytest.mark.django_db
+def test_pretalx_table_has_event_permission(event):
+    class NoModelTable(PretalxTable):
+        default_columns = ()
+        title = tables.Column()
+
+    orga = make_orga_user(
+        event, can_change_submissions=True, can_change_event_settings=True
+    )
+    unsaved = ExportTestTable([], event=event, user=UserFactory.build())
+    real = ExportTestTable([], event=event, user=orga)
+    no_event = ExportTestTable([], user=orga)
+
+    no_model = NoModelTable([], event=event, user=orga)
+
+    assert unsaved.has_update_permission is False
+    assert real.has_update_permission is True
+    assert real.has_event_permission("event.update_event") is True
+    assert real.has_event_permission(None) is False
+    assert no_event.has_update_permission is False
+    assert no_model.has_update_permission is False
