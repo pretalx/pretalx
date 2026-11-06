@@ -32,7 +32,8 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - uses: extractions/setup-just@v4
+      - name: Install just
+        run: uv tool install rust-just
       - name: Install Dependencies
         run: just install --extra devdocs
       - name: Docs build without warnings
@@ -50,7 +51,8 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - uses: extractions/setup-just@v4
+      - name: Install just
+        run: uv tool install rust-just
       - name: Install Dependencies
         run: just install --extra devdocs
       - name: Linkcheck docs
