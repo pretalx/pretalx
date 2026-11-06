@@ -4,6 +4,7 @@
 import django_tables2 as tables
 from django.utils.functional import cached_property
 from django.utils.html import format_html
+from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
@@ -18,6 +19,7 @@ from pretalx.common.tables import (
 )
 from pretalx.common.text.phrases import phrases
 from pretalx.submission.domain.queries.question import questions_for_user
+from pretalx.submission.enums import QuestionTarget
 from pretalx.submission.models import (
     Question,
     SubmissionType,
@@ -224,6 +226,7 @@ class SubmissionTypeTable(PretalxTable):
 
 class QuestionTable(DragsortTable):
     primary_column = "question"
+    target = None
     default_columns = ("question", "variant", "required", "active", "answer_count")
 
     question = tables.Column(verbose_name=_("Custom field"))
@@ -241,14 +244,14 @@ class QuestionTable(DragsortTable):
     contains_personal_data = BooleanColumn()
     actions = ActionsColumn(actions={"edit": {}, "delete": {}})
 
-    def __init__(self, *args, target, list_url, **kwargs):
-        self.target = target
-        self.list_url = list_url
+    def __init__(self, *args, target=None, list_url=None, **kwargs):
+        self.target = target or self.target
+        self.list_url = list_url or self.default_list_url(kwargs["event"])
         super().__init__(*args, **kwargs)
 
-    @property
-    def name(self):
-        return f"{self.__class__.__name__}-{self.target}"
+    @classmethod
+    def default_list_url(cls, event):
+        return event.cfp.urls.questions
 
     def get_dragsort_url(self):
         return f"{self.list_url}?target={self.target}"
@@ -294,3 +297,19 @@ class QuestionTable(DragsortTable):
             "contains_personal_data",
             "actions",
         )
+
+
+class SubmissionQuestionTable(QuestionTable):
+    target = QuestionTarget.SUBMISSION.slug
+
+
+class ReviewerQuestionTable(QuestionTable):
+    target = QuestionTarget.REVIEWER.slug
+
+    @classmethod
+    def default_list_url(cls, event):
+        return event.orga_urls.review_questions
+
+
+class SpeakerQuestionTable(QuestionTable):
+    target = QuestionTarget.SPEAKER.slug
