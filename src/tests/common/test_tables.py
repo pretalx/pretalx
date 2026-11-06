@@ -782,6 +782,8 @@ def test_colour_column_render():
     assert col.render(value="Red thing", record=record) == (
         '<span class="table-color-dot" style="--dot-color: #ff0000">Red thing</span>'
     )
+    assert col.value(track) == "Security"
+    assert col.value("#abc") == "#abc"
 
 
 def test_actions_column_merges_actions_with_defaults():
@@ -793,6 +795,7 @@ def test_actions_column_merges_actions_with_defaults():
     )
 
     assert col.header() == ""
+    assert col.exclude_from_export is True
     assert col.actions == {
         "edit": {
             "title": "Edit",
@@ -1353,13 +1356,6 @@ def test_boolean_column_value(value, expected):
     assert BooleanColumn().value(value) == expected
 
 
-def test_colour_column_value_uses_label():
-    col = ColourColumn()
-
-    assert col.value(Track(color="#fff", name="Track")) == "Track"
-    assert col.value("#abc") == "#abc"
-
-
 @pytest.mark.django_db
 def test_question_column_mixin_review_model():
 
@@ -1397,7 +1393,3 @@ def test_independent_score_column_value(event):
     table = SimpleNamespace(get_independent_score=lambda record, pk: 4.5)
 
     assert col.value(record=None, table=table) == 4.5
-
-
-def test_actions_column_is_excluded_from_export():
-    assert ActionsColumn(actions={"edit": {}}).exclude_from_export is True

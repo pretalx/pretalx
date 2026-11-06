@@ -170,13 +170,9 @@ def test_option_map_pairs_options_by_identifier():
     new_b = AnswerOptionFactory(question=target, answer="B", identifier="b")
     new_a = AnswerOptionFactory(question=target, answer="A", identifier="a")
 
-    assert _option_map({source.pk: target}) == {
+    assert _option_map({source.pk: target, 999999: _Obj(1)}) == {
         source.pk: {old_a.pk: new_a, old_b.pk: new_b}
     }
-
-
-def test_option_map_skips_missing_source_questions():
-    assert _option_map({999999: _Obj(1)}) == {}
 
 
 def test_copy_table_exports_ignores_unknown_source(event):
