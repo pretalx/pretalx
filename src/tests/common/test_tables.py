@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import re
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, time
 from pathlib import Path
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo
@@ -23,6 +23,7 @@ from pretalx.common.tables import (
     ActionsColumn,
     BooleanColumn,
     ColourColumn,
+    Column,
     DateTimeColumn,
     DragsortTable,
     IndependentScoreColumn,
@@ -37,7 +38,7 @@ from pretalx.common.tables import (
 from pretalx.common.tables.columns import _cached_template
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.enums import QuestionTarget
-from pretalx.submission.models import Review, Submission
+from pretalx.submission.models import Review, Submission, Track
 from tests.factories import (
     AnswerFactory,
     QuestionFactory,
@@ -764,18 +765,9 @@ def test_datetime_column_render_in_event_timezone():
     assert render(None, None) == "&mdash;"
 
 
-def test_datetime_column_value():
-    col = DateTimeColumn()
-
-    assert col.value(datetime(2024, 6, 15, 14, 30, tzinfo=UTC)) == (
-        "2024-06-15T14:30:00+00:00"
-    )
-    assert col.value(None) is None
-
-
 def test_colour_column_render():
     col = ColourColumn()
-    track = SimpleNamespace(color="#00ff00", name="Security")
+    track = Track(color="#00ff00", name="Security")
     record = SimpleNamespace(color="#ff0000")
 
     assert col.render(value=track, record=SimpleNamespace()) == (
@@ -1207,3 +1199,68 @@ def test_question_column_mixin_review_model():
 
     assert table._question_model == "review"
     assert table._get_answer_filter_field() == "review_id__in"
+
+
+@pytest.mark.parametrize(
+    ("part", "value", "expected_value", "expected_render"),
+    (
+        pytest.param(
+            None,
+            datetime(2024, 6, 15, 14, 30, tzinfo=UTC),
+            datetime(2024, 6, 15, 16, 30, tzinfo=ZoneInfo("Europe/Berlin")),
+            "2024-06-15 16:30",
+            id="datetime",
+        ),
+        pytest.param(
+            "date",
+            datetime(2024, 6, 15, 23, 30, tzinfo=UTC),
+            date(2024, 6, 16),
+            "2024-06-16",
+            id="date",
+        ),
+        pytest.param(
+            "time",
+            datetime(2024, 6, 15, 14, 30, 12, tzinfo=UTC),
+            time(16, 30, 12),
+            "16:30",
+            id="time",
+        ),
+        pytest.param(None, None, None, "&mdash;", id="none"),
+    ),
+)
+def test_datetime_column_value_and_render_in_event_timezone(
+    part, value, expected_value, expected_render
+):
+    col = DateTimeColumn(part=part)
+    table = SimpleNamespace(event=SimpleNamespace(tz=ZoneInfo("Europe/Berlin")))
+
+    assert col.value(value, table) == expected_value
+    assert col.render(None, table, value, None) == expected_render
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    ((None, None), ("", False), ("x", True), (0, False), (1, True)),
+)
+def test_boolean_column_value(value, expected):
+    assert BooleanColumn().value(value) == expected
+
+
+def test_colour_column_value_uses_label():
+    col = ColourColumn()
+
+    assert col.value(Track(color="#fff", name="Track")) == "Track"
+    assert col.value("#abc") == "#abc"
+
+
+@pytest.mark.django_db
+def test_independent_score_column_value(event):
+    category = SimpleNamespace(pk=3, name="Novelty")
+    col = IndependentScoreColumn(category=category)
+    table = SimpleNamespace(get_independent_score=lambda record, pk: 4.5)
+
+    assert col.value(record=None, table=table) == 4.5
+
+
+def test_actions_column_is_excluded_from_export():
+    assert ActionsColumn(actions={"edit": {}}).exclude_from_export is True
