@@ -151,6 +151,11 @@ class QueuedMail(PretalxModel):
     def has_error(self):
         return self.state == QueuedMailStates.DRAFT and self.error_data is not None
 
+    def get_state_display(self):
+        if self.has_error:
+            return pgettext_lazy("email status", "Failed")
+        return self._get_FIELD_display(self._meta.get_field("state"))
+
     @property
     def body_html(self):
         # Not cached: ``MailDetailForm.save`` clears ``text_html`` on

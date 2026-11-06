@@ -90,6 +90,11 @@ class MailTemplate(PretalxModel):
         """Help with debugging."""
         return f"MailTemplate(event={self.event.slug}, subject={self.subject})"
 
+    def get_role_display(self):
+        if not self.role:
+            return pgettext_lazy("email template: custom/user-created", "Custom email")
+        return self._get_FIELD_display(self._meta.get_field("role"))
+
     @property
     def log_parent(self):
         return self.event
