@@ -78,8 +78,6 @@ class SpeakerInformationTable(PretalxTable):
         return mark_safe('<i class="fa fa-file-o"></i>')
 
     def value_resource(self, record):
-        if not record.resource:
-            return None
         return get_base_url(self.event) + record.resource.url
 
     def value_limit_tracks(self, record):

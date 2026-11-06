@@ -17,24 +17,6 @@ def test_mail_template_log_parent_is_event(event):
     assert template.log_parent == event
 
 
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    ("state", "error", "expected"),
-    (
-        (QueuedMailStates.SENDING, False, "Sending"),
-        (QueuedMailStates.SENT, False, "Sent"),
-        (QueuedMailStates.DRAFT, True, "Failed"),
-        (QueuedMailStates.DRAFT, False, "Draft"),
-    ),
-)
-def test_queued_mail_get_state_display(state, error, expected):
-    mail = QueuedMailFactory(state=state)
-    if error:
-        mail.error_data = {"error": "boom"}
-
-    assert str(mail.get_state_display()) == expected
-
-
 @pytest.mark.parametrize(
     ("role", "expected"),
     (
@@ -48,18 +30,21 @@ def test_mail_template_get_role_display(event, role, expected):
 
 
 @pytest.mark.parametrize(
-    ("state", "error_data", "expected"),
+    ("state", "error_data", "has_error", "display"),
     (
-        (QueuedMailStates.DRAFT, {"error": "Connection refused"}, True),
-        (QueuedMailStates.DRAFT, None, False),
-        (QueuedMailStates.SENT, {"error": "stale"}, False),
+        (QueuedMailStates.DRAFT, {"error": "Connection refused"}, True, "Failed"),
+        (QueuedMailStates.DRAFT, None, False, "Draft"),
+        (QueuedMailStates.SENT, {"error": "stale"}, False, "Sent"),
+        (QueuedMailStates.SENDING, None, False, "Sending"),
     ),
 )
 def test_queued_mail_has_error_requires_draft_and_error_data(
-    state, error_data, expected
+    state, error_data, has_error, display
 ):
     mail = QueuedMailFactory(state=state, error_data=error_data)
-    assert mail.has_error is expected
+
+    assert mail.has_error is has_error
+    assert str(mail.get_state_display()) == display
 
 
 def test_queued_mail_mark_sent_updates_state_and_timestamp():

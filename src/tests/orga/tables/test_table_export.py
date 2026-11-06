@@ -16,7 +16,9 @@ def test_table_export_table_renders_summary_and_table_name(event):
         filters={"state": ["accepted"]},
         ordering=["title"],
     )
-    stale = TableExportFactory(event=event, table="GoneTable", columns=[])
+    stale = TableExportFactory(
+        event=event, table="GoneTable", columns=[], filters={"state": ["accepted"]}
+    )
     table = TableExportTable([export, stale], event=event, user=UserFactory())
 
     assert table.render_table(export) == "Sessions"
@@ -24,7 +26,7 @@ def test_table_export_table_renders_summary_and_table_name(event):
     assert table.render_serializer("xlsx") == "xlsx"
     assert table.render_summary(export).count(",") == 2
     assert "2" in table.render_summary(export)
-    assert table.render_summary(stale).count(",") == 0
+    assert table.render_summary(stale) == "0 columns, 1 filters"
     assert table.exportable is False
 
 
@@ -34,8 +36,9 @@ def test_table_export_table_renders_summary_and_table_name(event):
         ({"state": ["submitted", "accepted", "confirmed"]}, ""),
         ({"state": ["accepted", "submitted", "confirmed"], "track": [1]}, "1 filters"),
         ({"state": ["accepted"]}, "1 filters"),
+        ({"state": "accepted"}, "1 filters"),
     ),
-    ids=("defaults_only", "default_plus_one", "changed_default"),
+    ids=("defaults_only", "default_plus_one", "changed_default", "scalar_value"),
 )
 def test_table_export_summary_counts_only_non_default_filters(
     event, filters, expected, django_assert_num_queries
