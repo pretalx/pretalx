@@ -3,12 +3,15 @@
 
 import hashlib
 from contextlib import suppress
+from functools import wraps
 from pathlib import Path
 
 from csp.decorators import csp_exempt
+from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.core.exceptions import ImproperlyConfigured
 from django.http import Http404, HttpResponse, JsonResponse
+from django.utils.cache import patch_cache_control
 from django.views.decorators.cache import cache_control
 from django.views.decorators.http import condition
 from i18nfield.utils import I18nJSONEncoder
@@ -29,7 +32,7 @@ def style_etag(request, event, **kwargs):
 
 def _load_widget_js():
     global WIDGET_JS_CHECKSUM, WIDGET_JS_CONTENT  # noqa: PLW0603 -- module-level cache for widget JS
-    if WIDGET_JS_CONTENT is None:
+    if WIDGET_JS_CONTENT is None or settings.DEBUG:
         found = finders.find("agenda/js/pretalx-schedule.min.js")
         if not found:
             raise ImproperlyConfigured(
@@ -124,7 +127,20 @@ def widget_data(request, event, version=None):
     return response
 
 
-@cache_control(public=True, max_age=5 * 60)
+def widget_script_cache_control(view):
+    @wraps(view)
+    def wrapped(request, *args, **kwargs):
+        response = view(request, *args, **kwargs)
+        if settings.DEBUG:
+            patch_cache_control(response, public=True, no_cache=True)
+        else:
+            patch_cache_control(response, public=True, max_age=5 * 60)
+        return response
+
+    return wrapped
+
+
+@widget_script_cache_control
 @condition(etag_func=widget_js_etag)
 @csp_exempt()
 def widget_script(request):
