@@ -681,8 +681,11 @@ def test_export_question_columns(event, variant, answer_kwargs, csv_value, json_
 def test_export_csv_delimiter_option_joins_lists(event):
     user = make_orga_user(event, can_change_submissions=True)
     submission = SubmissionFactory(event=event)
-    for name in ("Ada", "Grace; Hopper"):
-        submission.speakers.add(SpeakerFactory(event=event, name=name))
+    for position, name in enumerate(("Ada", "Grace; Hopper")):
+        submission.speakers.add(
+            SpeakerFactory(event=event, name=name),
+            through_defaults={"position": position},
+        )
 
     newline = _render(event, user, _config(columns=["speakers"]))
     comma = _render(
