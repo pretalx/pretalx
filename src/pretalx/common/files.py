@@ -1,47 +1,55 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-# Canonical allow-lists of uploadable file types, shared by the web form layer
-# (pretalx.common.forms.fields) and the API upload layer
-# (pretalx.api.serializers.fields). Restricting uploads to these known-safe
-# types keeps user-uploaded files from being served same-origin as text/html,
-# image/svg+xml, etc., which would otherwise enable XSS.
-#
-# Each mapping is content-type -> list of permitted file extensions (lower-cased,
-# with a leading dot). The API enforces the browser-reported content type
-# against these keys; the form layer enforces the uploaded file's extension
-# against the extension set derived via extensions_from_types().
-IMAGE_UPLOAD_TYPES = {
-    "image/png": [".png"],
-    "image/jpeg": [".jpg", ".jpeg"],
-    "image/gif": [".gif"],
-    "image/webp": [".webp"],
+from django.utils.translation import gettext_lazy as _
+
+# Allow-lists of uploadable file types, shared by the frontend and API.
+FILE_TYPE_GROUPS = {
+    "image/*": {
+        "image/png": [".png"],
+        "image/jpeg": [".jpg", ".jpeg"],
+        "image/gif": [".gif"],
+        "image/webp": [".webp"],
+    },
+    "document/*": {
+        "application/pdf": [".pdf"],
+        "text/plain": [".txt"],
+        "application/rtf": [".rtf"],
+        "application/msword": [".doc"],
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
+            ".docx"
+        ],
+        "application/vnd.oasis.opendocument.text": [".odt"],
+    },
+    "presentation/*": {
+        "application/vnd.ms-powerpoint": [".ppt"],
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation": [
+            ".pptx"
+        ],
+        "application/vnd.oasis.opendocument.presentation": [".odp"],
+    },
+    "spreadsheet/*": {
+        "text/csv": [".csv"],
+        "application/vnd.ms-excel": [".xls"],
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+        "application/vnd.oasis.opendocument.spreadsheet": [".ods"],
+    },
+    "archive/*": {"application/zip": [".zip"]},
 }
+FILE_TYPE_GROUP_LABELS = {
+    "image/*": _("Images"),
+    "document/*": _("Documents"),
+    "presentation/*": _("Presentations"),
+    "spreadsheet/*": _("Spreadsheets"),
+    "archive/*": _("Archives"),
+}
+IMAGE_UPLOAD_TYPES = FILE_TYPE_GROUPS["image/*"]
 DOCUMENT_UPLOAD_TYPES = {
-    # All image types are also valid documents, so spread them in rather than
-    # repeating them (and risk the two lists drifting apart).
-    **IMAGE_UPLOAD_TYPES,
-    "image/bmp": [".bmp"],
-    "image/tiff": [".tif", ".tiff"],
-    "application/pdf": [".pdf"],
-    "text/plain": [".txt"],
-    "text/csv": [".csv"],
-    "application/zip": [".zip"],
-    "application/msword": [".doc"],
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
-        ".docx"
-    ],
-    "application/rtf": [".rtf"],
-    "application/vnd.ms-powerpoint": [".ppt"],
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation": [
-        ".pptx"
-    ],
-    "application/vnd.ms-excel": [".xls"],
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
-    "application/vnd.oasis.opendocument.text": [".odt"],
-    "application/vnd.oasis.opendocument.spreadsheet": [".ods"],
-    "application/vnd.oasis.opendocument.presentation": [".odp"],
+    content_type: extensions
+    for group in FILE_TYPE_GROUPS.values()
+    for content_type, extensions in group.items()
 }
+FILE_TYPE_TOKENS = [*FILE_TYPE_GROUPS, *DOCUMENT_UPLOAD_TYPES]
 
 
 def extensions_from_types(upload_types):
@@ -61,3 +69,25 @@ def extensions_from_types(upload_types):
 
 IMAGE_EXTENSIONS = extensions_from_types(IMAGE_UPLOAD_TYPES)
 FILE_EXTENSIONS = extensions_from_types(DOCUMENT_UPLOAD_TYPES)
+
+
+def resolve_file_types(tokens):
+    if not tokens:
+        return DOCUMENT_UPLOAD_TYPES
+    content_types = set()
+    for token in tokens:
+        if token in FILE_TYPE_GROUPS:
+            content_types.update(FILE_TYPE_GROUPS[token])
+        elif token in DOCUMENT_UPLOAD_TYPES:
+            content_types.add(token)
+        else:
+            raise KeyError(token)
+    return {
+        content_type: extensions
+        for content_type, extensions in DOCUMENT_UPLOAD_TYPES.items()
+        if content_type in content_types
+    }
+
+
+def is_image_only(upload_types):
+    return upload_types.keys() <= IMAGE_UPLOAD_TYPES.keys()

@@ -14,7 +14,14 @@ from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceFie
 from i18nfield.strings import LazyI18nString
 
 from pretalx.cfp.forms import CfPFormMixin, RequestRequire
-from pretalx.common.files import FILE_EXTENSIONS
+from pretalx.common.files import (
+    FILE_EXTENSIONS,
+    FILE_TYPE_GROUP_LABELS,
+    FILE_TYPE_GROUPS,
+    extensions_from_types,
+    is_image_only,
+    resolve_file_types,
+)
 from pretalx.common.forms.fields import DateTimeField, ExtensionFileField
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
@@ -28,11 +35,13 @@ from pretalx.common.forms.widgets import (
     ClearableBasenameFileInput,
     EnhancedSelect,
     EnhancedSelectMultiple,
+    FileTypeSelect,
     HtmlDateInput,
     HtmlDateTimeInput,
     IconSelect,
     SegmentedRadioSelect,
 )
+from pretalx.common.image import validate_image
 from pretalx.common.templatetags.rich_text import rich_text
 from pretalx.common.text.phrases import phrases
 from pretalx.submission.domain.queries.question import (
@@ -82,10 +91,24 @@ def _build_url(*, initial, help_text, **kwargs):
     return forms.URLField(help_text=help_text, initial=initial)
 
 
-def _build_file(*, initial, help_text, **kwargs):
-    return ExtensionFileField(
-        help_text=help_text, initial=initial, extensions=FILE_EXTENSIONS
+def _build_file(*, question, initial, help_text, **kwargs):
+    if not question.allowed_file_types:
+        return ExtensionFileField(
+            help_text=help_text, initial=initial, extensions=FILE_EXTENSIONS
+        )
+    upload_types = resolve_file_types(question.allowed_file_types)
+    extensions = extensions_from_types(upload_types)
+    allowed = _("Allowed file types: {extensions}.").format(
+        extensions=", ".join(extensions)
     )
+    field = ExtensionFileField(
+        help_text=format_lazy("{} {}", allowed, help_text) if help_text else allowed,
+        initial=initial,
+        extensions=extensions,
+    )
+    if is_image_only(upload_types):
+        field.validators.append(validate_image)
+    return field
 
 
 def _build_choices(*, question, initial_object, help_text, **kwargs):
@@ -367,6 +390,28 @@ class QuestionsForm(CfPFormMixin, ReadOnlyFlag, forms.Form):
 
 
 class QuestionOrgaForm(ReadOnlyFlag, PretalxI18nModelForm):
+    allowed_file_types = forms.MultipleChoiceField(
+        label=_("Allowed file types"),
+        help_text=_(
+            "Check a group to allow all of its file types. "
+            "Leave everything unchecked to allow all file types."
+        ),
+        choices=[
+            (
+                FILE_TYPE_GROUP_LABELS[wildcard],
+                [
+                    (wildcard, FILE_TYPE_GROUP_LABELS[wildcard]),
+                    *(
+                        (content_type, ", ".join(extensions))
+                        for content_type, extensions in upload_types.items()
+                    ),
+                ],
+            )
+            for wildcard, upload_types in FILE_TYPE_GROUPS.items()
+        ],
+        widget=FileTypeSelect,
+        required=False,
+    )
     options = forms.FileField(
         label=_("Upload options"),
         widget=ClearableBasenameFileInput,
@@ -521,6 +566,7 @@ class QuestionOrgaForm(ReadOnlyFlag, PretalxI18nModelForm):
             "max_datetime",
             "min_options",
             "max_options",
+            "allowed_file_types",
         ]
         widgets = {
             "deadline": HtmlDateTimeInput,

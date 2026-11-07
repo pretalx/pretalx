@@ -231,6 +231,7 @@ def test_questionviewset_edit_cannot_change_target(
             "variant": "number",
             "target": "speaker",
             "help_text": "hellllp",
+            "allowed_file_types": ["presentation/*", "application/pdf"],
         },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
@@ -238,10 +239,15 @@ def test_questionviewset_edit_cannot_change_target(
 
     assert response.status_code == 200, response.text
     assert response.json()["target"] == "submission"
+    assert response.json()["allowed_file_types"] == [
+        "presentation/*",
+        "application/pdf",
+    ]
     with scopes_disabled():
         question.refresh_from_db()
         assert question.target == "submission"
         assert question.help_text == "hellllp"
+        assert question.allowed_file_types == ["presentation/*", "application/pdf"]
 
 
 def test_questionviewset_edit_options(client, event, orga_write_token, choice_question):
@@ -1004,6 +1010,7 @@ def test_answerviewset_create_file_question(
             variant=QuestionVariant.FILE,
             target="submission",
             question_required=QuestionRequired.OPTIONAL,
+            allowed_file_types=["image/*"],
         )
     upload = SimpleUploadedFile(
         "answer.pdf", b"file content", content_type="application/pdf"
@@ -1016,17 +1023,33 @@ def test_answerviewset_create_file_question(
     )
     cached_file.file.save("answer.pdf", upload)
     cached_file.save()
+    data = {
+        "question": question.pk,
+        "submission": submission.code,
+        "answer": "answer.pdf",
+        "answer_file": f"file:{cached_file.pk}",
+    }
+    headers = {"Authorization": f"Token {orga_write_token.token}"}
 
     response = client.post(
         event.api_urls.answers,
-        data={
-            "question": question.pk,
-            "submission": submission.code,
-            "answer": "answer.pdf",
-            "answer_file": f"file:{cached_file.pk}",
-        },
+        data=data,
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
+        headers=headers,
+    )
+
+    assert response.status_code == 400, response.text
+    assert list(response.json()) == ["answer_file"]
+    with scopes_disabled():
+        assert not Answer.objects.filter(question=question).exists()
+    question.allowed_file_types = ["document/*"]
+    question.save(update_fields=["allowed_file_types"])
+
+    response = client.post(
+        event.api_urls.answers,
+        data=data,
+        content_type="application/json",
+        headers=headers,
     )
 
     assert response.status_code == 201, response.text

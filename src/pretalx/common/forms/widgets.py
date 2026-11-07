@@ -497,6 +497,13 @@ class SegmentedRadioSelect(forms.RadioSelect):
         css = {"all": ["orga/css/ui/filters.css"]}
 
 
+class FileTypeSelect(forms.CheckboxSelectMultiple):
+    template_name = "common/widgets/file_type_select.html"
+
+    class Media:
+        css = {"all": ["orga/css/forms/file-types.css"]}
+
+
 class TextInputWithAddon(forms.TextInput):
     template_name = "common/widgets/text_input_with_addon.html"
 
