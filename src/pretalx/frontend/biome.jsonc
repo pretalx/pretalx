@@ -95,9 +95,7 @@
       },
       "suspicious": {
         "useIterableCallbackReturn": "off",
-        "noRedundantUseStrict": "off"
-      },
-      "nursery": {
+        "noRedundantUseStrict": "off",
         "useBaseline": {
           "level": "warn",
           "options": {

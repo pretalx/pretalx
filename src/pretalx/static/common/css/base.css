@@ -531,38 +531,38 @@ a,
  * does not weigh more than a plain element selector, so that components
  * and plugins can override without using !important. */
 :where(
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6,
-  p,
-  li,
-  dt,
-  dd,
-  blockquote,
-  small,
-  footer,
-  .alert,
-  .answer
-)
-a:where(
-  :not(
-    table *,
-    .btn,
-    .no-underline,
-    .nav-link,
-    .navbar-brand,
-    .dropdown-item,
-    .header-tab,
-    .page-link,
-    [data-lightbox],
-    [role="button"],
-    [role="tab"],
-    [role="menuitem"]
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p,
+    li,
+    dt,
+    dd,
+    blockquote,
+    small,
+    footer,
+    .alert,
+    .answer
   )
-) {
+  a:where(
+    :not(
+      table *,
+      .btn,
+      .no-underline,
+      .nav-link,
+      .navbar-brand,
+      .dropdown-item,
+      .header-tab,
+      .page-link,
+      [data-lightbox],
+      [role="button"],
+      [role="tab"],
+      [role="menuitem"]
+    )
+  ) {
   text-decoration: underline;
 }
 
