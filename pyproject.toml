@@ -64,6 +64,7 @@ dependencies = [
   "urllib3~=2.8.0",
   "urlman~=2.0.1",
   "whitenoise[brotli]~=6.12.0",
+  "XlsxWriter~=3.3.0",
 ]
 
 [project.optional-dependencies]

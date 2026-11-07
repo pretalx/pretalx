@@ -482,12 +482,18 @@ class TableFilterSet:
         self.data = data
 
     def resolved_params(self):
-        self.values  # noqa: B018
-        return {
-            param: self.data.getlist(param)
-            for param in self.param_names
-            if param in self.data
-        }
+        params = {}
+        for name, table_filter in self.filters.items():
+            if not table_filter.has_value(self.values[name]):
+                continue
+            for param in table_filter.get_params():
+                if entries := [
+                    entry
+                    for entry in self.data.getlist(param)
+                    if entry and entry != EMPTY_VALUE
+                ]:
+                    params[param] = entries
+        return params
 
     @cached_property
     def values(self):

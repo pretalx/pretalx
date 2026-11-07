@@ -122,10 +122,25 @@ class TableExportView(OrgaCRUDView):
             return ["orga/exports/tableexport/pick_table.html"]
         return super().get_template_names()
 
+    def get_success_url(self):
+        if self.request.POST.get("action") == "download":
+            return self.object.urls.run
+        return super().get_success_url()
+
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
         if self.action == "create" and not self.export_table_class:
             result["next_buttons"] = [Button(label=_("Continue"))]
+        elif result.get("form"):
+            result["submit_buttons"] = [
+                Button(
+                    name="action",
+                    value="download",
+                    label=_("Save and download"),
+                    icon="download",
+                )
+            ]
+            result["submit_buttons_extra"].append(Button(color="outline-success"))
         return result
 
 

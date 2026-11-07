@@ -23,7 +23,7 @@ def test_table_export_table_renders_summary_and_table_name(event):
 
     assert table.render_table(export) == "Sessions"
     assert table.render_serializer("csv") == "CSV"
-    assert table.render_serializer("xlsx") == "xlsx"
+    assert table.render_serializer("pdf") == "pdf"
     assert table.render_summary(export).count(",") == 2
     assert "2" in table.render_summary(export)
     assert table.render_summary(stale) == "0 columns, 1 filters"

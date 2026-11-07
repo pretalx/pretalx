@@ -3,6 +3,7 @@
 
 import statistics
 from collections import defaultdict
+from decimal import Decimal
 
 import django_tables2 as tables
 from django.db.models import Count, F, Max, OuterRef, Subquery, Value
@@ -499,7 +500,7 @@ class ReviewTable(SubmissionValuesMixin, QuestionColumnMixin, PretalxTable):
         return f"{value:.1f}"
 
     def _raw_score(self, value):
-        return value
+        return None if value is None else Decimal(f"{value:.1f}")
 
     value_median_score = value_mean_score = value_user_score = _raw_score
 
