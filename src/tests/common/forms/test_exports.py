@@ -349,9 +349,9 @@ def test_export_form_uses_given_table_for_the_picker(event):
     ]
     assert "abstract" in {column["name"] for column in form.columns_form.hidden_columns}
     assert [identifier for identifier, _ in form.option_bound_fields] == [
-        "csv",
-        "csv",
         "xlsx",
+        "csv",
+        "csv",
     ]
     assert without_user.preferences is None
     assert without_user.columns == ["state", "title"]
