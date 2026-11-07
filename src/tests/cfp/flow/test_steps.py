@@ -347,9 +347,9 @@ def test_info_step_keeps_held_resource_when_replacement_rejected():
         "resource": [
             (
                 "This filetype (.exe) is not allowed, it has to be one of "
-                "the following: .png, .jpg, .jpeg, .gif, .webp, .bmp, .tif, "
-                ".tiff, .pdf, .txt, .csv, .zip, .doc, .docx, .rtf, .ppt, "
-                ".pptx, .xls, .xlsx, .odt, .ods, .odp"
+                "the following: .png, .jpg, .jpeg, .gif, .webp, .pdf, .txt, "
+                ".rtf, .doc, .docx, .odt, .ppt, .pptx, .odp, .csv, .xls, .xlsx, "
+                ".ods, .zip"
             )
         ]
     }

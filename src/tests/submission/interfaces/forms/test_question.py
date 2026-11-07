@@ -10,6 +10,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 from django.utils.timezone import now
 
+from pretalx.common.files import FILE_EXTENSIONS
 from pretalx.submission.interfaces.forms import (
     AnswerOptionForm,
     QuestionOrgaForm,
@@ -277,7 +278,86 @@ def test_build_question_field_boolean_number_url_file():
     assert isinstance(field, forms.URLField)
     assert field.initial == "https://example.com"
 
-    assert isinstance(build_question_field(question=file_q), forms.FileField)
+    field = build_question_field(question=file_q)
+    assert isinstance(field, forms.FileField)
+    assert field.extensions == FILE_EXTENSIONS
+    assert "Allowed file types" not in str(field.help_text)
+
+
+def test_build_question_field_file_restriction():
+    question = QuestionFactory(
+        variant=QuestionVariant.FILE,
+        allowed_file_types=["image/png", "application/pdf"],
+    )
+    field = build_question_field(question=question)
+    allowed = SimpleUploadedFile("slides.pdf", b"%PDF")
+
+    with pytest.raises(forms.ValidationError) as exc:
+        field.clean(SimpleUploadedFile("slides.pptx", b"slides"), None)
+
+    assert exc.value.messages == [
+        (
+            "This filetype (.pptx) is not allowed, it has to be one of the following: "
+            ".png, .pdf"
+        )
+    ]
+    assert field.clean(allowed, None) is allowed
+    assert set(field.widget.attrs["accept"].split(",")) == {
+        "image/png",
+        ".png",
+        "application/pdf",
+        ".pdf",
+    }
+    assert str(field.help_text).startswith("Allowed file types: .png, .pdf. ")
+
+
+@pytest.mark.parametrize(
+    ("allowed_file_types", "filename", "valid_image", "error"),
+    (
+        (
+            ["image/*"],
+            "photo.png",
+            False,
+            (
+                "Upload a valid image. The file you uploaded was either not an "
+                "image or a corrupted image."
+            ),
+        ),
+        (["image/*"], "photo.png", True, None),
+        (["image/*", "application/pdf"], "photo.png", False, None),
+        (
+            [],
+            "photo.bmp",
+            False,
+            (
+                "This filetype (.bmp) is not allowed, it has to be one of the "
+                "following: .png, .jpg, .jpeg, .gif, .webp, .pdf, .txt, .rtf, "
+                ".doc, .docx, .odt, .ppt, .pptx, .odp, .csv, .xls, .xlsx, .ods, "
+                ".zip"
+            ),
+        ),
+    ),
+    ids=("broken_image", "valid_image", "not_image_only", "bmp_unrestricted"),
+)
+def test_build_question_field_file_validates_upload(
+    make_image, allowed_file_types, filename, valid_image, error
+):
+    question = QuestionFactory(
+        variant=QuestionVariant.FILE, allowed_file_types=allowed_file_types
+    )
+    field = build_question_field(question=question)
+    upload = (
+        make_image(filename)
+        if valid_image
+        else SimpleUploadedFile(filename, b"MZ not an image")
+    )
+
+    if error:
+        with pytest.raises(forms.ValidationError) as exc:
+            field.clean(upload, None)
+        assert exc.value.messages == [error]
+    else:
+        assert field.clean(upload, None) is upload
 
 
 @pytest.mark.parametrize(
@@ -807,10 +887,21 @@ def test_question_orga_form_saves_option_limits():
             {"max_options": "0"},
             {"max_options": ["Ensure this value is greater than or equal to 1."]},
         ),
+        (
+            {"allowed_file_types": ["image/*", "application/x-msdownload"]},
+            {
+                "allowed_file_types": [
+                    (
+                        "Select a valid choice. application/x-msdownload is not "
+                        "one of the available choices."
+                    )
+                ]
+            },
+        ),
     ),
-    ids=("min_above_max", "zero_min", "zero_max"),
+    ids=("min_above_max", "zero_min", "zero_max", "unknown_file_type"),
 )
-def test_question_orga_form_rejects_invalid_option_limits(overrides, errors):
+def test_question_orga_form_rejects_invalid_settings(overrides, errors):
     event = EventFactory()
 
     form = _orga_form(event, variant=QuestionVariant.MULTIPLE, **overrides)
@@ -922,3 +1013,17 @@ def test_question_reminder_form_fields_and_scope():
     form = QuestionReminderForm(event=event)
 
     assert list(form.fields["track"].queryset) == [track]
+
+
+def test_question_orga_form_saves_allowed_file_types():
+    event = EventFactory()
+
+    form = _orga_form(
+        event,
+        variant=QuestionVariant.FILE,
+        allowed_file_types=["image/*", "application/pdf"],
+    )
+    assert form.is_valid(), form.errors
+    question = form.save()
+
+    assert refresh(question).allowed_file_types == ["image/*", "application/pdf"]

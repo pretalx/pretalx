@@ -5021,9 +5021,9 @@ paths:
     post:
       operationId: File upload
       description: 'Upload a file (image, PDF or office document) for temporary storage.
-        Allowed file types match the web interface: images (PNG, JPEG, GIF, WebP,
-        BMP, TIFF), PDF, office documents (DOC, DOCX, XLS, XLSX, PPT, PPTX, ODT, ODS,
-        ODP, RTF, TXT, CSV), and ZIP archives.'
+        Allowed file types match the web interface: images (PNG, JPEG, GIF, WebP),
+        PDF, office documents (DOC, DOCX, XLS, XLSX, PPT, PPTX, ODT, ODS, ODP, RTF,
+        TXT, CSV), and ZIP archives.'
       tags:
       - file-uploads
       requestBody:
@@ -5106,6 +5106,56 @@ components:
           nullable: true
       required:
       - email
+    AllowedFileTypesEnum:
+      enum:
+      - image/*
+      - document/*
+      - presentation/*
+      - spreadsheet/*
+      - archive/*
+      - image/png
+      - image/jpeg
+      - image/gif
+      - image/webp
+      - application/pdf
+      - text/plain
+      - application/rtf
+      - application/msword
+      - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+      - application/vnd.oasis.opendocument.text
+      - application/vnd.ms-powerpoint
+      - application/vnd.openxmlformats-officedocument.presentationml.presentation
+      - application/vnd.oasis.opendocument.presentation
+      - text/csv
+      - application/vnd.ms-excel
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      - application/vnd.oasis.opendocument.spreadsheet
+      - application/zip
+      type: string
+      description: |-
+        * `image/*` - image/*
+        * `document/*` - document/*
+        * `presentation/*` - presentation/*
+        * `spreadsheet/*` - spreadsheet/*
+        * `archive/*` - archive/*
+        * `image/png` - image/png
+        * `image/jpeg` - image/jpeg
+        * `image/gif` - image/gif
+        * `image/webp` - image/webp
+        * `application/pdf` - application/pdf
+        * `text/plain` - text/plain
+        * `application/rtf` - application/rtf
+        * `application/msword` - application/msword
+        * `application/vnd.openxmlformats-officedocument.wordprocessingml.document` - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+        * `application/vnd.oasis.opendocument.text` - application/vnd.oasis.opendocument.text
+        * `application/vnd.ms-powerpoint` - application/vnd.ms-powerpoint
+        * `application/vnd.openxmlformats-officedocument.presentationml.presentation` - application/vnd.openxmlformats-officedocument.presentationml.presentation
+        * `application/vnd.oasis.opendocument.presentation` - application/vnd.oasis.opendocument.presentation
+        * `text/csv` - text/csv
+        * `application/vnd.ms-excel` - application/vnd.ms-excel
+        * `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+        * `application/vnd.oasis.opendocument.spreadsheet` - application/vnd.oasis.opendocument.spreadsheet
+        * `application/zip` - application/zip
     Answer:
       type: object
       description: |-
@@ -6363,6 +6413,12 @@ components:
           nullable: true
           title: Maximum number of options
           description: Maximum number of options that can be selected.
+        allowed_file_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllowedFileTypesEnum'
+          description: 'File types accepted by file questions: content types, or group
+            wildcards like image/*. Empty means all supported file types.'
         icon:
           nullable: true
           description: |-
@@ -6518,6 +6574,12 @@ components:
           nullable: true
           title: Maximum number of options
           description: Maximum number of options that can be selected.
+        allowed_file_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllowedFileTypesEnum'
+          description: 'File types accepted by file questions: content types, or group
+            wildcards like image/*. Empty means all supported file types.'
         icon:
           nullable: true
           description: |-
@@ -6689,6 +6751,12 @@ components:
           nullable: true
           title: Maximum number of options
           description: Maximum number of options that can be selected.
+        allowed_file_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllowedFileTypesEnum'
+          description: 'File types accepted by file questions: content types, or group
+            wildcards like image/*. Empty means all supported file types.'
         icon:
           nullable: true
           description: |-
@@ -6856,6 +6924,12 @@ components:
           nullable: true
           title: Maximum number of options
           description: Maximum number of options that can be selected.
+        allowed_file_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllowedFileTypesEnum'
+          description: 'File types accepted by file questions: content types, or group
+            wildcards like image/*. Empty means all supported file types.'
         icon:
           nullable: true
           description: |-
@@ -7020,6 +7094,12 @@ components:
           nullable: true
           title: Maximum number of options
           description: Maximum number of options that can be selected.
+        allowed_file_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllowedFileTypesEnum'
+          description: 'File types accepted by file questions: content types, or group
+            wildcards like image/*. Empty means all supported file types.'
         icon:
           nullable: true
           description: |-

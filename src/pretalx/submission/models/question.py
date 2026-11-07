@@ -39,6 +39,7 @@ from pretalx.submission.rules import (
 from pretalx.submission.validators.question import (
     validate_answer_option_identifier_unique,
     validate_question_deadline,
+    validate_question_file_types,
     validate_question_identifier_unique,
     validate_question_option_limits,
 )
@@ -262,6 +263,12 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
         help_text=_("Maximum number of options that can be selected."),
         validators=[MinValueValidator(1)],
     )
+    allowed_file_types = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name=_("Allowed file types"),
+        help_text=_("Leave empty to allow all supported file types."),
+    )
     min_date = DateField(null=True, blank=True, verbose_name=_("Minimum value"))
     max_date = DateField(null=True, blank=True, verbose_name=_("Maximum value"))
     min_datetime = DateTimeField(null=True, blank=True, verbose_name=_("Minimum value"))
@@ -347,6 +354,7 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
         super().clean()
         validate_question_deadline(self)
         validate_question_option_limits(self)
+        validate_question_file_types(self)
         if not (self.event_id and self.identifier):
             return
         validate_question_identifier_unique(

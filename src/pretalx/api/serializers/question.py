@@ -2,13 +2,16 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import copy
+from pathlib import Path
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import exceptions
 from rest_framework.serializers import (
     CharField,
+    ChoiceField,
     HiddenField,
+    ListField,
     PrimaryKeyRelatedField,
     SlugRelatedField,
     as_serializer_error,
@@ -18,7 +21,11 @@ from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import register_serializer
-from pretalx.common.files import DOCUMENT_UPLOAD_TYPES
+from pretalx.common.files import (
+    DOCUMENT_UPLOAD_TYPES,
+    FILE_TYPE_TOKENS,
+    resolve_file_types,
+)
 from pretalx.person.domain.queries.profile import submitters_for_event
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.domain.queries.question import questions_for_user
@@ -35,6 +42,7 @@ from pretalx.submission.models import (
     Track,
 )
 from pretalx.submission.validators.question import (
+    clean_file_type_tokens,
     validate_option_count,
     validate_question_min_options_available,
 )
@@ -84,6 +92,12 @@ class AnswerOptionCreateSerializer(AnswerOptionSerializer):
 @register_serializer()
 class QuestionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     identifier = CharField(required=False, allow_blank=True)
+    allowed_file_types = ListField(
+        child=ChoiceField(choices=FILE_TYPE_TOKENS),
+        required=False,
+        help_text="File types accepted by file questions: content types, or "
+        "group wildcards like image/*. Empty means all supported file types.",
+    )
 
     class Meta:
         model = Question
@@ -112,6 +126,7 @@ class QuestionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             "max_datetime",
             "min_options",
             "max_options",
+            "allowed_file_types",
             "icon",
         )
         expandable_fields = {
@@ -175,6 +190,9 @@ class QuestionOrgaSerializer(QuestionSerializer):
             self.fields[
                 "submission_types"
             ].child_relation.queryset = SubmissionType.objects.none()
+
+    def validate_allowed_file_types(self, value):
+        return clean_file_type_tokens(value)
 
     def validate(self, data):
         data = super().validate(data)
@@ -256,15 +274,27 @@ class AnswerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
     def validate(self, data):
         data = super().validate(data)
-        if "options" in data:
-            question = self.get_with_fallback(data, "question")
-            if question.variant == QuestionVariant.MULTIPLE:
-                try:
-                    validate_option_count(
-                        data["options"], question.min_options, question.max_options
-                    )
-                except DjangoValidationError as exc:
-                    raise exceptions.ValidationError({"options": exc.messages}) from exc
+        question = self.get_with_fallback(data, "question")
+        if "options" in data and question.variant == QuestionVariant.MULTIPLE:
+            try:
+                validate_option_count(
+                    data["options"], question.min_options, question.max_options
+                )
+            except DjangoValidationError as exc:
+                raise exceptions.ValidationError({"options": exc.messages}) from exc
+        if data.get("answer_file") and question.variant == QuestionVariant.FILE:
+            extensions = [
+                ext
+                for exts in resolve_file_types(question.allowed_file_types).values()
+                for ext in exts
+            ]
+            if Path(data["answer_file"].name).suffix.lower() not in extensions:
+                raise exceptions.ValidationError(
+                    {
+                        "answer_file": "This file type is not allowed for this "
+                        f"question, it has to be one of: {', '.join(extensions)}"
+                    }
+                )
         return data
 
 

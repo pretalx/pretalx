@@ -1,0 +1,16 @@
+/*
+ * SPDX-FileCopyrightText: 2026-present Tobias Kunze
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+.file-type-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1em 2em;
+}
+.file-type-group-header input + label {
+  font-weight: bold;
+}
+.file-type-member {
+  margin-left: 1.5em;
+}

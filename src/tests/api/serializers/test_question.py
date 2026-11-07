@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
+from django.core.files.base import ContentFile
 from rest_framework import exceptions
 
 from pretalx.api.serializers.question import (
@@ -104,6 +105,7 @@ def test_question_serializer_data():
         "max_datetime",
         "min_options",
         "max_options",
+        "allowed_file_types",
         "icon",
     }
     assert data["id"] == question.id
@@ -538,3 +540,97 @@ def test_answer_create_serializer_validate_rejects_option_count_outside_limits(
         )
 
     assert "options" in exc_info.value.detail
+
+
+@pytest.mark.parametrize(
+    ("allowed_file_types", "errors", "stored"),
+    (
+        (
+            ["presentation/*", "application/pdf", "presentation/*"],
+            {},
+            ["presentation/*", "application/pdf"],
+        ),
+        (
+            ["image/*", "application/x-msdownload"],
+            {
+                "allowed_file_types": {
+                    1: ['"application/x-msdownload" is not a valid choice.']
+                }
+            },
+            None,
+        ),
+    ),
+    ids=("valid_deduplicated", "unknown_token"),
+)
+def test_question_orga_serializer_validates_allowed_file_types(
+    allowed_file_types, errors, stored
+):
+    event = EventFactory()
+    serializer = QuestionOrgaSerializer(
+        data={
+            "question": "Upload slides",
+            "variant": QuestionVariant.FILE,
+            "target": QuestionTarget.SUBMISSION,
+            "allowed_file_types": allowed_file_types,
+        },
+        context={"request": make_api_request(event=event)},
+    )
+
+    assert serializer.is_valid() == (not errors)
+    assert serializer.errors == errors
+    if stored:
+        assert serializer.validated_data["allowed_file_types"] == stored
+
+
+@pytest.mark.parametrize(
+    ("variant", "allowed_file_types", "filename", "error"),
+    (
+        (QuestionVariant.FILE, ["image/*"], "answer.pdf", True),
+        (QuestionVariant.FILE, ["image/*"], "answer.PNG", False),
+        (QuestionVariant.FILE, [], "answer.pdf", False),
+        (QuestionVariant.STRING, ["image/*"], "answer.pdf", False),
+    ),
+    ids=("disallowed", "allowed_uppercase", "unrestricted", "not_a_file_question"),
+)
+def test_answer_create_serializer_validate_checks_allowed_file_types(
+    variant, allowed_file_types, filename, error
+):
+    question = QuestionFactory(
+        target=QuestionTarget.SUBMISSION,
+        variant=variant,
+        allowed_file_types=allowed_file_types,
+    )
+    data = {
+        "question": question,
+        "submission": SubmissionFactory(event=question.event),
+        "answer_file": ContentFile(b"content", name=filename),
+    }
+    serializer = AnswerCreateSerializer()
+    serializer.instance = None
+
+    if error:
+        with pytest.raises(exceptions.ValidationError) as exc_info:
+            serializer.validate(data)
+        assert exc_info.value.detail == {
+            "answer_file": "This file type is not allowed for this question, it "
+            "has to be one of: .png, .jpg, .jpeg, .gif, .webp"
+        }
+    else:
+        assert serializer.validate(data) == data
+
+
+def test_answer_serializer_validate_checks_allowed_file_types_on_update():
+    question = QuestionFactory(
+        target=QuestionTarget.SUBMISSION,
+        variant=QuestionVariant.FILE,
+        allowed_file_types=["presentation/*"],
+    )
+    answer = AnswerFactory(
+        question=question, submission=SubmissionFactory(event=question.event)
+    )
+    serializer = AnswerSerializer(instance=answer)
+
+    with pytest.raises(exceptions.ValidationError) as exc_info:
+        serializer.validate({"answer_file": ContentFile(b"x", name="talk.pdf")})
+
+    assert list(exc_info.value.detail) == ["answer_file"]

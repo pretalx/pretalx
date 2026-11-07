@@ -39,8 +39,8 @@ class UploadView(APIView):
         operation_id="File upload",
         description="Upload a file (image, PDF or office document) for temporary "
         "storage. Allowed file types match the web interface: images (PNG, JPEG, "
-        "GIF, WebP, BMP, TIFF), PDF, office documents (DOC, DOCX, XLS, XLSX, PPT, "
-        "PPTX, ODT, ODS, ODP, RTF, TXT, CSV), and ZIP archives.",
+        "GIF, WebP), PDF, office documents (DOC, DOCX, XLS, XLSX, PPT, PPTX, ODT, "
+        "ODS, ODP, RTF, TXT, CSV), and ZIP archives.",
         request={
             "multipart/form-data": {
                 "type": "object",

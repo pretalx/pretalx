@@ -20,6 +20,7 @@ const question_page_toggle_view = () => {
     setBlockVisibility("#limit-date", variant === "date")
     setBlockVisibility("#limit-datetime", variant === "datetime")
     setBlockVisibility("#limit-options", variant === "multiple_choice")
+    setBlockVisibility("#limit-file", variant === "file")
     setBlockVisibility("#icon-field", variant === "url" && isPublic)
     setBlockVisibility("#limit-teams", !isPublic)
 }
@@ -38,7 +39,32 @@ const question_page_toggle_deadline = () => {
     }
 }
 
+const question_page_update_file_group = (group) => {
+    const header = group.querySelector("[data-file-type-wildcard]")
+    const members = [...group.querySelectorAll("[data-file-type-member]")]
+    members.forEach((member) => {
+        if (header.checked) member.checked = true
+        member.disabled = header.checked || header.disabled
+    })
+    const checked = members.filter((member) => member.checked).length
+    header.indeterminate = !header.checked && checked > 0
+}
+
 onReady(() => {
+    document.querySelectorAll("[data-file-type-group]").forEach((group) => {
+        group.addEventListener("change", (event) => {
+            if (
+                event.target.matches("[data-file-type-wildcard]") &&
+                !event.target.checked
+            ) {
+                group
+                    .querySelectorAll("[data-file-type-member]")
+                    .forEach((member) => (member.checked = false))
+            }
+            question_page_update_file_group(group)
+        })
+        question_page_update_file_group(group)
+    })
     document
         .querySelector("#id_variant")
         .addEventListener("change", question_page_toggle_view)

@@ -56,31 +56,6 @@ def test_upload_image_creates_cached_file(client, orga_write_token, make_image):
 
 
 @pytest.mark.parametrize(
-    ("filename", "content_type"),
-    (("scan.bmp", "image/bmp"), ("scan.tiff", "image/tiff")),
-    ids=("bmp", "tiff"),
-)
-def test_upload_document_image_type_skips_image_validation(
-    client, orga_write_token, filename, content_type
-):
-    response = client.post(
-        "/api/upload/",
-        data={"name": filename, "file_field": ContentFile(b"fake image content")},
-        headers={
-            "Authorization": f"Token {orga_write_token.token}",
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Content-Type": content_type,
-        },
-    )
-
-    assert response.status_code == 201, response.data
-    assert response.data["id"].startswith("file:")
-    cf = CachedFile.objects.get()
-    assert cf.filename == filename
-    assert cf.content_type == content_type
-
-
-@pytest.mark.parametrize(
     ("filename", "content_type", "error"),
     (
         (
@@ -90,8 +65,10 @@ def test_upload_document_image_type_skips_image_validation(
         ),
         ("file.bin", "application/octet-stream", "Content type is not allowed."),
         ("evil.html", "text/html", "Content type is not allowed."),
+        ("scan.bmp", "image/bmp", "Content type is not allowed."),
+        ("scan.tiff", "image/tiff", "Content type is not allowed."),
     ),
-    ids=("extension_mismatch", "octet_stream", "active_content_html"),
+    ids=("extension_mismatch", "octet_stream", "active_content_html", "bmp", "tiff"),
 )
 def test_upload_rejects_invalid_type_or_extension(
     client, orga_write_token, filename, content_type, error

@@ -1,0 +1,35 @@
+{% comment %}
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+{% endcomment %}
+
+<div class="file-type-select" {% if widget.attrs.id %}id="{{ widget.attrs.id }}"{% endif %}>
+    {% for group, options, index in widget.optgroups %}
+        <div class="file-type-group" data-file-type-group>
+            {% with header=options.0 %}
+                <div class="file-type-group-header">
+                    <input
+                        type="checkbox"
+                        name="{{ header.name }}"
+                        value="{{ header.value }}"
+                        data-file-type-wildcard
+                        {% include "django/forms/widgets/attrs.html" with widget=header %}
+                    >
+                    <label for="{{ header.attrs.id }}">{{ header.label }}</label>
+                </div>
+            {% endwith %}
+            {% for option in options|slice:"1:" %}
+                <div class="file-type-member">
+                    <input
+                        type="checkbox"
+                        name="{{ option.name }}"
+                        value="{{ option.value }}"
+                        data-file-type-member
+                        {% include "django/forms/widgets/attrs.html" with widget=option %}
+                    >
+                    <label for="{{ option.attrs.id }}">{{ option.label }}</label>
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+</div>

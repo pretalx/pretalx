@@ -4,6 +4,7 @@
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
+from pretalx.common.files import FILE_TYPE_TOKENS
 from pretalx.submission.enums import QuestionRequired, QuestionVariant
 
 
@@ -120,3 +121,25 @@ def validate_answer_option_identifier_unique(*, question, identifier, instance=N
         instance=instance,
         message=_("This identifier is already used for a different option."),
     )
+
+
+def clean_file_type_tokens(tokens):
+    if not tokens:
+        return []
+    if not isinstance(tokens, list) or not all(isinstance(t, str) for t in tokens):
+        raise ValidationError(_("Please provide a list of file types."))
+    unknown = [token for token in tokens if token not in FILE_TYPE_TOKENS]
+    if unknown:
+        raise ValidationError(
+            _("Unknown file type: {types}").format(types=", ".join(unknown))
+        )
+    return list(dict.fromkeys(tokens))
+
+
+def validate_question_file_types(question):
+    try:
+        question.allowed_file_types = clean_file_type_tokens(
+            question.allowed_file_types
+        )
+    except ValidationError as exc:
+        raise ValidationError({"allowed_file_types": exc.messages}) from exc

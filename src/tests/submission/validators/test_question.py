@@ -5,10 +5,12 @@ from django.core.exceptions import ValidationError
 
 from pretalx.submission.enums import QuestionRequired, QuestionVariant
 from pretalx.submission.validators.question import (
+    clean_file_type_tokens,
     get_option_count_help_text,
     validate_answer_option_identifier_unique,
     validate_option_count,
     validate_question_deadline,
+    validate_question_file_types,
     validate_question_identifier_unique,
     validate_question_min_options_available,
     validate_question_option_limits,
@@ -243,3 +245,51 @@ def test_validate_question_min_options_available_skips_unsaved_question():
     question = QuestionFactory.build(variant=QuestionVariant.MULTIPLE, min_options=3)
 
     validate_question_min_options_available(question)
+
+
+@pytest.mark.parametrize(
+    ("tokens", "expected"),
+    (
+        (None, []),
+        ([], []),
+        (
+            ["image/*", "application/pdf", "image/*", "image/png"],
+            ["image/*", "application/pdf", "image/png"],
+        ),
+    ),
+    ids=("none", "empty", "dedup_keeps_order"),
+)
+def test_clean_file_type_tokens(tokens, expected):
+    assert clean_file_type_tokens(tokens) == expected
+
+
+@pytest.mark.parametrize(
+    ("tokens", "messages"),
+    (
+        (
+            ["image/png", "application/x-msdownload", "foo/*"],
+            ["Unknown file type: application/x-msdownload, foo/*"],
+        ),
+        ("image/*", ["Please provide a list of file types."]),
+        ([["image/*"]], ["Please provide a list of file types."]),
+    ),
+    ids=("unknown", "string", "nested"),
+)
+def test_clean_file_type_tokens_rejects_invalid_input(tokens, messages):
+    assert _messages(clean_file_type_tokens, tokens) == messages
+
+
+def test_validate_question_file_types_cleans_question_in_place():
+    question = QuestionFactory.build(allowed_file_types=["image/*", "image/*"])
+
+    validate_question_file_types(question)
+
+    assert question.allowed_file_types == ["image/*"]
+
+
+def test_validate_question_file_types_reports_field_error():
+    question = QuestionFactory.build(allowed_file_types=["text/html"])
+
+    assert _message_dict(validate_question_file_types, question) == {
+        "allowed_file_types": ["Unknown file type: text/html"]
+    }

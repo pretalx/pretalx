@@ -11,6 +11,7 @@ For already released changes, head over here:
 
 - :bug:`api` Only organisers, reviewers and administrators can create API tokens, as documented. Existing tokens of users without any team membership no longer work.
 - :feature:`orga` Every list in the organiser area can now be exported as CSV, JSON or Excel file. The export uses the active filters and sort order, and can include some export-only columns that would make no sense to display in a table (e.g. the speaker biography or the full session description). Exports can also be saved, edited, and downloaded again later by other members of your team.
+- :feature:`cfp` Organisers can limit which file types a file field accepts. You can select groups like images or presentations, or single file types like PNG or PDF.
 - :bug:`admin` pretalx now looks for the ``pretalx.cfg`` configuration file in the ``src`` directory, as documented, instead of in the current working directory. If you relied on a ``pretalx.cfg`` in the directory you start pretalx from, move it to ``/etc/pretalx/pretalx.cfg`` or point the ``PRETALX_CONFIG_FILE`` environment variable at it.
 - :feature:`orga` Organisers can now choose for each header and footer link whether it opens in a new tab.
 - :feature:`cfp` Submitting the last step of the proposal form twice, for example by double-clicking or by resending the form, now creates only one proposal.
