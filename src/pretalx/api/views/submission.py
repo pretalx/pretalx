@@ -206,13 +206,15 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         "reject": "submission.state_change_submission",
         "confirm": "submission.state_change_submission",
         "cancel": "submission.state_change_submission",
-        "add_speaker": "submission.update_submission",
-        "remove_speaker": "submission.update_submission",
-        "invite_speaker": "submission.update_submission",
-        "retract_invitation": "submission.update_submission",
-        "add_resource": "submission.update_submission",
-        "remove_resource": "submission.update_submission",
+        "add_speaker": "submission.orga_update_submission",
+        "remove_speaker": "submission.orga_update_submission",
+        "invite_speaker": "submission.orga_update_submission",
+        "retract_invitation": "submission.orga_update_submission",
+        "add_resource": "submission.orga_update_submission",
+        "remove_resource": "submission.orga_update_submission",
         "attendees": "submission.orga_update_submission",
+        "update": "submission.orga_update_submission",
+        "partial_update": "submission.orga_update_submission",
     }
     endpoint = "submissions"
 
@@ -359,7 +361,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
                 )
         add_speaker(submission, speaker, log_user=self.request.user)
         submission = self.get_object()
-        return Response(SubmissionOrgaSerializer(submission).data)
+        return Response(self.get_serializer(submission).data)
 
     @action(detail=True, methods=["POST"], url_path="remove-speaker")
     @transaction.atomic()
@@ -376,7 +378,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             )
         remove_speaker(submission, speaker, user=self.request.user)
         submission = self.get_object()
-        return Response(SubmissionOrgaSerializer(submission).data)
+        return Response(self.get_serializer(submission).data)
 
     @action(detail=True, methods=["POST"], url_path="invitations")
     @transaction.atomic()
@@ -394,7 +396,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
 
         send_invitation(submission, email=email, sender=request.user, orga=True)
         submission = self.get_object()
-        return Response(SubmissionOrgaSerializer(submission).data)
+        return Response(self.get_serializer(submission).data)
 
     @action(
         detail=True,
@@ -426,11 +428,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         )
         serializer.is_valid(raise_exception=True)
         create_resource(submission, user=request.user, **serializer.validated_data)
-        return Response(
-            SubmissionOrgaSerializer(
-                submission, context=self.get_serializer_context()
-            ).data
-        )
+        return Response(self.get_serializer(submission).data)
 
     @action(
         detail=True, methods=["DELETE"], url_path=r"resources/(?P<resource_id>[0-9]+)"

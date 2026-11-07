@@ -234,8 +234,6 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
     @extend_schema_field(list[str])
     def get_speakers(self, obj):
-        if not self.event:
-            return []
         speakers = obj.sorted_speakers
         if serializer := self.get_extra_flex_field("speakers", speakers):
             return serializer.data

@@ -7,6 +7,7 @@ from django.utils.timezone import now
 from rest_framework import exceptions
 from rest_framework.authentication import TokenAuthentication
 
+from pretalx.event.rules import is_any_organiser
 from pretalx.person.models import UserApiToken
 
 
@@ -24,6 +25,8 @@ class UserTokenAuthentication(TokenAuthentication):
             )
         except model.DoesNotExist:
             raise exceptions.AuthenticationFailed("Invalid token.") from None
+        if not is_any_organiser(token.user, None):
+            raise exceptions.AuthenticationFailed("Invalid token.")
 
         timestamp = now()
         last_used_interval = dt.timedelta(minutes=1)

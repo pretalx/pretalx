@@ -424,6 +424,8 @@ def test_submission_add_speaker_by_email(
     with scopes_disabled():
         assert existing in submission.speakers.all()
         assert SpeakerProfile.objects.filter(event=event).count() == profile_count + 1
+        speaker_codes = {s.code for s in submission.speakers.all()}
+    assert set(reused.json()["speakers"]) == speaker_codes
 
 
 def test_submission_add_speaker_by_code_next_version(
@@ -686,6 +688,47 @@ def test_submission_link_resource_lifecycle(
     with scopes_disabled():
         assert not Resource.objects.filter(pk=resource.pk).exists()
         assert Resource.objects.filter(pk=foreign.pk).exists()
+
+
+@pytest.mark.parametrize(
+    ("method", "path", "data"),
+    (
+        (
+            "post",
+            "resources/",
+            {"link": "https://example.com/slides", "description": "Slide deck"},
+        ),
+        ("patch", "", {"title": "Changed"}),
+        ("put", "", {"title": "Changed"}),
+    ),
+)
+def test_submission_write_denied_to_speaker_organising_elsewhere(
+    client, published_talk_slot, method, path, data
+):
+    submission = published_talk_slot.submission
+    with scopes_disabled():
+        user = submission.speakers.select_related("user").get().user
+    TeamFactory(organiser=EventFactory().organiser, all_events=True).members.add(user)
+    token = UserApiTokenFactory(
+        user=user,
+        all_events=True,
+        endpoints=dict.fromkeys(
+            ENDPOINTS, ["list", "retrieve", "create", "update", "actions"]
+        ),
+    )
+
+    response = getattr(client, method)(
+        submission.event.api_urls.submissions + f"{submission.code}/{path}",
+        follow=True,
+        data=data,
+        content_type="application/json",
+        headers={"Authorization": f"Token {token.token}"},
+    )
+
+    assert response.status_code == 403
+    with scopes_disabled():
+        assert not submission.resources.exists()
+        assert Submission.objects.get(pk=submission.pk).title == submission.title
 
 
 def test_submission_file_resource_lifecycle(

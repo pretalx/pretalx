@@ -7,14 +7,15 @@ from django.utils.timezone import now
 from rest_framework.exceptions import AuthenticationFailed
 
 from pretalx.api.auth import UserTokenAuthentication
-from tests.factories import EventFactory, UserApiTokenFactory
+from tests.factories import EventFactory, TeamFactory, UserApiTokenFactory
+from tests.utils import make_orga_user
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def test_user_token_authentication_valid_token(django_assert_num_queries):
-    token = UserApiTokenFactory()
     event = EventFactory()
+    token = UserApiTokenFactory(user=make_orga_user(event))
     token.limit_events.add(event)
     auth = UserTokenAuthentication()
 
@@ -33,7 +34,7 @@ def test_user_token_authentication_valid_token(django_assert_num_queries):
 @pytest.mark.parametrize(("age", "expected_update"), ((10, False), (600, True)))
 def test_user_token_authentication_debounces_last_used(age, expected_update):
     previous = now() - timedelta(seconds=age)
-    token = UserApiTokenFactory(last_used=previous)
+    token = UserApiTokenFactory(user=make_orga_user(EventFactory()), last_used=previous)
     auth = UserTokenAuthentication()
 
     auth.authenticate_credentials(token.token)
@@ -50,13 +51,24 @@ def test_user_token_authentication_invalid_token():
 
 
 @pytest.mark.parametrize(
-    "token_kwargs",
-    ({"expires": now() - timedelta(days=1)}, {"user__is_active": False}),
-    ids=["expired", "deactivated_user"],
+    ("token_kwargs", "has_team"),
+    (
+        ({"expires": now() - timedelta(days=1)}, True),
+        ({"user__is_active": False}, True),
+        ({}, False),
+    ),
+    ids=["expired", "deactivated_user", "no_team"],
 )
-def test_user_token_authentication_inactive_token(token_kwargs):
-    token = UserApiTokenFactory(**token_kwargs)
+def test_user_token_authentication_rejects_token(token_kwargs, has_team):
+    token = UserApiTokenFactory(all_events=True, **token_kwargs)
+    if has_team:
+        TeamFactory(organiser=EventFactory().organiser, all_events=True).members.add(
+            token.user
+        )
     auth = UserTokenAuthentication()
 
     with pytest.raises(AuthenticationFailed, match="Invalid token"):
         auth.authenticate_credentials(token.token)
+
+    token.refresh_from_db()
+    assert token.last_used is None

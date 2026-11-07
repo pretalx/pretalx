@@ -6,6 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load html_signal %}
 {% load i18n %}
+{% load rules %}
 {% load static %}
 
 {% block extra_title %}{% translate "User settings" %} ::
@@ -22,7 +23,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% include "orga/includes/base_form.html" with form=login_form submit_buttons=login_submit %}
     </fieldset>
 
-    {% if user.cached_teams %}
+    {% has_perm "event.view_any_organiser" request.user request as can_use_api %}
+    {% if can_use_api %}
         <fieldset class="m-2">
             <legend>{% translate "API Access" %}</legend>
             <p>
