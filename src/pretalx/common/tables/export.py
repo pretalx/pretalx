@@ -334,7 +334,7 @@ class XLSXSerializer(TableSerializer):
 def get_table_serializers(event):
     serializers = {
         serializer.identifier: serializer
-        for serializer in (CSVSerializer, JSONSerializer, XLSXSerializer)
+        for serializer in (XLSXSerializer, JSONSerializer, CSVSerializer)
     }
     for _receiver, serializer in register_table_serializers.send(event):
         if serializer is not None:
