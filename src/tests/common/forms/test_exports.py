@@ -8,7 +8,12 @@ from pretalx.common.forms.exports import TableExportForm
 from pretalx.common.models.exports import TableExport
 from pretalx.orga.tables.cfp import TrackTable
 from pretalx.orga.tables.submission import SubmissionTable
-from tests.factories import EventFactory, TableExportFactory, UserFactory
+from tests.factories import (
+    EventFactory,
+    QuestionFactory,
+    TableExportFactory,
+    UserFactory,
+)
 from tests.utils import make_orga_user
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -178,16 +183,33 @@ def test_export_form_requires_locale_for_chosen_format(
 
 def test_export_form_reads_filter_widgets_when_no_querystring(event):
     user = make_orga_user(event, can_change_submissions=True)
+    free_text = QuestionFactory(event=event, variant="string")
+    answered = QuestionFactory(event=event, variant="string")
 
     form = TableExportForm(
-        data=_data(state=["accepted", "rejected"], q="needle", ordering=["title"]),
+        data=_data(
+            state=["accepted", "rejected"],
+            q="needle",
+            fulltext="",
+            is_featured="__none__",
+            do_not_record="maybe",
+            **{
+                f"question_{free_text.pk}": "__none__",
+                f"question_{answered.pk}": ["__none__", "", "yes"],
+            },
+            ordering=["title"],
+        ),
         event=event,
         user=user,
         table_class=SubmissionTable,
     )
 
     assert form.is_valid()
-    assert form.filters == {"state": ["accepted", "rejected"], "q": ["needle"]}
+    assert form.filters == {
+        "state": ["accepted", "rejected"],
+        "q": ["needle"],
+        f"question_{answered.pk}": ["yes"],
+    }
     assert form.ordering == ["title"]
     assert form.filterset.is_set("state")
 
@@ -326,7 +348,11 @@ def test_export_form_uses_given_table_for_the_picker(event):
         "title",
     ]
     assert "abstract" in {column["name"] for column in form.columns_form.hidden_columns}
-    assert [identifier for identifier, _ in form.option_bound_fields] == ["csv", "csv"]
+    assert [identifier for identifier, _ in form.option_bound_fields] == [
+        "csv",
+        "csv",
+        "xlsx",
+    ]
     assert without_user.preferences is None
     assert without_user.columns == ["state", "title"]
     assert without_user.ordering == ["title"]
@@ -336,7 +362,7 @@ def test_export_form_without_filters_or_serializer(event):
     user = make_orga_user(event, can_change_submissions=True)
 
     form = TableExportForm(
-        data=_data(serializer="xlsx"), event=event, user=user, table_class=TrackTable
+        data=_data(serializer="pdf"), event=event, user=user, table_class=TrackTable
     )
     unsaved_user = TableExportForm(
         data=_data(), event=event, user=UserFactory.build(), table_class=TrackTable

@@ -5,6 +5,9 @@ import csv
 import datetime as dt
 import io
 import json
+import zipfile
+from decimal import Decimal
+from xml.etree import ElementTree as ET
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -21,6 +24,7 @@ from pretalx.common.tables.export import (
     ExportError,
     JSONSerializer,
     TableSerializer,
+    XLSXSerializer,
     build_export_table,
     filters_to_querydict,
     get_exportable_table,
@@ -42,6 +46,8 @@ from tests.factories import (
     QuestionFactory,
     QueuedMailFactory,
     ReviewFactory,
+    ReviewScoreCategoryFactory,
+    ReviewScoreFactory,
     RoomFactory,
     SpeakerFactory,
     SpeakerInformationFactory,
@@ -80,18 +86,51 @@ def _csv_rows(content):
     return list(csv.reader(io.StringIO(content.decode("utf-8-sig"))))
 
 
-def test_table_serializers_offer_csv_and_json(event):
+XLSX_NS = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+
+
+def _xlsx_cells(content):
+    with zipfile.ZipFile(io.BytesIO(content)) as archive:
+        workbook = ET.fromstring(archive.read("xl/workbook.xml"))
+        sheet = ET.fromstring(archive.read("xl/worksheets/sheet1.xml"))
+        styles = ET.fromstring(archive.read("xl/styles.xml"))
+    formats = {
+        fmt.get("numFmtId"): fmt.get("formatCode")
+        for fmt in styles.iterfind("m:numFmts/m:numFmt", XLSX_NS)
+    }
+    xfs = styles.findall("m:cellXfs/m:xf", XLSX_NS)
+    fonts = styles.findall("m:fonts/m:font", XLSX_NS)
+    cells = {}
+    for cell in sheet.iterfind("m:sheetData/m:row/m:c", XLSX_NS):
+        xf = xfs[int(cell.get("s", 0))]
+        text = cell.findtext(
+            "m:is/m:t" if cell.get("t") == "inlineStr" else "m:v", namespaces=XLSX_NS
+        )
+        cells[cell.get("r")] = {
+            "value": text,
+            "type": cell.get("t"),
+            "format": formats.get(xf.get("numFmtId")),
+            "bold": fonts[int(xf.get("fontId"))].find("m:b", XLSX_NS) is not None,
+            "wrap": xf.find("m:alignment[@wrapText='1']", XLSX_NS) is not None,
+        }
+    name = workbook.find("m:sheets/m:sheet", XLSX_NS).get("name")
+    return name, sheet, cells
+
+
+def test_table_serializers_offer_csv_json_and_xlsx(event):
     assert get_table_serializers(event) == {
         "csv": CSVSerializer,
         "json": JSONSerializer,
+        "xlsx": XLSXSerializer,
     }
     assert get_table_serializer(event, "csv") is CSVSerializer
-    assert get_table_serializer(event, "xlsx") is None
+    assert get_table_serializer(event, "pdf") is None
     assert CSVSerializer.default_options(event) == {
         "delimiter": ",",
         "list_delimiter": "newline",
     }
     assert JSONSerializer.default_options(event) == {}
+    assert XLSXSerializer.default_options(event) == {"list_delimiter": "newline"}
 
 
 @pytest.mark.parametrize(
@@ -125,13 +164,13 @@ def test_serializers_offer_locale_only_with_several_languages(locales, has_local
 def test_table_serializers_add_plugin_formats_without_replacing_core(
     event, register_signal_handler
 ):
-    class XLSXSerializer(TableSerializer):
-        identifier = "xlsx"
+    class PDFSerializer(TableSerializer):
+        identifier = "pdf"
 
     class FakeCSVSerializer(TableSerializer):
         identifier = "csv"
 
-    for serializer in (None, XLSXSerializer, FakeCSVSerializer):
+    for serializer in (None, PDFSerializer, FakeCSVSerializer):
         register_signal_handler(
             register_table_serializers,
             lambda signal, sender, serializer=serializer, **kwargs: serializer,
@@ -141,6 +180,7 @@ def test_table_serializers_add_plugin_formats_without_replacing_core(
         "csv": CSVSerializer,
         "json": JSONSerializer,
         "xlsx": XLSXSerializer,
+        "pdf": PDFSerializer,
     }
 
 
@@ -384,6 +424,10 @@ def test_export_prepends_id_and_uses_data_values_in_event_timezone():
     table = build_export_table(event, user, config)
     csv_content = _render(event, user, config)
     json_content = _render(event, user, {**config, "serializer": "json"})
+    xlsx_content = _render(event, user, {**config, "serializer": "xlsx"})
+    sheet_name, sheet, cells = _xlsx_cells(xlsx_content)
+    with zipfile.ZipFile(io.BytesIO(xlsx_content)) as archive:
+        core = ET.fromstring(archive.read("docProps/core.xml"))
 
     assert table.export_column_names() == [
         "ID",
@@ -424,6 +468,25 @@ def test_export_prepends_id_and_uses_data_values_in_event_timezone():
             "abstract": "Long text",
         }
     ]
+    assert sheet_name == "Sessions"
+    dc = {"dc": "http://purl.org/dc/elements/1.1/"}
+    assert core.findtext("dc:title", namespaces=dc) == "Sessions"
+    assert core.findtext("dc:creator", namespaces=dc) == "pretalx"
+    assert sheet.find("m:sheetViews/m:sheetView/m:pane", XLSX_NS).get("ySplit") == "1"
+    assert sheet.find("m:autoFilter", XLSX_NS).get("ref") == "A1:G2"
+    assert [cells[f"{col}1"]["value"] for col in "ABCDEFG"] == rows[0]
+    assert all(cells[f"{col}1"]["bold"] for col in "ABCDEFG")
+    assert [cells[f"{col}2"]["value"] for col in "ABCDEFG"] == [
+        submission.code,
+        "Talk, with comma",
+        "Ada Lovelace",
+        "accepted",
+        "45458.6875",
+        "0",
+        "Long text",
+    ]
+    assert cells["E2"]["format"] == "yyyy-mm-dd hh:mm"
+    assert cells["F2"]["type"] == "b"
 
 
 @pytest.mark.parametrize(
@@ -465,22 +528,74 @@ def test_export_drops_columns_the_user_may_not_see(event):
     assert reviewer_table.export_column_names() == ["ID", "title"]
 
 
-def test_export_review_table_with_review_count_filter(event):
+@pytest.mark.parametrize(
+    ("aggregate_method", "aggregate"),
+    (("median", "median_score"), ("mean", "mean_score")),
+)
+def test_export_review_table_with_review_count_filter(
+    event, aggregate_method, aggregate
+):
+    event.review_settings["aggregate_method"] = aggregate_method
+    event.save()
     user = make_orga_user(event, can_change_submissions=True)
+    category = ReviewScoreCategoryFactory(event=event, is_independent=True)
     reviewed = SubmissionFactory(event=event, title="Reviewed")
-    ReviewFactory(submission=reviewed)
-    ReviewFactory(submission=reviewed)
+    zero = SubmissionFactory(event=event, title="Zero")
+    half = SubmissionFactory(event=event, title="Half")
+    for submission, scores in (
+        (reviewed, (1, 2, 3)),
+        (zero, (0, 0)),
+        (half, (Decimal("2.25"), Decimal("2.25"))),
+    ):
+        for index, score in enumerate(scores):
+            review = ReviewFactory(
+                submission=submission,
+                score=score,
+                **({"user": user} if index == 0 else {}),
+            )
+            review.scores.add(ReviewScoreFactory(category=category, value=score))
     SubmissionFactory(event=event, title="Bare")
+    independent = f"independent_score_{category.pk}"
 
-    content = _render(
-        event,
-        user,
-        _config(
-            table="ReviewTable", columns=["title"], filters={"review-count": ["1,2"]}
-        ),
+    config = _config(
+        table="ReviewTable",
+        columns=["title", aggregate, "user_score", independent],
+        filters={"review-count": ["1,3"]},
+        serializer="json",
     )
 
-    assert [row[1] for row in _csv_rows(content)[1:]] == ["Reviewed"]
+    content = _render(event, user, config)
+
+    rows = {row["title"]: row for row in json.loads(content)}
+    assert rows == {
+        "Reviewed": {
+            "ID": reviewed.code,
+            "title": "Reviewed",
+            aggregate: "2.0",
+            "user_score": "1.0",
+            independent: "2.0",
+        },
+        "Zero": {
+            "ID": zero.code,
+            "title": "Zero",
+            aggregate: "0.0",
+            "user_score": "0.0",
+            independent: "0.0",
+        },
+        "Half": {
+            "ID": half.code,
+            "title": "Half",
+            aggregate: "2.2",
+            "user_score": "2.2",
+            independent: "2.2",
+        },
+    }
+    table = build_export_table(event, user, config)
+    rendered = next(row for row in table.rows if row.record.title == "Half")
+    assert {
+        name: str(rendered.get_cell(name))
+        for name in (aggregate, "user_score", independent)
+    } == {name: rows["Half"][name] for name in (aggregate, "user_score", independent)}
 
 
 @pytest.mark.parametrize(
@@ -491,6 +606,11 @@ def test_export_review_table_with_review_count_filter(event):
         ("boolean", {"answer": "True"}, "Yes", True),
         ("multiple_choice", {"options": ["one", "two"]}, "one, two", ["one", "two"]),
         ("number", {}, "", None),
+        ("number", {"answer": "12.50"}, "12.50", "12.50"),
+        ("number", {"answer": "lots"}, "lots", "lots"),
+        ("number", {"answer": "NaN"}, "NaN", "NaN"),
+        ("number", {"answer": "1e400"}, "1e400", "1e400"),
+        ("number", {"answer": "-1e400"}, "'-1e400", "-1e400"),
         ("date", {"answer": "2026-05-04"}, "2026-05-04", "2026-05-04"),
         (
             "datetime",
@@ -514,6 +634,11 @@ def test_export_review_table_with_review_count_filter(event):
         "boolean",
         "multiple_choice",
         "unanswered",
+        "number",
+        "number_unparseable",
+        "number_nan",
+        "number_too_large",
+        "number_too_large_negative",
         "date",
         "datetime",
         "unparseable",
@@ -716,7 +841,7 @@ def test_export_speaker_submission_columns_need_no_query_per_row(
     ("config", "message"),
     (
         (_config(table="NoSuchTable"), "unknown table"),
-        (_config(serializer="xlsx"), "unknown format"),
+        (_config(serializer="pdf"), "unknown format"),
         (_config(table="OutboxMailTable"), "permission denied"),
     ),
 )
@@ -786,3 +911,188 @@ def test_serializer_render_keeps_file_open_when_writing_fails(event, serializer_
 
     assert not file.closed
     assert file.getvalue()
+
+
+def test_xlsx_render_writes_value_types():
+    event = EventFactory()
+
+    class Table:
+        export_name = None
+
+        def as_values(self):
+            yield [
+                "date",
+                "time",
+                "decimal",
+                "float",
+                "empty first, datetime later",
+                "nan",
+                "zone",
+                "list",
+                "formula, then a value wider than the width cap",
+                "url",
+            ]
+            yield [
+                dt.date(2024, 6, 15),
+                dt.time(16, 30),
+                Decimal("1.5"),
+                2.25,
+                None,
+                float("nan"),
+                ZoneInfo("UTC"),
+                [dt.date(2024, 6, 15), None, True],
+                '=HYPERLINK("https://evil.example","x")',
+                "https://pretalx.com/",
+            ]
+            yield (
+                [None] * 4
+                + [
+                    dt.datetime(2024, 6, 15, 16, 30, tzinfo=ZoneInfo("Europe/Berlin")),
+                    False,
+                ]
+                + [None] * 2
+                + ["x" * 200, "https://pretalx.com/ and more"]
+            )
+            yield [
+                None,
+                None,
+                dt.date(1899, 12, 31),
+                dt.datetime(1899, 12, 31, 23),  # noqa: DTZ001 -- naive on purpose
+                None,
+                None,
+                "file:///etc/passwd",
+                None,
+                None,
+                "https://pretalx.com/" + "x" * 2100,
+            ]
+
+    class HeaderOnlyTable:
+        export_name = None
+
+        def as_values(self):
+            yield ["ID", "Title"]
+
+    file = io.BytesIO()
+    comma_file = io.BytesIO()
+    with pytest.warns(UserWarning, match="exceeds Excel's limit for URLs"):
+        XLSXSerializer(event).export(Table(), file)
+    with pytest.warns(UserWarning, match="exceeds Excel's limit for URLs"):
+        XLSXSerializer(event, options={"list_delimiter": "comma"}).export(
+            Table(), comma_file
+        )
+
+    header_only_file = io.BytesIO()
+    XLSXSerializer(event).export(HeaderOnlyTable(), header_only_file)
+
+    sheet_name, sheet, cells = _xlsx_cells(file.getvalue())
+    _name, _sheet, comma_cells = _xlsx_cells(comma_file.getvalue())
+    _name, header_only_sheet, header_only_cells = _xlsx_cells(
+        header_only_file.getvalue()
+    )
+
+    assert not file.closed
+    assert {
+        (col.get("min"), col.get("max")): col.get("width")
+        for col in sheet.iterfind("m:cols/m:col", XLSX_NS)
+    } == {
+        ("1", "1"): "10.42578125",
+        ("3", "3"): "10.42578125",
+        ("4", "4"): "18.5703125",
+        ("5", "5"): "26.7109375",
+        ("7", "7"): "17.28515625",
+        ("8", "8"): "10.42578125",
+        ("9", "10"): "71.42578125",
+    }
+    assert sheet_name == "Sheet1"
+    assert sheet.find("m:autoFilter", XLSX_NS).get("ref") == "A1:J4"
+    assert [
+        link.get("ref") for link in sheet.iterfind("m:hyperlinks/m:hyperlink", XLSX_NS)
+    ] == ["J2"]
+    assert cells["J4"]["value"].startswith("https://pretalx.com/xxx")
+    assert sheet.find("m:ignoredErrors/m:ignoredError", XLSX_NS).attrib == {
+        "sqref": "A1:XFD1048576",
+        "numberStoredAsText": "1",
+    }
+    assert sheet.find("m:sheetPr/m:pageSetUpPr", XLSX_NS).get("fitToPage") == "1"
+    assert sheet.find("m:pageSetup", XLSX_NS).attrib == {
+        "fitToHeight": "0",
+        "orientation": "landscape",
+    }
+    with zipfile.ZipFile(file) as archive:
+        workbook = ET.fromstring(archive.read("xl/workbook.xml"))
+        styles = ET.fromstring(archive.read("xl/styles.xml"))
+    assert workbook.findtext(
+        "m:definedNames/m:definedName[@name='_xlnm.Print_Titles']", namespaces=XLSX_NS
+    ) == ("Sheet1!$1:$1")
+    xfs = styles.findall("m:cellXfs/m:xf", XLSX_NS)
+    assert {
+        cell.get("r"): xfs[int(cell.get("s", 0))].find(
+            "m:alignment[@vertical='top']", XLSX_NS
+        )
+        is not None
+        for cell in sheet.iterfind("m:sheetData/m:row/m:c", XLSX_NS)
+    } == dict.fromkeys(cells, True)
+    checkbox_style = sheet.find("m:sheetData/m:row/m:c[@r='F3']", XLSX_NS).get("s")
+    assert (
+        styles.findall("m:cellXfs/m:xf", XLSX_NS)[int(checkbox_style)].find(
+            "m:extLst", XLSX_NS
+        )
+        is not None
+    )
+    assert header_only_sheet.find("m:autoFilter", XLSX_NS).get("ref") == "A1:B1"
+    assert list(header_only_cells) == ["A1", "B1"]
+    assert cells["A2"]["value"] == "45458"
+    assert cells["A2"]["format"] == "yyyy-mm-dd"
+    assert float(cells["B2"]["value"]) == pytest.approx(16.5 / 24)
+    assert cells["B2"]["format"] == "hh:mm"
+    assert cells["C2"]["value"] == "1.5"
+    assert cells["D2"]["value"] == "2.25"
+    assert "E2" not in cells
+    assert cells["F2"]["value"] == "#NUM!"
+    assert cells["G2"]["value"] == "UTC"
+    assert float(cells["E3"]["value"]) == pytest.approx(45458 + 14.5 / 24)
+    assert cells["F3"]["value"] == "0"
+    assert cells["F3"]["type"] == "b"
+    assert cells["H2"]["value"] == "2024-06-15\n\nYes"
+    assert cells["H2"]["wrap"] is True
+    assert comma_cells["H2"] == {
+        "value": "2024-06-15, , Yes",
+        "type": "inlineStr",
+        "format": None,
+        "bold": False,
+        "wrap": False,
+    }
+    assert cells["C4"] == {
+        "value": "1899-12-31",
+        "type": "inlineStr",
+        "format": None,
+        "bold": False,
+        "wrap": False,
+    }
+    assert cells["D4"]["value"] == "1899-12-31T23:00:00"
+    assert cells["D4"]["type"] == "inlineStr"
+    assert cells["D4"]["format"] is None
+    assert cells["I2"] == {
+        "value": '=HYPERLINK("https://evil.example","x")',
+        "type": "inlineStr",
+        "format": None,
+        "bold": False,
+        "wrap": False,
+    }
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    (
+        ("Sessions", "Sessions"),
+        ("Custom fields [Reviews]: a/b\\c?*", "Custom fields Reviews abc"),
+        ("x" * 40, "x" * 31),
+        ("\U0001f600" * 20, "\U0001f600" * 15),
+        ("'quoted'", "quoted"),
+        ("History", None),
+        ("[]", None),
+        (None, None),
+    ),
+)
+def test_xlsx_sheet_name(name, expected):
+    assert XLSXSerializer.sheet_name(name) == expected

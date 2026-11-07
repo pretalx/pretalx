@@ -203,6 +203,34 @@ def test_table_export_create_from_scratch(client, event):
     )
 
 
+@pytest.mark.parametrize("existing", (False, True), ids=("create", "update"))
+def test_table_export_save_and_download_redirects_to_run(client, event, existing):
+    with scopes_disabled():
+        orga = make_orga_user(event, can_change_event_settings=True)
+        url = (
+            TableExportFactory(event=event, name="Before").urls.edit
+            if existing
+            else event.orga_urls.new_export + "?table=SubmissionTable"
+        )
+    client.force_login(orga)
+
+    response = client.post(
+        url,
+        data={
+            "name": "Talks",
+            "columns": ["title"],
+            "serializer": "json",
+            "action": "download",
+        },
+    )
+
+    with scopes_disabled():
+        export = TableExport.objects.select_related("event").get(event=event)
+    assert export.name == "Talks"
+    assert response.status_code == 302
+    assert response.url == export.urls.run
+
+
 def test_table_export_create_for_view_less_review_table(client, event):
     with scopes_disabled():
         orga = make_orga_user(event, can_change_event_settings=True)
@@ -229,7 +257,7 @@ def test_table_export_create_for_view_less_review_table(client, event):
         {
             "ID": review.pk,
             "submission_title": "Reviewed",
-            "score": 2.0,
+            "score": "2.00",
             "user_name": reviewer.name,
         }
     ]
@@ -280,6 +308,7 @@ def test_table_export_update_and_delete(client, event):
 
     assert form_response.status_code == 200
     assert response.status_code == 302
+    assert response.url == event.orga_urls.exports
     with scopes_disabled():
         export = TableExport.objects.select_related("event").get(pk=export.pk)
         assert export.name == "After"

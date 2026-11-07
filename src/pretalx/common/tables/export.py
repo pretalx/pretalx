@@ -5,9 +5,11 @@ import contextlib
 import datetime as dt
 import io
 import json
+import re
 import textwrap
 from decimal import Decimal
 
+import xlsxwriter
 from django import forms
 from django.http import QueryDict
 from django.utils import timezone, translation
@@ -15,6 +17,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from i18nfield.strings import LazyI18nString
 from i18nfield.utils import I18nJSONEncoder
+from xlsxwriter.utility import cell_autofit_width
 
 from pretalx.common.exporter import write_csv
 from pretalx.common.signals import (
@@ -100,6 +103,21 @@ def text_writer(file, *, newline=None):
         text.detach()
 
 
+LIST_DELIMITERS = {"newline": "\n", "comma": ", "}
+
+
+def get_list_delimiter_field(event):
+    return forms.ChoiceField(
+        label=_("List separator"),
+        help_text=_(
+            "How multiple values in one cell are separated, for example several speakers of one session."
+        ),
+        choices=(("newline", _("Newline")), ("comma", _("Comma"))),
+        initial="newline",
+        required=False,
+    )
+
+
 class CSVSerializer(TableSerializer):
     identifier = "csv"
     verbose_name = _("CSV")
@@ -112,17 +130,8 @@ class CSVSerializer(TableSerializer):
             initial=",",
             required=False,
         ),
-        "list_delimiter": lambda event: forms.ChoiceField(
-            label=_("List separator"),
-            help_text=_(
-                "How multiple values in one cell are separated, for example several speakers of one session."
-            ),
-            choices=(("newline", _("Newline")), ("comma", _("Comma"))),
-            initial="newline",
-            required=False,
-        ),
+        "list_delimiter": get_list_delimiter_field,
     }
-    list_delimiters = {"newline": "\n", "comma": ", "}
 
     def format_value(self, value):
         if value is None:
@@ -130,9 +139,7 @@ class CSVSerializer(TableSerializer):
         if isinstance(value, bool):
             return str(_("Yes") if value else _("No"))
         if isinstance(value, (list, tuple, set)):
-            delimiter = self.list_delimiters.get(
-                self.options.get("list_delimiter"), "\n"
-            )
+            delimiter = LIST_DELIMITERS.get(self.options.get("list_delimiter"), "\n")
             return delimiter.join(self.format_value(entry) for entry in value)
         if isinstance(value, dt.datetime):
             return _localize_datetime(value).isoformat()
@@ -169,7 +176,7 @@ class JSONSerializer(TableSerializer):
         if isinstance(value, (dt.date, dt.time)):
             return value.isoformat()
         if isinstance(value, Decimal):
-            return float(value)
+            return str(value)
         if value is None or isinstance(value, (bool, int, float, str, dict)):
             return value
         return str(value)
@@ -195,10 +202,139 @@ class JSONSerializer(TableSerializer):
             text.write("]" if empty else "\n]")
 
 
+class XLSXSerializer(TableSerializer):
+    identifier = "xlsx"
+    verbose_name = _("Microsoft Excel")
+    extension = "xlsx"
+    content_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    options = {"list_delimiter": get_list_delimiter_field}
+
+    @staticmethod
+    def sheet_name(name):
+        name = re.sub(r"[\[\]:*?/\\]", "", str(name or ""))
+        name = name.encode("utf-16-le")[:62].decode("utf-16-le", errors="ignore")
+        name = name.strip("'")
+        if not name or name.lower() == "history":
+            return None
+        return name
+
+    @staticmethod
+    def text_width(text):
+        # Capping at 100 chars because we won't show much more anyway
+        return max(cell_autofit_width(line[:100]) for line in text.split("\n"))
+
+    def format_value(self, value):
+        if isinstance(value, (list, tuple, set)):
+            delimiter = LIST_DELIMITERS.get(self.options.get("list_delimiter"), "\n")
+            entries = (
+                str(_("Yes") if entry else _("No"))
+                if isinstance(entry, bool)
+                else self.format_value(entry)
+                for entry in value
+            )
+            return delimiter.join(
+                "" if entry is None else str(entry) for entry in entries
+            )
+        if isinstance(value, dt.datetime):
+            value = _localize_datetime(value)
+        if isinstance(value, dt.date) and value.year < 1900:
+            # Excel cannot show dates before 1900 and renders them as ###.
+            return value.isoformat()
+        if value is None or isinstance(
+            value, (bool, int, float, Decimal, dt.date, dt.time)
+        ):
+            return value
+        return str(value)
+
+    def render(self, table, file):
+        workbook = xlsxwriter.Workbook(
+            file,
+            {
+                "constant_memory": True,
+                "default_format_properties": {
+                    "font_name": "Calibri",  # library default
+                    "font_size": 11,  # library default
+                    "valign": "top",
+                },
+                "nan_inf_to_errors": True,
+                "remove_timezone": True,
+            },
+        )
+        workbook.set_properties(
+            {"title": str(table.export_name or ""), "author": "pretalx"}
+        )
+        worksheet = workbook.add_worksheet(self.sheet_name(table.export_name))
+        worksheet.freeze_panes(1, 0)
+        worksheet.ignore_errors({"number_stored_as_text": "A1:XFD1048576"})
+        worksheet.repeat_rows(0)
+        worksheet.set_landscape()
+        worksheet.fit_to_pages(1, 0)
+        bold = workbook.add_format({"bold": True})
+        wrap = workbook.add_format({"text_wrap": True})
+        checkbox = workbook.add_format(
+            {"checkbox": True}
+        )  # pre-2024 versions show as TRUE / FALSE
+        date_formats = (
+            (
+                dt.datetime,
+                workbook.add_format({"num_format": "yyyy-mm-dd hh:mm"}),
+                "%Y-%m-%d %H:%M",
+            ),
+            (dt.date, workbook.add_format({"num_format": "yyyy-mm-dd"}), "%Y-%m-%d"),
+            (dt.time, workbook.add_format({"num_format": "hh:mm"}), "%H:%M"),
+        )
+
+        rows = table.as_values()
+        headers = [str(header) for header in next(rows)]
+        # autofit() does not work in constant_memory mode, so we track width while writing.
+        # We add 16 pixels for the filter button, like xlsxwriter does.
+        widths = {
+            col: self.text_width(header) + 16 for col, header in enumerate(headers)
+        }
+        for col, header in enumerate(headers):
+            worksheet.write_string(0, col, header, bold)
+        last_row = 0
+        for last_row, row in enumerate(rows, start=1):
+            for col, raw in enumerate(row):
+                value = self.format_value(raw)
+                if value is None:
+                    continue
+                if isinstance(value, str):
+                    if not re.fullmatch(
+                        r"https?://\S+", value, re.IGNORECASE
+                    ) or worksheet.write_url(last_row, col, value):
+                        # write_url can fail for absurdly long links or too many in one sheet (65530)
+                        worksheet.write_string(
+                            last_row, col, value, wrap if "\n" in value else None
+                        )
+                    text = value
+                elif isinstance(value, bool):
+                    worksheet.write_boolean(last_row, col, value, checkbox)
+                    text = "TRUE" if value else "FALSE"
+                elif isinstance(value, (dt.date, dt.time)):
+                    cell_format, pattern = next(
+                        (cell_format, pattern)
+                        for value_type, cell_format, pattern in date_formats
+                        if isinstance(value, value_type)
+                    )
+                    worksheet.write_datetime(last_row, col, value, cell_format)
+                    text = value.strftime(pattern)
+                else:
+                    worksheet.write_number(last_row, col, value)
+                    text = str(value)
+                widths[col] = max(widths[col], self.text_width(text))
+        worksheet.autofilter(0, 0, last_row, len(headers) - 1)
+        for col, width in widths.items():
+            # 64 is the default column width. Capping at 500 to keep the table sane.
+            if width > 64:
+                worksheet.set_column_pixels(col, col, min(width, 500))
+        workbook.close()
+
+
 def get_table_serializers(event):
     serializers = {
         serializer.identifier: serializer
-        for serializer in (CSVSerializer, JSONSerializer)
+        for serializer in (CSVSerializer, JSONSerializer, XLSXSerializer)
     }
     for _receiver, serializer in register_table_serializers.send(event):
         if serializer is not None:

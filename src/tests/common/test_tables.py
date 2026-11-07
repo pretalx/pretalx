@@ -3,6 +3,7 @@
 
 import re
 from datetime import UTC, date, datetime, time
+from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo
@@ -1390,6 +1391,6 @@ def test_question_column_ordering_uses_review_answers(event):
 def test_independent_score_column_value(event):
     category = SimpleNamespace(pk=3, name="Novelty")
     col = IndependentScoreColumn(category=category)
-    table = SimpleNamespace(get_independent_score=lambda record, pk: 4.5)
+    table = SimpleNamespace(get_independent_score=lambda record, pk: Decimal("2.25"))
 
-    assert col.value(record=None, table=table) == 4.5
+    assert str(col.value(record=None, table=table)) == "2.25"

@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import datetime as dt
+import math
 import re
+from decimal import Decimal, InvalidOperation
 from functools import cache
 from urllib.parse import quote
 
@@ -545,6 +547,13 @@ class QuestionColumn(TemplateColumn):
             if dj_timezone.is_naive(value):
                 value = value.replace(tzinfo=table.event.tz)
             return value
+        if variant == "number":
+            try:
+                number = Decimal(answer.answer)
+            except InvalidOperation:
+                number = None
+            if number is not None and number.is_finite() and math.isfinite(number):
+                return number
         return answer.answer_string or None
 
 
@@ -562,4 +571,5 @@ class IndependentScoreColumn(Column):
         return score if score is not None else self.placeholder
 
     def value(self, record, table, **kwargs):
-        return table.get_independent_score(record, self.category.pk)
+        score = table.get_independent_score(record, self.category.pk)
+        return None if score is None else Decimal(str(score))
