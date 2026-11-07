@@ -204,6 +204,25 @@ def test_user_settings_token_create_revoke_and_upgrade(client, event):
         assert response.url == url, data
 
 
+def test_user_settings_token_create_denied_without_team(client):
+    user = UserFactory()
+    client.force_login(user)
+
+    response = client.post(
+        reverse("orga:user.view"),
+        {
+            "form": "token",
+            "name": "Token",
+            "all_events": "on",
+            "permission_preset": "write",
+        },
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert not UserApiToken.objects.filter(user=user).exists()
+
+
 def test_user_settings_token_edit_logs_event_changes(client, event):
     user = make_orga_user(event)
     client.force_login(user)

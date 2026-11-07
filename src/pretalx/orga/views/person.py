@@ -19,6 +19,7 @@ from pretalx.common.ui import Button
 from pretalx.common.views.generic import FormLoggingMixin
 from pretalx.common.views.helpers import is_form_bound
 from pretalx.common.views.redirect import get_next_url
+from pretalx.event.rules import is_any_organiser
 from pretalx.orga.views.event import EventPermissionRequired
 from pretalx.person.domain.auth_token import revoke_token, upgrade_token
 from pretalx.person.domain.verification import (
@@ -94,7 +95,11 @@ class UserSettings(TemplateView):
             self.profile_form.save()
             messages.success(request, phrases.base.saved)
             request.user.log_action("pretalx.user.profile.update")
-        elif self.token_form.is_bound and self.token_form.is_valid():
+        elif (
+            self.token_form.is_bound
+            and is_any_organiser(request.user, None)
+            and self.token_form.is_valid()
+        ):
             token = self.token_form.save()
             messages.info(
                 request,
