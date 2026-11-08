@@ -3,7 +3,9 @@
 import random
 
 import pytest
+from diff_match_patch import diff_match_patch
 
+from pretalx.common.text import diff
 from pretalx.common.text.diff import detect_markdown, preformat_diff, render_diff
 
 pytestmark = pytest.mark.unit
@@ -173,7 +175,13 @@ def test_render_diff_marks_every_changed_paragraph():
     assert str(result["old_html"]).count("<del>") == 3
 
 
-def test_render_diff_marks_changes_in_long_text():
+def test_render_diff_marks_changes_in_long_text(monkeypatch):
+    class NoTimeoutDiff(diff_match_patch):
+        def __init__(self):
+            super().__init__()
+            self.Diff_Timeout = 0
+
+    monkeypatch.setattr(diff, "diff_match_patch", NoTimeoutDiff)
     vocabulary = [
         "conference",
         "software",
