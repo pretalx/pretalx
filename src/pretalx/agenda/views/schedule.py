@@ -279,7 +279,10 @@ class ScheduleNoJsView(ScheduleView):
     def get_schedule_data(self):
         schedule = self.get_object()
         data = ScheduleData(
-            schedule, with_accepted=not schedule.version, with_breaks=True
+            schedule,
+            with_accepted=not schedule.version,
+            with_breaks=True,
+            with_tags=True,
         ).data
         for date in data:
             rooms = date.pop("rooms")

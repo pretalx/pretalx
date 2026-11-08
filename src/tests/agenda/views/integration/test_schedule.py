@@ -7,7 +7,7 @@ from django_scopes import scope, scopes_disabled
 
 from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import SubmissionStates
-from tests.factories import EventFactory, SubmissionFactory
+from tests.factories import EventFactory, SubmissionFactory, TagFactory
 from tests.utils import make_orga_user, make_published_schedule
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
@@ -327,8 +327,13 @@ def test_schedule_nojs_view_renders_with_talk_data(
     client, event, item_count, django_assert_num_queries
 ):
     submissions = make_published_schedule(event, item_count)
+    public_tag = TagFactory(event=event, tag="Beginner friendly", is_public=True)
+    internal_tag = TagFactory(event=event, tag="Internal triage", is_public=False)
+    with scopes_disabled():
+        for submission in submissions:
+            submission.tags.add(public_tag, internal_tag)
 
-    with django_assert_num_queries(5):
+    with django_assert_num_queries(6):
         response = client.get(event.urls.schedule_nojs, HTTP_ACCEPT="text/html")
 
     assert response.status_code == 200
@@ -337,6 +342,8 @@ def test_schedule_nojs_view_renders_with_talk_data(
     assert "day_count" in response.context
     content = response.content.decode()
     assert all(sub.title in content for sub in submissions)
+    assert "Beginner friendly" in content
+    assert "Internal triage" not in content
 
 
 @pytest.mark.parametrize("release_count", (1, 3))

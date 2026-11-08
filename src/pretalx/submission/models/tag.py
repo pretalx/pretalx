@@ -42,11 +42,9 @@ class Tag(PretalxModel):
         verbose_name=_("Show tag publicly"),
         help_text=format_lazy(
             "{} {}",
+            _("Public tags are shown in the schedule and on session pages."),
             _(
                 "Public tags can be selected by submitters in the CfP if you activate the tags field."
-            ),
-            _(
-                "In a future release of pretalx, public tags may also be shown in the public schedule."
             ),
         ),
     )

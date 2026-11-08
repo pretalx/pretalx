@@ -16,6 +16,7 @@ from tests.factories import (
     RoomFactory,
     SpeakerFactory,
     SubmissionFactory,
+    TagFactory,
     TalkSlotFactory,
     TrackFactory,
 )
@@ -78,8 +79,10 @@ def test_build_widget_data_talk_with_track_and_speaker(event):
                 "content_locale": "de-formal",
                 "content_lang": "de",
                 "do_not_record": False,
+                "tags": [],
             }
         ],
+        "tags": [],
         "tracks": [
             {
                 "id": track.id,
@@ -235,6 +238,54 @@ def test_build_widget_data_roomless_talk_and_skipped_zero_duration(event):
         (roomless.code, None)
     ]
     assert [r["id"] for r in data["rooms"]] == [room.id]
+
+
+def test_build_widget_data_tags_only_public_tags_of_included_talks(event):
+    room = RoomFactory(event=event)
+    beginner = TagFactory(event=event, tag="Beginner", color="#00ff00", is_public=True)
+    advanced = TagFactory(event=event, tag="advanced", color="#0000ff", is_public=True)
+    internal = TagFactory(event=event, tag="internal", is_public=False)
+    hidden_only = TagFactory(event=event, tag="Hidden only", is_public=True)
+    TagFactory(event=event, tag="Unused", is_public=True)
+    tagged = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    tagged.tags.add(beginner, advanced, internal)
+    untagged = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    untagged.tags.add(internal)
+    invisible = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    invisible.tags.add(hidden_only, beginner)
+    with scope(event=event):
+        schedule = event.wip_schedule
+    for submission, is_visible, hours in (
+        (tagged, True, 0),
+        (untagged, True, 1),
+        (invisible, False, 2),
+    ):
+        TalkSlotFactory(
+            submission=submission,
+            schedule=schedule,
+            room=room,
+            start=event.datetime_from + dt.timedelta(hours=hours),
+            end=event.datetime_from + dt.timedelta(hours=hours + 1),
+            is_visible=is_visible,
+        )
+
+    with scope(event=event):
+        data = build_widget_data(schedule)
+        all_talks = build_widget_data(schedule, all_talks=True)
+
+    assert [(talk["code"], talk["tags"]) for talk in data["talks"]] == [
+        (tagged.code, [advanced.pk, beginner.pk]),
+        (untagged.code, []),
+    ]
+    assert data["tags"] == [
+        {"id": advanced.pk, "name": "advanced", "color": "#0000ff"},
+        {"id": beginner.pk, "name": "Beginner", "color": "#00ff00"},
+    ]
+    assert [tag["id"] for tag in all_talks["tags"]] == [
+        advanced.pk,
+        beginner.pk,
+        hidden_only.pk,
+    ]
 
 
 @pytest.mark.parametrize(

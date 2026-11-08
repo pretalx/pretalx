@@ -228,6 +228,10 @@ export default {
 			if (!this.schedule) return {}
 			return this.schedule.tracks.reduce((acc, t) => { acc[t.id] = t; return acc }, {})
 		},
+		tagsLookup () {
+			if (!this.schedule?.tags) return {}
+			return this.schedule.tags.reduce((acc, t) => { acc[t.id] = t; return acc }, {})
+		},
 		editorSessionAvailabilities () {
 			if (!this.editorSession) return []
 			const avails = this.availabilities.talks[this.editorSession.id]
@@ -268,6 +272,7 @@ export default {
 					abstract: session.abstract,
 					speakers: session.speakers?.map(s => this.speakersLookup[s]),
 					track: this.tracksLookup[session.track],
+					tags: session.tags?.map(id => this.tagsLookup[id]).filter(Boolean) || [],
 					duration: session.duration,
 					state: session.state,
 					signup_status: session.signup_status,
@@ -310,6 +315,7 @@ export default {
 					duration: moment(session.end).diff(session.start, 'm'),
 					speakers: session.speakers?.map(s => this.speakersLookup[s]),
 					track: this.tracksLookup[session.track],
+					tags: session.tags?.map(id => this.tagsLookup[id]).filter(Boolean) || [],
 					state: session.state,
 					slot_type: session.slot_type,
 					room: this.roomsLookup[session.room],

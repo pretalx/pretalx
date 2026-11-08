@@ -178,15 +178,20 @@ If there is only a single session type, pretalx will not show the session type s
 Tags
 ^^^^
 
-Tags are internal labels that help organisers categorise and filter sessions.
-Only organisers and reviewers can see tags, they will not appear on the public schedule.
+Tags are labels that help organisers categorise and filter sessions. Tags can
+be internal, where they are visible only to organisers and reviewers, or
+public. This setting is per-tag, so you can have internal tags and public tags
+at the same time.
 
 You can use them for any organisational purpose that comes to mind, from state
 markers like "needs work", organisational notes like "requires mentor", or
 thematic labels like "beginner-friendly".
 
-We hope to make allow tags to show up in the public schedule in the future, but
-any tags existing prior to that point will remain internal.
+Public tags appear in the public schedule and on session pages. Attendees can
+filter the schedule widget by public tags.
+If you activate the tags field in your CfP form, submitters can also select
+public tags for their proposals. Non-public tags are never shown to submitters
+or the public.
 
 .. _`user-guide-featured-sessions`:
 

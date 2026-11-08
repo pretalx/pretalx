@@ -28,12 +28,20 @@ class ScheduleData(BaseExporter):
     with_accepted = False
     with_breaks = False
     with_resources = False
+    with_tags = False
     talks_filter = None
 
     def __init__(
-        self, schedule, with_accepted=None, with_breaks=None, talks_filter=None
+        self,
+        schedule,
+        with_accepted=None,
+        with_breaks=None,
+        talks_filter=None,
+        with_tags=None,
     ):
         super().__init__(schedule)
+        if with_tags is not None:
+            self.with_tags = with_tags
         if with_accepted is not None:
             self.with_accepted = with_accepted
         if with_breaks is not None:
@@ -76,6 +84,8 @@ class ScheduleData(BaseExporter):
         )
         if self.with_resources:
             talks = talks.prefetch_related("submission__resources")
+        if self.with_tags:
+            talks = talks.prefetch_related("submission__tags")
         if event.get_feature_flag("attendee_signup"):
             talks = annotate_slot_signup_status(talks)
         data = {

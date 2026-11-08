@@ -14,6 +14,7 @@ from tests.factories import (
     QuestionFactory,
     SpeakerFactory,
     SubmissionFactory,
+    TagFactory,
     TalkSlotFactory,
 )
 from tests.utils import make_published_schedule
@@ -50,20 +51,25 @@ def test_speaker_page_shows_biography_and_talks(
         speaker = SpeakerFactory(event=event)
         speaker.biography = "A very interesting biography."
         speaker.save()
+        public_tag = TagFactory(event=event, tag="Beginner friendly", is_public=True)
+        internal_tag = TagFactory(event=event, tag="Internal triage", is_public=False)
         for _ in range(item_count):
             sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
             sub.speakers.add(speaker)
+            sub.tags.add(public_tag, internal_tag)
             TalkSlotFactory(submission=sub, is_visible=True)
         with scope(event=event):
             freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     url = reverse("agenda:speaker", kwargs={"code": speaker.code, "event": event.slug})
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(10):
         response = client.get(url, follow=True)
 
     assert response.status_code == 200
     content = response.content.decode()
     assert "A very interesting biography." in content
+    assert "Beginner friendly" in content
+    assert "Internal triage" not in content
     with scopes_disabled():
         for sub in speaker.submissions.all():
             assert sub.title in content
@@ -161,7 +167,7 @@ def test_speaker_page_hides_invisible_submissions(
             )
 
     url = reverse("agenda:speaker", kwargs={"code": speaker.code, "event": event.slug})
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(10):
         response = client.get(url, follow=True)
 
     assert response.status_code == 200
@@ -233,7 +239,7 @@ def test_speaker_talks_ical_returns_calendar(
     url = reverse(
         "agenda:speaker.talks.ical", kwargs={"code": speaker.code, "event": event.slug}
     )
-    with django_assert_num_queries(10):
+    with django_assert_num_queries(11):
         response = client.get(url, follow=True)
 
     assert response.status_code == 200
