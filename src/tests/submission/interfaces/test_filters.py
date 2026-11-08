@@ -27,6 +27,7 @@ from tests.factories.submission import (
     AnswerOptionFactory,
     AttendeeSignupFactory,
     QuestionFactory,
+    ResourceFactory,
     ReviewFactory,
     SubmissionFactory,
     SubmissionInvitationFactory,
@@ -250,6 +251,27 @@ def test_requires_signup_filter_needs_the_feature_flag():
     assert "requires_signup" not in facet_names(submission_set(plain))
     assert "requires_signup" in facet_names(filterset)
     assert list(filterset.filter(event.submissions.all())) == [required]
+
+
+def test_resources_filter_needs_the_resources_field():
+    plain = EventFactory()
+    event = EventFactory(cfp__fields={"resources": {"visibility": "optional"}})
+    with_two = SubmissionFactory(event=event)
+    ResourceFactory(submission=with_two)
+    ResourceFactory(submission=with_two)
+    empty_resource = SubmissionFactory(event=event)
+    ResourceFactory(submission=empty_resource, link="")
+    without = SubmissionFactory(event=event)
+    submissions = event.submissions.all()
+
+    assert "has_resources" not in facet_names(submission_set(plain))
+    assert list(submission_set(event, "has_resources=true").filter(submissions)) == [
+        with_two
+    ]
+    assert set(submission_set(event, "has_resources=false").filter(submissions)) == {
+        empty_resource,
+        without,
+    }
 
 
 def test_custom_field_filters_are_grouped_under_their_own_heading():
