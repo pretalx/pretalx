@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.db.models import Count, Q
+from django.db.models import Count, Exists, OuterRef, Q
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
@@ -39,7 +39,8 @@ from pretalx.submission.enums import (
     QuestionTarget,
     SubmissionStates,
 )
-from pretalx.submission.models import Answer
+from pretalx.submission.models import Answer, Resource
+from pretalx.submission.models.resource import active_resource_filter
 
 PENDING_PREFIX = "pending_state__"
 
@@ -383,6 +384,17 @@ class PendingInvitationsFilter(BooleanFilter):
         return qs.filter(invitations__isnull=not value).distinct()
 
 
+class ResourcesFilter(BooleanFilter):
+    def is_available(self):
+        return bool(self.event and self.event.cfp.request_resources)
+
+    def filter(self, qs, value):
+        active = Resource.objects.filter(
+            active_resource_filter(), submission=OuterRef("pk")
+        )
+        return qs.filter(Exists(active) if value else ~Exists(active))
+
+
 def _scoped_submissions(bound):
     submissions = bound.event.submissions.all()
     if usable_states := bound.context.get("usable_states"):
@@ -446,6 +458,12 @@ def submission_filters(context):
         RequiresSignupFilter(name="requires_signup", label=_("Requires signup")),
         PendingInvitationsFilter(
             name="has_pending_invitations", label=_("Pending invitations")
+        ),
+        ResourcesFilter(
+            name="has_resources",
+            label=_("Resources"),
+            yes_label=_("With"),
+            no_label=_("Without"),
         ),
     ]
 
