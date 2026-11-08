@@ -55,9 +55,11 @@ def annotate_room_usage(queryset, event):
 
 
 def rooms_for_schedule(schedule):
-    return schedule.event.rooms.filter(
-        Q(hidden=False) | Q(talks__schedule=schedule)
-    ).distinct()
+    return (
+        schedule.event.rooms.filter(Q(hidden=False) | Q(talks__schedule=schedule))
+        .distinct()
+        .order_by("position", "id")
+    )
 
 
 def hide_room(room, *, log_kwargs=None):
