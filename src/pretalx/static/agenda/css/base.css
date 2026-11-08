@@ -167,6 +167,47 @@
     border-radius: 6px;
   }
 }
+.session-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 4px 0;
+  font-size: 13px;
+  color: rgb(0 0 0 / 0.54);
+  .pretalx-session & {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .abstract + & {
+    margin: 0 0 12px 0;
+  }
+}
+.abstract:has(+ .session-tags) > :last-child {
+  margin-bottom: 0;
+}
+.session-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+.session-tag-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.session-tag-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--tag-color);
+}
+.session-tag-overflow {
+  flex: none;
+  font-weight: 600;
+}
 .pretalx-list-day a:hover {
   text-decoration: none;
   .title {

@@ -649,6 +649,13 @@ class Submission(GenerateCode, PretalxModel):
     def public_resources(self):
         return [resource for resource in self.active_resources if resource.is_public]
 
+    @cached_property
+    def public_tags(self):
+        return sorted(
+            (tag for tag in self.tags.all() if tag.is_public),
+            key=lambda tag: tag.tag.lower(),
+        )
+
     @property
     def user_state(self):
         deadline = self.submission_type.deadline or self.event.cfp.deadline

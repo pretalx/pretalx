@@ -56,6 +56,7 @@ def visible_talk_slots(speaker, schedule=None):
             "submission__track",
             "submission__submission_type",
         )
+        .prefetch_related("submission__tags")
         .with_sorted_speakers()
     )
     if schedule.event.get_feature_flag("attendee_signup"):

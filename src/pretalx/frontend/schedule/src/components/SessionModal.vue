@@ -50,6 +50,10 @@ dialog.pretalx-modal#session-modal(ref="modal", @click.stop="close()")
 								span.talk-track-swatch
 								| {{ getLocalizedString(session.track.name) }}{{ submissionType ? ` · ${submissionType}` : '' }}
 							.talk-fact(v-else-if="submissionType") {{ submissionType }}
+							.talk-fact.talk-tags(v-if="session.tags?.length")
+								span.talk-tag(v-for="tag in session.tags", :key="tag.id")
+									span.talk-tag-dot(:style="{'background-color': tag.color}")
+									| {{ tag.name }}
 							.talk-fact(v-if="doNotRecord")
 								do-not-record-icon
 								span {{ translationMessages.not_recorded || 'Not recorded' }}
@@ -534,6 +538,18 @@ export default {
 			height: 8px
 			border-radius: 2px
 			background-color: var(--track-color)
+		.talk-tags
+			flex-wrap: wrap
+			column-gap: 12px
+		.talk-tag
+			display: inline-flex
+			align-items: center
+			gap: 4px
+		.talk-tag-dot
+			flex: none
+			width: 8px
+			height: 8px
+			border-radius: 50%
 
 		.talk-signup
 			margin-top: 12px

@@ -237,7 +237,7 @@ def test_talk_list_returns_talks_json(
             TalkSlotFactory(submission=sub, is_visible=True)
     client.force_login(user)
 
-    with django_assert_num_queries(8):
+    with django_assert_num_queries(9):
         response = client.get(event.orga_urls.talks_api)
 
     assert response.status_code == 200

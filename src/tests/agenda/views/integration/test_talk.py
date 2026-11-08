@@ -27,6 +27,7 @@ from tests.factories import (
     SpeakerFactory,
     SubmissionFactory,
     SubmissionTypeFactory,
+    TagFactory,
     TalkSlotFactory,
     UserFactory,
 )
@@ -77,7 +78,7 @@ def test_talk_view_default_rendering(
         submission.description = "Test description for the talk"
         submission.save()
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(15):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -180,7 +181,7 @@ def test_talk_view_shows_room_neighbours_and_parallel_sessions(
 ):
     submission = neighbourhood["Main session"]
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(15):
         response = client.get(submission.urls.public, follow=True)
 
     content = response.content.decode()
@@ -310,7 +311,7 @@ def test_talk_view_orga_can_see_unreleased(
         slot = TalkSlotFactory(submission=submission, is_visible=True)
     client.force_login(organiser_user)
 
-    with django_assert_num_queries(12):
+    with django_assert_num_queries(13):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -351,7 +352,7 @@ def test_talk_view_shows_edit_button_for_speaker(
         speaker_user = slot.submission.speakers.select_related("user").first().user
     client.force_login(speaker_user)
 
-    with django_assert_num_queries(16):
+    with django_assert_num_queries(17):
         response = client.get(slot.submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -366,7 +367,7 @@ def test_talk_view_shows_do_not_record_indicator(
         slot.submission.do_not_record = True
         slot.submission.save()
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(15):
         response = client.get(slot.submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -376,7 +377,7 @@ def test_talk_view_shows_do_not_record_indicator(
 def test_talk_view_feedback_link_shown_for_past_talk(
     client, django_assert_num_queries, feedback_submission
 ):
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(15):
         response = client.get(feedback_submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -399,7 +400,7 @@ def test_talk_view_recording_iframe_with_plugin(
 
     register_signal_handler(register_recording_provider, handler)
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(15):
         response = client.get(slot.submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -407,13 +408,17 @@ def test_talk_view_recording_iframe_with_plugin(
     assert response._csp_update == {"frame-src": "cdn.test"}
 
 
-def test_talk_view_shows_public_resources_only(
+def test_talk_view_shows_public_resources_and_tags_only(
     client, django_assert_num_queries, event
 ):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.speakers.add(speaker)
+        submission.tags.add(
+            TagFactory(event=event, tag="Beginner friendly", is_public=True),
+            TagFactory(event=event, tag="Internal triage", is_public=False),
+        )
         TalkSlotFactory(submission=submission, is_visible=True)
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
         public_resource = ResourceFactory(
@@ -429,13 +434,15 @@ def test_talk_view_shows_public_resources_only(
             is_public=False,
         )
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(15):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 200
     content = response.content.decode()
     assert public_resource.link in content
     assert private_resource.link not in content
+    assert content.count("Beginner friendly") == 1
+    assert "Internal triage" not in content
 
 
 def test_talk_view_renders_when_resource_file_missing(client, event):
@@ -475,7 +482,7 @@ def test_talk_view_context_without_schedule_permission(
         submission.speakers.add(speaker)
     client.force_login(organiser_user)
 
-    with django_assert_num_queries(12):
+    with django_assert_num_queries(13):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -495,7 +502,7 @@ def test_talk_view_speaker_query_count(
         TalkSlotFactory(submission=submission, is_visible=True)
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(15):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -530,7 +537,7 @@ def test_talk_review_view_renders_when_enabled(client, django_assert_num_queries
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         submission.speakers.add(speaker)
 
-    with django_assert_num_queries(10):
+    with django_assert_num_queries(11):
         response = client.get(submission.urls.review, follow=True)
 
     assert response.status_code == 200
@@ -584,7 +591,7 @@ def test_feedback_view_submit_creates_feedback_and_redirects_to_talk(
 def test_feedback_view_managed_speaker_feedback_is_stored_but_hidden_from_public(
     client, django_assert_num_queries, managed_feedback_submission
 ):
-    with django_assert_num_queries(23):
+    with django_assert_num_queries(24):
         post = client.post(
             managed_feedback_submission.urls.feedback,
             {"review": "Loved it!"},
@@ -610,7 +617,7 @@ def test_feedback_view_submit_multiple_speakers_no_auto_assign(
         speaker2 = SpeakerFactory(event=feedback_submission.event)
         feedback_submission.speakers.add(speaker2)
 
-    with django_assert_num_queries(23):
+    with django_assert_num_queries(24):
         response = client.post(
             feedback_submission.urls.feedback, {"review": "Great talks!"}, follow=True
         )

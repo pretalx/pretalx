@@ -20,13 +20,17 @@ def build_widget_data(
         talks = talks.exclude(slot_type=SlotType.BLOCKER)
     if filter_updated:
         talks = talks.filter(updated__gte=filter_updated)
-    talks = talks.select_related(
-        "submission",
-        "room",
-        "submission__track",
-        "submission__event",
-        "submission__submission_type",
-    ).with_sorted_speakers()
+    talks = (
+        talks.select_related(
+            "submission",
+            "room",
+            "submission__track",
+            "submission__event",
+            "submission__submission_type",
+        )
+        .prefetch_related("submission__tags")
+        .with_sorted_speakers()
+    )
     show_signup = schedule.event.get_feature_flag("attendee_signup")
     if show_signup:
         talks = annotate_slot_signup_status(talks)
@@ -34,6 +38,7 @@ def build_widget_data(
     all_event_rooms = list(rooms_for_schedule(schedule))
     rooms = set(all_event_rooms) if all_rooms else set()
     tracks = set()
+    tags = set()
     speakers = set()
     result = {
         "talks": [],
@@ -52,6 +57,8 @@ def build_widget_data(
                 continue
             tracks.add(talk.submission.track)
             speakers |= set(talk.submission.sorted_speakers)
+            public_tags = talk.submission.public_tags
+            tags.update(public_tags)
             talk_data = {
                 "code": talk.submission.code,
                 "id": talk.id,
@@ -68,6 +75,7 @@ def build_widget_data(
                 "updated": talk.updated.isoformat(),
                 "content_locale": talk.submission.content_locale,
                 "content_lang": talk.submission.content_language_tag,
+                "tags": [tag.pk for tag in public_tags],
             }
             if all_talks:
                 talk_data["state"] = talk.submission.state
@@ -97,6 +105,10 @@ def build_widget_data(
             "color": track.color,
         }
         for track in tracks
+    ]
+    result["tags"] = [
+        {"id": tag.pk, "name": tag.tag, "color": tag.color}
+        for tag in sorted(tags, key=lambda tag: tag.tag.lower())
     ]
     result["rooms"] = [
         {"id": room.id, "name": room.name, "description": room.description}

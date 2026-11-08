@@ -158,6 +158,18 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% elif submission.submission_type %}
                             <div class="talk-fact">{{ submission.submission_type.name }}</div>
                         {% endif %}
+                        {% if submission.public_tags %}
+                            <div class="talk-fact">
+                                <div class="session-tags">
+                                    {% for tag in submission.public_tags %}
+                                        <span class="session-tag"><span
+                                                class="session-tag-dot"
+                                                style="--tag-color: {{ tag.color }}"
+                                            ></span>{{ tag.tag }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
                         {% if request.event.is_multilingual and request.event.cfp.request_content_locale %}
                             <div class="talk-fact">
                                 <strong>{{ phrases.base.language }}:</strong>

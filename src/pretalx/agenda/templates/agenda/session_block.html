@@ -45,6 +45,26 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {{ session.submission.abstract|rich_text_without_links }}
             </div>
         {% endif %}
+        {% if session.submission.public_tags %}
+            {% with tags=session.submission.public_tags %}
+                <div class="session-tags">
+                    {% for tag in tags|slice:":3" %}
+                        <span class="session-tag" title="{{ tag.tag }}"><span
+                                class="session-tag-dot"
+                                style="--tag-color: {{ tag.color }}"
+                            ></span><span class="session-tag-name">{{ tag.tag }}</span></span>
+                    {% endfor %}
+                    {% if tags|length > 3 %}
+                        <span
+                            class="session-tag-overflow"
+                            title="{{ tags|slice:'3:'|join:', ' }}"
+                            aria-hidden="true"
+                        >+{{ tags|length|add:"-3" }}</span>
+                        <span class="sr-only">{{ tags|slice:'3:'|join:', ' }}</span>
+                    {% endif %}
+                </div>
+            {% endwith %}
+        {% endif %}
         <div class="bottom-info">
             <div class="track">
                 {% if session.submission and session.submission.track %}{{ session.submission.track.name|default:"" }}{% endif %}

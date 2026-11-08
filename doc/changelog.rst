@@ -10,6 +10,7 @@ The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
 - :feature:`orga:submission,2514` If your CfP asks for resources, you can now filter the session and review lists by whether a session has resources. This also allows you to send emails to speakers who have uploaded no resources for their sessions.
+- :feature:`schedule,1710` Public tags are now shown in the schedule and on session pages. Attendees can filter the schedule by public tags. Internal tags remain hidden everywhere.
 - :bug:`api` Only organisers, reviewers and administrators can create API tokens, as documented. Existing tokens of users without any team membership no longer work.
 - :feature:`orga` Every list in the organiser area can now be exported as CSV, JSON or Excel file. The export uses the active filters and sort order, and can include some export-only columns that would make no sense to display in a table (e.g. the speaker biography or the full session description). Exports can also be saved, edited, and downloaded again later by other members of your team.
 - :feature:`cfp` Organisers can limit which file types a file field accepts. You can select groups like images or presentations, or single file types like PNG or PDF.

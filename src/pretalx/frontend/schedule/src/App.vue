@@ -270,6 +270,10 @@ export default {
 			if (!this.schedule) return {}
 			return this.schedule.tracks.reduce((acc, t) => { acc[t.id] = t; return acc }, {})
 		},
+		tagsLookup () {
+			if (!this.schedule?.tags) return {}
+			return this.schedule.tags.reduce((acc, t) => { acc[t.id] = t; return acc }, {})
+		},
 		filteredTracks () {
 			if (this.selectedTrackIds.length === 0 || !this.schedule?.tracks) return []
 			return this.schedule.tracks.filter(t => this.selectedTrackIds.includes(t.id))
@@ -339,9 +343,7 @@ export default {
 					if (!titleMatch && !speakerMatch) continue
 				}
 
-				if (this.selectedTagIds.length && session.tags) {
-					if (!this.selectedTagIds.some(tagId => session.tags.includes(tagId))) continue
-				}
+				if (this.selectedTagIds.length && !this.selectedTagIds.some(id => session.tags?.includes(id))) continue
 
 				if (this.filterDoNotRecord && !session.do_not_record) continue
 				if (this.onlyRequiresSignup && !session.signup_status) continue
@@ -854,6 +856,7 @@ export default {
 				end: DateTime.fromISO(talk.end, { zone: this.currentTimezone }),
 				speakers: talk.speakers?.map(s => this.speakersLookup[s]),
 				track: this.tracksLookup[talk.track],
+				tags: talk.tags?.map(id => this.tagsLookup[id]).filter(Boolean) || [],
 				room: this.roomsLookup[talk.room]
 			}
 		},

@@ -17,6 +17,7 @@ SPDX-License-Identifier: Apache-2.0
 		.pending-line(v-if="session.state && session.state !== 'confirmed' && session.state !== 'accepted'")
 			i.fa.fa-exclamation-circle
 			span {{ $t('Pending proposal state') }}
+		tag-list(v-if="session.tags?.length", :tags="session.tags")
 		.bottom-info(v-if="!isBreak && !isBlocker")
 			.track(v-if="session.track") {{ getLocalizedString(session.track.name) }}
 			i.fa.fa-user-plus.signup-icon(v-if="session.signup_status === 'open'", :title="$t('Requires attendee signup')")
@@ -34,8 +35,12 @@ SPDX-License-Identifier: Apache-2.0
 import moment from 'moment-timezone'
 import { getLocale, getLocalizedString } from '~/utils'
 import { getHasAmPm, timeWithoutAmPm, timeAmPm } from '../../../schedule/src/time.js'
+import TagList from '../../../shared/components/TagList.vue'
 
 export default {
+	components: {
+		TagList
+	},
 	inject: {
 		eventUrl: { default: null },
 		generateSessionLinkUrl: {
@@ -231,6 +236,8 @@ export default {
 			color: $clr-danger
 		.bottom-info .track
 			margin-right: 0
+		.c-tag-list
+			margin: 4px 0
 		.speakers
 			color: $clr-secondary-text-light
 			session-text-clamp(2)
@@ -277,7 +284,7 @@ export default {
 					line-height: 1.2
 					session-text-clamp(1)
 					session-text-expand(4)
-				.bottom-info
+				.bottom-info, .c-tag-list
 					display: none
 				.pending-line
 					font-size: 11px

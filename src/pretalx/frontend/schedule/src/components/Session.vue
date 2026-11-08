@@ -23,7 +23,8 @@ a.c-linear-schedule-session(:class="{faved, 'signed-up': signedUp, 'signup-full'
 					img(v-else-if="speaker.avatar_thumbnail_default", :src="speaker.avatar_thumbnail_default")
 					img(v-else-if="speaker.avatar", :src="speaker.avatar")
 			.names {{ session.speakers.map(s => s.name).join(', ') }}
-		.abstract(v-if="showAbstract", :lang="session.content_lang", dir="auto", v-html="abstractText")
+		.abstract(v-if="showAbstract && (session.abstract || !session.tags?.length)", :lang="session.content_lang", dir="auto", v-html="abstractText")
+		tag-list(v-if="session.tags?.length", :tags="session.tags")
 		.bottom-info
 			.track(v-if="session.track") {{ getLocalizedString(session.track.name) }}
 			.room(v-if="showRoom && session.room", :title="getLocalizedString(session.room.name)") {{ getLocalizedString(session.room.name) }}
@@ -41,11 +42,13 @@ import { getPrettyDuration, getSessionTime, renderMarkdown } from '~/utils'
 import localize from '~/mixins/localize'
 import DoNotRecordIcon from '~/components/DoNotRecordIcon.vue'
 import FavButton from '~/components/FavButton.vue'
+import TagList from '../../../shared/components/TagList.vue'
 
 export default {
 	components: {
 		DoNotRecordIcon,
-		FavButton
+		FavButton,
+		TagList
 	},
 	mixins: [localize],
 	inject: {
@@ -210,6 +213,10 @@ export default {
 			.names
 				line-height: 24px
 				overflow-wrap: anywhere
+		.c-tag-list
+			margin: 4px 0
+		.abstract + .c-tag-list
+			margin: 0 0 12px 0
 		.abstract
 			margin: 8px 0 12px 0
 			// TODO make this take up more space if available?
