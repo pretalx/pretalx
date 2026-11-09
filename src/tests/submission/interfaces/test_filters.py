@@ -274,6 +274,25 @@ def test_resources_filter_needs_the_resources_field():
     }
 
 
+def test_internal_notes_filter_needs_permission_to_change_submissions():
+    event = EventFactory()
+    orga = make_orga_user(event)
+    reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
+    with_notes = SubmissionFactory(event=event, internal_notes="Call back")
+    blank = SubmissionFactory(event=event, internal_notes="")
+    null = SubmissionFactory(event=event, internal_notes=None)
+    submissions = event.submissions.all()
+
+    assert "has_internal_notes" not in facet_names(submission_set(event))
+    assert "has_internal_notes" not in facet_names(submission_set(event, user=reviewer))
+    assert list(
+        submission_set(event, "has_internal_notes=true", user=orga).filter(submissions)
+    ) == [with_notes]
+    assert set(
+        submission_set(event, "has_internal_notes=false", user=orga).filter(submissions)
+    ) == {blank, null}
+
+
 def test_custom_field_filters_are_grouped_under_their_own_heading():
     event = EventFactory()
     question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
