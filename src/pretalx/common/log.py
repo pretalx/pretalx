@@ -593,8 +593,7 @@ def speaker_names_for_logs(log_entries):
             event_id__in={event_id for event_id, __ in pairs},
             user_id__in={user_id for __, user_id in pairs},
         )
-        .exclude(name=None)
-        .exclude(name="")
+        .filter(name__gt="")
         .values_list("event_id", "user_id", "name")
     )
     return {

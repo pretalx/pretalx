@@ -714,8 +714,7 @@ class ProfilePictureWidget(forms.Widget):
             with scopes_disabled():
                 pictures = (
                     ProfilePicture.objects.filter(user=self.user)
-                    .exclude(avatar="")
-                    .exclude(avatar__isnull=True)
+                    .filter(avatar__gt="")
                     .annotate(event_count=Count("speakers__event", distinct=True))
                     .select_related("user")
                     .prefetch_related("speakers__event")
