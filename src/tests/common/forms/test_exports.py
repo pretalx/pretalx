@@ -60,9 +60,14 @@ def test_export_form_builds_config_from_toolbar_submission(event):
     ("stored", "data", "expected"),
     (
         (None, {"filters": ""}, {"state": ["submitted", "accepted", "confirmed"]}),
+        (None, {"filters": "?state=__none__"}, {}),
         ({}, {}, {}),
     ),
-    ids=("toolbar_resolves_list_defaults", "editor_keeps_stored_empty_filters"),
+    ids=(
+        "toolbar_resolves_list_defaults",
+        "toolbar_keeps_cleared_defaults",
+        "editor_keeps_stored_empty_filters",
+    ),
 )
 def test_export_form_applies_list_defaults_only_from_list_url(
     event, stored, data, expected

@@ -621,6 +621,11 @@ urlpatterns = [
                     name="exports.run",
                 ),
                 path(
+                    "exports/<int:pk>/view/",
+                    exports.TableExportViewData.as_view(),
+                    name="exports.view",
+                ),
+                path(
                     "exports/more/",
                     exports.MoreExportsView.as_view(),
                     name="exports.more",

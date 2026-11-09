@@ -109,6 +109,10 @@ class SubmitterAccessCodeTable(PretalxTable):
             self.exclude.append("tracks")
 
     @classmethod
+    def get_list_url(cls, event):
+        return event.cfp.urls.access_codes
+
+    @classmethod
     def base_queryset(cls, event, user):
         return (
             event.submitter_access_codes.all()
@@ -179,6 +183,10 @@ class TrackTable(DragsortTable):
         self.exclude = list(self.exclude)
         if not self.event.get_feature_flag("attendee_signup"):
             self.exclude.append("attendee_signup_required")
+
+    @classmethod
+    def get_list_url(cls, event):
+        return event.cfp.urls.tracks
 
     @classmethod
     def base_queryset(cls, event, user):
@@ -258,6 +266,10 @@ class SubmissionTypeTable(PretalxTable):
             self.exclude.append("attendee_signup_required")
 
     @classmethod
+    def get_list_url(cls, event):
+        return event.cfp.urls.types
+
+    @classmethod
     def base_queryset(cls, event, user):
         return annotate_submission_count(
             event.submission_types.select_related("event__cfp__default_type").order_by(
@@ -308,6 +320,10 @@ class QuestionTable(DragsortTable):
 
     @classmethod
     def default_list_url(cls, event):
+        return event.cfp.urls.questions
+
+    @classmethod
+    def get_list_url(cls, event):
         return event.cfp.urls.questions
 
     @classmethod
@@ -388,6 +404,10 @@ class ReviewerQuestionTable(QuestionTable):
     @classmethod
     def default_list_url(cls, event):
         return event.orga_urls.review_questions
+
+    @classmethod
+    def get_list_url(cls, event):
+        return None
 
 
 class SpeakerQuestionTable(QuestionTable):

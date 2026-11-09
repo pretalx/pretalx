@@ -34,4 +34,41 @@ def test_table_export_config_table_class_and_urls(event):
     assert export.urls.edit == f"{event.orga_urls.exports}{export.pk}/"
     assert export.urls.delete == f"{event.orga_urls.exports}{export.pk}/delete/"
     assert export.urls.run == f"{event.orga_urls.exports}{export.pk}/run/"
+    assert export.urls.view == f"{event.orga_urls.exports}{export.pk}/view/"
     assert stale.table_class is None
+
+
+def test_table_export_view_data_url_only_for_tables_with_a_list(event):
+    orga = event.orga_urls
+    cfp = event.cfp.urls
+    expected = {
+        "SubmissionTable": orga.submissions,
+        "ReviewTable": orga.reviews,
+        "ReviewExportTable": None,
+        "SpeakerTable": orga.speakers,
+        "OutboxMailTable": orga.outbox,
+        "SentMailTable": orga.sent_mails,
+        "MailTemplateTable": orga.mail_templates,
+        "FeedbackTable": orga.feedback,
+        "SubmitterAccessCodeTable": cfp.access_codes,
+        "TrackTable": cfp.tracks,
+        "SubmissionTypeTable": cfp.types,
+        "TagTable": orga.tags,
+        "RoomTable": orga.room_settings,
+        "SubmissionQuestionTable": cfp.questions,
+        "SpeakerQuestionTable": cfp.questions,
+        "ReviewerQuestionTable": None,
+        "SpeakerInformationTable": orga.information,
+        "GoneTable": None,
+    }
+    exports = {
+        table: TableExportFactory(event=event, table=table) for table in expected
+    }
+
+    assert {
+        table: export.table_class and export.table_class.get_list_url(event)
+        for table, export in exports.items()
+    } == expected
+    assert {table: export.view_data_url for table, export in exports.items()} == {
+        table: url and exports[table].urls.view for table, url in expected.items()
+    }

@@ -34,6 +34,12 @@ class TableExportTable(PretalxTable):
                 "url": "urls.run",
                 "color": "primary",
             },
+            "view": {
+                "title": _("View data"),
+                "icon": "table",
+                "url": "view_data_url",
+                "condition": lambda record: record.view_data_url,
+            },
             "edit": {},
             "delete": {},
         }

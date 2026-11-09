@@ -181,6 +181,12 @@ class PretalxTable(BaseTable):
         raise NotImplementedError
 
     @classmethod
+    def get_list_url(cls, event):
+        """The organiser page listing this table, or ``None``. Saved exports
+        of this table link there to show their data."""
+        return
+
+    @classmethod
     def prepare_queryset(cls, queryset, *, event, user):
         """Add annotations needed for filters to apply."""
         return queryset

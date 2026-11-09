@@ -66,6 +66,10 @@ class RoomTable(DragsortTable):
     )
 
     @classmethod
+    def get_list_url(cls, event):
+        return event.orga_urls.room_settings
+
+    @classmethod
     def base_queryset(cls, event, user):
         return annotate_room_usage(event.rooms.all(), event=event)
 

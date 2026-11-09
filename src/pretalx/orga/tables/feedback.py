@@ -45,6 +45,10 @@ class FeedbackTable(PretalxTable):
             self.exclude.append("talk")
 
     @classmethod
+    def get_list_url(cls, event):
+        return event.orga_urls.feedback
+
+    @classmethod
     def base_queryset(cls, event, user):
         return (
             Feedback.objects.filter(talk__in=submissions_for_user(event, user))

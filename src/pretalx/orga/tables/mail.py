@@ -59,6 +59,10 @@ class MailTemplateTable(PretalxTable):
     )
 
     @classmethod
+    def get_list_url(cls, event):
+        return event.orga_urls.mail_templates
+
+    @classmethod
     def base_queryset(cls, event, user):
         return event.mail_templates.exclude(is_auto_created=True).order_by("role", "pk")
 
@@ -80,6 +84,10 @@ class OutboxMailTable(PretalxTable):
     default_columns = ("subject", "to_recipients", "submissions", "template_role")
     export_name = _("Outbox")
     export_permission = "mail.list_queuedmail"
+
+    @classmethod
+    def get_list_url(cls, event):
+        return event.orga_urls.outbox
 
     @classmethod
     def base_queryset(cls, event, user):
@@ -223,6 +231,10 @@ class SentMailTable(OutboxMailTable):
         "template_role",
     )
     export_name = _("Sent emails")
+
+    @classmethod
+    def get_list_url(cls, event):
+        return event.orga_urls.sent_mails
 
     @classmethod
     def base_queryset(cls, event, user):

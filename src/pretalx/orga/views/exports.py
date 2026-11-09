@@ -18,10 +18,13 @@ from pretalx.common.forms.exports import TableExportForm, TablePickerForm
 from pretalx.common.models.exports import TableExport
 from pretalx.common.models.file import CachedFile
 from pretalx.common.tables.export import (
+    build_filterset,
+    filters_to_querydict,
     get_exportable_table,
     get_exportable_tables,
     get_table_serializer,
 )
+from pretalx.common.tables.filters import EMPTY_VALUE
 from pretalx.common.tasks import task_export_table
 from pretalx.common.ui import Button, LinkButton
 from pretalx.common.views.generic import OrgaCRUDView
@@ -141,7 +144,50 @@ class TableExportView(OrgaCRUDView):
                 )
             ]
             result["submit_buttons_extra"].append(Button(color="outline-success"))
+            if self.object and self.object.view_data_url:
+                result["submit_buttons_extra"].append(
+                    LinkButton(
+                        href=self.object.view_data_url,
+                        label=_("View data"),
+                        icon="table",
+                        color="outline-info",
+                    )
+                )
         return result
+
+
+class TableExportViewData(EventPermissionRequired, View):
+    permission_required = TableExport.get_perm("view")
+
+    def get(self, request, *args, **kwargs):
+        table_export = get_object_or_404(
+            request.event.table_exports, pk=self.kwargs.get("pk")
+        )
+        table_class = table_export.table_class
+        if not can_export(table_class, request.event, request.user):
+            raise Http404
+        list_url = table_class.get_list_url(request.event)
+        if not list_url:
+            raise Http404
+        query = filters_to_querydict(table_export.filters)
+        filterset = build_filterset(
+            table_class, request.event, request.user, table_export.filters
+        )
+        if filterset:
+            for table_filter in filterset.filters.values():
+                if (
+                    table_filter.get_initial() is not None
+                    and table_filter.param not in query
+                ):
+                    query[table_filter.param] = EMPTY_VALUE
+        if table_export.ordering:
+            meta = table_class._meta
+            query.setlist(
+                f"{meta.prefix}{meta.order_by_field}", list(table_export.ordering)
+            )
+        if not query:
+            return redirect(list_url)
+        return redirect(f"{list_url}?{query.urlencode()}")
 
 
 class ExportDownloadMixin(AsyncFileDownloadMixin):

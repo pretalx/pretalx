@@ -40,6 +40,7 @@ class TableExport(PretalxModel):
         base = edit = "{self.event.orga_urls.exports}{self.pk}/"
         delete = "{base}delete/"
         run = "{base}run/"
+        view = "{base}view/"
 
     def __str__(self):
         return self.name
@@ -53,6 +54,12 @@ class TableExport(PretalxModel):
         from pretalx.common.tables.export import get_exportable_table  # noqa: PLC0415 -- thin method
 
         return get_exportable_table(self.event, self.table)
+
+    @cached_property
+    def view_data_url(self):
+        if self.table_class and self.table_class.get_list_url(self.event):
+            return self.urls.view
+        return None
 
     @property
     def config(self):

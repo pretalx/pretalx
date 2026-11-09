@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 from django.contrib.messages import constants as message_constants
 from django.contrib.messages import get_messages
 from django.core.files.base import ContentFile
+from django.http import QueryDict
 from django.urls import reverse
 from django_scopes import scopes_disabled
 
@@ -679,3 +680,128 @@ def test_html_export_download_after_release(client, published_talk_slot):
     assert filenames == [f"{event.slug}_schedule.zip"]
     assert after_stale.status_code == 200
     assert event.cache.get("schedule_export_cached_file") != str(stale_file.id)
+
+
+@pytest.mark.parametrize(
+    "table",
+    (
+        "SubmissionTable",
+        "ReviewTable",
+        "SpeakerTable",
+        "OutboxMailTable",
+        "SentMailTable",
+        "MailTemplateTable",
+        "FeedbackTable",
+        "SubmitterAccessCodeTable",
+        "TrackTable",
+        "SubmissionTypeTable",
+        "TagTable",
+        "RoomTable",
+        "SubmissionQuestionTable",
+        "SpeakerQuestionTable",
+        "SpeakerInformationTable",
+    ),
+)
+def test_table_export_view_data_redirects_to_working_list_page(client, event, table):
+    with scopes_disabled():
+        orga = make_orga_user(event, can_change_event_settings=True)
+        export = TableExportFactory(event=event, table=table, ordering=[])
+        list_url = export.table_class.get_list_url(event)
+    client.force_login(orga)
+
+    response = client.get(export.view_data_url, follow=True)
+
+    assert response.status_code == 200
+    assert response.redirect_chain[0][0].partition("?")[0] == list_url
+
+
+def test_table_export_view_data_redirect_carries_filters_and_ordering(client, event):
+    with scopes_disabled():
+        orga = make_orga_user(event, can_change_event_settings=True)
+        featured = SubmissionFactory(event=event, title="Starfare", is_featured=True)
+        SubmissionFactory(event=event, title="Plainfare", is_featured=False)
+        export = TableExportFactory(
+            event=event,
+            columns=["title", "is_featured"],
+            ordering=["-title", "code"],
+            filters={"is_featured": ["true"]},
+        )
+    client.force_login(orga)
+
+    response = client.get(export.urls.view)
+    page = client.get(response.url)
+
+    path, _, query = response.url.partition("?")
+    assert path == event.orga_urls.submissions
+    assert QueryDict(query).getlist("is_featured") == ["true"]
+    assert QueryDict(query).getlist("sort") == ["-title", "code"]
+    with scopes_disabled():
+        assert list(page.context["table"].data.data) == [featured]
+
+
+def test_table_export_view_data_redirect_keeps_unfiltered_export_unfiltered(
+    client, event
+):
+    with scopes_disabled():
+        orga = make_orga_user(event, can_change_event_settings=True)
+        submissions = {
+            SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED),
+            SubmissionFactory(event=event, state=SubmissionStates.REJECTED),
+        }
+        export = TableExportFactory(
+            event=event, table="SubmissionTable", filters={}, ordering=[]
+        )
+    client.force_login(orga)
+
+    response = client.get(export.urls.view)
+    page = client.get(response.url)
+
+    assert QueryDict(response.url.partition("?")[2]).getlist("state") == ["__none__"]
+    assert "sort" not in QueryDict(response.url.partition("?")[2])
+    with scopes_disabled():
+        assert set(page.context["table"].data.data) == submissions
+
+
+def test_table_export_view_data_redirect_404s(client, event):
+    with scopes_disabled():
+        orga = make_orga_user(event, can_change_event_settings=True)
+        reviewer = _reviewer(event)
+        limited = make_orga_user(
+            event, can_change_event_settings=True, can_change_submissions=False
+        )
+        export = TableExportFactory(event=event)
+        no_list = TableExportFactory(event=event, table="ReviewExportTable")
+        gone = TableExportFactory(event=event, table="GoneTable")
+        other_event = TableExportFactory()
+    client.force_login(orga)
+
+    responses = [
+        client.get(no_list.urls.view),
+        client.get(gone.urls.view),
+        client.get(f"{event.orga_urls.exports}{other_event.pk}/view/"),
+    ]
+    client.force_login(reviewer)
+    responses.append(client.get(export.urls.view))
+    client.force_login(limited)
+    responses.append(client.get(export.urls.view))
+
+    assert [response.status_code for response in responses] == [404] * 5
+
+
+def test_table_export_view_data_link_placement(client, event):
+    with scopes_disabled():
+        orga = make_orga_user(event, can_change_event_settings=True)
+        export = TableExportFactory(event=event)
+        no_list = TableExportFactory(event=event, table="ReviewExportTable")
+    client.force_login(orga)
+
+    edit = client.get(export.urls.edit)
+    no_list_edit = client.get(no_list.urls.edit)
+
+    assert export.urls.view in [
+        getattr(button, "href", None) for button in edit.context["submit_buttons_extra"]
+    ]
+    assert no_list.urls.view not in [
+        getattr(button, "href", None)
+        for button in no_list_edit.context["submit_buttons_extra"]
+    ]
