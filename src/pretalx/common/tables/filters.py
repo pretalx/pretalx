@@ -404,6 +404,14 @@ class BooleanFilter(SegmentedChoiceFilter):
         return super().get_pills("true" if value else "false")
 
 
+class HasTextFilter(BooleanFilter):
+    """Filters by whether the text ``field`` has content; NULL and "" count as empty."""
+
+    def filter(self, qs, value):
+        lookup = {f"{self.field}__gt": ""}
+        return qs.filter(**lookup) if value else qs.exclude(**lookup)
+
+
 class SearchFilter(TableFilter):
     control = SEARCH
     is_facet = False

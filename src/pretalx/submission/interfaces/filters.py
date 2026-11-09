@@ -14,6 +14,7 @@ from pretalx.common.tables.filters import (
     ChoiceFilter,
     FilterChoice,
     FilterPill,
+    HasTextFilter,
     ModelChoiceFilter,
     ModelMultiChoiceFilter,
     MultiChoiceFilter,
@@ -411,6 +412,11 @@ def _locale_choices(bound):
 
 
 def submission_filters(context):
+    can_change = bool(
+        context.event
+        and context.user
+        and context.user.has_perm("submission.orga_update_submission", context.event)
+    )
     return [
         SearchFilter(search=submission_search, fulltext=True),
         SubmissionStateFilter(name="state", label=_("State"), with_counts=True),
@@ -464,6 +470,19 @@ def submission_filters(context):
             label=_("Resources"),
             yes_label=_("With"),
             no_label=_("Without"),
+        ),
+        *(
+            [
+                HasTextFilter(
+                    name="has_internal_notes",
+                    field="internal_notes",
+                    label=phrases.base.internal_notes,
+                    yes_label=_("With"),
+                    no_label=_("Without"),
+                )
+            ]
+            if can_change
+            else []
         ),
     ]
 

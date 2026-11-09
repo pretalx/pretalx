@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`orga:submission,2912` Organisers can now filter the session and review lists by whether a session has internal notes.
 - :feature:`orga:submission,2514` If your CfP asks for resources, you can now filter the session and review lists by whether a session has resources. This also allows you to send emails to speakers who have uploaded no resources for their sessions.
 - :feature:`schedule,1710` Public tags are now shown in the schedule and on session pages. Attendees can filter the schedule by public tags. Internal tags remain hidden everywhere.
 - :bug:`api` Only organisers, reviewers and administrators can create API tokens, as documented. Existing tokens of users without any team membership no longer work.
