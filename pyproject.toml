@@ -56,7 +56,7 @@ dependencies = [
   "packaging",
   "Pillow~=13.0.0",
   "publicsuffixlist~=1.1.2",
-  "python-dateutil~=3.0.0",
+  "python-dateutil>=3.0,<4.1",
   "qrcode==8.2",
   "redis~=8.1.0",
   "reportlab~=5.0.0",
