@@ -206,8 +206,10 @@ def test_access_code_detail_v1_shows_singular_fields(client, event, orga_read_to
         sub_type1 = SubmissionTypeFactory(event=event)
         sub_type2 = SubmissionTypeFactory(event=event)
         code = SubmitterAccessCodeFactory(event=event, maximum_uses=5)
-        code.tracks.add(track1, track2)
-        code.submission_types.add(sub_type1, sub_type2)
+        code.tracks.add(track2)
+        code.tracks.add(track1)
+        code.submission_types.add(sub_type2)
+        code.submission_types.add(sub_type1)
         empty_code = SubmitterAccessCodeFactory(event=event)
     headers = {
         "Authorization": f"Token {orga_read_token.token}",
