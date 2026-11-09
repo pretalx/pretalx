@@ -92,8 +92,10 @@ class V1SubmitterAccessCodeSerializer(PretalxSerializer):
         """
         data = super().to_representation(instance)
         request = self.context.get("request")
-        track = instance.tracks.first()
-        submission_type = instance.submission_types.first()
+        track = instance.tracks.order_by("position", "pk").first()
+        submission_type = instance.submission_types.order_by(
+            "default_duration", "pk"
+        ).first()
 
         if track and request and is_expanded(request, "track"):
             data["track"] = TrackSerializer(track, context=self.context).data
