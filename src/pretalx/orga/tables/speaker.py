@@ -67,6 +67,10 @@ class SpeakerInformationTable(PretalxTable):
             self.exclude.append("limit_tracks")
 
     @classmethod
+    def get_list_url(cls, event):
+        return event.orga_urls.information
+
+    @classmethod
     def base_queryset(cls, event, user):
         return (
             event.information.all()
@@ -115,6 +119,10 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
     export_permission = "person.orga_list_speakerprofile"
 
     default_columns = ("name", "submissions", "has_arrived")
+
+    @classmethod
+    def get_list_url(cls, event):
+        return event.orga_urls.speakers
 
     @classmethod
     def base_queryset(cls, event, user):

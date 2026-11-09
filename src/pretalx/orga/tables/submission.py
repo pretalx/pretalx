@@ -366,6 +366,10 @@ class SubmissionTable(SubmissionValuesMixin, QuestionColumnMixin, PretalxTable):
             self.exclude += ["requires_signup", "attendee_signup_count"]
 
     @classmethod
+    def get_list_url(cls, event):
+        return event.orga_urls.submissions
+
+    @classmethod
     def base_queryset(cls, event, user):
         queryset = (
             submissions_for_user(event, user)
@@ -723,6 +727,10 @@ class ReviewTable(SubmissionValuesMixin, QuestionColumnMixin, PretalxTable):
         return options
 
     @classmethod
+    def get_list_url(cls, event):
+        return event.orga_urls.reviews
+
+    @classmethod
     def base_queryset(cls, event, user):
         return SubmissionTable.base_queryset(event, user).filter(
             state__in=cls.usable_states
@@ -834,6 +842,10 @@ class TagTable(PretalxTable):
     )
     is_public = BooleanColumn()
     actions = ActionsColumn(actions={"edit": {}, "delete": {}})
+
+    @classmethod
+    def get_list_url(cls, event):
+        return event.orga_urls.tags
 
     @classmethod
     def base_queryset(cls, event, user):
