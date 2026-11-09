@@ -216,10 +216,8 @@ def export_answer_files(*, question, cached_file):
         LOGGER.error("Question %s is not a file question.", question.pk)
         return None
 
-    answers = (
-        question.answers.filter(answer_file__isnull=False)
-        .exclude(answer_file="")
-        .select_related("submission", "speaker", "review")
+    answers = question.answers.filter(answer_file__gt="").select_related(
+        "submission", "speaker", "review"
     )
 
     used_filenames = set()

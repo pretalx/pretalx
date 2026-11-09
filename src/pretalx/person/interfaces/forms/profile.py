@@ -131,8 +131,7 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
         ):
             suggestions = list(
                 other_speaker_profiles(self.instance)
-                .exclude(biography="")
-                .exclude(biography__isnull=True)
+                .filter(biography__gt="")
                 .values_list("pk", "event__name", "biography")
             )
             if suggestions:
