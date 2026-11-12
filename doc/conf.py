@@ -76,6 +76,8 @@ linkcheck_ignore = [
     "https://pypi.org/project/pretalx/#history",  # CDN/bot check breaks the check for the link anchor
     "https://www.gnu.org",  # spurious errors, and as it’s only licensing information, this is fine
 ]
+# GitHub returns sporadic 504s that fail CI, because GitHub is a good and stable platform
+linkcheck_retries = 3
 
 htmlhelp_basename = "pretalxdoc"
 autodoc_member_order = "groupwise"
