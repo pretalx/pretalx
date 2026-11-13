@@ -24,10 +24,10 @@
   "dependencies": {
     "buntpapier": "^2.0.0-alpha.34",
     "dompurify": "^3.4.17",
-    "i18next": "^26.5.11",
+    "i18next": "^27.1.1",
     "luxon": "^3.5.0",
     "markdown-it": "^15.0.3",
-    "moment-timezone": "^0.6.4",
+    "moment-timezone": "^0.6.6",
     "vue": "^3.5.44"
   },
   "devDependencies": {
