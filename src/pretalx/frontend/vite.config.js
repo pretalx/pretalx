@@ -166,6 +166,8 @@ export default defineConfig(({ mode }) => {
 		},
 		server: {
 			port: 8080,
+			// Set VITE_HOST=0.0.0.0 to expose the dev server outside a container.
+			host: process.env.VITE_HOST || 'localhost',
 		},
 	}
 })

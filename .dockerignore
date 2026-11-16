@@ -1,0 +1,16 @@
+.git
+.github
+.venv
+**/__pycache__
+**/*.py[cod]
+**/node_modules
+dist
+build
+doc
+htmlcov
+src/data
+src/static.dist
+src/pretalx.cfg
+src/pretalx/frontend/schedule-editor/dist
+Dockerfile*
+docker-compose.yml

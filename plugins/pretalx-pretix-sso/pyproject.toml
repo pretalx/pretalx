@@ -1,0 +1,33 @@
+[project]
+name = "pretalx-pretix-sso"
+version = "0.4.0"
+description = "Log in to the pretalx CfP with a pretix customer account (OpenID Connect)"
+requires-python = ">=3.10"
+# pretalx: the series this plugin is tested against. It patches pretalx
+# internals (see restrict.py), so widen this only after the tests pass on the
+# new version; tests/test_restrict.py fails when the installed pretalx is outside.
+dependencies = ["requests", "pretalx>=2026.2.1,<2026.3"]
+
+[project.entry-points."pretalx.plugin"]
+pretalx_pretix_sso = "pretalx_pretix_sso:PretalxPluginMeta"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["pretalx_pretix_sso*"]
+
+[tool.setuptools.package-data]
+pretalx_pretix_sso = ["static/**/*", "templates/**/*"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "pretix_sso_test_settings"
+pythonpath = ["tests"]
+testpaths = ["tests"]
+# Runs real migrations, so the plugin's migration is exercised too
+addopts = "-p no:cacheprovider"
+filterwarnings = ["ignore::DeprecationWarning", "ignore::UserWarning", "ignore::RuntimeWarning"]

@@ -1,0 +1,24 @@
+{% extends "cfp/event/base.html" %}
+
+{% load i18n %}
+
+{% block title %}{% translate "Resubmit a previous proposal" %} ::
+{% endblock title %}
+
+{% block content %}
+    {% if sources %}
+        {% include "pretalx_resubmit/_panel.html" with event=request.event %}
+    {% else %}
+        <h2>{% translate "Resubmit a previous proposal" %}</h2>
+        <p>
+            {% blocktranslate trimmed with organiser=request.event.organiser.name %}
+                You have no proposals from other {{ organiser }} events to resubmit.
+            {% endblocktranslate %}
+        </p>
+    {% endif %}
+    <p>
+        <a href="{{ request.event.urls.submit }}" class="btn btn-success">
+            {% translate "Submit a new proposal instead" %}
+        </a>
+    </p>
+{% endblock content %}
