@@ -104,7 +104,6 @@ jobs:
           task-definition: ${{ steps.web.outputs.task-definition }}
           service: ${{ vars.ECS_SERVICE_WEB }}
           cluster: ${{ env.CLUSTER }}
-          wait-for-service-stability: true
 
       - name: Worker task definition
         id: worker-bootstrap
@@ -129,7 +128,6 @@ jobs:
           task-definition: ${{ steps.worker.outputs.task-definition }}
           service: ${{ vars.ECS_SERVICE_WORKER }}
           cluster: ${{ env.CLUSTER }}
-          wait-for-service-stability: true
 
       - name: Cron task definition
         id: cron-bootstrap

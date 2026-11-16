@@ -3,9 +3,7 @@
 # Differences: installs a pinned pretalx release from PyPI (PRETALX_VERSION)
 # instead of a source submodule, so no Node.js; PostgreSQL only (no
 # MariaDB/memcached); local plugins from plugins/ and extra pip packages via
-# PRETALX_PLUGINS; and
-# `pretalx` is a small wrapper (deploy/docker/entrypoint.bash) that applies
-# PRETALX_APP_CONFIG / PRETALX_APP_ENV before running the upstream script.
+# PRETALX_PLUGINS.
 #
 # Runtime contract (used by the ECS task definitions in wf-org/infra):
 #   entrypoint `pretalx`; commands webworker | taskworker | cron | all | shell
@@ -82,11 +80,10 @@ COPY --from=builder /usr/local/lib/python3.14/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin/gunicorn /usr/local/bin/celery /usr/local/bin/
 COPY --from=builder --chown=pretalxuser:pretalxuser /pretalx /pretalx
 
-COPY --chown=root:root deploy/docker/pretalx.bash /usr/local/lib/pretalx/pretalx.bash
-COPY --chown=root:root deploy/docker/entrypoint.bash /usr/local/bin/pretalx
+COPY --chown=root:root deploy/docker/pretalx.bash /usr/local/bin/pretalx
 COPY --chown=root:root deploy/docker/supervisord.conf /etc/supervisord.conf
 
-RUN chmod +x /usr/local/bin/pretalx /usr/local/lib/pretalx/pretalx.bash && \
+RUN chmod +x /usr/local/bin/pretalx && \
     chown pretalxuser:pretalxuser /data /public /etc/pretalx
 
 USER pretalxuser
