@@ -18,7 +18,8 @@ permissions:
   id-token: write  # OIDC: assume the deploy role from wf-org/infra
 
 # Repository variables are written by wf-org/infra (stacks/apps/pretalx/registry):
-#   AWS_REGION, AWS_DEPLOY_ROLE_ARN, ECR_REPOSITORY_APP
+#   AWS_REGION, AWS_DEPLOY_ROLE_ARN, ECR_REPOSITORY_APP, ECS_CLUSTER,
+#   ECS_SERVICE_WEB, ECS_SERVICE_WORKER
 jobs:
   build:
     name: Build and push image
@@ -53,88 +54,116 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy:
-    name: Update config and redeploy
+    name: Deploy
     needs: build
     runs-on: ubuntu-24.04
     env:
-      SSM_PREFIX: /pretalx/app
+      CLUSTER: ${{ vars.ECS_CLUSTER }}
+      IMAGE: ${{ vars.ECR_REPOSITORY_APP }}:${{ github.sha }}
     steps:
-      - uses: actions/checkout@v7
-
       - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Install sops
+      # Current task definitions; the families are named like the services.
+      # The worker service exists only with redis_enabled in wf-org/infra.
+      - name: Fetch task definitions
+        id: fetch
         env:
-          SOPS_VERSION: 3.13.3
-          # From sops-v3.13.3.checksums.txt on the release page
-          SOPS_SHA256: e5bec3346a873ae91d871550f3e698c1aad962aff462a080e40f25fde17fef6b
-        run: |
-          curl -fsSLo "$RUNNER_TEMP/sops" \
-            "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64"
-          echo "$SOPS_SHA256  $RUNNER_TEMP/sops" | sha256sum -c -
-          sudo install -m 0755 "$RUNNER_TEMP/sops" /usr/local/bin/sops
-
-      # deploy/prod/env -> SSM String <SSM_PREFIX>/env (PRETALX_APP_ENV)
-      # deploy/prod/pretalx.secrets.enc.ini -> SSM SecureString <SSM_PREFIX>/config
-      # (PRETALX_APP_CONFIG). The task definitions in wf-org/infra read both at
-      # task start; deploy/docker/entrypoint.bash applies them.
-      - name: Store app config in Parameter Store
+          WEB: ${{ vars.ECS_SERVICE_WEB }}
+          WORKER: ${{ vars.ECS_SERVICE_WORKER }}
         run: |
           set -euo pipefail
-          umask 077
-          config="$RUNNER_TEMP/pretalx.cfg"
-          param="$RUNNER_TEMP/param.json"
-          trap 'rm -f "$config" "$param"' EXIT
-
-          # put <name> <type> <file>; the value goes in through a 0600 file,
-          # never the command line or the log
-          put() {
-            jq -Rs --arg name "$1" --arg type "$2" \
-              '{Name: $name, Value: ., Type: $type, Overwrite: true}' "$3" > "$param"
-            aws ssm put-parameter --cli-input-json "file://$param" --output text > /dev/null
-            echo "stored $1"
-          }
-
-          bad=$(grep -nvE '^[[:space:]]*(#.*)?$|^[[:space:]]*(export )?[A-Za-z_][A-Za-z0-9_]*=' deploy/prod/env || true)
-          [ -z "$bad" ] || { echo "::error::deploy/prod/env has lines that aren't KEY=value:"; echo "$bad"; exit 1; }
-          put "$SSM_PREFIX/env" String deploy/prod/env
-
-          if [ -f deploy/prod/pretalx.secrets.enc.ini ]; then
-            sops decrypt deploy/prod/pretalx.secrets.enc.ini > "$config"
-          else
-            echo "::notice::deploy/prod/pretalx.secrets.enc.ini not found; storing an empty config"
-            echo "; no app config" > "$config"
+          aws ecs describe-task-definition --task-definition "$WEB" --query taskDefinition > web.json
+          aws ecs describe-task-definition --task-definition "${WEB%-web}-cron" --query taskDefinition > cron.json
+          status=$(aws ecs describe-services --cluster "$CLUSTER" --services "$WORKER" --query 'services[0].status' --output text)
+          if [ "$status" = ACTIVE ]; then
+            aws ecs describe-task-definition --task-definition "$WORKER" --query taskDefinition > worker.json
+            echo "worker=true" >> "$GITHUB_OUTPUT"
           fi
-          # Fail here rather than at container start on a config pretalx can't parse
-          python3 -c 'import configparser, sys; configparser.RawConfigParser().read(sys.argv[1], encoding="utf-8")' "$config" ||
-            { echo "::error::pretalx.secrets.enc.ini is not a valid cfg file"; exit 1; }
-          put "$SSM_PREFIX/config" SecureString "$config"
 
-      # The task definitions use the :latest tag, so a new deployment pulls the
-      # image pushed above and reads the config stored above. The cron task
-      # picks both up on its next scheduled run.
-      - name: Redeploy services
+      # The bootstrap container (writes pretalx.cfg) runs the app image too
+      - name: Web task definition
+        id: web-bootstrap
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: web.json
+          container-name: bootstrap
+          image: ${{ env.IMAGE }}
+      - id: web
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ steps.web-bootstrap.outputs.task-definition }}
+          container-name: pretalx-web
+          image: ${{ env.IMAGE }}
+
+      - name: Deploy web
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.web.outputs.task-definition }}
+          service: ${{ vars.ECS_SERVICE_WEB }}
+          cluster: ${{ env.CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Worker task definition
+        id: worker-bootstrap
+        if: steps.fetch.outputs.worker == 'true'
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: worker.json
+          container-name: bootstrap
+          image: ${{ env.IMAGE }}
+      - id: worker
+        if: steps.fetch.outputs.worker == 'true'
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ steps.worker-bootstrap.outputs.task-definition }}
+          container-name: pretalx-worker
+          image: ${{ env.IMAGE }}
+
+      - name: Deploy worker
+        if: steps.fetch.outputs.worker == 'true'
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.worker.outputs.task-definition }}
+          service: ${{ vars.ECS_SERVICE_WORKER }}
+          cluster: ${{ env.CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Cron task definition
+        id: cron-bootstrap
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: cron.json
+          container-name: bootstrap
+          image: ${{ env.IMAGE }}
+      - id: cron
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ steps.cron-bootstrap.outputs.task-definition }}
+          container-name: pretalx-cron
+          image: ${{ env.IMAGE }}
+
+      # Without a service, the action only registers the revision
+      - name: Register cron task definition
+        id: cron-register
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.cron.outputs.task-definition }}
+
+      # EventBridge Scheduler runs a pinned revision; point it at the new one
+      - name: Update cron schedule
         env:
-          CLUSTER: ${{ vars.ECS_CLUSTER }}
-          SERVICES: ${{ vars.ECS_SERVICE_WEB }} ${{ vars.ECS_SERVICE_WORKER }}
+          SCHEDULE: ${{ vars.ECS_SERVICE_WEB }}
+          TASK_DEFINITION: ${{ steps.cron-register.outputs.task-definition-arn }}
         run: |
           set -euo pipefail
-          deployed=()
-          for service in $SERVICES; do
-            status=$(aws ecs describe-services --cluster "$CLUSTER" --services "$service" \
-              --query 'services[0].status' --output text)
-            # The worker exists only with redis_enabled in wf-org/infra
-            if [ "$status" != "ACTIVE" ]; then
-              echo "::notice::$service is not active ($status); skipped"
-              continue
-            fi
-            aws ecs update-service --cluster "$CLUSTER" --service "$service" \
-              --force-new-deployment --query 'service.serviceName' --output text
-            deployed+=("$service")
-          done
-          [ "${#deployed[@]}" -gt 0 ] || { echo "::error::No active services to deploy"; exit 1; }
-          # Fails if a deployment doesn't settle (the circuit breaker rolls back)
-          aws ecs wait services-stable --cluster "$CLUSTER" --services "${deployed[@]}"
+          aws scheduler get-schedule --name "${SCHEDULE%-web}-cron" --group-name default --output json |
+            jq --arg td "$TASK_DEFINITION" '
+              .Target.EcsParameters.TaskDefinitionArn = $td
+              | {Name, GroupName, Description, ScheduleExpression, ScheduleExpressionTimezone,
+                 StartDate, EndDate, State, KmsKeyArn, ActionAfterCompletion, FlexibleTimeWindow, Target}
+              | with_entries(select(.value != null))' > schedule.json
+          aws scheduler update-schedule --cli-input-json file://schedule.json --output text > /dev/null
+          echo "cron -> $TASK_DEFINITION"
