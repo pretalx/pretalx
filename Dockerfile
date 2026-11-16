@@ -43,6 +43,16 @@ RUN pip3 install --no-cache-dir -U pip setuptools wheel && \
     pip3 install --no-cache-dir gunicorn && \
     if [ -n "$PRETALX_PLUGINS" ]; then pip3 install --no-cache-dir $PRETALX_PLUGINS; fi
 
+# Local plugins: every plugins/<name>/ with a pyproject.toml or setup.py.
+# Installed non-editable so they land in site-packages (copied to the runtime
+# stage), and before `rebuild` so their static files and translations are built.
+COPY --chown=root:root plugins /plugins
+RUN set -e; for plugin in /plugins/*/; do \
+        if [ -f "$plugin/pyproject.toml" ] || [ -f "$plugin/setup.py" ]; then \
+            pip3 install --no-cache-dir "$plugin"; \
+        fi; \
+    done
+
 RUN python3 -m pretalx rebuild && \
     rm -rf /pretalx/src/pretalx.cfg /pretalx/src/data/.secret \
            /pretalx/src/pretalx/frontend/node_modules
