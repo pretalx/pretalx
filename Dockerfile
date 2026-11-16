@@ -1,7 +1,9 @@
 # Modeled on the community pretalx-docker image:
 # https://github.com/pretalx/pretalx-docker/blob/main/Dockerfile
-# Differences: built from this repository (not a submodule), PostgreSQL only
-# (no MariaDB/memcached), optional extra pip packages via PRETALX_PLUGINS, and
+# Differences: installs a pinned pretalx release from PyPI (PRETALX_VERSION)
+# instead of a source submodule, so no Node.js; PostgreSQL only (no
+# MariaDB/memcached); local plugins from plugins/ and extra pip packages via
+# PRETALX_PLUGINS; and
 # `pretalx` is a small wrapper (deploy/docker/entrypoint.bash) that applies
 # PRETALX_APP_CONFIG / PRETALX_APP_ENV before running the upstream script.
 #
@@ -12,58 +14,57 @@
 
 FROM python:3.14-slim-trixie AS builder
 
-# Space-separated pip requirement specs installed alongside pretalx,
-# e.g. plugins: --build-arg PRETALX_PLUGINS="pretalx-pages==1.6.0"
+# pretalx release from PyPI. Pinned: bump deliberately, together with the
+# `pretalx>=…,<…` range in plugins/*/pyproject.toml (the plugins patch pretalx
+# internals and are only tested against one release series).
+ARG PRETALX_VERSION=2026.2.1
+
+# Space-separated extra pip requirement specs, e.g. PyPI plugins:
+# --build-arg PRETALX_PLUGINS="pretalx-pages==1.6.0"
 ARG PRETALX_PLUGINS=""
 
-# Quiet down pip and npm so build logs stay readable.
+# Quiet down pip so build logs stay readable.
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_ROOT_USER_ACTION=ignore \
     PIP_NO_INPUT=1 \
     PIP_PROGRESS_BAR=off \
-    NPM_CONFIG_LOGLEVEL=error \
-    NPM_CONFIG_FUND=false \
-    NPM_CONFIG_AUDIT=false \
-    NPM_CONFIG_PROGRESS=false
+    PRETALX_FILESYSTEM_STATIC=/pretalx/src/static.dist
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get -qq update && \
     DEBIAN_FRONTEND=noninteractive apt-get -qq install -y --no-install-recommends \
-        git gettext \
-        libpq-dev build-essential \
-        nodejs npm && \
+        gettext build-essential && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-COPY --chown=root:root pyproject.toml /pretalx/
-COPY --chown=root:root _build /pretalx/_build
-COPY --chown=root:root src /pretalx/src
-
-RUN pip3 install --no-cache-dir -U pip setuptools wheel && \
-    pip3 install --no-cache-dir -e /pretalx/[postgres] && \
-    pip3 install --no-cache-dir gunicorn && \
-    if [ -n "$PRETALX_PLUGINS" ]; then pip3 install --no-cache-dir $PRETALX_PLUGINS; fi
-
 # Local plugins: every plugins/<name>/ with a pyproject.toml or setup.py.
-# Installed non-editable so they land in site-packages (copied to the runtime
-# stage), and before `rebuild` so their static files and translations are built.
 COPY --chown=root:root plugins /plugins
-RUN set -e; for plugin in /plugins/*/; do \
-        if [ -f "$plugin/pyproject.toml" ] || [ -f "$plugin/setup.py" ]; then \
-            pip3 install --no-cache-dir "$plugin"; \
-        fi; \
-    done
 
-RUN python3 -m pretalx rebuild && \
-    rm -rf /pretalx/src/pretalx.cfg /pretalx/src/data/.secret \
-           /pretalx/src/pretalx/frontend/node_modules
+# One pip resolve for pretalx, the plugins and extras, so a plugin can't
+# silently swap in another pretalx (or Django) version: an incompatible
+# combination fails the build. Plugins are installed non-editable so they land
+# in site-packages, which the runtime stage copies.
+RUN set -e; \
+    plugins=""; \
+    for plugin in /plugins/*/; do \
+        if [ -f "$plugin/pyproject.toml" ] || [ -f "$plugin/setup.py" ]; then plugins="$plugins $plugin"; fi; \
+    done; \
+    pip3 install --no-cache-dir -U pip setuptools wheel && \
+    pip3 install --no-cache-dir \
+        "pretalx[postgres]==${PRETALX_VERSION}" gunicorn $plugins $PRETALX_PLUGINS && \
+    test "$(pip3 show pretalx | sed -n 's/^Version: //p')" = "$PRETALX_VERSION"
 
+# The wheel ships the prebuilt frontend, so no npm is needed. /pretalx/src is
+# the working directory of the upstream script and holds the collected static
+# files (static.dist), where wf-org/infra expects them.
+RUN mkdir -p /pretalx/src && \
+    PRETALX_DATA_DIR=/tmp/build-data python3 -m pretalx rebuild && \
+    rm -rf /tmp/build-data
 
 FROM python:3.14-slim-trixie
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get -qq update && \
     DEBIAN_FRONTEND=noninteractive apt-get -qq install -y --no-install-recommends \
         gettext locales \
-        nodejs npm \
         supervisor && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
@@ -74,7 +75,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get -qq update && \
     groupadd -g 999 pretalxuser && \
     useradd -r -u 999 -g pretalxuser -d /pretalx -ms /bin/bash pretalxuser
 
-ENV LC_ALL=C.UTF-8
+ENV LC_ALL=C.UTF-8 \
+    PRETALX_FILESYSTEM_STATIC=/pretalx/src/static.dist
 
 COPY --from=builder /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/site-packages
 COPY --from=builder /usr/local/bin/gunicorn /usr/local/bin/celery /usr/local/bin/

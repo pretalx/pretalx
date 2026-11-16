@@ -46,11 +46,9 @@ jobs:
           sbom: false
           build-args: |
             PRETALX_PLUGINS=${{ vars.PRETALX_PLUGINS }}
-          # The task definitions use image_tag (currently "latest");
-          # the SHA tag keeps every build addressable for rollbacks.
+          # Deployed by this tag (see the deploy job); never by a moving tag.
           tags: |
             ${{ vars.ECR_REPOSITORY_APP }}:${{ github.sha }}
-            ${{ vars.ECR_REPOSITORY_APP }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
