@@ -59,7 +59,7 @@ dependencies = [
   "python-dateutil>=3.0,<4.1",
   "qrcode==8.2",
   "redis~=8.1.0",
-  "reportlab~=5.0.0",
+  "reportlab>=5.0,<5.2",
   "rules~=3.5.0",
   "urllib3~=2.8.0",
   "urlman~=2.0.1",
