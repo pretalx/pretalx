@@ -1,0 +1,14 @@
+{% with slot=item.data submission=item.data.submission %}
+    {# Coloured by answer (e.g. difficulty) where set up, else by track #}
+    <article
+        class="ts-session{% if slot.ts_color %} ts-coloured{% endif %}"
+        style="--track-color: {% if slot.ts_color %}{{ slot.ts_color }}{% elif submission.track.color %}{{ submission.track.color }}{% else %}#999{% endif %}"
+    >
+        <div class="ts-meta">{{ item.start|date:"H:i" }}–{{ item.end|date:"H:i" }} · {{ slot.room.name }}</div>
+        <a class="ts-title" href="{{ submission.urls.public }}">{{ submission.title }}</a>
+        {% if submission.display_speaker_names %}<div class="ts-speakers">
+                {{ submission.display_speaker_names }}
+            </div>{% endif %}
+        {% if slot.ts_label %}<span class="ts-chip">{{ slot.ts_label }}</span>{% endif %}
+    </article>
+{% endwith %}

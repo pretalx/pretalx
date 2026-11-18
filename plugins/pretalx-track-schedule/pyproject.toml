@@ -1,0 +1,33 @@
+[project]
+name = "pretalx-track-schedule"
+version = "0.1.0"
+description = "Public schedule page with tracks as columns"
+requires-python = ">=3.10"
+# pretalx: the series this plugin is tested against. It reads the published
+# schedule through pretalx's models, so widen this only after the tests
+# pass on the new version.
+dependencies = ["pretalx>=2026.2.1,<2026.3"]
+
+[project.entry-points."pretalx.plugin"]
+pretalx_track_schedule = "pretalx_track_schedule:PretalxPluginMeta"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["pretalx_track_schedule*"]
+
+[tool.setuptools.package-data]
+pretalx_track_schedule = ["static/**/*", "templates/**/*"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "track_schedule_test_settings"
+pythonpath = ["tests"]
+testpaths = ["tests"]
+# Runs real migrations, so the plugin's migration is exercised too
+addopts = "-p no:cacheprovider"
+filterwarnings = ["ignore::DeprecationWarning", "ignore::UserWarning", "ignore::RuntimeWarning"]

@@ -4,6 +4,10 @@
 #   docker compose up --build
 #   docker compose exec web python manage.py createsuperuser
 #
+# Local plugins (plugins/*/ with a pyproject.toml) are installed editable by
+# Dockerfile.dev: edits to them are live; after adding a plugin, rebuild
+# (`docker compose up --build`). Enable them per event under Settings → Plugins.
+#
 # pretalx:  http://localhost:8000   (organiser backend: /orga/)
 # Mailpit:  http://localhost:8025   (MAILPIT_PORT to change; all outgoing mail lands here)
 

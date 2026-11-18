@@ -28,6 +28,18 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --extra dev --extra postgres
 
+# Local plugins: every plugins/<name>/ with a pyproject.toml, installed
+# editable, so the bind-mounted source at the same path is what runs and plugin
+# code changes need no rebuild. Adding a plugin does need one (its entry point,
+# which pretalx finds plugins by, is registered here). --no-deps: the plugins
+# pin a released pretalx, but here pretalx is the mounted development source.
+COPY plugins plugins
+RUN for plugin in plugins/*/; do \
+        if [ -f "$plugin/pyproject.toml" ]; then \
+            uv pip install --python /opt/venv --no-deps --editable "$plugin" || exit 1; \
+        fi; \
+    done
+
 COPY src/pretalx/frontend/package.json src/pretalx/frontend/package-lock.json src/pretalx/frontend/
 RUN cd src/pretalx/frontend && npm ci
 

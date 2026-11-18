@@ -1,0 +1,12 @@
+# Test-only dependencies with their full dependency set, pinned so results do not
+# change underneath us. Installed by run-tests.sh (--no-deps) into the pretalx
+# image (Python 3.14).
+pytest==9.1.1
+pytest-django==4.14.0
+exceptiongroup==1.3.1
+iniconfig==2.3.0
+packaging==26.3
+pluggy==1.6.0
+pygments==2.21.0
+tomli==2.4.1
+typing_extensions==4.16.0

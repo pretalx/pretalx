@@ -1,7 +1,6 @@
 # pretalx-track-schedule: spec
 
-Status: not started. This directory has no `pyproject.toml` yet, so the
-Docker build skips it (see the plugin loop in `/Dockerfile`).
+Status: implemented (see README.md). The notes below are the original spec.
 
 ## Goal
 

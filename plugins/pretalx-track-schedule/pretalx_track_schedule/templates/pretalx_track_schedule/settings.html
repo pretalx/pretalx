@@ -1,0 +1,30 @@
+{% extends "orga/base.html" %}
+
+{% load i18n %}
+
+{% block extra_title %}{% translate "Schedule by track" %} ::
+{% endblock extra_title %}
+
+{% block content %}
+    <h2>{% translate "Schedule by track" %}</h2>
+    <p class="text-muted">
+        {% blocktranslate trimmed %}
+            Colours of the sessions on the schedule by track. Pick a question asked per proposal, such as difficulty,
+            and a colour for each answer. Track colours stay on the column headers.
+        {% endblocktranslate %}
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form }}
+        {% include "orga/includes/submit_row.html" %}
+    </form>
+    <p>
+        <a
+            href="{% url "plugins:pretalx_track_schedule:schedule" event=request.event.slug %}"
+            target="_blank"
+            rel="noopener"
+        >
+            {% translate "View the schedule by track" %}
+        </a>
+    </p>
+{% endblock content %}

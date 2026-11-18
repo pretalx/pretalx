@@ -1,0 +1,100 @@
+{% extends "agenda/base.html" %}
+
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% translate "Schedule by track" %} :: {{ request.event.name }}{% endblock title %}
+
+{% block agenda_stylesheets %}
+    <link rel="stylesheet" href="{% static "pretalx_track_schedule/schedule.css" %}">
+{% endblock agenda_stylesheets %}
+
+{% block header_tabs %}
+    {{ block.super }}
+    <a href="{{ request.path }}" class="header-tab active">
+        <i class="fa fa-columns"></i> {% translate "By track" %}
+    </a>
+{% endblock header_tabs %}
+
+{% block agenda_content %}
+    <div class="track-schedule" style="--pretalx-clr-primary: {{ request.event.visible_primary_color }}">
+        {% if legend %}
+            <ul class="ts-legend" aria-label="{% translate "Colours" %}">
+                {% for label, colour in legend %}
+                    <li style="--track-color: {{ colour }}"><span class="ts-swatch"></span>{{ label }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        {% if days|length > 1 %}
+            <nav class="ts-days" aria-label="{% translate "Days" %}">
+                {% for day, layout in days %}
+                    <a href="#day-{{ day|date:"Y-m-d" }}">{{ day|date:"l, j F" }}</a>
+                {% endfor %}
+            </nav>
+        {% endif %}
+        {% for day, layout in days %}
+            <section class="ts-day" id="day-{{ day|date:"Y-m-d" }}">
+                <h3>{{ day|date:"l, j F Y" }}</h3>
+
+                {# Wide screens: one grid, a column per track lane #}
+                <div
+                    class="ts-grid"
+                    style="grid-template-columns: 4rem repeat({{ layout.lanes }}, minmax(9rem, 1fr)); grid-template-rows: auto repeat({{ layout.slices }}, minmax(0.5rem, auto))"
+                >
+                    {% for track_column in layout.tracks %}
+                        <div
+                            class="ts-track-head"
+                            style="grid-column: {{ track_column.column }} / span {{ track_column.lanes }}; --track-color: {% if track_column.track.color %}{{ track_column.track.color }}{% else %}#999{% endif %}"
+                        >
+                            {% if track_column.track %}{{ track_column.track.name }}{% else %}{% translate "No track" %}{% endif %}
+                        </div>
+                    {% endfor %}
+                    {% for row, moment in layout.labels %}
+                        <div class="ts-time" style="grid-row: {{ row }}">{{ moment|date:"H:i" }}</div>
+                    {% endfor %}
+                    {% for placed in layout.breaks %}
+                        <div
+                            class="ts-break"
+                            style="grid-column: 2 / {{ layout.end_column }}; grid-row: {{ placed.row_start }} / {{ placed.row_end }}"
+                        >
+                            {% include "pretalx_track_schedule/_break.html" with item=placed.item %}
+                        </div>
+                    {% endfor %}
+                    {% for placed in layout.sessions %}
+                        <div
+                            class="ts-cell"
+                            style="grid-column: {{ placed.column }}; grid-row: {{ placed.row_start }} / {{ placed.row_end }}"
+                        >
+                            {% include "pretalx_track_schedule/_session.html" with item=placed.item %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {# Narrow screens: a list per track #}
+                <div class="ts-list">
+                    {% for track_column in layout.tracks %}
+                        <section
+                            class="ts-list-track"
+                            style="--track-color: {% if track_column.track.color %}{{ track_column.track.color }}{% else %}#999{% endif %}"
+                        >
+                            <h4 class="ts-track-head">
+                                {% if track_column.track %}{{ track_column.track.name }}{% else %}{% translate "No track" %}{% endif %}
+                            </h4>
+                            {% for placed in track_column.agenda %}
+                                {% if placed.item.is_break %}
+                                    <div class="ts-break">
+                                        {% include "pretalx_track_schedule/_break.html" with item=placed.item %}
+                                    </div>
+                                {% else %}
+                                    {% include "pretalx_track_schedule/_session.html" with item=placed.item %}
+                                {% endif %}
+                            {% endfor %}
+                        </section>
+                    {% endfor %}
+                </div>
+            </section>
+        {% empty %}
+            <p>{% translate "The schedule has no sessions yet." %}</p>
+        {% endfor %}
+    </div>
+{% endblock agenda_content %}
