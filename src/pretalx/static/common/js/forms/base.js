@@ -6,6 +6,19 @@
  * and deactivates submit button in order to prevent accidental double submits.
  */
 
+const escapeHtml = (value) =>
+    String(value ?? "").replace(
+        /[&<>"']/g,
+        (character) =>
+            ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;",
+            })[character],
+    )
+
 /**
  * Smoothly show or hide a block-level element. The target should have
  * class="collapse", which prevents a flash during first paint before

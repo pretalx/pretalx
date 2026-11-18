@@ -20,6 +20,7 @@
   },
   "javascript": {
     "globals": [
+      "escapeHtml",
       "getCookie",
       "initDragsort",
       "initSelect",
@@ -77,6 +78,7 @@
           "options": {
             "ignore": {
               "*": [
+                "escapeHtml",
                 "getCookie",
                 "initDragsort",
                 "initSelect",

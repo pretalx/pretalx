@@ -22,18 +22,6 @@ const initAvailabilities = (element) => {
 
     const pad = (value) => String(value).padStart(2, "0")
     const clock = (minute) => `${pad(Math.floor(minute / 60))}:${pad(minute % 60)}`
-    const escapeHtml = (value) =>
-        String(value ?? "").replace(
-            /[&<>"']/g,
-            (character) =>
-                ({
-                    "&": "&amp;",
-                    "<": "&lt;",
-                    ">": "&gt;",
-                    '"': "&quot;",
-                    "'": "&#39;",
-                })[character],
-        )
 
     const locale = document.documentElement.lang || undefined
     const dateFormat = (options) => {

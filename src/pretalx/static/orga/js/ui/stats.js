@@ -148,7 +148,7 @@ const drawPieChart = (data, scope, type) => {
         legend: {
             formatter: (val, opts) => {
                 if (val.length > 15) val = `${val.slice(0, 15)}…`
-                return `${val} - ${opts.w.globals.series[opts.seriesIndex]}`
+                return `${escapeHtml(val)} - ${opts.w.globals.series[opts.seriesIndex]}`
             },
         },
         responsive: [

@@ -52,12 +52,6 @@ onReady(() => {
         return normalized.length
     }
 
-    const escapeHtml = (text) => {
-        const div = document.createElement("div")
-        div.textContent = text
-        return div.innerHTML
-    }
-
     const createWrapper = (element, wrapperClass, elementClass) => {
         const parentEl = element.closest(".form-group") || element.parentElement
         let wrapper = parentEl.querySelector(`.${wrapperClass}`)
