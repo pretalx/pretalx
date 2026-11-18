@@ -1,0 +1,81 @@
+# Local development: pretalx devserver (Django autoreload + Vite HMR) with
+# PostgreSQL, Redis, a Celery worker and Mailpit. Source is bind-mounted.
+#
+#   docker compose up --build
+#   docker compose exec web python manage.py createsuperuser
+#
+# pretalx:  http://localhost:8000   (organiser backend: /orga/)
+# Mailpit:  http://localhost:8025   (MAILPIT_PORT to change; all outgoing mail lands here)
+
+x-pretalx: &pretalx
+  build:
+    context: .
+    dockerfile: Dockerfile.dev
+  volumes:
+    - .:/app
+    # Keep the image's Linux node_modules instead of the host's
+    - /app/src/pretalx/frontend/node_modules
+    - pretalx-data:/data
+  environment:
+    PRETALX_DEBUG: "True"
+    PRETALX_SITE_URL: http://localhost:8000
+    PRETALX_DATA_DIR: /data
+    PRETALX_DB_TYPE: postgresql
+    PRETALX_DB_NAME: pretalx
+    PRETALX_DB_USER: pretalx
+    PRETALX_DB_PASS: pretalx
+    PRETALX_DB_HOST: db
+    PRETALX_DB_PORT: "5432"
+    PRETALX_REDIS: redis://redis:6379/0
+    PRETALX_CELERY_BACKEND: redis://redis:6379/1
+    PRETALX_CELERY_BROKER: redis://redis:6379/2
+    PRETALX_MAIL_HOST: mailpit
+    PRETALX_MAIL_PORT: "1025"
+    # Fixed Vite port, reachable from the host browser
+    PRETALX_VITE_PORT: "8080"
+    VITE_HOST: 0.0.0.0
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_started
+
+services:
+  web:
+    <<: *pretalx
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py devserver 0.0.0.0:8000 --skip-checks"
+    ports:
+      - "8000:8000"
+      - "8080:8080"
+
+  worker:
+    <<: *pretalx
+    command: celery -A pretalx.celery_app worker --loglevel info
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: pretalx
+      POSTGRES_USER: pretalx
+      POSTGRES_PASSWORD: pretalx
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pretalx"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "${MAILPIT_PORT:-8025}:8025"
+
+volumes:
+  pretalx-data:
+  postgres-data:

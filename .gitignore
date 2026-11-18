@@ -118,3 +118,9 @@ src/legacy-tests
 
 # Screenshots
 screens/
+
+# Plaintext copies left by SOPS editor integrations
+.decrypted~*
+
+# Plaintext secrets; encrypt into deploy/<env>/env.secrets.enc instead
+deploy/*/secrets.yml

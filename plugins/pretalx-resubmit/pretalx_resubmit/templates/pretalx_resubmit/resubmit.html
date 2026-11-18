@@ -1,0 +1,34 @@
+{% extends "cfp/event/base.html" %}
+
+{% load i18n %}
+
+{% block title %}{% translate "Resubmit proposal" %} ::
+{% endblock title %}
+
+{% block content %}
+    <h2>{% translate "Resubmit proposal" %}</h2>
+    <p>
+        {% blocktranslate trimmed with title=source.title source_event=source.event.name %}
+            This submits a copy of “{{ title }}” from {{ source_event }} to this event. Its title, abstract,
+            description, notes and image are copied.
+        {% endblocktranslate %}
+    </p>
+    <div class="alert alert-info">
+        {% blocktranslate trimmed %}
+            Co-speakers, tags and answers to questions are not copied. After submitting, you can edit the proposal,
+            answer this event's questions and invite your co-speakers.
+        {% endblocktranslate %}
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        {{ form }}
+        <p>
+            <button type="submit" class="btn float-right btn-success">
+                {% translate "Submit proposal" %}
+            </button>
+            <a href="{{ request.event.urls.user_submissions }}" class="btn float-right btn-info">
+                {% translate "Back" %}
+            </a>
+        </p>
+    </form>
+{% endblock content %}

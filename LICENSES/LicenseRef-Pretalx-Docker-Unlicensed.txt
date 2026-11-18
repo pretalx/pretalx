@@ -1,0 +1,4 @@
+deploy/docker/pretalx.bash is copied unchanged from
+https://github.com/pretalx/pretalx-docker (commit
+789cc5801941f78c24b4bd4f9a6846c23a086054). That repository does not publish a
+license, so no license is granted here beyond what its authors allow.

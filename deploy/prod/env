@@ -1,0 +1,11 @@
+# Plain (non-secret) pretalx settings for production, as KEY=value lines.
+# The deploy workflow stores this file in SSM (/pretalx/app/env); containers
+# export each line at start (deploy/docker/entrypoint.bash).
+# Settings: https://docs.pretalx.org/administrator/configure/
+# Database, mail, Redis and site URL come from wf-org/infra; don't set them here.
+# Secrets go in env.secrets.enc instead (same format, SOPS-encrypted, as in
+# wf-org/volunteer-next): `sops deploy/prod/env.secrets.enc`.
+#
+# PRETALX_LANGUAGE_CODE=en
+# PRETALX_TIME_ZONE=UTC
+# PRETALX_FILE_UPLOAD_LIMIT=10

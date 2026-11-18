@@ -1,0 +1,168 @@
+{% load i18n %}
+{# data-pending: tickets.js polls again while a background job is running #}
+<div class="pretix-tickets-content" data-pending="{% if pending %}1{% endif %}">
+    {% if waiting or load_error %}
+        {% if syncing %}
+            <div class="alert alert-info">
+                <div><i class="fa fa-circle-o-notch fa-spin"></i> {% translate "Tag sync running…" %}</div>
+            </div>
+        {% endif %}
+        {% if waiting %}
+            <div class="pretix-tickets-loading text-center text-muted py-4">
+                <i class="fa fa-circle-o-notch fa-spin fa-2x"></i>
+                <p class="mt-2">{% translate "Loading tickets from pretix…" %}</p>
+            </div>
+        {% else %}
+            <div class="alert alert-danger">
+                {% translate "Could not load orders from pretix." %}
+                <a
+                    href="?refresh=1{% if only_accepted %}&accepted=1{% endif %}"
+                    class="alert-link"
+                >{% translate "Try again" %}</a>
+            </div>
+        {% endif %}
+    {% else %}
+        {# The latest results: who is missing a ticket, how fresh the data is, the last tag sync #}
+        {% if rows or fetched_at or refreshing or syncing or last_sync %}
+            <div class="alert alert-info pretix-tickets-status">
+                <div>
+                    {% if rows %}
+                        <strong>
+                            {% blocktranslate trimmed count count=missing_count %}
+                                {{ count }} speaker with an accepted proposal has no ticket.
+                            {% plural %}
+                                {{ count }} speakers with an accepted proposal have no ticket.
+                            {% endblocktranslate %}
+                        </strong>
+                    {% endif %}
+                    {% if fetched_at or refreshing %}
+                        <div>
+                            {% if fetched_at %}
+                                {% blocktranslate trimmed with age=fetched_at|timesince %}
+                                    Ticket data from pretix, updated {{ age }} ago.
+                                {% endblocktranslate %}
+                            {% endif %}
+                            {% if refreshing %}
+                                <span class="ml-1"><i class="fa fa-circle-o-notch fa-spin"></i>
+                                    {% translate "Refreshing…" %}</span>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    {% if syncing %}
+                        <div><i class="fa fa-circle-o-notch fa-spin"></i> {% translate "Tag sync running…" %}</div>
+                    {% elif last_sync %}
+                        <div
+                            {% if last_sync.action_type == "pretalx_pretix_sso.tag.sync_failed" %}
+                                class="text-danger"
+                            {% endif %}
+                        >
+                            {% if last_sync.action_type == "pretalx_pretix_sso.tag.sync_failed" %}<i
+                                    class="fa fa-exclamation-triangle"
+                                ></i>{% endif %}
+                            {% blocktranslate trimmed with age=last_sync.timestamp|timesince result=last_sync.display %}
+                                Last tag sync {{ age }} ago: {{ result }}
+                            {% endblocktranslate %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+        {% if failed_at %}
+            <div class="alert alert-warning">
+                {% blocktranslate trimmed with age=failed_at|timesince %}
+                    The last refresh from pretix failed {{ age }} ago, so this is older data.
+                {% endblocktranslate %}
+            </div>
+        {% endif %}
+        <div class="table-responsive-md">
+            <table class="table table-sm table-hover table-flip table-sticky">
+                <thead>
+                    <tr>
+                        <th>{% translate "Name" %}</th>
+                        <th>{% translate "Email" %}</th>
+                        <th>{% translate "Accepted sessions" %}</th>
+                        <th>{% translate "Ticket" %}</th>
+                        {% if can_edit %}<th></th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td><a href="{{ row.profile.orga_urls.base }}">{{ row.profile.get_display_name }}</a></td>
+                            <td>
+                                {{ row.profile.user.email }}
+                                {% if row.linked %}
+                                    <i
+                                        class="fa fa-link text-muted"
+                                        title="{% translate "Linked to a pretix account" %}"
+                                    ></i>
+                                {% endif %}
+                            </td>
+                            <td>{{ row.profile.accepted_submission_count }}</td>
+                            <td>
+                                {% if row.status == "account" %}
+                                    <span
+                                        class="badge color-success"
+                                        title="{% translate "Paid order placed with their pretix account" %}"
+                                    ><i class="fa fa-check"></i> {% translate "Paid" %}</span>
+                                {% elif row.status == "email" %}
+                                    <span
+                                        class="badge color-success"
+                                        title="{% translate "Paid order with a matching order or attendee email" %}"
+                                    ><i class="fa fa-check"></i> {% translate "Paid (email)" %}</span>
+                                {% elif row.status == "override" %}
+                                    <span
+                                        class="badge color-info"
+                                        title="{% translate "Marked as covered by an organiser" %}"
+                                    ><i class="fa fa-check"></i> {% translate "Covered" %}</span>
+                                {% else %}
+                                    <span class="badge color-danger"><i class="fa fa-times"></i>
+                                        {% translate "None" %}</span>
+                                {% endif %}
+                            </td>
+                            {% if can_edit %}
+                                <td class="text-right">
+                                    {# Overrides belong to an account, so profiles without one get none #}
+                                    {% if row.profile.user %}
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="user" value="{{ row.profile.user.code }}">
+                                            {% if row.overridden %}
+                                                <button
+                                                    type="submit"
+                                                    name="action"
+                                                    value="override_off"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    data-pretix-busy
+                                                >
+                                                    {% translate "Remove override" %}
+                                                </button>
+                                            {% elif not row.status %}
+                                                <button
+                                                    type="submit"
+                                                    name="action"
+                                                    value="override_on"
+                                                    class="btn btn-sm btn-outline-info"
+                                                    data-pretix-busy
+                                                    title="{% translate "e.g. a complimentary ticket, or one bought under another email address" %}"
+                                                >
+                                                    {% translate "Mark as covered" %}
+                                                </button>
+                                            {% endif %}
+                                        </form>
+                                    {% endif %}
+                                </td>
+                            {% endif %}
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="{% if can_edit %}5{% else %}4{% endif %}">
+                                {% translate "No speakers yet." %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>

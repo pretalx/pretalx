@@ -1,0 +1,88 @@
+{% extends "orga/base.html" %}
+
+{% load i18n %}
+{% load static %}
+
+{% block extra_title %}{% translate "pretix tickets" %} ::
+{% endblock extra_title %}
+
+{% block scripts %}
+    <script defer src="{% static "pretalx_pretix_sso/tickets.js" %}"></script>
+{% endblock scripts %}
+
+{% block content %}
+    <h2>{% translate "pretix tickets" %}</h2>
+    {% if not configured %}
+        <div class="alert alert-warning">
+            <div>
+                {% blocktranslate trimmed %}
+                    The pretix ticket check is not configured yet. Set these in the
+                    <code>[plugin:pretalx_pretix_sso]</code> section of pretalx.cfg, or as
+                    <code>PRETALX_PRETIX_SSO_&lt;NAME&gt;</code> environment variables:
+                {% endblocktranslate %}
+                {% for name in missing_settings %}<code>{{ name }}</code>{% if not forloop.last %},
+                    {% endif %}{% endfor %}
+            </div>
+            {% if "organizer" in missing_settings %}
+                <div class="mt-2">
+                    {% blocktranslate trimmed %}
+                        The organizer can only be read from issuer URLs like
+                        <code>https://pretix.eu/&lt;organizer&gt;</code>. If your pretix organizer has its own domain,
+                        set <code>organizer</code> to its short name.
+                    {% endblocktranslate %}
+                </div>
+            {% endif %}
+        </div>
+    {% else %}
+        <p class="text-muted">
+            {% blocktranslate trimmed %}
+                Speakers are matched against paid orders in the pretix event
+                <code>{{ pretix_event }}</code>: first by the pretix account they logged in with, then by order or
+                attendee email. Results are cached for 60 minutes.
+            {% endblocktranslate %}
+        </p>
+        <div class="d-flex justify-content-between mb-3">
+            <div>
+                {% if only_accepted %}
+                    <a href="?" class="btn btn-outline-info">{% translate "Show all speakers" %}</a>
+                {% else %}
+                    <a href="?accepted=1" class="btn btn-outline-info">{% translate "Accepted speakers only" %}</a>
+                {% endif %}
+            </div>
+            <div class="d-flex">
+                {% if can_edit %}
+                    <form method="post" class="mr-2">
+                        {% csrf_token %}
+                        <button
+                            type="submit"
+                            name="action"
+                            value="sync_tag"
+                            class="btn btn-outline-info"
+                            data-pretix-busy
+                            title="{% blocktranslate trimmed with tag=ticket_tag has_tag=has_ticket_tag %}Add the “{{ tag }}” tag to every proposal (all states and types, except drafts) where no speaker is covered, and the “{{ has_tag }}” tag to every proposal where a speaker holds a paid ticket. Both are removed from all other proposals.{% endblocktranslate %}"
+                        >
+                            <i class="fa fa-tag"></i>
+                            {% blocktranslate trimmed with tag=ticket_tag has_tag=has_ticket_tag %}Sync “{{ tag }}” and
+                                “{{ has_tag }}” tags{% endblocktranslate %}
+                        </button>
+                    </form>
+                {% endif %}
+                <a href="?refresh=1{% if only_accepted %}&accepted=1{% endif %}" class="btn btn-info" data-pretix-busy>
+                    <i class="fa fa-refresh"></i> {% translate "Refresh from pretix" %}
+                </a>
+            </div>
+        </div>
+        <div
+            id="pretix-tickets"
+            data-url="{{ table_url }}"
+            aria-live="polite"
+            data-error="{% translate "Could not load orders from pretix." %}"
+            data-retry="{% translate "Try again" %}"
+        >
+            <div class="pretix-tickets-loading text-center text-muted py-4">
+                <i class="fa fa-circle-o-notch fa-spin fa-2x"></i>
+                <p class="mt-2">{% translate "Loading tickets from pretix…" %}</p>
+            </div>
+        </div>
+    {% endif %}
+{% endblock content %}

@@ -1,0 +1,37 @@
+{% load i18n %}
+<h2>{% translate "Resubmit a proposal from another event" %}</h2>
+<p>
+    {% blocktranslate trimmed with organiser=event.organiser.name %}
+        You can submit a copy of a proposal you made to another {{ organiser }} event. You choose the session type
+        before it is submitted, and can edit it afterwards.
+    {% endblocktranslate %}
+</p>
+<div class="table-responsive">
+    <table class="table table-sm table-flip">
+        <thead>
+            <tr>
+                <th>{% translate "Title" %}</th>
+                <th>{% translate "Event" %}</th>
+                <th>{% translate "State" %}</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for source in sources %}
+                <tr>
+                    <td>{{ source.title }}</td>
+                    <td>{{ source.event.name }}</td>
+                    <td>{{ source.get_state_display }}</td>
+                    <td class="text-right">
+                        <a
+                            class="btn btn-sm btn-info"
+                            href="{% url "plugins:pretalx_resubmit:resubmit" event=event.slug code=source.code %}"
+                        >
+                            {% translate "Resubmit" %}
+                        </a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
