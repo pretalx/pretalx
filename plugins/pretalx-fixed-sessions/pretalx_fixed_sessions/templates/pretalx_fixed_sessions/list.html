@@ -1,0 +1,53 @@
+{% extends "orga/base.html" %}
+
+{% load i18n %}
+
+{% block extra_title %}{% translate "Fixed sessions" %} :: {% endblock extra_title %}
+
+{% block content %}
+    <h2>{% translate "Fixed sessions" %}</h2>
+    <p class="text-muted">
+        {% blocktranslate trimmed %}
+            A core session has its own session type. Its title, abstract and description
+            (and optionally track and recording choice) are set here and overwrite whatever
+            speakers enter, in new and existing proposals of that type. Session types
+            without fixed content are write-in sessions and work as usual.
+        {% endblocktranslate %}
+    </p>
+    <p>
+        <a class="btn btn-success" href="{% url "plugins:pretalx_fixed_sessions:create" event=request.event.slug %}">
+            <i class="fa fa-plus"></i> {% translate "New core session" %}
+        </a>
+    </p>
+    <table class="table table-sm table-hover">
+        <thead>
+            <tr>
+                <th>{% translate "Session type" %}</th>
+                <th>{% translate "Fixed title" %}</th>
+                <th class="numeric">{% translate "Proposals" %}</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in types %}
+                <tr>
+                    <td>{{ row.type }}</td>
+                    <td>
+                        {% if row.fixed %}
+                            {{ row.fixed.title }}
+                        {% else %}
+                            <span class="text-muted">{% translate "Write-in" %}</span>
+                        {% endif %}
+                    </td>
+                    <td class="numeric">{{ row.proposals }}</td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-info"
+                           href="{% url "plugins:pretalx_fixed_sessions:edit" event=request.event.slug type_id=row.type.pk %}">
+                            {% if row.fixed %}{% translate "Edit" %}{% else %}{% translate "Make core session" %}{% endif %}
+                        </a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock content %}
