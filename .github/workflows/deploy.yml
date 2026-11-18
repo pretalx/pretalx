@@ -2,7 +2,7 @@ name: Build and deploy
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, ecs-deploy ]
     paths-ignore:
       - 'doc/**'
       - 'src/pretalx/locale/**'

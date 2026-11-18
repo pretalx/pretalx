@@ -1,0 +1,45 @@
+{% extends "orga/base.html" %}
+
+{% load i18n %}
+
+{% block extra_title %}{% translate "Fixed sessions" %} ::
+{% endblock extra_title %}
+
+{% block content %}
+    <h2>
+        {% if submission_type %}
+            {% blocktranslate trimmed with name=submission_type.name %}Core session: {{ name }}{% endblocktranslate %}
+        {% else %}
+            {% translate "New core session" %}
+        {% endif %}
+    </h2>
+    <div class="alert alert-warning">
+        {% blocktranslate trimmed %}
+            Saving overwrites the title, abstract, description and the fields set below in every proposal with this
+            session type, including what speakers already entered.
+        {% endblocktranslate %}
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.media }}
+        {{ form }}
+        {% if answers_form.fields %}
+            <fieldset>
+                <legend>{% translate "Answers to proposal questions" %}</legend>
+                {{ answers_form.media }}
+                {{ answers_form }}
+            </fieldset>
+        {% endif %}
+        <div class="submit-group">
+            <a class="btn btn-outline-secondary" href="{{ list_url }}">{% translate "Cancel" %}</a>
+            <span>
+                {% if fixed.pk %}
+                    <button type="submit" name="action" value="remove" class="btn btn-outline-danger" formnovalidate>
+                        {% translate "Make write-in session" %}
+                    </button>
+                {% endif %}
+                <button type="submit" class="btn btn-success">{% translate "Save" %}</button>
+            </span>
+        </div>
+    </form>
+{% endblock content %}
