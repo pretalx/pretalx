@@ -22,9 +22,7 @@ class TicketOverride(models.Model):
     """An organiser has confirmed that this speaker is covered for this event,
     e.g. a complimentary ticket or one bought under another email address."""
 
-    event = models.ForeignKey(
-        "event.Event", on_delete=models.CASCADE, related_name="+"
-    )
+    event = models.ForeignKey("event.Event", on_delete=models.CASCADE, related_name="+")
     user = models.ForeignKey("person.User", on_delete=models.CASCADE, related_name="+")
     created_by = models.ForeignKey(
         "person.User", on_delete=models.SET_NULL, null=True, related_name="+"
@@ -37,3 +35,6 @@ class TicketOverride(models.Model):
                 fields=["event", "user"], name="pretix_sso_unique_override"
             )
         ]
+
+    def __str__(self):
+        return f"{self.event_id}/{self.user_id}"

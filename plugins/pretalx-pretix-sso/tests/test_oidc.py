@@ -4,9 +4,9 @@ import time
 from unittest import mock
 
 import pytest
+from pretalx_pretix_sso import oidc
 
 from pretalx.event.domain.plugins import disable_plugin
-from pretalx_pretix_sso import oidc
 
 ISSUER = "https://pretix.example.invalid/org"
 
@@ -38,9 +38,11 @@ def _fetch(claims, userinfo=None, token_status=200, discovery_issuer=ISSUER):
         "token_endpoint": f"{ISSUER}/token",
         "userinfo_endpoint": f"{ISSUER}/userinfo",
     }
-    with mock.patch.object(oidc, "discovery", return_value=meta), mock.patch.object(
-        oidc.requests, "post", return_value=token
-    ) as post, mock.patch.object(oidc.requests, "get", return_value=info):
+    with (
+        mock.patch.object(oidc, "discovery", return_value=meta),
+        mock.patch.object(oidc.requests, "post", return_value=token) as post,
+        mock.patch.object(oidc.requests, "get", return_value=info),
+    ):
         result = oidc.fetch_userinfo("code", "https://cb", "nonce", "verifier")
     return result, post
 
@@ -58,14 +60,14 @@ def test_issuer_with_trailing_slash_is_accepted():
 
 
 @pytest.mark.parametrize(
-    "claims, message",
-    [
+    ("claims", "message"),
+    (
         (_claims(iss="https://evil.example.invalid/org"), "issuer"),
         (_claims(aud="other-client"), "audience"),
         (_claims(exp=time.time() - 1), "expired"),
         (_claims(nonce="other"), "nonce"),
         (_claims(sub=None), "subject"),
-    ],
+    ),
 )
 def test_invalid_id_token_is_rejected(claims, message):
     with pytest.raises(oidc.OIDCError, match=message):
@@ -124,20 +126,22 @@ def _token_response(json_value=None, bad_json=False):
 
 @pytest.mark.parametrize(
     "token_response",
-    [
+    (
         _token_response(bad_json=True),
         _token_response(["not", "an", "object"]),
         _token_response({"id_token": 42, "access_token": "a"}),
         _token_response({"id_token": _jwt(["claims", "list"]), "access_token": "a"}),
         _token_response({"id_token": _jwt(_claims(exp="soon")), "access_token": "a"}),
         _token_response({"id_token": _jwt(_claims())}),  # no access token
-    ],
+    ),
 )
 def test_malformed_token_response_raises_oidc_error(token_response):
     meta = {"issuer": ISSUER, "token_endpoint": "t", "userinfo_endpoint": "u"}
-    with mock.patch.object(oidc, "discovery", return_value=meta), mock.patch.object(
-        oidc.requests, "post", return_value=token_response
-    ), pytest.raises(oidc.OIDCError):
+    with (
+        mock.patch.object(oidc, "discovery", return_value=meta),
+        mock.patch.object(oidc.requests, "post", return_value=token_response),
+        pytest.raises(oidc.OIDCError),
+    ):
         oidc.fetch_userinfo("code", "https://cb", "nonce", "verifier")
 
 
@@ -146,16 +150,17 @@ def test_malformed_userinfo_raises_oidc_error():
     meta = {"issuer": ISSUER, "token_endpoint": "t", "userinfo_endpoint": "u"}
     info = mock.Mock(status_code=200)
     info.json.side_effect = ValueError("html error page")
-    with mock.patch.object(oidc, "discovery", return_value=meta), mock.patch.object(
-        oidc.requests, "post", return_value=token
-    ), mock.patch.object(oidc.requests, "get", return_value=info), pytest.raises(
-        oidc.OIDCError
+    with (
+        mock.patch.object(oidc, "discovery", return_value=meta),
+        mock.patch.object(oidc.requests, "post", return_value=token),
+        mock.patch.object(oidc.requests, "get", return_value=info),
+        pytest.raises(oidc.OIDCError),
     ):
         oidc.fetch_userinfo("code", "https://cb", "nonce", "verifier")
 
 
 @pytest.mark.parametrize(
-    "document", [ValueError("not json"), {"issuer": ISSUER}, ["list"]]
+    "document", (ValueError("not json"), {"issuer": ISSUER}, ["list"])
 )
 def test_broken_discovery_raises_oidc_error_and_is_not_cached(document):
     response = mock.Mock()
@@ -173,7 +178,9 @@ def test_broken_discovery_raises_oidc_error_and_is_not_cached(document):
 
 def test_malformed_event_map_entries_are_reported_once(monkeypatch, caplog):
     oidc._parse_event_map.cache_clear()
-    monkeypatch.setenv("PRETALX_PRETIX_SSO_EVENT_MAP", "good=pretix-good, broken, =x, y=, ,")
+    monkeypatch.setenv(
+        "PRETALX_PRETIX_SSO_EVENT_MAP", "good=pretix-good, broken, =x, y=, ,"
+    )
     with caplog.at_level("WARNING", logger="pretalx_pretix_sso.oidc"):
         assert oidc.get_config()["event_map"] == {"good": "pretix-good"}
         oidc.get_config()  # same value again: no repeated warnings

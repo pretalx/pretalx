@@ -1,0 +1,36 @@
+# Licensing for files the wf-org fork adds on top of pretalx (checked by
+# `just reuse`). Upstream files carry their own SPDX headers or .license files.
+version = 1
+
+[[annotations]]
+path = "plugins/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026-present Wildfire Retreat"
+SPDX-License-Identifier = "AGPL-3.0-only"
+
+[[annotations]]
+path = [
+  ".dockerignore",
+  ".env.example",
+  ".github/workflows/deploy.yml",
+  ".sops.yaml",
+  ".tool-versions",
+  "Dockerfile",
+  "Dockerfile.dev",
+  "REUSE.toml",
+  "docker-compose.yml",
+  "deploy/docker/entrypoint.bash",
+  "deploy/docker/supervisord.conf",
+  "deploy/prod/env",
+  "deploy/prod/env.secrets.enc",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026-present Wildfire Retreat"
+SPDX-License-Identifier = "CC0-1.0"
+
+# Copied unchanged from pretalx/pretalx-docker, which publishes no license
+[[annotations]]
+path = "deploy/docker/pretalx.bash"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "pretalx-docker contributors"
+SPDX-License-Identifier = "LicenseRef-Pretalx-Docker-Unlicensed"

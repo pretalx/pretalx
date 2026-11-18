@@ -2,10 +2,10 @@ import datetime as dt
 
 import pytest
 from django.utils.timezone import now
+from pretalx_resubmit.models import Resubmission
 
 from pretalx.submission.enums import SubmissionStates
 from pretalx.submission.models import Submission
-from pretalx_resubmit.models import Resubmission
 
 
 def _list(client, event):
@@ -38,7 +38,9 @@ def test_panel_lists_own_proposals_from_same_organiser(
     assert "Not mine" not in html
 
 
-def test_panel_hidden_when_cfp_closed(event, old_event, speaker, make_proposal, client_for):
+def test_panel_hidden_when_cfp_closed(
+    event, old_event, speaker, make_proposal, client_for
+):
     make_proposal(old_event, "Mine", speaker)
     event.cfp.deadline = now() - dt.timedelta(days=1)
     event.cfp.save()
@@ -123,7 +125,7 @@ def test_co_speakers_not_copied(event, old_event, speaker, make_proposal, client
     assert [s.user for s in copy.speakers.all()] == [speaker]
 
 
-@pytest.mark.parametrize("who", ["stranger", "anonymous"])
+@pytest.mark.parametrize("who", ("stranger", "anonymous"))
 def test_cannot_resubmit_others_proposal(
     who, event, old_event, speaker, make_proposal, client_for
 ):
@@ -131,7 +133,9 @@ def test_cannot_resubmit_others_proposal(
 
     source = make_proposal(old_event, "Mine", speaker)
     if who == "stranger":
-        client = client_for(User.objects.create_user(email="s@example.invalid", name="S"))
+        client = client_for(
+            User.objects.create_user(email="s@example.invalid", name="S")
+        )
         expected = 404
     else:
         client = client_for()
@@ -155,13 +159,19 @@ def test_not_available_where_plugin_disabled(
     assert client_for(speaker).get(_url(old_event, source)).status_code == 404
 
 
-def test_session_type_matched_by_name(event, old_event, speaker, make_proposal, client_for):
+def test_session_type_matched_by_name(
+    event, old_event, speaker, make_proposal, client_for
+):
     from pretalx.submission.models import SubmissionType
 
     SubmissionType.objects.create(event=old_event, name="Workshop", default_duration=90)
-    workshop = SubmissionType.objects.create(event=event, name="Workshop", default_duration=60)
+    workshop = SubmissionType.objects.create(
+        event=event, name="Workshop", default_duration=60
+    )
     source = make_proposal(old_event, "Hands on", speaker)
-    source.submission_type = SubmissionType.objects.get(event=old_event, name="Workshop")
+    source.submission_type = SubmissionType.objects.get(
+        event=old_event, name="Workshop"
+    )
     source.save()
 
     response = client_for(speaker).get(_url(event, source))
@@ -193,7 +203,7 @@ def test_image_copied(event, old_event, speaker, make_proposal, client_for):
         assert Image.open(image).size == (40, 30)
 
 
-@pytest.mark.parametrize("page", ["", "cfp"])
+@pytest.mark.parametrize("page", ("", "cfp"))
 def test_button_on_start_and_cfp_pages(
     page, event, old_event, speaker, make_proposal, client_for
 ):

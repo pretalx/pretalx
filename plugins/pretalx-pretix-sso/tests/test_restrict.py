@@ -91,7 +91,9 @@ def test_registration_allowed_when_plugin_disabled(client, event):
 def test_migrations_are_up_to_date():
     from django.core.management import call_command
 
-    call_command("makemigrations", "pretalx_pretix_sso", "--check", "--dry-run", verbosity=0)
+    call_command(
+        "makemigrations", "pretalx_pretix_sso", "--check", "--dry-run", verbosity=0
+    )
 
 
 def test_plugin_version_comes_from_pyproject():
@@ -101,7 +103,7 @@ def test_plugin_version_comes_from_pyproject():
     from pretalx_pretix_sso.apps import PluginApp
 
     pyproject = (Path(__file__).parent.parent / "pyproject.toml").read_text()
-    expected = re.search(r'^version\s*=\s*"([^"]+)"', pyproject, re.M).group(1)
+    expected = re.search(r'^version\s*=\s*"([^"]+)"', pyproject, re.MULTILINE).group(1)
     assert PluginApp.PretalxPluginMeta.version == expected
 
 
@@ -113,9 +115,13 @@ def test_installed_pretalx_is_in_supported_range():
     from packaging.requirements import Requirement
 
     pyproject = (Path(__file__).parent.parent / "pyproject.toml").read_text()
-    deps = re.search(r"^dependencies\s*=\s*\[(.*?)\]", pyproject, re.M | re.S).group(1)
+    deps = re.search(
+        r"^dependencies\s*=\s*\[(.*?)\]", pyproject, re.MULTILINE | re.DOTALL
+    ).group(1)
     pretalx = next(
-        Requirement(dep) for dep in re.findall(r'"([^"]+)"', deps) if dep.startswith("pretalx")
+        Requirement(dep)
+        for dep in re.findall(r'"([^"]+)"', deps)
+        if dep.startswith("pretalx")
     )
     installed = metadata.version("pretalx")
     assert pretalx.specifier.contains(installed), (

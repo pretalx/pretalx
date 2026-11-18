@@ -35,24 +35,26 @@ class TicketCheckView(EventPermissionRequired, TemplateView):
 
     def dispatch(self, request, *args, **kwargs):
         if "pretalx_pretix_sso" not in request.event.plugin_list:
-            raise Http404()
+            raise Http404
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         if not request.user.has_perm(CHANGE_PERMISSION, request.event):
-            raise Http404()
+            raise Http404
         action = request.POST.get("action")
         if action == "sync_tag":
             self._sync_tag(request)
         elif action in ("override_on", "override_off"):
             self._set_override(request, action == "override_on")
         else:
-            raise Http404()
+            raise Http404
         # Back to the page, but without ?refresh=1: the action already fetched
         # fresh data where needed, and reloads should use the cache again
         query = request.GET.copy()
         query.pop("refresh", None)
-        return redirect(f"{request.path}?{query.urlencode()}" if query else request.path)
+        return redirect(
+            f"{request.path}?{query.urlencode()}" if query else request.path
+        )
 
     def _set_override(self, request, enabled):
         event = request.event
@@ -62,7 +64,7 @@ class TicketCheckView(EventPermissionRequired, TemplateView):
             .first()
         )
         if not profile:
-            raise Http404()
+            raise Http404
         user = profile.user
         if enabled:
             TicketOverride.objects.get_or_create(
@@ -150,9 +152,13 @@ class TicketCheckView(EventPermissionRequired, TemplateView):
         except Exception:
             tickets.release_job(event, "sync")
             logger.exception("Could not queue the tag sync for event %s", event.slug)
-            messages.error(request, _("Could not start the tag sync. Please try again."))
+            messages.error(
+                request, _("Could not start the tag sync. Please try again.")
+            )
             return
-        logger.info("Queued the %s tag sync for event %s", tagging.TICKET_TAG, event.slug)
+        logger.info(
+            "Queued the %s tag sync for event %s", tagging.TICKET_TAG, event.slug
+        )
         messages.info(
             request,
             _(

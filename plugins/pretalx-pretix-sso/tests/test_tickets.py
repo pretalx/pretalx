@@ -1,7 +1,6 @@
 from unittest import mock
 
 import pytest
-
 from pretalx_pretix_sso import tickets
 from pretalx_pretix_sso.models import PretixCustomer
 
@@ -9,22 +8,34 @@ ITEMS = {"results": [{"id": 1, "admission": True}], "next": None}
 ORDERS_PAGE_1 = {
     "results": [
         # add-on/merch only: not a ticket
-        {"email": "merch@example.invalid", "customer": "MERCH",
-         "positions": [{"item": 99, "attendee_email": None}]},
+        {
+            "email": "merch@example.invalid",
+            "customer": "MERCH",
+            "positions": [{"item": 99, "attendee_email": None}],
+        },
         # bought for someone else: the attendee holds it, not the buyer
-        {"email": "Buyer@example.invalid", "customer": "BUYER",
-         "positions": [{"item": 1, "attendee_email": "Friend@example.invalid"}]},
+        {
+            "email": "Buyer@example.invalid",
+            "customer": "BUYER",
+            "positions": [{"item": 1, "attendee_email": "Friend@example.invalid"}],
+        },
     ],
     "next": "https://pretix.example.invalid/orders/?page=2",
 }
 ORDERS_PAGE_2 = {
     "results": [
         # no attendee named: the buyer holds it
-        {"email": "self@example.invalid", "customer": "SELF",
-         "positions": [{"item": 1, "attendee_email": None}, {"item": 99}]},
+        {
+            "email": "self@example.invalid",
+            "customer": "SELF",
+            "positions": [{"item": 1, "attendee_email": None}, {"item": 99}],
+        },
         # attendee is the buyer: account counts too
-        {"email": "named@example.invalid", "customer": "NAMED",
-         "positions": [{"item": 1, "attendee_email": "NAMED@example.invalid"}]},
+        {
+            "email": "named@example.invalid",
+            "customer": "NAMED",
+            "positions": [{"item": 1, "attendee_email": "NAMED@example.invalid"}],
+        },
     ],
     "next": None,
 }
@@ -87,11 +98,15 @@ def test_attendee_equal_to_buyer_counts_account(holders):
     assert "NAMED" in holders.customers
 
 
-@pytest.mark.parametrize("response", [_response(bad_json=True), _response({"detail": "?"})])
+@pytest.mark.parametrize(
+    "response", (_response(bad_json=True), _response({"detail": "?"}))
+)
 def test_malformed_response_raises_lookup_error(response):
-    with mock.patch.object(tickets.requests, "get", return_value=response):
-        with pytest.raises(tickets.TicketLookupError):
-            tickets._fetch_ticket_holders("test")
+    with (
+        mock.patch.object(tickets.requests, "get", return_value=response),
+        pytest.raises(tickets.TicketLookupError),
+    ):
+        tickets._fetch_ticket_holders("test")
 
 
 def test_status_priority(make_speaker):
@@ -100,8 +115,7 @@ def test_status_priority(make_speaker):
     by_email = make_speaker("paid@example.invalid")
     nobody = make_speaker("nobody@example.invalid")
     holders = tickets.TicketHolders.from_emails(
-        emails={"paid@example.invalid", "linked@example.invalid"},
-        customers={"CUST1"},
+        emails={"paid@example.invalid", "linked@example.invalid"}, customers={"CUST1"}
     )
     linked.refresh_from_db()
     assert holders.status(linked) == tickets.PAID_ACCOUNT
@@ -114,7 +128,9 @@ def test_status_priority(make_speaker):
 def test_cached_until_refresh(event):
     first = tickets.TicketHolders.from_emails({"a@example.invalid"})
     second = tickets.TicketHolders.from_emails({"b@example.invalid"})
-    with mock.patch.object(tickets, "_fetch_ticket_holders", side_effect=[first, second]):
+    with mock.patch.object(
+        tickets, "_fetch_ticket_holders", side_effect=[first, second]
+    ):
         assert tickets.ticket_holders(event) == first
         assert tickets.ticket_holders(event) == first
         assert tickets.ticket_holders(event, refresh=True) == second
@@ -150,46 +166,65 @@ def test_cache_holds_only_plain_data(event):
     assert set(data) == {"email_hashes", "customers", "fetched_at"}  # plain data only
 
 
-@pytest.mark.parametrize("junk", [["unexpected"], {"emails": ["x"]}, "text"])
+@pytest.mark.parametrize("junk", (["unexpected"], {"emails": ["x"]}, "text"))
 def test_unreadable_cache_entry_counts_as_miss(event, junk):
     from django.core.cache import cache
 
     cache.set(f"pretix_sso_tickets:v6:org:{event.slug}", junk)
     fresh = tickets.TicketHolders.from_emails({"fresh@example.invalid"})
-    with mock.patch.object(tickets, "_fetch_ticket_holders", return_value=fresh) as fetch:
+    with mock.patch.object(
+        tickets, "_fetch_ticket_holders", return_value=fresh
+    ) as fetch:
         assert tickets.ticket_holders(event) == fresh
     fetch.assert_called_once()
 
 
 def test_cache_outage_does_not_break_lookup(event):
     holders = tickets.TicketHolders.from_emails({"a@example.invalid"})
-    with mock.patch.object(tickets.cache, "get", side_effect=ConnectionError("redis down")), \
-         mock.patch.object(tickets.cache, "set", side_effect=ConnectionError("redis down")), \
-         mock.patch.object(tickets, "_fetch_ticket_holders", return_value=holders):
+    with (
+        mock.patch.object(
+            tickets.cache, "get", side_effect=ConnectionError("redis down")
+        ),
+        mock.patch.object(
+            tickets.cache, "set", side_effect=ConnectionError("redis down")
+        ),
+        mock.patch.object(tickets, "_fetch_ticket_holders", return_value=holders),
+    ):
         assert tickets.ticket_holders(event) == holders
 
 
 def test_email_hash_is_normalised_and_stable():
-    assert tickets.email_hash(" A@Example.Invalid ") == tickets.email_hash("a@example.invalid")
-    assert tickets.email_hash("a@example.invalid") != tickets.email_hash("b@example.invalid")
+    assert tickets.email_hash(" A@Example.Invalid ") == tickets.email_hash(
+        "a@example.invalid"
+    )
+    assert tickets.email_hash("a@example.invalid") != tickets.email_hash(
+        "b@example.invalid"
+    )
     # fixed across processes and containers: no per-install secret involved
     assert tickets.email_hash("a@example.invalid") == (
-        __import__("hashlib").sha256(b"pretalx-pretix-sso:a@example.invalid").hexdigest()
+        __import__("hashlib")
+        .sha256(b"pretalx-pretix-sso:a@example.invalid")
+        .hexdigest()
     )
 
 
 @pytest.mark.parametrize(
-    "env, missing",
-    [
+    ("env", "missing"),
+    (
         ({}, []),
         ({"PRETALX_PRETIX_SSO_API_TOKEN": ""}, None),  # empty env falls back to cfg
-        ({"PRETALX_PRETIX_SSO_ISSUER": "https://tickets.example.invalid"}, ["organizer"]),
         (
-            {"PRETALX_PRETIX_SSO_ISSUER": "https://tickets.example.invalid",
-             "PRETALX_PRETIX_SSO_ORGANIZER": "myorg"},
+            {"PRETALX_PRETIX_SSO_ISSUER": "https://tickets.example.invalid"},
+            ["organizer"],
+        ),
+        (
+            {
+                "PRETALX_PRETIX_SSO_ISSUER": "https://tickets.example.invalid",
+                "PRETALX_PRETIX_SSO_ORGANIZER": "myorg",
+            },
             [],
         ),
-    ],
+    ),
 )
 def test_missing_settings(monkeypatch, env, missing):
     for key, value in env.items():

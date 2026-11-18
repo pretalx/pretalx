@@ -3,11 +3,11 @@ from unittest import mock
 import pytest
 import requests
 from django.http import Http404
+from pretalx_pretix_sso import tickets
+from pretalx_pretix_sso.models import PretixCustomer, TicketOverride
 
 from pretalx.common.models import ActivityLog
 from pretalx.event.domain.plugins import disable_plugin
-from pretalx_pretix_sso import tickets
-from pretalx_pretix_sso.models import PretixCustomer, TicketOverride
 
 
 def _holders(emails=(), customers=()):
@@ -36,14 +36,18 @@ def test_page_shell_does_not_call_pretix(tickets_page, pretix):
     assert "<table" not in html
 
 
-def test_table_partial_shows_statuses(tickets_page, pretix, make_speaker, make_proposal):
+def test_table_partial_shows_statuses(
+    tickets_page, pretix, make_speaker, make_proposal
+):
     linked = make_speaker("linked@example.invalid")
     PretixCustomer.objects.create(user=linked, identifier="CUST1")
     by_email = make_speaker("email@example.invalid")
     nobody = make_speaker("nobody@example.invalid")
     # pretalx only lists speakers who have a proposal
     make_proposal("Talk", "accepted", linked, by_email, nobody)
-    pretix.return_value = _holders(emails={"email@example.invalid"}, customers={"CUST1"})
+    pretix.return_value = _holders(
+        emails={"email@example.invalid"}, customers={"CUST1"}
+    )
     response, _ = tickets_page(query="?partial=1")
     html = response.content.decode()
     assert "<html" not in html
@@ -56,7 +60,9 @@ def test_speaker_without_account_needs_a_ticket(tickets_page, pretix, event):
 
     guest = SpeakerProfile.objects.create(event=event, name="Guest Speaker")
     talk = Submission.objects.create(
-        event=event, title="Guest talk", state="accepted",
+        event=event,
+        title="Guest talk",
+        state="accepted",
         submission_type=event.cfp.default_type,
     )
     talk.speakers.add(guest)
@@ -64,13 +70,15 @@ def test_speaker_without_account_needs_a_ticket(tickets_page, pretix, event):
     html = response.content.decode()
     # listed as missing a ticket, without an override (overrides need an account)
     assert "Guest Speaker" in html and "Mark as covered" not in html
-    assert "1 speaker with an accepted proposal has no ticket." in " ".join(html.split())
+    assert "1 speaker with an accepted proposal has no ticket." in " ".join(
+        html.split()
+    )
     tickets_page("post", data={"action": "sync_tag"})
     assert _tagged(event) == {"Guest talk"}
 
 
 @pytest.mark.parametrize(
-    "error", [requests.ConnectionError("down"), tickets.TicketLookupError("bad")]
+    "error", (requests.ConnectionError("down"), tickets.TicketLookupError("bad"))
 )
 def test_pretix_failure_shows_inline_error(tickets_page, pretix, error):
     pretix.side_effect = error
@@ -84,11 +92,16 @@ def test_override_on_and_off(tickets_page, event, admin, make_speaker, make_prop
     speaker = make_speaker("comp@example.invalid")
     make_proposal("Talk", "accepted", speaker)
     tickets_page("post", data={"action": "override_on", "user": speaker.code})
-    assert TicketOverride.objects.filter(event=event, user=speaker, created_by=admin).exists()
+    assert TicketOverride.objects.filter(
+        event=event, user=speaker, created_by=admin
+    ).exists()
     tickets_page("post", data={"action": "override_off", "user": speaker.code})
     assert not TicketOverride.objects.filter(event=event, user=speaker).exists()
     logged = set(ActivityLog.objects.values_list("action_type", flat=True))
-    assert {"pretalx_pretix_sso.override.set", "pretalx_pretix_sso.override.removed"} <= logged
+    assert {
+        "pretalx_pretix_sso.override.set",
+        "pretalx_pretix_sso.override.removed",
+    } <= logged
 
 
 def test_override_for_unknown_speaker_is_404(tickets_page):
@@ -107,10 +120,19 @@ def test_sync_tags_uncovered_proposals_in_every_state_and_type(
     make_proposal("Paid", "accepted", paid)
     make_proposal("Comp", "confirmed", comp)
     make_proposal("Shared", "accepted", nobody, paid)
-    for state in ("submitted", "accepted", "confirmed", "rejected", "withdrawn", "canceled"):
+    for state in (
+        "submitted",
+        "accepted",
+        "confirmed",
+        "rejected",
+        "withdrawn",
+        "canceled",
+    ):
         make_proposal(f"Uncovered {state}", state, nobody)
     workshop = make_proposal("Uncovered workshop", "accepted", nobody)
-    workshop.submission_type = SubmissionType.objects.create(event=event, name="Workshop")
+    workshop.submission_type = SubmissionType.objects.create(
+        event=event, name="Workshop"
+    )
     workshop.save()
     draft = make_proposal("Draft", "draft", nobody)
     TicketOverride.objects.create(event=event, user=comp)
@@ -118,17 +140,25 @@ def test_sync_tags_uncovered_proposals_in_every_state_and_type(
 
     _, messages = tickets_page("post", data={"action": "sync_tag"})
     expected = {
-        "Uncovered submitted", "Uncovered accepted", "Uncovered confirmed",
-        "Uncovered rejected", "Uncovered withdrawn", "Uncovered canceled",
+        "Uncovered submitted",
+        "Uncovered accepted",
+        "Uncovered confirmed",
+        "Uncovered rejected",
+        "Uncovered withdrawn",
+        "Uncovered canceled",
         "Uncovered workshop",
     }
     assert _tagged(event) == expected
     assert f"added to {len(expected)}" in messages[-1]
     assert not Submission.all_objects.get(pk=draft.pk).tags.exists()  # drafts untouched
-    assert ActivityLog.objects.filter(action_type="pretalx_pretix_sso.tag.synced").exists()
+    assert ActivityLog.objects.filter(
+        action_type="pretalx_pretix_sso.tag.synced"
+    ).exists()
 
     # the tag comes off again once the speaker is covered
-    pretix.return_value = _holders(emails={"paid@example.invalid", "nobody@example.invalid"})
+    pretix.return_value = _holders(
+        emails={"paid@example.invalid", "nobody@example.invalid"}
+    )
     tickets_page("post", data={"action": "sync_tag"})
     assert _tagged(event) == set()
 
@@ -139,7 +169,9 @@ def test_sync_always_fetches_fresh_data(tickets_page, pretix, event):
     assert pretix.call_count == 2
 
 
-def test_actions_redirect_without_refresh(tickets_page, make_speaker, make_proposal, event):
+def test_actions_redirect_without_refresh(
+    tickets_page, make_speaker, make_proposal, event
+):
     speaker = make_speaker("sp@example.invalid")
     make_proposal("Talk", "accepted", speaker)
     base = f"/orga/event/{event.slug}/p/pretix-tickets/"
@@ -158,8 +190,11 @@ def test_actions_need_change_permission(tickets_page, event, make_speaker):
 
     reviewer = make_speaker("reviewer@example.invalid")
     team = Team.objects.create(
-        organiser=event.organiser, name="Reviewers", is_reviewer=True,
-        can_change_submissions=False, all_events=True,
+        organiser=event.organiser,
+        name="Reviewers",
+        is_reviewer=True,
+        can_change_submissions=False,
+        all_events=True,
     )
     team.members.add(reviewer)
     with pytest.raises(Http404):
@@ -183,7 +218,9 @@ def test_missing_count_only_includes_accepted_speakers(
     assert "1 speaker with an accepted proposal has no ticket." in html
 
 
-def test_activity_log_entries_are_readable(tickets_page, pretix, event, make_speaker, make_proposal):
+def test_activity_log_entries_are_readable(
+    tickets_page, pretix, event, make_speaker, make_proposal
+):
     speaker = make_speaker("comp@example.invalid")
     make_proposal("Talk", "accepted", speaker)
     tickets_page("post", data={"action": "override_on", "user": speaker.code})
@@ -193,7 +230,10 @@ def test_activity_log_entries_are_readable(tickets_page, pretix, event, make_spe
     assert not any(text.startswith("pretalx_pretix_sso.") for text in shown), shown
     assert any("marked as covered" in text for text in shown)
     assert any("override was removed" in text for text in shown)
-    assert any('"needsTicket" tag was synced' in text and "added to 1" in text for text in shown)
+    assert any(
+        '"needsTicket" tag was synced' in text and "added to 1" in text
+        for text in shown
+    )
 
 
 def test_unconfigured_page_names_missing_settings(tickets_page, monkeypatch):
@@ -217,8 +257,11 @@ def test_nav_links_to_tickets_page_for_organisers(event, admin, make_speaker):
     # a team member who cannot see speakers gets no link
     member = make_speaker("member@example.invalid")
     team = Team.objects.create(
-        organiser=event.organiser, name="Settings only", all_events=True,
-        can_change_event_settings=True, can_change_submissions=False,
+        organiser=event.organiser,
+        name="Settings only",
+        all_events=True,
+        can_change_event_settings=True,
+        can_change_submissions=False,
     )
     team.members.add(member)
     client.force_login(member)
@@ -275,5 +318,7 @@ def test_old_sync_log_entries_still_display(event, admin):
         orga=True,
         data={"tag": "needsTicket", "added": 2, "removed": 1},
     )
-    display = ActivityLog.objects.get(action_type="pretalx_pretix_sso.tag.synced").display
+    display = ActivityLog.objects.get(
+        action_type="pretalx_pretix_sso.tag.synced"
+    ).display
     assert '"needsTicket" tag was synced' in display and "hasTicket" not in display

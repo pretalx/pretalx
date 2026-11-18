@@ -32,7 +32,11 @@ BUTTON_URL_NAMES = {"event.landing", "event.start"}
 @receiver(html_head, dispatch_uid="resubmit_html_head")
 def add_resubmit_button(sender, request, **kwargs):
     match = getattr(request, "resolver_match", None)
-    if not match or "cfp" not in match.namespaces or match.url_name not in BUTTON_URL_NAMES:
+    if (
+        not match
+        or "cfp" not in match.namespaces
+        or match.url_name not in BUTTON_URL_NAMES
+    ):
         return ""
     if not request.user.is_authenticated or not can_resubmit_to(sender):
         return ""

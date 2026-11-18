@@ -1,14 +1,14 @@
 from unittest import mock
 
 import pytest
+from conftest import _prepare
 from django.db import IntegrityError
 from django.http import Http404
-
-from conftest import _prepare
-from pretalx.event.domain.plugins import disable_plugin
-from pretalx.person.models import User
 from pretalx_pretix_sso import views
 from pretalx_pretix_sso.models import PretixCustomer
+
+from pretalx.event.domain.plugins import disable_plugin
+from pretalx.person.models import User
 
 
 def _userinfo(sub="CUST1", email="new@example.invalid", verified=True, **extra):
@@ -19,7 +19,10 @@ def _userinfo(sub="CUST1", email="new@example.invalid", verified=True, **extra):
 
 
 def test_redirect_uri_comes_from_site_url_not_request():
-    assert views._redirect_uri() == "https://pretalx.example.invalid/p/pretix-sso/callback/"
+    assert (
+        views._redirect_uri()
+        == "https://pretalx.example.invalid/p/pretix-sso/callback/"
+    )
 
 
 def test_new_user_is_created_linked_and_logged_in(sso_callback, event):
@@ -36,7 +39,7 @@ def test_new_user_is_created_linked_and_logged_in(sso_callback, event):
     assert request.fetch.call_args.args[1] == views._redirect_uri()
 
 
-@pytest.mark.parametrize("verified", [None, False])
+@pytest.mark.parametrize("verified", (None, False))
 def test_unverified_email_is_refused(sso_callback, verified):
     _, request = sso_callback(_userinfo(verified=verified))
     assert not request.user.is_authenticated
@@ -82,7 +85,9 @@ def test_team_member_is_refused(sso_callback, event, make_speaker):
     from pretalx.event.models import Team
 
     reviewer = make_speaker("reviewer@example.invalid")
-    team = Team.objects.create(organiser=event.organiser, name="Reviewers", is_reviewer=True)
+    team = Team.objects.create(
+        organiser=event.organiser, name="Reviewers", is_reviewer=True
+    )
     team.members.add(reviewer)
     _, request = sso_callback(_userinfo(email="reviewer@example.invalid"))
     assert not request.user.is_authenticated
@@ -98,7 +103,9 @@ def test_deactivated_user_is_refused(sso_callback, make_speaker):
 
 def test_concurrent_creation_reuses_the_other_account(sso_callback):
     # The other request committed the user; our lookup ran just before that
-    other = User.objects.create_user(email="new@example.invalid", password=None, name="Other")
+    other = User.objects.create_user(
+        email="new@example.invalid", password=None, name="Other"
+    )
     real_filter = User.objects.filter
     calls = []
 
@@ -113,9 +120,12 @@ def test_concurrent_creation_reuses_the_other_account(sso_callback):
 
 
 def test_integrity_error_without_existing_user_is_raised(sso_callback):
-    with mock.patch.object(
-        User.objects, "create_user", side_effect=IntegrityError("other constraint")
-    ), pytest.raises(IntegrityError):
+    with (
+        mock.patch.object(
+            User.objects, "create_user", side_effect=IntegrityError("other constraint")
+        ),
+        pytest.raises(IntegrityError),
+    ):
         sso_callback(_userinfo())
 
 
@@ -148,7 +158,9 @@ def test_callback_for_disabled_plugin_is_404(sso_callback, event):
 def test_pretix_error_during_token_exchange_shows_message(event):
     from pretalx_pretix_sso import oidc
 
-    with mock.patch.object(views.oidc, "fetch_userinfo", side_effect=oidc.OIDCError("bad")):
+    with mock.patch.object(
+        views.oidc, "fetch_userinfo", side_effect=oidc.OIDCError("bad")
+    ):
         request = _callback_request(event)
         response = views.CallbackView.as_view()(request)
     assert response.status_code == 302 and response.url == event.urls.login
@@ -157,19 +169,22 @@ def test_pretix_error_during_token_exchange_shows_message(event):
 
 def test_broken_discovery_on_login_start_shows_message(event):
     from django.test import RequestFactory
-
     from pretalx_pretix_sso import oidc
 
     request = RequestFactory().get(f"/{event.slug}/p/pretix-sso/login/")
     _prepare(request, event=event)
-    with mock.patch.object(views.oidc, "discovery", side_effect=oidc.OIDCError("broken")):
+    with mock.patch.object(
+        views.oidc, "discovery", side_effect=oidc.OIDCError("broken")
+    ):
         response = views.LoginStartView.as_view()(request, event=event.slug)
     assert response.status_code == 302 and response.url == event.urls.login
     assert "unavailable" in " ".join(str(m) for m in request._messages)
 
 
 def test_non_text_email_is_refused(sso_callback):
-    _, request = sso_callback({"sub": "X", "email": ["a@example.invalid"], "email_verified": True})
+    _, request = sso_callback(
+        {"sub": "X", "email": ["a@example.invalid"], "email_verified": True}
+    )
     assert not request.user.is_authenticated
 
 
@@ -185,10 +200,16 @@ def test_speaker_is_told_when_password_stops_working(sso_callback, make_speaker)
 def _callback_request(event):
     from django.test import RequestFactory
 
-    request = RequestFactory().get("/p/pretix-sso/callback/", {"state": "st", "code": "c"})
+    request = RequestFactory().get(
+        "/p/pretix-sso/callback/", {"state": "st", "code": "c"}
+    )
     _prepare(request)
     request.session[views.SESSION_KEY] = {
-        "state": "st", "nonce": "n", "verifier": "v", "event": event.slug, "next": "",
+        "state": "st",
+        "nonce": "n",
+        "verifier": "v",
+        "event": event.slug,
+        "next": "",
     }
     return request
 
@@ -197,7 +218,9 @@ def _stale_callback(event_slug, user=None, state_token="tok"):
     from django.test import RequestFactory
 
     state = f"{state_token}.{event_slug}" if event_slug else state_token
-    request = RequestFactory().get("/p/pretix-sso/callback/", {"state": state, "code": "c"})
+    request = RequestFactory().get(
+        "/p/pretix-sso/callback/", {"state": state, "code": "c"}
+    )
     _prepare(request, user=user)  # fresh session: no login in progress
     return views.CallbackView.as_view()(request), request
 
@@ -207,7 +230,9 @@ def test_login_start_puts_event_in_state(event):
 
     request = RequestFactory().get(f"/{event.slug}/p/pretix-sso/login/")
     _prepare(request, event=event)
-    meta = {"authorization_endpoint": "https://pretix.example.invalid/org/oauth2/v1/authorize"}
+    meta = {
+        "authorization_endpoint": "https://pretix.example.invalid/org/oauth2/v1/authorize"
+    }
     with mock.patch.object(views.oidc, "discovery", return_value=meta):
         views.LoginStartView.as_view()(request, event=event.slug)
     token, _, slug = request.session[views.SESSION_KEY]["state"].partition(".")
@@ -226,7 +251,7 @@ def test_stale_callback_when_already_logged_in_goes_to_submissions(event, make_s
     assert response.url == event.urls.user_submissions
 
 
-@pytest.mark.parametrize("slug", ["no-such-event", ""])
+@pytest.mark.parametrize("slug", ("no-such-event", ""))
 def test_stale_callback_without_known_event_is_404(event, slug):
     with pytest.raises(Http404):
         _stale_callback(slug)

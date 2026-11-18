@@ -129,6 +129,13 @@ ignore = [
   "assets/*",
   "CODE_OF_CONDUCT.md",
   "CONTRIBUTORS",
+  # wf-org fork: deployment and local plugins, not part of the pretalx package
+  "Dockerfile",
+  "Dockerfile.dev",
+  "docker-compose.yml",
+  "deploy/**",
+  "plugins/**",
+  "REUSE.toml",
   "docs/*",
   "src/local/*",
   "src/tests",
@@ -243,6 +250,20 @@ allowed-confusables = ["–", "’", "×"]
   "SLF001",  # TODO: remove SLF001, fix private access
   "TID253",  # Tests run on demand, not at every Django boot
   "TRY",     # Exception handling is special in tests
+]
+# Local plugins (installed into the image, not part of the pretalx wheel)
+"plugins/**.py" = [
+  "PLC0415", # Plugins import pretalx models lazily, after app loading
+]
+"plugins/*/tests/**.py" = [
+  "DTZ",     # Same exemptions as src/tests
+  "RUF",
+  "S",
+  "SLF001",
+  "TID253",
+  "TRY",
+  "INP001",  # Test directories are not packages
+  "PT018",   # Composite assertions are fine in plugin tests
 ]
 "src/pretalx/**/management/commands/**.py" = ["TID253"]
 # The slow-leaf modules themselves: they ARE the wrappers around slow

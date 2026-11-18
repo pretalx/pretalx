@@ -54,14 +54,16 @@ def _log_account_event(event, user, action, **data):
 def _redirect_uri():
     # Built from the configured site URL, not the request: behind a TLS-terminating
     # proxy the request looks like plain http, and the Host header is client input.
-    return settings.SITE_URL.rstrip("/") + reverse("plugins:pretalx_pretix_sso:callback")
+    return settings.SITE_URL.rstrip("/") + reverse(
+        "plugins:pretalx_pretix_sso:callback"
+    )
 
 
 class LoginStartView(View):
     def get(self, request, *args, **kwargs):
         event = request.event
         if not oidc.is_enabled(event):
-            raise Http404()
+            raise Http404
         if request.user.is_authenticated:
             return redirect(event.urls.user_submissions)
 
@@ -99,7 +101,7 @@ class CallbackView(View):
         with scopes_disabled():
             event = Event.objects.filter(slug=data["event"]).first()
         if not event or not oidc.is_enabled(event):
-            raise Http404()
+            raise Http404
 
         def fail(message):
             messages.error(request, message)
@@ -203,7 +205,9 @@ class CallbackView(View):
         if password_disabled:
             user.set_unusable_password()
             user.save(update_fields=["password"])
-            logger.info("Disabled password of user %s on first pretix SSO link", user.code)
+            logger.info(
+                "Disabled password of user %s on first pretix SSO link", user.code
+            )
 
         # Remember the pretix account so its orders count as this speaker's tickets.
         # The latest login wins if the user switched pretix accounts.
@@ -219,7 +223,9 @@ class CallbackView(View):
         else:
             outcome = "returning"
         if outcome == "linked":
-            _log_account_event(event, user, "linked", password_disabled=password_disabled)
+            _log_account_event(
+                event, user, "linked", password_disabled=password_disabled
+            )
         elif outcome != "returning":
             _log_account_event(event, user, outcome)
 
@@ -250,13 +256,14 @@ class CallbackView(View):
         an expired session, or a login finished in another browser."""
         event = _event_from_state(request.GET.get("state", ""))
         if not event or not oidc.is_enabled(event):
-            raise Http404()
+            raise Http404
         if request.user.is_authenticated:
             return redirect(event.urls.user_submissions)
         logger.info(
             "pretix SSO callback for event %s had no login in progress", event.slug
         )
         messages.error(
-            request, _("Your login attempt has expired. Please log in with pretix again.")
+            request,
+            _("Your login attempt has expired. Please log in with pretix again."),
         )
         return redirect(event.urls.login)

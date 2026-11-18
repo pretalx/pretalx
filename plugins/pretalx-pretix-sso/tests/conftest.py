@@ -136,7 +136,9 @@ def tickets_page(event, admin):
     def call(method="get", query="", data=None, user=None):
         path = f"/orga/event/{event.slug}/p/pretix-tickets/{query}"
         factory = RequestFactory()
-        request = factory.post(path, data or {}) if method == "post" else factory.get(path)
+        request = (
+            factory.post(path, data or {}) if method == "post" else factory.get(path)
+        )
         _prepare(request, user=user or admin, event=event)
         response = orga_views.TicketCheckView.as_view()(request, event=event.slug)
         if hasattr(response, "render"):

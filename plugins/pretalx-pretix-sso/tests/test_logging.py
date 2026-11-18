@@ -6,7 +6,6 @@ from unittest import mock
 
 import pytest
 from django.test import Client
-
 from pretalx_pretix_sso import tickets
 
 PLUGIN_LOGGER = "pretalx_pretix_sso"
@@ -63,15 +62,19 @@ def test_forged_state_is_a_warning(sso_callback, event, plugin_logs):
 def test_error_from_pretix_is_logged_on_one_line(event, plugin_logs):
     from conftest import _prepare
     from django.test import RequestFactory
-
     from pretalx_pretix_sso import views
 
     request = RequestFactory().get(
-        "/p/pretix-sso/callback/", {"state": "st", "error": "access_denied\nFAKE LOG LINE"}
+        "/p/pretix-sso/callback/",
+        {"state": "st", "error": "access_denied\nFAKE LOG LINE"},
     )
     _prepare(request)
     request.session[views.SESSION_KEY] = {
-        "state": "st", "nonce": "n", "verifier": "v", "event": event.slug, "next": "",
+        "state": "st",
+        "nonce": "n",
+        "verifier": "v",
+        "event": event.slug,
+        "next": "",
     }
     views.CallbackView.as_view()(request)
     (line,) = [m for m in plugin_logs(logging.INFO) if "ended at pretix" in m]
@@ -79,22 +82,31 @@ def test_error_from_pretix_is_logged_on_one_line(event, plugin_logs):
 
 
 def test_ticket_fetch_is_logged_with_counts_and_cache_hits(event, plugin_logs):
-    holders = tickets.TicketHolders.from_emails({"a@example.invalid"}, {"CUST-SECRET-ID"})
+    holders = tickets.TicketHolders.from_emails(
+        {"a@example.invalid"}, {"CUST-SECRET-ID"}
+    )
     with mock.patch.object(tickets, "_fetch_ticket_holders", return_value=holders):
         tickets.ticket_holders(event)
         tickets.ticket_holders(event)
     logs = plugin_logs()
     assert any("Fetching pretix tickets for event" in m for m in logs)
-    assert any(re.search(r"Fetched pretix tickets for event \S+ in \d+\.\ds$", m) for m in logs)
+    assert any(
+        re.search(r"Fetched pretix tickets for event \S+ in \d+\.\ds$", m) for m in logs
+    )
     assert any("served from cache" in m for m in logs)
 
 
 def test_failed_fetch_is_a_warning(event, plugin_logs):
     import requests
 
-    with mock.patch.object(
-        tickets, "_fetch_ticket_holders", side_effect=requests.ConnectionError("down")
-    ), pytest.raises(requests.ConnectionError):
+    with (
+        mock.patch.object(
+            tickets,
+            "_fetch_ticket_holders",
+            side_effect=requests.ConnectionError("down"),
+        ),
+        pytest.raises(requests.ConnectionError),
+    ):
         tickets.ticket_holders(event)
     assert any("failed after" in m for m in plugin_logs(logging.WARNING))
 
@@ -105,13 +117,20 @@ def test_organiser_actions_are_logged(
     speaker = make_speaker("comp@example.invalid")
     make_proposal("Talk", "accepted", speaker)
     with mock.patch.object(
-        tickets, "_fetch_ticket_holders", return_value=tickets.TicketHolders.from_emails()
+        tickets,
+        "_fetch_ticket_holders",
+        return_value=tickets.TicketHolders.from_emails(),
     ):
         tickets_page("post", data={"action": "override_on", "user": speaker.code})
         tickets_page("post", data={"action": "sync_tag"})
     info = plugin_logs(logging.INFO)
-    assert any(admin.code in m and "set the ticket override" in m and speaker.code in m for m in info)
-    assert any("started the needsTicket tag sync" in m and admin.code in m for m in info)
+    assert any(
+        admin.code in m and "set the ticket override" in m and speaker.code in m
+        for m in info
+    )
+    assert any(
+        "started the needsTicket tag sync" in m and admin.code in m for m in info
+    )
     # the speaker is covered by the override, so nothing needs the tag
     assert any("tag sync on event" in m and "added to 0" in m for m in info)
 
@@ -122,11 +141,17 @@ def test_refused_registration_is_logged(event, plugin_logs):
     client = Client(HTTP_HOST="pretalx.example.invalid")
     client.post(
         f"/{event.slug}/login/",
-        {"register_name": "X", "register_email": "x@example.invalid",
-         "register_password": "A-long-pass-123", "register_password_repeat": "A-long-pass-123"},
+        {
+            "register_name": "X",
+            "register_email": "x@example.invalid",
+            "register_password": "A-long-pass-123",
+            "register_password_repeat": "A-long-pass-123",
+        },
         secure=True,
     )
-    assert any("Refused registration on the login page" in m for m in plugin_logs(logging.INFO))
+    assert any(
+        "Refused registration on the login page" in m for m in plugin_logs(logging.INFO)
+    )
 
 
 def test_logs_contain_no_personal_data(
@@ -139,7 +164,9 @@ def test_logs_contain_no_personal_data(
     sso_callback(_userinfo(sub="CUST-SECRET-ID-3"))  # link moved
     sso_callback(_userinfo(), state="forged")
     make_proposal("Talk", "accepted", existing)
-    holders = tickets.TicketHolders.from_emails({"existing@example.invalid"}, {"CUST-SECRET-ID"})
+    holders = tickets.TicketHolders.from_emails(
+        {"existing@example.invalid"}, {"CUST-SECRET-ID"}
+    )
     with mock.patch.object(tickets, "_fetch_ticket_holders", return_value=holders):
         tickets_page(query="?partial=1&refresh=1")
         tickets_page("post", data={"action": "override_on", "user": existing.code})
@@ -156,15 +183,22 @@ def test_sync_logs_go_to_stdout_once_and_not_stderr(
 ):
     make_proposal("Talk", "accepted", make_speaker("nobody@example.invalid"))
     with mock.patch.object(
-        tickets, "_fetch_ticket_holders", return_value=tickets.TicketHolders.from_emails()
+        tickets,
+        "_fetch_ticket_holders",
+        return_value=tickets.TicketHolders.from_emails(),
     ):
         tickets_page("post", data={"action": "sync_tag"})
     out, err = capfd.readouterr()  # file-descriptor level: the real stdout/stderr
-    result_lines = [line for line in out.splitlines() if "needsTicket tag sync on event test:" in line]
+    result_lines = [
+        line
+        for line in out.splitlines()
+        if "needsTicket tag sync on event test:" in line
+    ]
     assert len(result_lines) == 1, out
     # pretalx's log format: level, time, logger name, module, message
     assert re.match(
-        r"INFO \d{4}-\d\d-\d\d [\d:,]+ pretalx_pretix_sso\.tagging tagging needsTicket", result_lines[0]
+        r"INFO \d{4}-\d\d-\d\d [\d:,]+ pretalx_pretix_sso\.tagging tagging needsTicket",
+        result_lines[0],
     ), result_lines[0]
     assert "Finished the needsTicket tag sync" in out
     assert "pretalx_pretix_sso" not in err
@@ -174,13 +208,19 @@ def test_plugin_logs_still_reach_the_pretalx_log_file():
     from pretalx_pretix_sso.log import PLUGIN_LOGGER
 
     plugin_logger = logging.getLogger(PLUGIN_LOGGER)
-    root_files = [h for h in logging.getLogger().handlers if isinstance(h, logging.FileHandler)]
+    root_files = [
+        h for h in logging.getLogger().handlers if isinstance(h, logging.FileHandler)
+    ]
     assert root_files and all(h in plugin_logger.handlers for h in root_files)
     assert plugin_logger.propagate is False  # so nothing is written twice
 
 
 def test_logging_setup_is_idempotent():
-    from pretalx_pretix_sso.log import PLUGIN_LOGGER, StdoutHandler, configure_plugin_logging
+    from pretalx_pretix_sso.log import (
+        PLUGIN_LOGGER,
+        StdoutHandler,
+        configure_plugin_logging,
+    )
 
     configure_plugin_logging()
     configure_plugin_logging()
@@ -192,6 +232,8 @@ def test_stdout_survives_celery_replacing_sys_stdout(capfd, monkeypatch):
     import io
 
     monkeypatch.setattr("sys.stdout", io.StringIO())  # what celery's worker does
-    logging.getLogger("pretalx_pretix_sso.tasks").info("Running the needsTicket tag sync")
+    logging.getLogger("pretalx_pretix_sso.tasks").info(
+        "Running the needsTicket tag sync"
+    )
     out, _ = capfd.readouterr()
     assert "Running the needsTicket tag sync" in out

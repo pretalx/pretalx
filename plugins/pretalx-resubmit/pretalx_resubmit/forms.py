@@ -17,7 +17,9 @@ class ResubmitForm(forms.Form):
         super().__init__(*args, **kwargs)
         types = submission_types_for(event)
         self.fields["submission_type"].queryset = types
-        self.fields["submission_type"].initial = _matching(types, source.submission_type)
+        self.fields["submission_type"].initial = _matching(
+            types, source.submission_type
+        )
 
         if event.has_active_tracks:
             tracks = tracks_for(event)

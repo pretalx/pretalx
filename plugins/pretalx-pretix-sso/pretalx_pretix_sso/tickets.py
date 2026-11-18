@@ -1,10 +1,11 @@
 """Look up paid pretix orders for a pretalx event via the pretix REST API."""
 
+import contextlib
 import hashlib
 import logging
 import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from urllib.parse import urlsplit
 
 import requests
@@ -14,7 +15,7 @@ from django.core.cache import cache
 from .oidc import TIMEOUT, get_config
 
 logger = logging.getLogger(__name__)
-CACHE_SECONDS = 3600 #Cache for an hour
+CACHE_SECONDS = 3600  # Cache for an hour
 
 # How a speaker is covered, strongest match first
 PAID_ACCOUNT = "account"  # paid order placed with their linked pretix account
@@ -137,8 +138,7 @@ def _get_all(url, params):
 def _fetch_ticket_holders(event_slug):
     conf = api_config()
     base = (
-        f"{conf['base_url']}/api/v1/organizers/{conf['organizer']}"
-        f"/events/{event_slug}"
+        f"{conf['base_url']}/api/v1/organizers/{conf['organizer']}/events/{event_slug}"
     )
     # Only products that grant entry count, not add-ons, merchandise or parking
     admission_items = {
@@ -200,7 +200,7 @@ def _from_cache(key):
             email_hashes=frozenset(data["email_hashes"]),
             customers=frozenset(data["customers"]),
         )
-        return holders, datetime.fromtimestamp(data["fetched_at"], tz=timezone.utc)
+        return holders, datetime.fromtimestamp(data["fetched_at"], tz=UTC)
     except Exception:
         logger.warning(
             "Ignoring unreadable pretix ticket cache entry %s", key, exc_info=True
@@ -250,10 +250,8 @@ def refresh_holders(event):
         "fetched_at": time.time(),
     }
     _cache_set(keys["holders"], data, CACHE_SECONDS)
-    try:
+    with contextlib.suppress(Exception):
         cache.delete(keys["error"])
-    except Exception:
-        pass
     return holders
 
 
@@ -273,8 +271,8 @@ def last_refresh_failed_at(event):
     """When the last refresh failed, if it has not succeeded since."""
     try:
         error = cache.get(_keys(event)["error"])
-        return datetime.fromtimestamp(error["at"], tz=timezone.utc) if error else None
-    except Exception:
+        return datetime.fromtimestamp(error["at"], tz=UTC) if error else None
+    except Exception:  # noqa: BLE001 -- a broken cache must not break the page
         return None
 
 
@@ -307,7 +305,7 @@ def release_job(event, job):
 def job_running(event, job):
     try:
         return cache.get(_keys(event)[job]) is not None
-    except Exception:
+    except Exception:  # noqa: BLE001 -- a broken cache must not break the page
         return False
 
 

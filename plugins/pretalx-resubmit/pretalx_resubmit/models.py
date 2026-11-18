@@ -11,9 +11,9 @@ class Resubmission(models.Model):
     )
     # Kept when the original is deleted, so the copy stays a plain proposal
     source = models.ForeignKey(
-        "submission.Submission",
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="+",
+        "submission.Submission", on_delete=models.SET_NULL, null=True, related_name="+"
     )
     created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.submission_id} <- {self.source_id}"

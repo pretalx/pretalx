@@ -19,7 +19,7 @@ def _patch(cls, name, make_wrapper):
     if getattr(original, "_pretix_sso", False):
         return
     wrapper = make_wrapper(original)
-    wrapper._pretix_sso = True
+    wrapper._pretix_sso = True  # noqa: SLF001 -- marks our own wrapper
     setattr(cls, name, wrapper)
 
 

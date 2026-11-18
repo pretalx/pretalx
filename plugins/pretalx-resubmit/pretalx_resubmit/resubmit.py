@@ -1,6 +1,6 @@
 """Copying a speaker's proposal from one event into another of the same organiser."""
 
-import os
+from pathlib import Path
 
 from django.core.files.base import ContentFile
 from django.db import transaction
@@ -42,7 +42,9 @@ def can_resubmit_to(event):
     if not event.cfp.is_open or not submission_types_for(event).exists():
         return False
     return not (
-        event.cfp.require_track and event.has_active_tracks and not tracks_for(event).exists()
+        event.cfp.require_track
+        and event.has_active_tracks
+        and not tracks_for(event).exists()
     )
 
 
@@ -100,18 +102,13 @@ def resubmit(source, *, event, user, submission_type, track=None, content_locale
         )
         _copy_profile(user, source_event=source.event, event=event)
         submission = create_submission(
-            submission=submission,
-            user=user,
-            speakers=[user],
-            send_initial_mails=True,
+            submission=submission, user=user, speakers=[user], send_initial_mails=True
         )
         if source.image:
             # Saved after creation: the upload path contains the new proposal's code
             with source.image.open("rb") as image:
                 submission.image.save(
-                    os.path.basename(source.image.name),
-                    ContentFile(image.read()),
-                    save=True,
+                    Path(source.image.name).name, ContentFile(image.read()), save=True
                 )
             submission.process_image("image")
         Resubmission.objects.create(submission=submission, source=source)

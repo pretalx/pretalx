@@ -68,8 +68,12 @@ def add_tickets_nav(sender, request, **kwargs):
 
 
 LOG_ACTIONS = {
-    "pretalx_pretix_sso.override.set": _("A speaker was marked as covered for pretix tickets."),
-    "pretalx_pretix_sso.override.removed": _("A speaker's pretix ticket override was removed."),
+    "pretalx_pretix_sso.override.set": _(
+        "A speaker was marked as covered for pretix tickets."
+    ),
+    "pretalx_pretix_sso.override.removed": _(
+        "A speaker's pretix ticket override was removed."
+    ),
     "pretalx_pretix_sso.account.created": _(
         "A speaker account was created by logging in with pretix."
     ),

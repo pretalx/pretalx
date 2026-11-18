@@ -13,7 +13,9 @@ def _version():
     installed); a plain source checkout reads the file directly."""
     pyproject = Path(__file__).resolve().parent.parent / "pyproject.toml"
     if pyproject.exists():
-        match = re.search(r'^version\s*=\s*"([^"]+)"', pyproject.read_text(), re.M)
+        match = re.search(
+            r'^version\s*=\s*"([^"]+)"', pyproject.read_text(), re.MULTILINE
+        )
         if match:
             return match.group(1)
     try:

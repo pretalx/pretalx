@@ -83,7 +83,10 @@ def sync_ticket_tag(event, holders, user):
             added,
             removed,
         )
-    (added, removed), (has_added, has_removed) = counts[TICKET_TAG], counts[HAS_TICKET_TAG]
+    (added, removed), (has_added, has_removed) = (
+        counts[TICKET_TAG],
+        counts[HAS_TICKET_TAG],
+    )
     event.log_action(
         SYNC_ACTION,
         person=user,
@@ -92,7 +95,11 @@ def sync_ticket_tag(event, holders, user):
             "tag": TICKET_TAG,
             "added": added,
             "removed": removed,
-            "has_ticket": {"tag": HAS_TICKET_TAG, "added": has_added, "removed": has_removed},
+            "has_ticket": {
+                "tag": HAS_TICKET_TAG,
+                "added": has_added,
+                "removed": has_removed,
+            },
         },
     )
     return {name: tuple(pair) for name, pair in counts.items()}

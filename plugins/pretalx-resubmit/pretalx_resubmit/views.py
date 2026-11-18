@@ -22,7 +22,9 @@ class ResubmitMixin(LoggedInEventPageMixin):
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated and not can_resubmit_to(request.event):
-            messages.error(request, _("This event is not accepting proposals right now."))
+            messages.error(
+                request, _("This event is not accepting proposals right now.")
+            )
             return redirect(request.event.urls.user_submissions)
         return super().dispatch(request, *args, **kwargs)
 
@@ -54,7 +56,11 @@ class ResubmitView(ResubmitMixin, FormView):
         raise Http404
 
     def get_form_kwargs(self):
-        return {**super().get_form_kwargs(), "event": self.request.event, "source": self.source}
+        return {
+            **super().get_form_kwargs(),
+            "event": self.request.event,
+            "source": self.source,
+        }
 
     def get_context_data(self, **kwargs):
         return {**super().get_context_data(**kwargs), "source": self.source}

@@ -37,9 +37,9 @@ Out:
 Use the current published schedule only:
 
 ```python
-schedule = request.event.current_schedule          # None -> 404 or "no schedule yet"
-talks = schedule.scheduled_talks                   # visible, has room/start/submission
-breaks = schedule.breaks                           # slot_type=BREAK, has room, no submission
+schedule = request.event.current_schedule  # None -> 404 or "no schedule yet"
+talks = schedule.scheduled_talks  # visible, has room/start/submission
+breaks = schedule.breaks  # slot_type=BREAK, has room, no submission
 ```
 
 Source: `src/pretalx/schedule/models/schedule.py` (`scheduled_talks`,

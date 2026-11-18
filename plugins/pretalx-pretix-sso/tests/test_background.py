@@ -4,9 +4,9 @@ from unittest import mock
 
 import pytest
 import requests
+from pretalx_pretix_sso import tagging, tasks, tickets
 
 from pretalx.common.models import ActivityLog
-from pretalx_pretix_sso import tagging, tasks, tickets
 
 
 class FakeWorker:
@@ -33,10 +33,17 @@ class FakeWorker:
 def worker(settings):
     settings.HAS_CELERY = True
     fake = FakeWorker()
-    with mock.patch.object(
-        tasks.refresh_tickets, "apply_async", side_effect=fake.queue_for(tasks.refresh_tickets)
-    ), mock.patch.object(
-        tasks.sync_ticket_tag, "apply_async", side_effect=fake.queue_for(tasks.sync_ticket_tag)
+    with (
+        mock.patch.object(
+            tasks.refresh_tickets,
+            "apply_async",
+            side_effect=fake.queue_for(tasks.refresh_tickets),
+        ),
+        mock.patch.object(
+            tasks.sync_ticket_tag,
+            "apply_async",
+            side_effect=fake.queue_for(tasks.sync_ticket_tag),
+        ),
     ):
         yield fake
 
@@ -69,7 +76,9 @@ def test_first_load_queues_refresh_without_calling_pretix(tickets_page, worker, 
     assert 'data-pending="1"' in html and "Loading tickets from pretix" in html
 
 
-def test_polling_does_not_queue_again_while_job_is_pending(tickets_page, worker, pretix):
+def test_polling_does_not_queue_again_while_job_is_pending(
+    tickets_page, worker, pretix
+):
     for _ in range(3):
         tickets_page(query="?partial=1")
     assert len(worker.queue) == 1
@@ -81,12 +90,16 @@ def test_table_appears_once_the_job_has_run(tickets_page, worker, pretix, speake
     response, _ = tickets_page(query="?partial=1")
     html = _html(response)
     assert 'data-pending=""' in html
-    assert "updated" in html and "Paid talk" not in html  # speakers table, not proposals
+    assert (
+        "updated" in html and "Paid talk" not in html
+    )  # speakers table, not proposals
     assert "<table" in html and "None" in html
     pretix.assert_called_once()
 
 
-def test_refresh_shows_cached_data_while_refreshing(tickets_page, worker, pretix, speakers, event):
+def test_refresh_shows_cached_data_while_refreshing(
+    tickets_page, worker, pretix, speakers, event
+):
     tickets.refresh_holders(event)  # warm cache
     response, _ = tickets_page(query="?partial=1&refresh=1")
     html = _html(response)
@@ -97,7 +110,9 @@ def test_refresh_shows_cached_data_while_refreshing(tickets_page, worker, pretix
     assert "Refreshing" not in _html(response)
 
 
-def test_failed_refresh_is_reported_and_not_retried_by_polls(tickets_page, worker, pretix):
+def test_failed_refresh_is_reported_and_not_retried_by_polls(
+    tickets_page, worker, pretix
+):
     pretix.side_effect = requests.ConnectionError("down")
     tickets_page(query="?partial=1")
     worker.run()  # the job fails
@@ -109,7 +124,9 @@ def test_failed_refresh_is_reported_and_not_retried_by_polls(tickets_page, worke
     assert len(worker.queue) == 1
 
 
-def test_failed_refresh_with_older_data_shows_warning(tickets_page, worker, pretix, speakers, event):
+def test_failed_refresh_with_older_data_shows_warning(
+    tickets_page, worker, pretix, speakers, event
+):
     tickets.refresh_holders(event)
     pretix.side_effect = requests.ConnectionError("down")
     tickets_page(query="?partial=1&refresh=1")
@@ -135,7 +152,11 @@ def test_sync_runs_in_background(tickets_page, worker, pretix, speakers, event, 
     assert log.person == admin
     response, _ = tickets_page(query="?partial=1")
     html = _html(response)
-    assert "Last tag sync" in html and "added to 1" in html and "Tag sync running" not in html
+    assert (
+        "Last tag sync" in html
+        and "added to 1" in html
+        and "Tag sync running" not in html
+    )
 
 
 def test_sync_can_run_again_after_finishing(tickets_page, worker, pretix, speakers):
@@ -181,7 +202,9 @@ def test_tasks_are_registered_with_pretalx_celery():
     assert "pretalx_pretix_sso.sync_ticket_tag" in app.tasks
 
 
-def test_without_worker_everything_stays_in_the_request(tickets_page, pretix, speakers, settings):
+def test_without_worker_everything_stays_in_the_request(
+    tickets_page, pretix, speakers, settings
+):
     settings.HAS_CELERY = False
     response, _ = tickets_page(query="?partial=1")
     assert "<table" in _html(response)
@@ -190,14 +213,18 @@ def test_without_worker_everything_stays_in_the_request(tickets_page, pretix, sp
     assert "added to 1" in messages[-1]
 
 
-def test_results_are_shown_in_one_info_box(tickets_page, worker, pretix, speakers, event):
+def test_results_are_shown_in_one_info_box(
+    tickets_page, worker, pretix, speakers, event
+):
     import re
 
     tickets.refresh_holders(event)
     tickets_page("post", data={"action": "sync_tag"})
     worker.run()
     html = _html(tickets_page(query="?partial=1")[0])
-    box = re.search(r'<div class="alert alert-info pretix-tickets-status">(.*?)</div> </div>', html)
+    box = re.search(
+        r'<div class="alert alert-info pretix-tickets-status">(.*?)</div> </div>', html
+    )
     assert box, html
     content = box.group(1)
     assert "1 speaker with an accepted proposal has no ticket." in content
@@ -208,20 +235,29 @@ def test_results_are_shown_in_one_info_box(tickets_page, worker, pretix, speaker
 
 def test_no_empty_info_box(tickets_page, settings, event):
     settings.HAS_CELERY = False
-    with mock.patch.object(
-        tickets, "_fetch_ticket_holders", return_value=tickets.TicketHolders.from_emails()
-    ), mock.patch.object(tickets, "cached_holders", return_value=(None, None)):
+    with (
+        mock.patch.object(
+            tickets,
+            "_fetch_ticket_holders",
+            return_value=tickets.TicketHolders.from_emails(),
+        ),
+        mock.patch.object(tickets, "cached_holders", return_value=(None, None)),
+    ):
         html = _html(tickets_page(query="?partial=1")[0])
     assert "pretix-tickets-status" not in html  # no speakers, no data age, no sync yet
 
 
 def _sync_logs(caplog):
     return [
-        r.getMessage() for r in caplog.records if r.name.startswith("pretalx_pretix_sso")
+        r.getMessage()
+        for r in caplog.records
+        if r.name.startswith("pretalx_pretix_sso")
     ]
 
 
-def test_background_sync_logs_its_lifecycle(tickets_page, worker, pretix, speakers, admin, caplog):
+def test_background_sync_logs_its_lifecycle(
+    tickets_page, worker, pretix, speakers, admin, caplog
+):
     import logging
 
     caplog.set_level(logging.INFO, logger="pretalx_pretix_sso")
@@ -242,11 +278,11 @@ def test_background_sync_logs_its_lifecycle(tickets_page, worker, pretix, speake
 
 
 @pytest.mark.parametrize(
-    "error, reason, shown",
-    [
+    ("error", "reason", "shown"),
+    (
         (requests.ConnectionError("down"), "pretix", "pretix could not be reached"),
         (RuntimeError("bug"), "error", "unexpected error"),
-    ],
+    ),
 )
 def test_failed_background_sync_is_logged_and_shown(
     tickets_page, worker, pretix, speakers, event, admin, caplog, error, reason, shown
@@ -263,7 +299,10 @@ def test_failed_background_sync_is_logged_and_shown(
     else:
         worker.run()
     log = ActivityLog.objects.get(action_type=tagging.SYNC_FAILED_ACTION)
-    assert log.person == admin and log.json_data == {"tag": "needsTicket", "reason": reason}
+    assert log.person == admin and log.json_data == {
+        "tag": "needsTicket",
+        "reason": reason,
+    }
     assert shown in str(log.display)
     assert any("tag sync for event test failed after" in m for m in _sync_logs(caplog))
     assert not tickets.job_running(event, "sync")
@@ -273,7 +312,9 @@ def test_failed_background_sync_is_logged_and_shown(
     assert not tagging.ticket_tag(event).submissions.exists()  # nothing was changed
 
 
-def test_failed_sync_without_worker_is_recorded(tickets_page, pretix, speakers, settings):
+def test_failed_sync_without_worker_is_recorded(
+    tickets_page, pretix, speakers, settings
+):
     settings.HAS_CELERY = False
     pretix.side_effect = requests.ConnectionError("down")
     _, messages = tickets_page("post", data={"action": "sync_tag"})
