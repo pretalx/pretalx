@@ -10,7 +10,7 @@ from django.views.generic import FormView, TemplateView
 from pretalx.common.views.mixins import EventPermissionRequired
 
 from .content import apply_to_existing, is_active
-from .forms import FixedSessionForm, NewFixedSessionForm
+from .forms import FixedAnswersForm, FixedSessionForm, NewFixedSessionForm
 from .models import FixedSession
 from .signals import PERMISSION
 
@@ -61,15 +61,35 @@ class FixedSessionFormView(FixedSessionMixin, FormView):
         kwargs["instance"] = self.instance
         return kwargs
 
+    submission_type = None
+
+    @cached_property
+    def answers_form(self):
+        return FixedAnswersForm(
+            data=self.request.POST if self.request.method == "POST" else None,
+            event=self.request.event,
+            submission_type=self.submission_type,
+            fixed=self.instance,
+        )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["list_url"] = self.list_url
         context["fixed"] = self.instance
+        context["answers_form"] = self.answers_form
         return context
+
+    def post(self, request, *args, **kwargs):
+        form = self.get_form()
+        # Validate both, so both show their errors
+        if form.is_valid() & self.answers_form.is_valid():
+            return self.form_valid(form)
+        return self.form_invalid(form)
 
     def form_valid(self, form):
         with transaction.atomic():
             fixed = form.save()
+            self.answers_form.save(fixed)
             count = apply_to_existing(fixed)
             self.request.event.log_action(
                 "pretalx_fixed_sessions.applied",

@@ -1,4 +1,4 @@
-from django.db.models.signals import pre_save
+from django.db.models.signals import m2m_changed, post_save, pre_save
 from django.dispatch import receiver
 from django.templatetags.static import static
 from django.urls import reverse
@@ -9,9 +9,9 @@ from django.utils.translation import gettext_lazy as _
 from pretalx.cfp.signals import html_head
 from pretalx.common.signals import activitylog_display
 from pretalx.orga.signals import nav_event_settings
-from pretalx.submission.models import Submission
+from pretalx.submission.models import Answer, QuestionVariant, Submission
 
-from .content import apply_to
+from .content import apply_answers, apply_to, is_writing
 from .models import FixedSession
 
 PERMISSION = "submission.update_submissiontype"
@@ -23,6 +23,45 @@ def enforce_fixed_content(sender, instance, raw=False, **kwargs):
     a core session's content can't be changed anywhere but in this plugin."""
     if not raw:
         apply_to(instance)
+
+
+@receiver(post_save, sender=Submission, dispatch_uid="fixed_sessions_answers_on_save")
+def add_fixed_answers(sender, instance, raw=False, **kwargs):
+    """Creates the fixed answers a proposal doesn't have yet, e.g. after its
+    session type changed to a core session."""
+    if not raw:
+        apply_answers(instance)
+
+
+@receiver(post_save, sender=Answer, dispatch_uid="fixed_sessions_answer_saved")
+def enforce_fixed_answer(sender, instance, raw=False, **kwargs):
+    if raw or is_writing() or not instance.submission_id:
+        return
+    apply_answers(instance.submission, question_id=instance.question_id)
+
+
+@receiver(
+    m2m_changed, sender=Answer.options.through, dispatch_uid="fixed_sessions_options"
+)
+def enforce_fixed_options(sender, instance, action, reverse, **kwargs):
+    """pretalx sets a choice answer's options after saving the answer."""
+    if reverse or is_writing() or not action.startswith("post_"):
+        return
+    if instance.submission_id:
+        apply_answers(instance.submission, question_id=instance.question_id)
+
+
+def _answer_value(fixed_answer):
+    """The fixed answer as the CfP form field takes it."""
+    variant = fixed_answer.question.variant
+    if variant == QuestionVariant.CHOICES:
+        option = fixed_answer.options.first()
+        return str(option.pk) if option else ""
+    if variant == QuestionVariant.MULTIPLE:
+        return [str(option.pk) for option in fixed_answer.options.all()]
+    if variant == QuestionVariant.BOOLEAN:
+        return fixed_answer.answer == "True"
+    return fixed_answer.answer
 
 
 @receiver(nav_event_settings, dispatch_uid="fixed_sessions_nav")
@@ -60,8 +99,14 @@ def add_form_script(sender, request, **kwargs):
             "title": f.title,
             "abstract": f.abstract,
             "description": f.description,
+            "track": str(f.track_id or ""),
+            "answers": {
+                f"question_{a.question_id}": _answer_value(a) for a in f.answers.all()
+            },
         }
-        for f in FixedSession.objects.filter(submission_type__event=sender)
+        for f in FixedSession.objects.filter(
+            submission_type__event=sender
+        ).prefetch_related("answers__question", "answers__options")
     }
     if not fixed:
         return ""
@@ -72,15 +117,23 @@ def add_form_script(sender, request, **kwargs):
     if code:
         submission = sender.submissions.filter(code__iexact=code).first()
         current = submission.submission_type_id if submission else ""
-    elif sender.cfp.default_type_id:
-        current = sender.cfp.default_type_id
+    else:
+        # Later wizard steps (questions) no longer show the type field; it is
+        # in the wizard's session data from the first step
+        info = (
+            request.session.get("cfp", {})
+            .get(match.kwargs.get("tmpid", ""), {})
+            .get("data", {})
+            .get("info", {})
+        )
+        current = info.get("submission_type") or sender.cfp.default_type_id or ""
     return json_script(fixed, "fixed-sessions-data") + format_html(
         '<meta name="fixed-sessions" data-current-type="{}" data-notice="{}">'
         '<script defer src="{}"></script>',
         current,
         gettext(
-            "This is a core session: its title, abstract and description are "
-            "set by the organisers."
+            "This is a core session: the fields marked as fixed are set by "
+            "the organisers."
         ),
         static("pretalx_fixed_sessions/form.js"),
     )

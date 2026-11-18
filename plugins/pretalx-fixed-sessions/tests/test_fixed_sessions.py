@@ -196,6 +196,8 @@ def test_cfp_wizard_gets_script(event, core_type, speaker, client_for):
             "title": "Intro to Contact Staff",
             "abstract": "Fixed abstract",
             "description": "Fixed description",
+            "track": "",
+            "answers": {},
         }
     }
     assert "pretalx_fixed_sessions/form.js" in html
@@ -249,3 +251,186 @@ def test_forms_import_without_event_scope():
 
     with scope():
         importlib.reload(forms)
+
+
+@pytest.fixture
+def questions(event):
+    from pretalx.submission.models import AnswerOption, Question
+
+    def make(variant, **fields):
+        return Question.objects.create(
+            event=event,
+            question=f"{variant}?",
+            variant=variant,
+            target="submission",
+            **fields,
+        )
+
+    text = make("string")
+    choice = make("choices")
+    options = [AnswerOption.objects.create(question=choice, answer=a) for a in "ABC"]
+    boolean = make("boolean")
+    return {"text": text, "choice": choice, "options": options, "boolean": boolean}
+
+
+@pytest.fixture
+def fixed_answers(core_type, questions):
+    from pretalx_fixed_sessions.models import FixedAnswer
+
+    fixed = core_type.fixed_session
+    FixedAnswer.objects.create(
+        fixed_session=fixed, question=questions["text"], answer="Fixed"
+    )
+    choice = FixedAnswer.objects.create(
+        fixed_session=fixed, question=questions["choice"], answer="B"
+    )
+    choice.options.set([questions["options"][1]])
+    FixedAnswer.objects.create(
+        fixed_session=fixed, question=questions["boolean"], answer="False"
+    )
+    return fixed
+
+
+def _answers(submission):
+    from pretalx.submission.models import Answer
+
+    return {
+        a.question.variant: (a.answer, sorted(o.answer for o in a.options.all()))
+        for a in Answer.objects.filter(submission=submission)
+    }
+
+
+def test_fixed_answers_created_with_proposal(
+    event, core_type, fixed_answers, speaker, make_proposal
+):
+    proposal = make_proposal(event, "x", speaker, submission_type=core_type)
+    assert _answers(proposal) == {"string": ("Fixed", []), "choices": ("B", ["B"])}
+
+
+def test_speaker_answers_are_overwritten(
+    event, core_type, questions, fixed_answers, speaker, make_proposal
+):
+    from pretalx.submission.domain.question import save_answer
+    from pretalx.submission.models import Answer
+
+    proposal = make_proposal(event, "x", speaker, submission_type=core_type)
+    existing = {a.question_id: a for a in Answer.objects.filter(submission=proposal)}
+    # The same calls pretalx's question form makes
+    save_answer(
+        question=questions["text"],
+        value="Mine",
+        target_object=proposal,
+        existing=existing[questions["text"].pk],
+    )
+    save_answer(
+        question=questions["choice"],
+        value=questions["options"][2],
+        target_object=proposal,
+        existing=existing[questions["choice"].pk],
+    )
+    save_answer(question=questions["boolean"], value=True, target_object=proposal)
+    assert _answers(proposal) == {"string": ("Fixed", []), "choices": ("B", ["B"])}
+
+
+def test_unfixed_questions_stay_with_speaker(
+    event, core_type, questions, speaker, make_proposal
+):
+    from pretalx.submission.domain.question import save_answer
+
+    proposal = make_proposal(event, "x", speaker, submission_type=core_type)
+    save_answer(question=questions["text"], value="Mine", target_object=proposal)
+    assert _answers(proposal) == {"string": ("Mine", [])}
+
+
+def test_orga_sets_fixed_answers_and_track(
+    event, core_type, questions, orga, speaker, make_proposal, client_for
+):
+    from pretalx.submission.models import Track
+
+    track = Track.objects.create(event=event, name="Staff")
+    proposal = make_proposal(event, "x", speaker, submission_type=core_type)
+    url = f"{_list_url(event)}{core_type.pk}/"
+    client = client_for(orga)
+    page = client.get(url).content.decode()
+    assert _has_attr(page, "name", f"answers-question_{questions['text'].pk}")
+
+    response = client.post(
+        url,
+        {
+            "title": "T",
+            "abstract": "",
+            "description": "",
+            "track": track.pk,
+            "do_not_record": "unknown",
+            f"answers-question_{questions['text'].pk}": "Orga text",
+            f"answers-question_{questions['choice'].pk}": questions["options"][0].pk,
+            f"answers-question_{questions['boolean'].pk}": "true",
+        },
+    )
+    assert response.status_code == 302, response.content.decode()[:3000]
+    proposal.refresh_from_db()
+    assert proposal.track == track
+    assert _answers(proposal) == {
+        "string": ("Orga text", []),
+        "choices": ("A", ["A"]),
+        "boolean": ("True", []),
+    }
+
+    # Emptied again: the speaker answers; existing answers are kept
+    response = client.post(
+        url,
+        {
+            "title": "T",
+            "abstract": "",
+            "description": "",
+            "do_not_record": "unknown",
+            f"answers-question_{questions['boolean'].pk}": "unknown",
+        },
+    )
+    assert response.status_code == 302
+    assert not core_type.fixed_session.answers.exists()
+    assert _answers(proposal)["string"] == ("Orga text", [])
+
+
+def test_cfp_data_has_track_and_answers(
+    event, core_type, questions, fixed_answers, speaker, client_for
+):
+    from pretalx.submission.models import Track
+
+    track = Track.objects.create(event=event, name="Staff")
+    core_type.fixed_session.track = track
+    core_type.fixed_session.save()
+    html = (
+        client_for(speaker).get(f"/{event.slug}/submit/", follow=True).content.decode()
+    )
+    data = _fixed_data(html)[str(core_type.pk)]
+    assert data["track"] == str(track.pk)
+    assert data["answers"] == {
+        f"question_{questions['text'].pk}": "Fixed",
+        f"question_{questions['choice'].pk}": str(questions["options"][1].pk),
+        f"question_{questions['boolean'].pk}": False,
+    }
+
+
+def test_questions_step_knows_type_from_wizard(
+    event, core_type, questions, fixed_answers, speaker, client_for
+):
+    client = client_for(speaker)
+    response = client.get(f"/{event.slug}/submit/", follow=True)
+    info_url = response.redirect_chain[-1][0]
+    response = client.post(
+        info_url,
+        {
+            "title": "x",
+            "submission_type": core_type.pk,
+            "abstract": "a",
+            "description": "d",
+            "content_locale": "en",
+        },
+        follow=True,
+    )
+    questions_url = response.redirect_chain[-1][0]
+    assert questions_url.rstrip("/").endswith("questions"), questions_url
+    html = response.content.decode()
+    assert _has_attr(html, "data-current-type", core_type.pk)
+    assert _has_attr(html, "name", f"question_{questions['text'].pk}")

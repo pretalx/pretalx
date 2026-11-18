@@ -62,3 +62,83 @@ class NewFixedSessionForm(FixedSessionForm):
             default_duration=self.cleaned_data["default_duration"],
         )
         return super().save(commit=commit)
+
+
+class FixedAnswersForm(forms.Form):
+    """One field per question asked per proposal, built by pretalx so it has
+    the same widget and validation as in the CfP. Empty means the speaker
+    answers. File questions can't be fixed."""
+
+    prefix = "answers"
+
+    def __init__(self, *args, event, submission_type=None, fixed=None, **kwargs):
+        from pretalx.submission.domain.queries.question import active_questions
+        from pretalx.submission.interfaces.forms.question import build_question_field
+        from pretalx.submission.models import QuestionVariant
+
+        super().__init__(*args, **kwargs)
+        questions = active_questions(event, submission_type=submission_type).exclude(
+            variant=QuestionVariant.FILE
+        )
+        if submission_type is None:
+            # A new session type can't be among the types a question is limited to
+            questions = questions.filter(submission_types__isnull=True)
+        self.fixed = fixed if fixed is not None and fixed.pk else None
+        existing = (
+            {a.question_id: a for a in self.fixed.answers.all()} if self.fixed else {}
+        )
+        for question in questions:
+            if question.variant == QuestionVariant.BOOLEAN:
+                # Three states: pretalx's checkbox can't say "speaker answers"
+                answer = existing.get(question.pk)
+                field = forms.NullBooleanField(
+                    widget=SpeakerChoiceSelect(),
+                    initial=(answer.answer == "True") if answer else None,
+                )
+            else:
+                # The fixed session stands in for the proposal: its answers
+                # have the attributes pretalx reads the initial value from
+                field = build_question_field(
+                    question=question, target_object=self.fixed
+                )
+                if question.pk not in existing:
+                    field.initial = None
+                if question.variant == QuestionVariant.CHOICES:
+                    field.empty_label = _("Speaker answers")
+                    field.widget = forms.Select(choices=field.choices)
+            field.label = question.question
+            field.help_text = _("Leave empty to let the speaker answer.")
+            field.required = False
+            field.disabled = False
+            field.question = question
+            self.fields[f"question_{question.pk}"] = field
+
+    def save(self, fixed):
+        from pretalx.submission.models import QuestionVariant
+
+        from .models import FixedAnswer
+
+        for name, value in self.cleaned_data.items():
+            question = self.fields[name].question
+            if (
+                value is None
+                or value == ""
+                or (question.variant == QuestionVariant.MULTIPLE and not value)
+            ):
+                FixedAnswer.objects.filter(
+                    fixed_session=fixed, question=question
+                ).delete()
+                continue
+            options = []
+            if question.variant == QuestionVariant.CHOICES:
+                options = [value]
+            elif question.variant == QuestionVariant.MULTIPLE:
+                options = list(value)
+            # The same text pretalx stores in Answer.answer
+            text = (
+                ", ".join(str(option) for option in options) if options else str(value)
+            )
+            answer, _created = FixedAnswer.objects.update_or_create(
+                fixed_session=fixed, question=question, defaults={"answer": text}
+            )
+            answer.options.set(options)

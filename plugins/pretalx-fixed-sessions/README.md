@@ -22,24 +22,32 @@ Organisers need permission to change event settings.
 | Field | Applied |
 | --- | --- |
 | Title, abstract, description | always |
-| Track | only when set; empty lets the speaker choose |
+| Track | only when set; empty lets the speaker choose. The field only shows when the event has tracks. |
 | Don't record | only when set to Yes or No; "Speaker chooses" leaves it alone |
+| Answers to questions asked per proposal | per question, only when set; empty lets the speaker answer |
+
+Question answers use the same fields as the CfP. Questions limited to other
+session types aren't offered, and file-upload questions can't be fixed. A
+fixed "No" to a yes/no question removes the speaker's answer, since pretalx
+stores "no" as no answer.
 
 Duration comes from the session type, as for any session. Notes to the
-organisers, co-speakers, answers to questions and resources stay the speaker's.
+organisers, co-speakers, per-speaker questions and resources stay the
+speaker's.
 
 ## How it works
 
 - The content is applied on every save of a proposal of a core session type
-  (`pre_save` on `Submission`): the CfP, the speaker's edit page, the organiser
-  backend and the API all go through it. What speakers type into these fields
-  is discarded.
+  (`pre_save` on `Submission`), and fixed answers on every save of an answer
+  or its options (`post_save` on `Answer`, `m2m_changed` on its options): the
+  CfP, the speaker's edit page, the organiser backend and the API all go
+  through these. What speakers enter there is discarded.
 - Saving a core session's content in the plugin also writes it to every
   existing proposal of that type (drafts and deleted ones included), and logs
   it in the event's activity log.
 - In the CfP form and the speaker's edit page, choosing a core session type
-  fills in the title, abstract and description and makes them read-only, with
-  a note that the organisers set them (`static/pretalx_fixed_sessions/form.js`).
+  fills in the title, abstract, description, track and fixed answers and locks
+  them, with a note that the organisers set them (`static/pretalx_fixed_sessions/form.js`).
   Without JavaScript, the speaker still has to enter a title to get past form
   validation; it is replaced on save.
 - When the plugin is disabled for an event, nothing is enforced and the pages

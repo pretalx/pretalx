@@ -1,48 +1,117 @@
-// Fills in and locks title, abstract and description when a core session type
-// is chosen in the CfP form. The server overwrites these fields on save anyway
-// (signals.enforce_fixed_content); this only shows the speaker what they get.
+// Fills in and locks the fields a core session fixes (title, abstract,
+// description, track, answers to proposal questions) in the CfP wizard and the
+// speaker's edit page. The server overwrites them on save anyway
+// (signals.py); this only shows the speaker what they get.
 (() => {
-    const FIELDS = ["title", "abstract", "description"]
+    const TEXT_FIELDS = ["title", "abstract", "description"]
 
     const init = () => {
         const dataElement = document.getElementById("fixed-sessions-data")
         const meta = document.querySelector('meta[name="fixed-sessions"]')
-        const title = document.getElementById("id_title")
-        if (!dataElement || !meta || !title) return
+        const form = document.querySelector("form[method=post]")
+        if (!dataElement || !meta || !form) return
         const fixed = JSON.parse(dataElement.textContent)
-        const inputs = FIELDS.map((name) => [name, document.getElementById(`id_${name}`)]).filter(
-            ([, input]) => input,
-        )
-        // Missing when the form has only one session type or it can't change
+        // Missing when the form has only one session type, it can't change,
+        // or on later wizard steps
         const select = document.getElementById("id_submission_type")
+
+        const inputsFor = (name) => [...form.querySelectorAll(`[name="${name}"]`)]
+        const fieldsOf = (content) => {
+            const fields = {}
+            for (const name of TEXT_FIELDS) fields[name] = content[name] || ""
+            if (content.track) fields.track = content.track
+            Object.assign(fields, content.answers || {})
+            return fields
+        }
 
         const notice = document.createElement("div")
         notice.className = "alert alert-info"
         notice.textContent = meta.dataset.notice
         notice.hidden = true
-        const anchor = title.closest(".form-group") || title
-        anchor.parentNode.insertBefore(notice, anchor)
+        const first = form.querySelector(".form-group, fieldset, input:not([type=hidden])")
+        if (first) first.parentNode.insertBefore(notice, first)
 
-        // The type whose content is currently in the fields
+        // Radios and checkboxes can't be read-only; undo clicks on them instead
+        const blockClick = (event) => event.preventDefault()
+        // Selects can't be read-only either; put the fixed value back
+        const restore = (event) => {
+            event.target.value = event.target.dataset.fixedValue
+        }
+
+        const lock = (input, value) => {
+            input.dataset.fixedSession = "1"
+            if (input.type === "radio" || input.type === "checkbox") {
+                const values = Array.isArray(value) ? value : [value]
+                input.checked =
+                    typeof value === "boolean" ? value : values.includes(input.value)
+                input.addEventListener("click", blockClick)
+            } else if (input.tagName === "SELECT") {
+                const values = Array.isArray(value) ? value : [value]
+                // The speaker's choice, put back when they leave the core type
+                if (input.dataset.valueBeforeFixed === undefined) {
+                    input.dataset.valueBeforeFixed = JSON.stringify(
+                        [...input.selectedOptions].map((option) => option.value),
+                    )
+                }
+                for (const option of input.options) option.selected = values.includes(option.value)
+                input.dataset.fixedValue = input.value
+                // pretalx's enhanced selects (track, long choice lists) are
+                // Choices.js widgets drawn over the hidden select
+                // (common/js/forms/select.js); update the widget too
+                const choices = input._choicesInstance
+                if (choices) {
+                    choices.removeActiveItems()
+                    choices.setChoiceByValue(values)
+                }
+                // inert, not disabled: a disabled select isn't submitted
+                const container = input.closest(".choices")
+                if (container) container.inert = true
+                input.addEventListener("change", restore)
+            } else {
+                input.value = value
+                input.readOnly = true
+            }
+            input.dispatchEvent(new Event("input", { bubbles: true }))
+        }
+
+        const unlock = (input) => {
+            delete input.dataset.fixedSession
+            input.removeEventListener("click", blockClick)
+            input.removeEventListener("change", restore)
+            input.readOnly = false
+            const container = input.closest(".choices")
+            if (container) container.inert = false
+            if (input.dataset.valueBeforeFixed !== undefined) {
+                const values = JSON.parse(input.dataset.valueBeforeFixed)
+                delete input.dataset.valueBeforeFixed
+                for (const option of input.options) option.selected = values.includes(option.value)
+                const choices = input._choicesInstance
+                if (choices) {
+                    choices.removeActiveItems()
+                    choices.setChoiceByValue(values)
+                }
+            }
+        }
+
         let applied = null
         const update = () => {
             const type = select ? select.value : meta.dataset.currentType
             const content = fixed[type]
-            if (content) {
-                for (const [name, input] of inputs) {
-                    input.value = content[name] || ""
-                    input.readOnly = true
-                    input.dispatchEvent(new Event("input", { bubbles: true }))
-                }
-                applied = type
-            } else if (applied) {
-                // Leaving a core type: clear its text, keep anything else
-                for (const [name, input] of inputs) {
-                    if (input.value === (fixed[applied][name] || "")) input.value = ""
-                    input.readOnly = false
-                    input.dispatchEvent(new Event("input", { bubbles: true }))
+            if (applied && applied !== type) {
+                // Leaving a core type: unlock, and clear its texts if unchanged
+                for (const [name, value] of Object.entries(fieldsOf(fixed[applied]))) {
+                    for (const input of inputsFor(name)) {
+                        unlock(input)
+                        if (TEXT_FIELDS.includes(name) && input.value === value) input.value = ""
+                    }
                 }
                 applied = null
+            }
+            if (content) {
+                for (const [name, value] of Object.entries(fieldsOf(content))) {
+                    for (const input of inputsFor(name)) lock(input, value)
+                }
+                applied = type
             }
             notice.hidden = !content
         }
@@ -51,6 +120,7 @@
         update()
     }
 
-    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init)
-    else init()
+    // After "load", so pretalx's own scripts have built their select widgets
+    if (document.readyState === "complete") init()
+    else window.addEventListener("load", init)
 })()
