@@ -4,8 +4,8 @@
 # instead of a source submodule, so no Node.js; PostgreSQL only (no
 # MariaDB/memcached); local plugins from plugins/ and extra pip packages via
 # PRETALX_PLUGINS; and `pretalx` is a small wrapper
-# (deploy/docker/entrypoint.bash) that applies PRETALX_APP_CONFIG /
-# PRETALX_APP_ENV (from SSM) before running the upstream script.
+# (deploy/docker/entrypoint.bash) that exports PRETALX_APP_CONFIG /
+# PRETALX_APP_ENV (KEY=value lines from SSM) before running the upstream script.
 #
 # Runtime contract (used by the ECS task definitions in wf-org/infra):
 #   entrypoint `pretalx`; commands webworker | taskworker | cron | all | shell

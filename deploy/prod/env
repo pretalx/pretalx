@@ -3,7 +3,8 @@
 # export each line at start (deploy/docker/entrypoint.bash).
 # Settings: https://docs.pretalx.org/administrator/configure/
 # Database, mail, Redis and site URL come from wf-org/infra; don't set them here.
-# Secrets go in pretalx.secrets.enc.ini instead.
+# Secrets go in env.secrets.enc instead (same format, SOPS-encrypted, as in
+# wf-org/volunteer-next): `sops deploy/prod/env.secrets.enc`.
 #
 # PRETALX_LANGUAGE_CODE=en
 # PRETALX_TIME_ZONE=UTC

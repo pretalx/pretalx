@@ -1,6 +1,7 @@
-# SOPS encrypts deploy/*/pretalx.secrets.enc.* with the shared stack's KMS key
-# (wf-org/infra stacks/000-shared, module.sops_key). Edit with `sops <file>`;
-# anyone who may kms:Decrypt the key can read it.
+# SOPS encrypts deploy/*/env.secrets.enc with the shared stack's KMS key
+# (wf-org/infra stacks/000-shared, module.sops_key). Same layout as
+# wf-org/volunteer-next. Edit with `sops deploy/prod/env.secrets.enc`; anyone
+# who may kms:Decrypt the key can read it.
 creation_rules:
-  - path_regex: ^deploy/.*/pretalx\.secrets\.enc\.
+  - path_regex: ^deploy/[^/]+/env\.secrets\.enc$
     kms: arn:aws:kms:us-east-1:413368852420:alias/sops

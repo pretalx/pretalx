@@ -80,42 +80,79 @@ jobs:
           echo "$SOPS_SHA256  $RUNNER_TEMP/sops" | sha256sum -c -
           sudo install -m 0755 "$RUNNER_TEMP/sops" /usr/local/bin/sops
 
-      # deploy/prod/env -> SSM String <SSM_PREFIX>/env (PRETALX_APP_ENV)
-      # deploy/prod/pretalx.secrets.enc.ini -> SSM SecureString <SSM_PREFIX>/config
-      # (PRETALX_APP_CONFIG). The task definitions (wf-org/infra app-config.tf)
-      # read both at task start; deploy/docker/entrypoint.bash applies them.
-      # Stored before the deploy below, so the new tasks get this config.
+      # Same layout as wf-org/volunteer-next: plain settings in deploy/prod/env,
+      # secrets in deploy/prod/env.secrets.enc (SOPS, KMS alias/sops; edit with
+      # `sops deploy/prod/env.secrets.enc`), both KEY=value lines.
+      #   deploy/prod/env            -> SSM String      <SSM_PREFIX>/env    (PRETALX_APP_ENV)
+      #   deploy/prod/env.secrets.enc -> SSM SecureString <SSM_PREFIX>/config (PRETALX_APP_CONFIG)
+      # The task definitions (wf-org/infra app-config.tf) read both at task
+      # start; deploy/docker/entrypoint.bash exports them. Stored before the
+      # deploy below, so the new tasks get this config.
       - name: Store app config in Parameter Store
         run: |
           set -euo pipefail
           umask 077
-          config="$RUNNER_TEMP/pretalx.cfg"
+          secrets="$RUNNER_TEMP/secrets.env"
+          plain_json="$RUNNER_TEMP/plain.json"
+          secrets_json="$RUNNER_TEMP/secrets.json"
+          value="$RUNNER_TEMP/value.env"
           param="$RUNNER_TEMP/param.json"
-          trap 'rm -f "$config" "$param"' EXIT
+          trap 'rm -f "$secrets" "$plain_json" "$secrets_json" "$value" "$param"' EXIT
 
-          # put <name> <type> <file>; the value goes in through a 0600 file,
-          # never the command line or the log
-          put() {
-            jq -Rs --arg name "$1" --arg type "$2" \
-              '{Name: $name, Value: ., Type: $type, Overwrite: true}' "$3" > "$param"
-            aws ssm put-parameter --cli-input-json "file://$param" --output text > /dev/null
-            echo "stored $1"
+          sops -d deploy/prod/env.secrets.enc > "$secrets"
+
+          # Writes a KEY=value file to $2 as a JSON object; empty values are skipped.
+          # With $3 = secret, values are masked and lines are never echoed.
+          env_to_json() {
+            local file=$1 out=$2 kind=${3:-plain} json='{}' line key value
+            while IFS= read -r line || [ -n "$line" ]; do
+              line="${line%$'\r'}"
+              line="${line#"${line%%[![:space:]]*}"}"
+              case "$line" in '' | '#'*) continue ;; esac
+              line="${line#export }"
+              key="${line%%=*}"
+              value="${line#*=}"
+              if ! [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ && "$line" == *=* ]]; then
+                if [ "$kind" = secret ]; then
+                  echo "::error::$file has a line that isn't KEY=value"
+                else
+                  echo "::error::$file has a line that isn't KEY=value: $line"
+                fi
+                exit 1
+              fi
+              if [[ "$value" =~ ^\"(.*)\"$ || "$value" =~ ^\'(.*)\'$ ]]; then value="${BASH_REMATCH[1]}"; fi
+              if [ -z "$value" ]; then
+                echo "::notice::$key is empty in $file; skipped"
+                continue
+              fi
+              if [ "$kind" = secret ]; then echo "::add-mask::$value"; fi
+              json=$(jq -c --arg k "$key" --arg v "$value" '. + {($k): $v}' <<< "$json")
+            done < "$file"
+            printf '%s\n' "$json" > "$out"
           }
 
-          bad=$(grep -nvE '^[[:space:]]*(#.*)?$|^[[:space:]]*(export )?[A-Za-z_][A-Za-z0-9_]*=' deploy/prod/env || true)
-          [ -z "$bad" ] || { echo "::error::deploy/prod/env has lines that aren't KEY=value:"; echo "$bad"; exit 1; }
-          put "$SSM_PREFIX/env" String deploy/prod/env
+          env_to_json "$secrets" "$secrets_json" secret
+          [ "$(jq length "$secrets_json")" -gt 0 ] ||
+            { echo "::error::No secrets found in env.secrets.enc"; exit 1; }
+          env_to_json deploy/prod/env "$plain_json"
 
-          if [ -f deploy/prod/pretalx.secrets.enc.ini ]; then
-            sops decrypt deploy/prod/pretalx.secrets.enc.ini > "$config"
-          else
-            echo "::notice::deploy/prod/pretalx.secrets.enc.ini not found; storing an empty config"
-            echo "; no app config" > "$config"
-          fi
-          # Fail here rather than at container start on a config pretalx can't parse
-          python3 -c 'import configparser, sys; configparser.RawConfigParser().read(sys.argv[1], encoding="utf-8")' "$config" ||
-            { echo "::error::pretalx.secrets.enc.ini is not a valid cfg file"; exit 1; }
-          put "$SSM_PREFIX/config" SecureString "$config"
+          jq -r --slurpfile s "$secrets_json" 'keys[] | select(in($s[0]))' "$plain_json" |
+            while IFS= read -r key; do
+              echo "::warning::$key is in both deploy/prod/env and env.secrets.enc; using the secret"
+            done
+
+          # put <name> <type> <json file>: stores the object as KEY=value lines.
+          # The value goes in through a 0600 file, never the command line or the log.
+          put() {
+            jq -r 'to_entries[] | "\(.key)=\(.value)"' "$3" > "$value"
+            [ -s "$value" ] || echo "# none" > "$value"
+            jq -Rs --arg name "$1" --arg type "$2" \
+              '{Name: $name, Value: ., Type: $type, Overwrite: true}' "$value" > "$param"
+            aws ssm put-parameter --cli-input-json "file://$param" --output text > /dev/null
+            echo "stored $1 ($(jq -r 'keys | join(" ")' "$3"))"
+          }
+          put "$SSM_PREFIX/env" String "$plain_json"
+          put "$SSM_PREFIX/config" SecureString "$secrets_json"
 
       # Current task definitions; the families are named like the services.
       # The worker service exists only with redis_enabled in wf-org/infra.
