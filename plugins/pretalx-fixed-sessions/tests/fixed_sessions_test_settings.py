@@ -3,12 +3,12 @@ throwaway SQLite database and a known plugin configuration."""
 
 import os
 import tempfile
+from pathlib import Path
 
 _tmp = tempfile.mkdtemp(prefix="fixed-sessions-tests-")
-_cfg = os.path.join(_tmp, "pretalx.cfg")
-with open(_cfg, "w") as f:
-    f.write(
-        f"""[filesystem]
+_cfg = Path(_tmp) / "pretalx.cfg"
+_cfg.write_text(
+    f"""[filesystem]
 data = {_tmp}
 [database]
 backend = sqlite3
@@ -18,9 +18,10 @@ url = https://pretalx.example.invalid
 debug = True
 [redis]
 location = False
-"""
-    )
-os.environ["PRETALX_CONFIG_FILE"] = _cfg
+""",
+    encoding="utf-8",
+)
+os.environ["PRETALX_CONFIG_FILE"] = str(_cfg)
 
 from pretalx.settings import *  # noqa: E402, F401, F403
 

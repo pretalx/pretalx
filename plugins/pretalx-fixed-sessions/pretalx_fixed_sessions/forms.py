@@ -1,5 +1,6 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
+from django_scopes.forms import SafeModelChoiceField
 
 from pretalx.common.forms.widgets import MarkdownWidget
 
@@ -34,6 +35,9 @@ class FixedSessionForm(forms.ModelForm):
             "description": MarkdownWidget(),
             "do_not_record": SpeakerChoiceSelect(),
         }
+        # Track is a scoped model: the default field would query it when this
+        # class is defined, which fails outside an event scope
+        field_classes = {"track": SafeModelChoiceField}
 
 
 class NewFixedSessionForm(FixedSessionForm):
@@ -45,10 +49,7 @@ class NewFixedSessionForm(FixedSessionForm):
         help_text=_("Shown to speakers when they choose a session type."),
     )
     default_duration = forms.IntegerField(
-        min_value=1,
-        initial=60,
-        label=_("Duration"),
-        help_text=_("Duration in minutes"),
+        min_value=1, initial=60, label=_("Duration"), help_text=_("Duration in minutes")
     )
     field_order = ["name", "default_duration"]
 

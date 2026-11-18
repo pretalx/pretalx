@@ -35,6 +35,9 @@ class FixedSession(models.Model):
     )
     updated = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return self.title
+
     def values(self):
         """The proposal fields this fixed session sets, as {field: value}."""
         result = {field: getattr(self, field) for field in CONTENT_FIELDS}

@@ -2,7 +2,8 @@
 
 {% load i18n %}
 
-{% block extra_title %}{% translate "Fixed sessions" %} :: {% endblock extra_title %}
+{% block extra_title %}{% translate "Fixed sessions" %} ::
+{% endblock extra_title %}
 
 {% block content %}
     <h2>
@@ -14,8 +15,8 @@
     </h2>
     <div class="alert alert-warning">
         {% blocktranslate trimmed %}
-            Saving overwrites the title, abstract and description of every proposal with this
-            session type, including what speakers already entered.
+            Saving overwrites the title, abstract and description of every proposal with this session type, including
+            what speakers already entered.
         {% endblocktranslate %}
     </div>
     <form method="post">

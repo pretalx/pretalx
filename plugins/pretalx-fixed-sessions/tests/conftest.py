@@ -69,6 +69,7 @@ def orga(event):
 @pytest.fixture
 def core_type(event):
     from pretalx_fixed_sessions.models import FixedSession
+
     from pretalx.submission.models import SubmissionType
 
     submission_type = SubmissionType.objects.create(

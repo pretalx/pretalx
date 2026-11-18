@@ -49,7 +49,11 @@ def add_form_script(sender, request, **kwargs):
     """Fills in and locks the content fields when a core session type is
     chosen. Only a convenience: enforce_fixed_content applies on save anyway."""
     match = getattr(request, "resolver_match", None)
-    if not match or "cfp" not in match.namespaces or match.url_name not in FORM_URL_NAMES:
+    if (
+        not match
+        or "cfp" not in match.namespaces
+        or match.url_name not in FORM_URL_NAMES
+    ):
         return ""
     fixed = {
         str(f.submission_type_id): {

@@ -3,7 +3,6 @@ import re
 
 import pytest
 from django.core.management import call_command
-
 from pretalx_fixed_sessions.models import FixedSession
 
 
@@ -17,8 +16,13 @@ def test_migrations_match_models():
 
 def test_save_overwrites_speaker_content(event, core_type, speaker, make_proposal):
     proposal = make_proposal(
-        event, "My own title", speaker, state="submitted", submission_type=core_type,
-        abstract="mine", description="mine too",
+        event,
+        "My own title",
+        speaker,
+        state="submitted",
+        submission_type=core_type,
+        abstract="mine",
+        description="mine too",
     )
     proposal.refresh_from_db()
     assert proposal.title == "Intro to Contact Staff"
@@ -70,17 +74,25 @@ def test_orga_edit_applies_to_existing_proposals(
     proposal = make_proposal(event, "x", speaker, submission_type=core_type)
     response = client_for(orga).post(
         f"{_list_url(event)}{core_type.pk}/",
-        {"title": "New title", "abstract": "New abstract", "description": "",
-         "do_not_record": "unknown"},
+        {
+            "title": "New title",
+            "abstract": "New abstract",
+            "description": "",
+            "do_not_record": "unknown",
+        },
     )
     assert response.status_code == 302, response.content.decode()[:2000]
     proposal.refresh_from_db()
     assert (proposal.title, proposal.abstract, proposal.description) == (
-        "New title", "New abstract", "",
+        "New title",
+        "New abstract",
+        "",
     )
-    assert event.logged_actions().filter(
-        action_type="pretalx_fixed_sessions.applied"
-    ).exists()
+    assert (
+        event.logged_actions()
+        .filter(action_type="pretalx_fixed_sessions.applied")
+        .exists()
+    )
 
 
 def test_orga_make_existing_type_core(event, orga, speaker, make_proposal, client_for):
@@ -91,7 +103,12 @@ def test_orga_make_existing_type_core(event, orga, speaker, make_proposal, clien
     assert page.status_code == 200
     response = client.post(
         f"{_list_url(event)}{write_in.pk}/",
-        {"title": "Now core", "abstract": "", "description": "d", "do_not_record": "unknown"},
+        {
+            "title": "Now core",
+            "abstract": "",
+            "description": "d",
+            "do_not_record": "unknown",
+        },
     )
     assert response.status_code == 302
     proposal.refresh_from_db()
@@ -101,8 +118,14 @@ def test_orga_make_existing_type_core(event, orga, speaker, make_proposal, clien
 def test_orga_create_core_session(event, orga, client_for):
     response = client_for(orga).post(
         f"{_list_url(event)}new/",
-        {"name": "Consent 101", "default_duration": "90", "title": "Consent 101",
-         "abstract": "a", "description": "d", "do_not_record": "true"},
+        {
+            "name": "Consent 101",
+            "default_duration": "90",
+            "title": "Consent 101",
+            "abstract": "a",
+            "description": "d",
+            "do_not_record": "true",
+        },
     )
     assert response.status_code == 302, response.content.decode()[:2000]
     fixed = FixedSession.objects.get(submission_type__event=event)
@@ -111,7 +134,9 @@ def test_orga_create_core_session(event, orga, client_for):
     assert fixed.do_not_record is True
 
 
-def test_orga_remove_makes_write_in(event, core_type, orga, speaker, make_proposal, client_for):
+def test_orga_remove_makes_write_in(
+    event, core_type, orga, speaker, make_proposal, client_for
+):
     response = client_for(orga).post(
         f"{_list_url(event)}{core_type.pk}/", {"action": "remove"}
     )
@@ -146,11 +171,15 @@ def test_orga_pages_404_without_plugin(event, orga, client_for):
 
 def _has_attr(html, name, value):
     """pretalx minifies its HTML, so attribute quotes may be dropped."""
-    return re.search(rf'{name}=["\']?{re.escape(str(value))}(["\'\s>])', html) is not None
+    return (
+        re.search(rf'{name}=["\']?{re.escape(str(value))}(["\'\s>])', html) is not None
+    )
 
 
 def _fixed_data(html):
-    match = re.search(r'<script id="?fixed-sessions-data"?[^>]*>(.*?)</script>', html, re.S)
+    match = re.search(
+        r'<script id="?fixed-sessions-data"?[^>]*>(.*?)</script>', html, re.DOTALL
+    )
     return json.loads(match.group(1)) if match else None
 
 
@@ -204,7 +233,19 @@ def test_speaker_edit_keeps_fixed_content(
     assert proposal.notes == "a note"
 
 
-@pytest.mark.parametrize("page", ["/{slug}/", "/{slug}/cfp"])
+@pytest.mark.parametrize("page", ("/{slug}/", "/{slug}/cfp"))
 def test_other_cfp_pages_have_no_script(event, core_type, client_for, page):
     html = client_for().get(page.format(slug=event.slug), follow=True).content.decode()
     assert "fixed-sessions-data" not in html
+
+
+def test_forms_import_without_event_scope():
+    """pretalx rebuild (Docker build) imports the URLconf with scopes active
+    and no event; defining the forms must not query scoped models."""
+    import importlib
+
+    from django_scopes import scope
+    from pretalx_fixed_sessions import forms
+
+    with scope():
+        importlib.reload(forms)

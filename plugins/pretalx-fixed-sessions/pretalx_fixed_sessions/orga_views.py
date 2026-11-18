@@ -20,7 +20,7 @@ class FixedSessionMixin(EventPermissionRequired):
 
     def dispatch(self, request, *args, **kwargs):
         if not is_active(request.event):
-            raise Http404()
+            raise Http404
         return super().dispatch(request, *args, **kwargs)
 
     @property
@@ -103,12 +103,10 @@ class FixedSessionEditView(FixedSessionFormView):
 
     @cached_property
     def instance(self):
-        return (
-            FixedSession.objects.filter(submission_type=self.submission_type).first()
-            or FixedSession(
-                submission_type=self.submission_type,
-                title=str(self.submission_type.name),
-            )
+        return FixedSession.objects.filter(
+            submission_type=self.submission_type
+        ).first() or FixedSession(
+            submission_type=self.submission_type, title=str(self.submission_type.name)
         )
 
     def get_context_data(self, **kwargs):

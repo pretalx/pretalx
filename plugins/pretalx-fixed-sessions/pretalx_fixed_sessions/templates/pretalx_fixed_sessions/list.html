@@ -2,16 +2,16 @@
 
 {% load i18n %}
 
-{% block extra_title %}{% translate "Fixed sessions" %} :: {% endblock extra_title %}
+{% block extra_title %}{% translate "Fixed sessions" %} ::
+{% endblock extra_title %}
 
 {% block content %}
     <h2>{% translate "Fixed sessions" %}</h2>
     <p class="text-muted">
         {% blocktranslate trimmed %}
-            A core session has its own session type. Its title, abstract and description
-            (and optionally track and recording choice) are set here and overwrite whatever
-            speakers enter, in new and existing proposals of that type. Session types
-            without fixed content are write-in sessions and work as usual.
+            A core session has its own session type. Its title, abstract and description (and optionally track and
+            recording choice) are set here and overwrite whatever speakers enter, in new and existing proposals of that
+            type. Session types without fixed content are write-in sessions and work as usual.
         {% endblocktranslate %}
     </p>
     <p>
@@ -41,8 +41,10 @@
                     </td>
                     <td class="numeric">{{ row.proposals }}</td>
                     <td class="text-end">
-                        <a class="btn btn-sm btn-info"
-                           href="{% url "plugins:pretalx_fixed_sessions:edit" event=request.event.slug type_id=row.type.pk %}">
+                        <a
+                            class="btn btn-sm btn-info"
+                            href="{% url "plugins:pretalx_fixed_sessions:edit" event=request.event.slug type_id=row.type.pk %}"
+                        >
                             {% if row.fixed %}{% translate "Edit" %}{% else %}{% translate "Make core session" %}{% endif %}
                         </a>
                     </td>
