@@ -8,7 +8,11 @@
     const init = () => {
         const dataElement = document.getElementById("fixed-sessions-data")
         const meta = document.querySelector('meta[name="fixed-sessions"]')
-        const form = document.querySelector("form[method=post]")
+        // The proposal form, found through one of its fields: logged-in pages
+        // have other POST forms before it (logout, in the page header)
+        const form = document.querySelector(
+            '#id_title, #id_submission_type, [name^="question_"]',
+        )?.form
         if (!dataElement || !meta || !form) return
         const fixed = JSON.parse(dataElement.textContent)
         // Missing when the form has only one session type, it can't change,
