@@ -21,6 +21,7 @@ path = [
   "docker-compose.yml",
   "deploy/docker/entrypoint.bash",
   "deploy/docker/supervisord.conf",
+  "deploy/docker/wildfire_settings.py",
   "deploy/prod/env",
   "deploy/prod/env.secrets.enc",
 ]

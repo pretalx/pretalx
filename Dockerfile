@@ -85,6 +85,10 @@ COPY --from=builder --chown=pretalxuser:pretalxuser /pretalx /pretalx
 COPY --chown=root:root deploy/docker/pretalx.bash /usr/local/lib/pretalx/pretalx.bash
 COPY --chown=root:root deploy/docker/entrypoint.bash /usr/local/bin/pretalx
 COPY --chown=root:root deploy/docker/supervisord.conf /etc/supervisord.conf
+# pretalx settings plus overrides (database connections closed after each
+# request, so an Aurora Serverless cluster can pause); see the module
+COPY --chown=root:root deploy/docker/wildfire_settings.py /usr/local/lib/python3.14/site-packages/wildfire_settings.py
+ENV DJANGO_SETTINGS_MODULE=wildfire_settings
 
 RUN chmod +x /usr/local/bin/pretalx /usr/local/lib/pretalx/pretalx.bash && \
     chown pretalxuser:pretalxuser /data /public /etc/pretalx
