@@ -9,13 +9,6 @@
     <link rel="stylesheet" href="{% static "pretalx_track_schedule/schedule.css" %}">
 {% endblock agenda_stylesheets %}
 
-{% block header_tabs %}
-    {{ block.super }}
-    <a href="{{ request.path }}" class="header-tab active">
-        <i class="fa fa-columns"></i> {% translate "By track" %}
-    </a>
-{% endblock header_tabs %}
-
 {% block agenda_content %}
     <div class="track-schedule" style="--pretalx-clr-primary: {{ request.event.visible_primary_color }}">
         {% if legend %}

@@ -127,3 +127,23 @@ def test_one_section_per_day(event, rooms, at, schedule_slot, release, client_fo
     html = _get(client_for(), _url(event)).content.decode()
     assert len(re.findall(r'class="?ts-day"? id="?day-', html)) == 2
     assert f"#day-{event.date_from.isoformat()}" in html
+
+
+def test_header_tab_script_on_schedule_pages(
+    event, rooms, at, schedule_slot, release, client_for
+):
+    client = client_for()
+    schedule_slot("Alpha", rooms[0], at(10), at(11))
+    # Not before the schedule is released
+    assert (
+        "track-schedule-tab"
+        not in _get(client, f"/{event.slug}/talk/").content.decode()
+    )
+    release()
+    for page in ("schedule/", "talk/", "speaker/", "p/track-schedule/"):
+        html = _get(client, f"/{event.slug}/{page}").content.decode()
+        assert "pretalx_track_schedule/tab.js" in html, page
+        assert _url(event) in html, page
+    # Not on CfP pages, which have no schedule tabs
+    html = _get(client, f"/{event.slug}/cfp").content.decode()
+    assert "track-schedule-tab" not in html

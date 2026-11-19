@@ -14,9 +14,12 @@ the built-in schedule is: it checks the same permission
 (`schedule.view_schedule`) on the same schedule, so it is a 404 before the
 first release, for non-public events, or with the schedule turned off.
 
-The page adds a "By track" tab while you are on it, and a "Schedule by track"
-link in the footer of every event page (pretalx has no plugin hook for the
-header tabs; footer links open in a new tab).
+The schedule pages (Schedule, Sessions, Speakers, and this one) get a "By
+track" tab after pretalx's own tabs, whenever the schedule is visible. pretalx
+has no plugin hook for these tabs, so a small script
+(`static/pretalx_track_schedule/tab.js`) adds it to the server-rendered tab
+bar; without JavaScript the tab is missing, and the footer link ("Schedule by
+track", on every event page) still leads there.
 
 ## Colours by answer (e.g. difficulty)
 
