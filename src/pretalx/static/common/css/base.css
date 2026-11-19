@@ -456,6 +456,10 @@ summary.btn {
     margin: 0;
   }
 }
+/* Flex buttons with icons need a gap */
+:where(button, [role="button"], a.btn):where(:has(> .fa)) {
+  column-gap: 6px;
+}
 a[data-toggle] {
   cursor: pointer;
 }
