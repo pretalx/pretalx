@@ -34,11 +34,15 @@ def _covered(users, holders, overridden):
     return any(holders.status(user, user.pk in overridden) for user in users if user)
 
 
-def is_covered(event, submission, *, refresh=False):
-    """True or False; None when no ticket data has been fetched yet and
-    ``refresh`` is off. With ``refresh``, fetches from pretix when the cached
-    data is missing, or says "not covered" and is older than REFRESH_AFTER;
-    pretix errors (tickets.LOOKUP_ERRORS) are raised."""
+def is_covered(event, submission, *, refresh=False, fetch_missing=False):
+    """True or False, or None when no ticket data is cached and neither
+    ``refresh`` nor ``fetch_missing`` is set.
+
+    ``fetch_missing``: fetch from pretix when nothing is cached (the banner;
+    the cache lasts an hour and is per web task in production, so it is often
+    empty). ``refresh``: also fetch when the cached data says "not covered" and
+    is older than REFRESH_AFTER (acceptance). pretix errors
+    (tickets.LOOKUP_ERRORS) are raised."""
     users = _speaker_users(submission)
     overridden = overridden_user_ids(event)
     if any(user and user.pk in overridden for user in users):
@@ -46,23 +50,23 @@ def is_covered(event, submission, *, refresh=False):
     holders, fetched_at = tickets.cached_holders(event)
     if holders is not None and _covered(users, holders, overridden):
         return True
-    if not refresh:
-        return None if holders is None else False
-    if holders is None or now() - fetched_at > REFRESH_AFTER:
-        holders = tickets.refresh_holders(event)
-        return _covered(users, holders, overridden)
+    if holders is None and (refresh or fetch_missing):
+        return _covered(users, tickets.refresh_holders(event), overridden)
+    if holders is None:
+        return None
+    if refresh and now() - fetched_at > REFRESH_AFTER:
+        return _covered(users, tickets.refresh_holders(event), overridden)
     return False
 
 
 def uncovered(event, submissions):
-    """The proposals among ``submissions`` that are not covered, from cached
-    ticket data only (never calls pretix); None if nothing is cached yet.
-    Pass them with prefetch_related("speakers__user__pretix_customer")."""
+    """The proposals among ``submissions`` that are not covered. Uses the
+    cached ticket data, fetching from pretix only when nothing is cached
+    (pretix errors, tickets.LOOKUP_ERRORS, are raised). Pass the proposals with
+    prefetch_related("speakers__user__pretix_customer")."""
     if not submissions:
         return []
-    holders, _fetched_at = tickets.cached_holders(event)
-    if holders is None:
-        return None
+    holders = tickets.ticket_holders(event)
     overridden = overridden_user_ids(event)
     return [
         submission

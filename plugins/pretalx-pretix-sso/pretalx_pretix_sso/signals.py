@@ -162,7 +162,8 @@ INACTIVE_STATES = ("rejected", "withdrawn", "canceled", "deleted", "draft")
 @receiver(html_above_orga_page, dispatch_uid="pretix_sso_ticket_banner")
 def ticket_banner(sender, request, **kwargs):
     """A warning on a proposal's organiser pages when no speaker is covered.
-    Uses cached ticket data only, so viewing a page never calls pretix."""
+    Uses the cached ticket data; fetches from pretix only when nothing is
+    cached (at most once an hour per web process)."""
     match = getattr(request, "resolver_match", None)
     code = match.kwargs.get("code") if match else None
     if (
@@ -175,12 +176,26 @@ def ticket_banner(sender, request, **kwargs):
     submission = sender.submissions.filter(code__iexact=code).first()
     if submission is None or submission.state in INACTIVE_STATES:
         return ""
-    if ticket_guard.is_covered(sender, submission) is not False:
+    tickets_url = reverse(
+        "plugins:pretalx_pretix_sso:tickets", kwargs={"event": sender.slug}
+    )
+    try:
+        covered = ticket_guard.is_covered(sender, submission, fetch_missing=True)
+    except tickets.LOOKUP_ERRORS:
+        return format_html(
+            '<div class="alert alert-warning"><div>{} <a href="{}">{}</a></div></div>',
+            gettext(
+                "The pretix tickets of this proposal's speakers could not be checked."
+            ),
+            tickets_url,
+            gettext("pretix tickets"),
+        )
+    if covered:
         return ""
     return format_html(
         '<div class="alert alert-danger"><div>{} <a href="{}">{}</a></div></div>',
         gettext("No speaker of this proposal has a paid pretix ticket."),
-        reverse("plugins:pretalx_pretix_sso:tickets", kwargs={"event": sender.slug}),
+        tickets_url,
         gettext("pretix tickets"),
     )
 
@@ -197,20 +212,22 @@ def ticket_tile(sender, **kwargs):
                 "speakers__user__pretix_customer"
             )
         )
+        url = reverse(
+            "plugins:pretalx_pretix_sso:tickets", kwargs={"event": sender.slug}
+        )
         missing = ticket_guard.uncovered(sender, sessions)
-    except Exception:
-        logger.warning("pretix ticket dashboard tile failed", exc_info=True)
-        return []
-    url = reverse("plugins:pretalx_pretix_sso:tickets", kwargs={"event": sender.slug})
-    if missing is None:
+    except tickets.LOOKUP_ERRORS:
         return [
             {
                 "large": "?",
-                "small": gettext("pretix tickets not checked yet"),
+                "small": gettext("pretix tickets could not be checked"),
                 "url": url,
                 "priority": 40,
             }
         ]
+    except Exception:
+        logger.warning("pretix ticket dashboard tile failed", exc_info=True)
+        return []
     if not missing:
         return []
     return [

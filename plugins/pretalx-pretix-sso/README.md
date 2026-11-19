@@ -96,7 +96,9 @@ Proposals that organisers create directly as accepted are not checked, since
 pretalx asks before their speakers are added; the banner and tile below show
 them.
 
-Also in the organiser area, from the cached data only (no pretix request):
+Also in the organiser area, from the cached ticket data; when nothing is
+cached (the cache lasts an hour, and in production each web task has its own),
+the page fetches from pretix first. If pretix can't be reached, they say so:
 
 - a red banner on a proposal's pages when no speaker is covered (not for
   rejected, withdrawn, cancelled or deleted proposals);

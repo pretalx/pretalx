@@ -129,15 +129,24 @@ def test_banner_on_proposal_pages(event, admin, make_speaker, make_proposal, fet
     proposal = make_proposal("Bannered", "submitted", speaker)
     url = f"/orga/event/{event.slug}/submissions/{proposal.code}/"
     client = _orga_client(admin)
-    # Nothing fetched yet: no banner, and no pretix request from a page view
-    assert "has a paid pretix ticket" not in client.get(url).content.decode()
-    tickets.refresh_holders(event)
-    fetch.reset_mock()
+    # Nothing cached (as usual in production): the banner fetches once
     html = client.get(url).content.decode()
     assert "No speaker of this proposal has a paid pretix ticket" in html
-    assert fetch.call_count == 0
+    assert fetch.call_count == 1
+    # Further page views use the cache
+    client.get(url)
+    assert fetch.call_count == 1
     TicketOverride.objects.create(event=event, user=speaker, created_by=admin)
     assert "has a paid pretix ticket" not in client.get(url).content.decode()
+
+
+def test_banner_when_pretix_is_down(event, admin, make_speaker, make_proposal, fetch):
+    fetch.side_effect = tickets.TicketLookupError("down")
+    proposal = make_proposal("Down", "submitted", make_speaker("a@example.invalid"))
+    url = f"/orga/event/{event.slug}/submissions/{proposal.code}/"
+    response = _orga_client(admin).get(url)
+    assert response.status_code == 200
+    assert "could not be checked" in response.content.decode()
 
 
 def test_dashboard_tile_counts_accepted_without_ticket(
@@ -154,13 +163,23 @@ def test_dashboard_tile_counts_accepted_without_ticket(
     )
     from pretalx_pretix_sso.signals import ticket_tile
 
-    assert ticket_tile(event)[0]["small"] == "pretix tickets not checked yet"
-    tickets.refresh_holders(event)
+    # Nothing cached: the tile fetches
     (tile,) = ticket_tile(event)
     assert tile["large"] == 2
     assert tile["url"].endswith("/p/pretix-tickets/")
+    assert fetch.call_count == 1
     html = _orga_client(admin).get(f"/orga/event/{event.slug}/").content.decode()
     assert "accepted sessions without a pretix ticket" in html
+    assert fetch.call_count == 1
+
+
+def test_dashboard_tile_when_pretix_is_down(event, make_speaker, make_proposal, fetch):
+    fetch.side_effect = tickets.TicketLookupError("down")
+    make_proposal("Accepted", "accepted", make_speaker("a@example.invalid"))
+    from pretalx_pretix_sso.signals import ticket_tile
+
+    (tile,) = ticket_tile(event)
+    assert tile["small"] == "pretix tickets could not be checked"
 
 
 def test_review_dashboard_saves_the_rest_and_reports_refusals(
