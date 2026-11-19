@@ -1,3 +1,4 @@
+import inspect
 import logging
 import time
 
@@ -10,12 +11,18 @@ from django.views.generic import TemplateView
 from pretalx.common.views.mixins import EventPermissionRequired
 from pretalx.person.domain.queries.profile import annotate_speaker_submission_counts
 from pretalx.submission.domain.queries.speaker import speakers_for_user
+from pretalx.submission.domain.queries.submission import submissions_for_user
 
 from . import tagging, tickets
 from .models import TicketOverride
 
 logger = logging.getLogger(__name__)
 VIEW_PERMISSION = "person.orga_list_speakerprofile"
+# pretalx 2026.3 requires the proposals the user may see (submissions=...);
+# 2026.2 doesn't take the argument
+COUNTS_NEED_SUBMISSIONS = (
+    "submissions" in inspect.signature(annotate_speaker_submission_counts).parameters
+)
 CHANGE_PERMISSION = "submission.orga_update_submission"
 
 
@@ -196,11 +203,14 @@ class TicketCheckView(EventPermissionRequired, TemplateView):
         overridden = tagging.overridden_user_ids(event)
         # Profiles without an account (user is None) are listed too: nothing
         # can match them to a ticket, so they show as missing one
+        count_kwargs = {"event": event}
+        if COUNTS_NEED_SUBMISSIONS:
+            count_kwargs["submissions"] = submissions_for_user(event, self.request.user)
         profiles = annotate_speaker_submission_counts(
             speakers_for_user(event, self.request.user).select_related(
                 "user__pretix_customer"
             ),
-            event=event,
+            **count_kwargs,
         ).order_by("-accepted_submission_count", "name", "user__name")
         for profile in profiles:
             if ctx["only_accepted"] and not profile.accepted_submission_count:

@@ -20,6 +20,11 @@ x-pretalx: &pretalx
     # Keep the image's Linux node_modules instead of the host's
     - /app/src/pretalx/frontend/node_modules
     - pretalx-data:/data
+  # Local secrets (copy .env.example to .env). Compose reads .env by itself only
+  # for ${...} in this file; this passes its variables into the containers.
+  env_file:
+    - path: .env
+      required: false
   environment:
     PRETALX_DEBUG: "True"
     PRETALX_SITE_URL: http://localhost:8000

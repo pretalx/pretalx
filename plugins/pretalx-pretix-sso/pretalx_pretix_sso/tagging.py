@@ -122,7 +122,9 @@ def last_sync(event):
         ActivityLog.objects.filter(
             event=event, action_type__in=(SYNC_ACTION, SYNC_FAILED_ACTION)
         )
-        .select_related("person")
+        # The page shows entry.display, which reads the event (newer pretalx
+        # refuses to load related objects lazily)
+        .select_related("event", "person")
         .order_by("-timestamp", "-pk")
         .first()
     )
