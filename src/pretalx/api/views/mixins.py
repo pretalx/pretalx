@@ -50,6 +50,7 @@ class PretalxViewSetMixin:
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
+        context["api_version"] = self.api_version
         locale = self.request.GET.get("lang")
         if self.event and locale and locale in self.event.locales:
             context["override_locale"] = locale

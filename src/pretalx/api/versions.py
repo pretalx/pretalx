@@ -44,18 +44,21 @@ def get_serializer_by_version(name, version):
     return SERIALIZER_REGISTRY[name, version]
 
 
+def get_unsupported_version_message(version):
+    if version in UNSUPPORTED_VERSIONS:
+        return UNSUPPORTED_VERSION_MESSAGE.format(version=version)
+    if version not in SUPPORTED_VERSIONS:
+        return f"Unsupported version: {version}"
+
+
 def get_api_version_from_request(request):
     api_version = (
         request.headers.get("pretalx-version")
         or getattr(request.auth, "version", None)
         or CURRENT_VERSION
     )
-    if api_version in UNSUPPORTED_VERSIONS:
-        raise exceptions.APIException(
-            UNSUPPORTED_VERSION_MESSAGE.format(version=api_version)
-        )
-    if api_version not in SUPPORTED_VERSIONS:
-        raise exceptions.APIException(f"Unsupported version: {api_version}")
+    if message := get_unsupported_version_message(api_version):
+        raise exceptions.APIException(message)
 
     if request.auth and not request.auth.version:
         request.auth.version = api_version

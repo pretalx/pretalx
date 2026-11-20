@@ -7,8 +7,9 @@ from django.utils.timezone import now
 from rest_framework.exceptions import AuthenticationFailed
 
 from pretalx.api.auth import UserTokenAuthentication
+from pretalx.api.versions import CURRENT_VERSION, UNSUPPORTED_VERSION_MESSAGE
 from tests.factories import EventFactory, TeamFactory, UserApiTokenFactory
-from tests.utils import make_orga_user
+from tests.utils import make_api_request, make_orga_user
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -72,3 +73,62 @@ def test_user_token_authentication_rejects_token(token_kwargs, has_team):
 
     token.refresh_from_db()
     assert token.last_used is None
+
+
+@pytest.mark.parametrize(
+    ("stored_version", "version_header", "expected_message"),
+    (
+        ("LEGACY", None, UNSUPPORTED_VERSION_MESSAGE.format(version="LEGACY")),
+        ("v-nonexistent", None, "Unsupported version: v-nonexistent"),
+        ("v1", "LEGACY", UNSUPPORTED_VERSION_MESSAGE.format(version="LEGACY")),
+        (None, "v-nonexistent", "Unsupported version: v-nonexistent"),
+        ("LEGACY", "v-nonexistent", "Unsupported version: v-nonexistent"),
+    ),
+    ids=[
+        "removed",
+        "unknown",
+        "removed_header",
+        "unknown_header",
+        "removed_with_unknown_header",
+    ],
+)
+def test_user_token_authentication_rejects_unsupported_version(
+    stored_version, version_header, expected_message
+):
+    token = UserApiTokenFactory(
+        user=make_orga_user(EventFactory()), version=stored_version
+    )
+    request = make_api_request()
+    request.META["HTTP_AUTHORIZATION"] = f"Token {token.token}"
+    if version_header:
+        request.META["HTTP_PRETALX_VERSION"] = version_header
+    auth = UserTokenAuthentication()
+
+    with pytest.raises(AuthenticationFailed) as excinfo:
+        auth.authenticate(request)
+
+    assert str(excinfo.value.detail) == expected_message
+
+
+@pytest.mark.parametrize(
+    ("stored_version", "version_header"),
+    (
+        ("LEGACY", CURRENT_VERSION),
+        ("v1", None),
+        (None, None),
+    ),
+    ids=["removed_with_supported_header", "supported", "unset"],
+)
+def test_user_token_authentication_accepts_supported_version(
+    stored_version, version_header
+):
+    token = UserApiTokenFactory(
+        user=make_orga_user(EventFactory()), version=stored_version
+    )
+    request = make_api_request()
+    request.META["HTTP_AUTHORIZATION"] = f"Token {token.token}"
+    if version_header:
+        request.META["HTTP_PRETALX_VERSION"] = version_header
+    auth = UserTokenAuthentication()
+
+    assert auth.authenticate(request) == (token.user, token)

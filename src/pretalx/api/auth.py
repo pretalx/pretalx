@@ -7,12 +7,21 @@ from django.utils.timezone import now
 from rest_framework import exceptions
 from rest_framework.authentication import TokenAuthentication
 
+from pretalx.api.versions import get_unsupported_version_message
 from pretalx.event.rules import is_any_organiser
 from pretalx.person.models import UserApiToken
 
 
 class UserTokenAuthentication(TokenAuthentication):
     model = UserApiToken
+
+    def authenticate(self, request):
+        result = super().authenticate(request)
+        if result:
+            version = request.headers.get("pretalx-version") or result[1].version
+            if version and (message := get_unsupported_version_message(version)):
+                raise exceptions.AuthenticationFailed(message)
+        return result
 
     def authenticate_credentials(self, key):
         model = self.get_model()
