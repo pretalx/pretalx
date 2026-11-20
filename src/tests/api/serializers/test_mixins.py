@@ -4,9 +4,17 @@ import pytest
 from django.utils import translation
 from i18nfield.strings import LazyI18nString
 
+from pretalx.api.serializers.access_code import (
+    SubmitterAccessCodeSerializer,
+    V1SubmitterAccessCodeSerializer,
+)
 from pretalx.api.serializers.mixins import DocumentedI18nField
 from pretalx.api.serializers.question import QuestionSerializer
-from pretalx.api.serializers.submission import SubmissionSerializer
+from pretalx.api.serializers.submission import (
+    ResourceWriteSerializer,
+    SubmissionSerializer,
+)
+from pretalx.api.versions import V1
 from tests.factories import EventFactory, SubmissionFactory, TalkSlotFactory
 from tests.utils import make_api_request
 
@@ -83,3 +91,30 @@ def test_pretalx_serializer_get_extra_flex_field_builds_once_per_serializer():
     assert serializer.get_extra_flex_field("slots") is slots
     assert serializer.get_extra_flex_field("tags") is not slots
     assert other.get_extra_flex_field("slots") is not slots
+
+
+@pytest.mark.parametrize(
+    ("context", "path", "expected"),
+    (
+        (
+            {},
+            "pretalx.api.serializers.access_code.SubmitterAccessCodeSerializer",
+            SubmitterAccessCodeSerializer,
+        ),
+        (
+            {"api_version": V1},
+            "pretalx.api.serializers.access_code.SubmitterAccessCodeSerializer",
+            V1SubmitterAccessCodeSerializer,
+        ),
+        (
+            {"api_version": V1},
+            "pretalx.api.serializers.submission.ResourceWriteSerializer",
+            ResourceWriteSerializer,
+        ),
+    ),
+    ids=["without_version", "registered_for_version", "unregistered_name"],
+)
+def test_pretalx_serializer_lazy_serializer_class(context, path, expected):
+    serializer = SubmissionSerializer(context=context)
+
+    assert serializer._get_serializer_class_from_lazy_string(path) is expected

@@ -5,7 +5,6 @@ import copy
 from pathlib import Path
 
 from django.core.exceptions import ValidationError as DjangoValidationError
-from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import exceptions
 from rest_framework.serializers import (
     CharField,
@@ -49,7 +48,7 @@ from pretalx.submission.validators.question import (
 
 
 @register_serializer()
-class AnswerOptionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class AnswerOptionSerializer(PretalxSerializer):
     question = PrimaryKeyRelatedField(read_only=True)
     identifier = CharField(required=False, allow_blank=True)
 
@@ -90,7 +89,7 @@ class AnswerOptionCreateSerializer(AnswerOptionSerializer):
 
 
 @register_serializer()
-class QuestionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class QuestionSerializer(PretalxSerializer):
     identifier = CharField(required=False, allow_blank=True)
     allowed_file_types = ListField(
         child=ChoiceField(choices=FILE_TYPE_TOKENS),
@@ -232,7 +231,7 @@ class QuestionOrgaCreateSerializer(QuestionOrgaSerializer):
 
 
 @register_serializer()
-class AnswerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class AnswerSerializer(PretalxSerializer):
     question = PrimaryKeyRelatedField(read_only=True)
     submission = SlugRelatedField(slug_field="code", read_only=True, required=False)
     person = SlugRelatedField(

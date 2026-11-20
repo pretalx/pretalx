@@ -3,7 +3,6 @@
 
 from pathlib import Path
 
-from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.serializers import HiddenField
 
 from pretalx.api.serializers.defaults import CurrentEventDefault
@@ -16,7 +15,7 @@ from pretalx.submission.models import SubmissionType, Track
 
 
 @register_serializer()
-class SpeakerInformationSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class SpeakerInformationSerializer(PretalxSerializer):
     resource = UploadedFileField(required=False, allowed_types=DOCUMENT_UPLOAD_TYPES)
     event = HiddenField(default=CurrentEventDefault())
 

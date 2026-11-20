@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import exceptions
 from rest_framework.serializers import SlugRelatedField
 
@@ -13,7 +12,7 @@ from pretalx.submission.models import Feedback, Submission
 
 
 @register_serializer()
-class FeedbackWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class FeedbackWriteSerializer(PretalxSerializer):
     submission = SlugRelatedField(
         slug_field="code", queryset=Submission.objects.none(), source="talk"
     )

@@ -6,7 +6,6 @@
 
 from pathlib import Path
 
-from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework.serializers import HiddenField, SerializerMethodField
 
@@ -41,7 +40,7 @@ from pretalx.submission.validators.submission import validate_slot_count
 
 
 @register_serializer()
-class ResourceSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class ResourceSerializer(PretalxSerializer):
     """
     Submission resources contain a URL,
     which may point to external sites or to files uploaded to pretalx.
@@ -83,7 +82,7 @@ class ResourceWriteSerializer(PretalxSerializer):
 
 
 @register_serializer()
-class TagSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class TagSerializer(PretalxSerializer):
     """
     Tags group proposals for organisers.
     Tags marked as public may also be shown to attendees.
@@ -157,7 +156,7 @@ class TrackSerializer(PretalxSerializer):
 
 
 @register_serializer()
-class SubmissionInvitationSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class SubmissionInvitationSerializer(PretalxSerializer):
     class Meta:
         model = SubmissionInvitation
         fields = ("id", "email", "created", "updated")
@@ -176,7 +175,7 @@ class AttendeeSignupSerializer(PretalxSerializer):
 
 
 @register_serializer()
-class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class SubmissionSerializer(PretalxSerializer):
     submission_type = serializers.PrimaryKeyRelatedField(
         queryset=SubmissionType.objects.none(), required=True
     )

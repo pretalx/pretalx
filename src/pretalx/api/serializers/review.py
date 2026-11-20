@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.db import IntegrityError, transaction
-from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import CurrentUserDefault, HiddenField, SlugRelatedField
 
@@ -45,7 +44,7 @@ class ReviewScoreCategorySerializer(PretalxSerializer):
 
 
 @register_serializer()
-class ReviewScoreSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class ReviewScoreSerializer(PretalxSerializer):
     class Meta:
         model = ReviewScore
         fields = ("id", "category", "value", "label")
@@ -58,14 +57,14 @@ class ReviewScoreSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
 
 @register_serializer()
-class ReviewerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class ReviewerSerializer(PretalxSerializer):
     class Meta:
         model = User
         fields = ("code", "name", "email")
 
 
 @register_serializer()
-class ReviewWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class ReviewWriteSerializer(PretalxSerializer):
     submission = SlugRelatedField(slug_field="code", queryset=Submission.objects.none())
     user = HiddenField(default=CurrentUserDefault())
 

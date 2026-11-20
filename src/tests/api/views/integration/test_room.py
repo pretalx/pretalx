@@ -68,7 +68,7 @@ def test_room_detail_with_read_token(client, event, orga_read_token):
         url, follow=True, headers={**headers, "Pretalx-Version": "INVALID"}
     )
 
-    assert invalid_version.status_code == 400
+    assert invalid_version.status_code == 401
     assert "id" not in invalid_version.json()
     orga_read_token.refresh_from_db()
     assert not orga_read_token.version
@@ -306,7 +306,7 @@ def test_room_create_with_availabilities_uses_event_timezone(
     assert "+00:00" not in data["availabilities"][0]["end"]
 
 
-def test_room_list_with_removed_legacy_token_version_returns_400(
+def test_room_list_with_removed_legacy_token_version_returns_401(
     client, event, orga_read_token
 ):
     orga_read_token.version = "LEGACY"
@@ -318,7 +318,7 @@ def test_room_list_with_removed_legacy_token_version_returns_400(
         headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 401
     assert response.json()["detail"] == UNSUPPORTED_VERSION_MESSAGE.format(
         version="LEGACY"
     )

@@ -82,6 +82,7 @@ def test_v1_access_code_serializer_scopes_querysets_to_event(rf):
 
     request = rf.get("/")
     request.event = event
+    request.query_params = request.GET
     serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
     track_qs = serializer.fields["track"].queryset
     type_qs = serializer.fields["submission_type"].queryset
@@ -96,14 +97,17 @@ def test_v1_access_code_serializer_scopes_querysets_to_event(rf):
         ("submission_type", "submission_types", SubmissionTypeFactory),
     ),
 )
+@pytest.mark.parametrize(
+    "outer_query", ({}, {"omit": "name"}), ids=["plain", "outer_omit"]
+)
 def test_v1_access_code_serializer_to_representation_expanded(
-    rf, field_name, m2m_attr, factory
+    rf, field_name, m2m_attr, factory, outer_query
 ):
     access_code = SubmitterAccessCodeFactory()
     related = factory(event=access_code.event)
     getattr(access_code, m2m_attr).add(related)
 
-    request = rf.get("/", {"expand": field_name})
+    request = rf.get("/", {"expand": field_name, **outer_query})
     request.event = access_code.event
     request.query_params = request.GET
     data = V1SubmitterAccessCodeSerializer(
@@ -132,6 +136,7 @@ def test_v1_access_code_serializer_create_with_optional_track_and_type(rf):
     sub_type = SubmissionTypeFactory(event=event)
     request = rf.get("/")
     request.event = event
+    request.query_params = request.GET
 
     with_relations = V1SubmitterAccessCodeSerializer(
         data={"code": "v1create", "track": track.pk, "submission_type": sub_type.pk},
@@ -165,6 +170,7 @@ def test_v1_access_code_serializer_update_sets_relation(
     related = factory(event=access_code.event)
     request = rf.get("/")
     request.event = access_code.event
+    request.query_params = request.GET
 
     serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
     serializer.initial_data = {field_name: related.pk}
@@ -188,6 +194,7 @@ def test_v1_access_code_serializer_update_clears_relation_when_null_in_initial_d
 
     request = rf.get("/")
     request.event = access_code.event
+    request.query_params = request.GET
     serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
     serializer.initial_data = {field_name: None}
     updated = serializer.update(access_code, {})
@@ -201,6 +208,7 @@ def test_v1_access_code_serializer_update_keeps_track_when_not_in_data(rf):
 
     request = rf.get("/")
     request.event = access_code.event
+    request.query_params = request.GET
     serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
     serializer.initial_data = {}
     updated = serializer.update(access_code, {})

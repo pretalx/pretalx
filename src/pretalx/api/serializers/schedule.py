@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.db import transaction
-from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_flex_fields.utils import split_levels
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -25,7 +24,7 @@ from pretalx.schedule.validators.schedule import (
 
 
 @register_serializer()
-class ScheduleListSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class ScheduleListSerializer(PretalxSerializer):
     version = CharField(source="version_with_fallback")
 
     class Meta:
@@ -83,7 +82,7 @@ class ScheduleReleaseSerializer(PretalxSerializer):
 
 
 @register_serializer()
-class TalkSlotSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class TalkSlotSerializer(PretalxSerializer):
     submission = SlugRelatedField(slug_field="code", read_only=True)
     end = DateTimeField(source="local_end", required=False)
 

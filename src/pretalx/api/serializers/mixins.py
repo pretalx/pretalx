@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.functional import cached_property
 from i18nfield.fields import I18nCharField, I18nTextField
 from i18nfield.rest_framework import I18nField
+from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_flex_fields.utils import split_levels
 from rest_framework.fields import HiddenField, empty
 from rest_framework.serializers import (
@@ -16,6 +17,7 @@ from rest_framework.serializers import (
 )
 
 from pretalx.api.documentation import extend_schema_field
+from pretalx.api.versions import SERIALIZER_REGISTRY
 
 
 @extend_schema_field(
@@ -34,7 +36,7 @@ class DocumentedI18nField(I18nField):
         return super().to_representation(value)
 
 
-class PretalxSerializer(ModelSerializer):
+class PretalxSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     """
     This serializer class will behave like the i18nfield serializer,
     outputting a dict/object for internationalized strings, unless if
@@ -48,6 +50,15 @@ class PretalxSerializer(ModelSerializer):
         self.override_locale = kwargs.get("context", {}).get("override_locale")
         self.event = getattr(kwargs.get("context", {}).get("request"), "event", None)
         super().__init__(*args, **kwargs)
+
+    def _get_serializer_class_from_lazy_string(self, full_lazy_path):
+        # Expanded serializers follow the API version of the request
+        class_name = full_lazy_path.rsplit(".", maxsplit=1)[-1]
+        version = self.context.get("api_version")
+        serializer_class = SERIALIZER_REGISTRY.get((class_name, version))
+        if serializer_class:
+            return serializer_class
+        return super()._get_serializer_class_from_lazy_string(full_lazy_path)
 
     def get_unique_together_validators(self):
         # DRF makes every unique-together field required, which breaks pairs of a

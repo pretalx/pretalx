@@ -112,11 +112,7 @@ def test_user_token_authentication_rejects_unsupported_version(
 
 @pytest.mark.parametrize(
     ("stored_version", "version_header"),
-    (
-        ("LEGACY", CURRENT_VERSION),
-        ("v1", None),
-        (None, None),
-    ),
+    (("LEGACY", CURRENT_VERSION), ("v1", None), (None, None)),
     ids=["removed_with_supported_header", "supported", "unset"],
 )
 def test_user_token_authentication_accepts_supported_version(

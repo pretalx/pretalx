@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework.serializers import HiddenField
 
@@ -19,21 +18,21 @@ from pretalx.submission.models import Track
 
 
 @register_serializer()
-class TeamMemberSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class TeamMemberSerializer(PretalxSerializer):
     class Meta:
         model = User
         fields = ("code", "name", "email")
 
 
 @register_serializer()
-class TeamInviteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class TeamInviteSerializer(PretalxSerializer):
     class Meta:
         model = TeamInvite
         fields = ("id", "email")
 
 
 @register_serializer()
-class TeamSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class TeamSerializer(PretalxSerializer):
     limit_events = serializers.SlugRelatedField(
         slug_field="slug", many=True, queryset=Event.objects.none(), required=False
     )

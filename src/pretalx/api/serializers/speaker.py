@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.serializers import (
     BooleanField,
     CharField,
@@ -29,7 +28,7 @@ from pretalx.submission.models import QuestionTarget
 
 
 @register_serializer()
-class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class SpeakerSerializer(PretalxSerializer):
     code = CharField(read_only=True)
     name = CharField()
     avatar_url = SerializerMethodField()

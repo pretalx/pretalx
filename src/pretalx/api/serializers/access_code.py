@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.utils.functional import cached_property
-from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_flex_fields.utils import is_expanded
 from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework.serializers import HiddenField
@@ -17,7 +16,7 @@ from pretalx.submission.models.type import SubmissionType
 
 
 @register_serializer(versions=CURRENT_VERSIONS)
-class SubmitterAccessCodeSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+class SubmitterAccessCodeSerializer(PretalxSerializer):
     event = HiddenField(default=CurrentEventDefault())
 
     class Meta:
@@ -89,11 +88,11 @@ class V1SubmitterAccessCodeSerializer(PretalxSerializer):
 
     @cached_property
     def _track_serializer(self):
-        return TrackSerializer(context=self.context)
+        return TrackSerializer(context=self.context, parent=self)
 
     @cached_property
     def _submission_type_serializer(self):
-        return SubmissionTypeSerializer(context=self.context)
+        return SubmissionTypeSerializer(context=self.context, parent=self)
 
     def to_representation(self, instance):
         """We cannot use flex fields here because our data structure changed,
