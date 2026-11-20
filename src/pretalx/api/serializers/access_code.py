@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.utils.functional import cached_property
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_flex_fields.utils import is_expanded
 from rest_framework.relations import PrimaryKeyRelatedField
@@ -86,6 +87,14 @@ class V1SubmitterAccessCodeSerializer(PretalxSerializer):
                 "submission_type"
             ].queryset = request.event.submission_types.all()
 
+    @cached_property
+    def _track_serializer(self):
+        return TrackSerializer(context=self.context)
+
+    @cached_property
+    def _submission_type_serializer(self):
+        return SubmissionTypeSerializer(context=self.context)
+
     def to_representation(self, instance):
         """We cannot use flex fields here because our data structure changed,
         so we handle expansion manually for the duration of our v1 support.
@@ -98,14 +107,14 @@ class V1SubmitterAccessCodeSerializer(PretalxSerializer):
         ).first()
 
         if track and request and is_expanded(request, "track"):
-            data["track"] = TrackSerializer(track, context=self.context).data
+            data["track"] = self._track_serializer.to_representation(track)
         else:
             data["track"] = track.pk if track else None
 
         if submission_type and request and is_expanded(request, "submission_type"):
-            data["submission_type"] = SubmissionTypeSerializer(
-                submission_type, context=self.context
-            ).data
+            data["submission_type"] = (
+                self._submission_type_serializer.to_representation(submission_type)
+            )
         else:
             data["submission_type"] = submission_type.pk if submission_type else None
 

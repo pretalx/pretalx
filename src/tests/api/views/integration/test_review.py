@@ -126,7 +126,7 @@ def test_reviewviewset_list_reviewer_query_count(
         else:
             ReviewFactory.create(submission=SubmissionFactory(event=event))
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(13):
         response = client.get(
             event.api_urls.reviews,
             follow=True,
@@ -281,7 +281,7 @@ def test_reviewviewset_list_expanded_query_count(
             review.scores.add(score)
             AnswerFactory(review=review, question=question, answer="text!")
 
-    with django_assert_num_queries(21):
+    with django_assert_num_queries(20):
         response = client.get(
             f"{event.api_urls.reviews}?expand={EXPAND_ALL}",
             follow=True,

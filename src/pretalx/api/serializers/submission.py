@@ -235,8 +235,8 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     @extend_schema_field(list[str])
     def get_speakers(self, obj):
         speakers = obj.sorted_speakers
-        if serializer := self.get_extra_flex_field("speakers", speakers):
-            return serializer.data
+        if serializer := self.get_extra_flex_field("speakers"):
+            return serializer.to_representation(speakers)
         return [s.code for s in speakers]
 
     @extend_schema_field(list[int])
@@ -252,22 +252,18 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             [a for a in obj.answers.all() if a.question_id in question_pks],
             key=lambda a: a.question.position,
         )
-        if serializer := self.get_extra_flex_field("answers", answers):
-            return serializer.data
+        if serializer := self.get_extra_flex_field("answers"):
+            return serializer.to_representation(answers)
         return [a.pk for a in answers]
 
     @extend_schema_field(list[int])
     def get_slots(self, obj):
-        schedule = self.context.get("schedule")
-        if not schedule:
-            return []
         public_slots = self.context.get("public_slots", True)
-        # Use prefetched slots, filter in Python to avoid busting prefetch cache
-        slots = [s for s in obj.slots.all() if s.schedule_id == schedule.pk]
+        slots = getattr(obj, "_prefetched_current_slots", ())
         if public_slots:
             slots = [s for s in slots if s.is_visible]
-        if serializer := self.get_extra_flex_field("slots", slots):
-            return serializer.data
+        if serializer := self.get_extra_flex_field("slots"):
+            return serializer.to_representation(slots)
         return [s.pk for s in slots]
 
     @extend_schema_field(list[int])
@@ -277,8 +273,8 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         tags = list(obj.tags.all())
         if public_tags:
             tags = [tag for tag in tags if tag.is_public]
-        if serializer := self.get_extra_flex_field("tags", tags):
-            return serializer.data
+        if serializer := self.get_extra_flex_field("tags"):
+            return serializer.to_representation(tags)
         return [tag.pk for tag in tags]
 
     @extend_schema_field(list[int])
@@ -289,8 +285,8 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         if public_resources:
             resources = [r for r in resources if r.is_public]
         resources.sort(key=lambda r: r.link or "")
-        if serializer := self.get_extra_flex_field("resources", resources):
-            return serializer.data
+        if serializer := self.get_extra_flex_field("resources"):
+            return serializer.to_representation(resources)
         return [r.pk for r in resources]
 
     class Meta:
@@ -386,8 +382,8 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
     @extend_schema_field(list[int])
     def get_invitations(self, obj):
         invitations = obj.invitations.all()
-        if serializer := self.get_extra_flex_field("invitations", invitations):
-            return serializer.data
+        if serializer := self.get_extra_flex_field("invitations"):
+            return serializer.to_representation(invitations)
         return [i.pk for i in invitations]
 
     def validate_slot_count(self, value):

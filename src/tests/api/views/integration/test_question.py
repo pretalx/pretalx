@@ -74,7 +74,7 @@ def test_questionviewset_list_organiser_sees_all(
             question_required=QuestionRequired.OPTIONAL,
         )
 
-    with django_assert_num_queries(13):
+    with django_assert_num_queries(12):
         response = client.get(
             event.api_urls.questions,
             follow=True,
@@ -646,7 +646,7 @@ def test_answerviewset_list_anonymous_returns_401(client, event, submission):
 @pytest.mark.parametrize("item_count", (1, 3))
 @pytest.mark.parametrize(
     ("expand", "expected_queries"),
-    (("", 13), ("question", 15), ("question.tracks", 15)),
+    (("", 12), ("question", 14), ("question.tracks", 14)),
 )
 def test_answerviewset_list_organiser(
     client,

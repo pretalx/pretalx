@@ -10,6 +10,7 @@ from pretalx.common.exceptions import SubmissionError
 from pretalx.person.enums import SpeakerProfileOrigin
 from pretalx.person.models import SpeakerProfile
 from pretalx.person.models.auth_token import ENDPOINTS
+from pretalx.schedule.domain.release import freeze_schedule
 from pretalx.submission.models import (
     Resource,
     Submission,
@@ -35,6 +36,7 @@ from tests.factories import (
     SubmissionInvitationFactory,
     SubmissionTypeFactory,
     TagFactory,
+    TalkSlotFactory,
     TeamFactory,
     TrackFactory,
     UserApiTokenFactory,
@@ -148,7 +150,7 @@ def test_submission_list_orga_sees_all_submissions(
             item_count, submission__event=event, speaker__event=event
         )
 
-    with django_assert_num_queries(20):
+    with django_assert_num_queries(18):
         response = client.get(
             event.api_urls.submissions,
             follow=True,
@@ -280,6 +282,10 @@ def test_submission_create_readonly_token_returns_403(client, event, orga_user_t
 def test_submission_update_and_delete_with_write_token(
     client, event, orga_user_write_token, submission
 ):
+    with scopes_disabled():
+        TalkSlotFactory(submission=submission)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
     url = event.api_urls.submissions + f"{submission.code}/"
     headers = {"Authorization": f"Token {orga_user_write_token.token}"}
 
@@ -944,7 +950,7 @@ def test_tag_list_orga(
 ):
     tags = TagFactory.create_batch(item_count, event=event)
 
-    with django_assert_num_queries(10):
+    with django_assert_num_queries(9):
         response = client.get(
             event.api_urls.tags,
             follow=True,
@@ -1094,7 +1100,7 @@ def test_track_list_orga(
 ):
     tracks = TrackFactory.create_batch(item_count, event=event)
 
-    with django_assert_num_queries(11):
+    with django_assert_num_queries(10):
         response = client.get(
             event.api_urls.tracks,
             follow=True,
@@ -1183,7 +1189,7 @@ def test_submission_type_list_orga(
     with scopes_disabled():
         default_type = event.cfp.default_type
 
-    with django_assert_num_queries(10):
+    with django_assert_num_queries(9):
         response = client.get(
             event.api_urls.submission_types,
             follow=True,
@@ -1433,9 +1439,9 @@ def test_reviewer_cannot_see_submissions_in_anonymised_phase(
 @pytest.mark.parametrize(
     ("expand", "expected_queries"),
     (
-        ("speakers", 21),
-        ("answers.question,speakers.answers.question", 27),
-        ("answers.question.tracks", 23),
+        ("speakers", 19),
+        ("answers.question,speakers.answers.question", 25),
+        ("answers.question.tracks", 21),
     ),
 )
 def test_submission_list_expand_answers_question_query_count(
@@ -1494,7 +1500,7 @@ def test_submission_list_expand_speakers_availabilities_query_count(
             role = SpeakerRoleFactory(submission__event=event, speaker__event=event)
             AvailabilityFactory(event=event, person=role.speaker)
 
-    with django_assert_num_queries(22):
+    with django_assert_num_queries(20):
         response = client.get(
             event.api_urls.submissions + "?expand=speakers",
             follow=True,
@@ -1504,6 +1510,60 @@ def test_submission_list_expand_speakers_availabilities_query_count(
     assert response.status_code == 200
     content = response.json()
     assert content["count"] == item_count
+    assert len(content["results"][0]["speakers"][0]["availabilities"]) == 1
+
+
+@pytest.mark.parametrize("item_count", (1, 3))
+@pytest.mark.parametrize("slots_expand", ("slots", "slots.room"))
+def test_submission_list_expand_speakers_slots_query_count(
+    client, event, orga_read_token, item_count, slots_expand, django_assert_num_queries
+):
+    with scopes_disabled():
+        event.cfp.fields["availabilities"] = {"visibility": "optional"}
+        event.cfp.save()
+        speakers = {}
+        for _ in range(item_count):
+            role = SpeakerRoleFactory(
+                submission__event=event,
+                submission__state=SubmissionStates.CONFIRMED,
+                speaker__event=event,
+            )
+            speakers[role.submission.code] = [role.speaker.code]
+            AvailabilityFactory(event=event, person=role.speaker)
+            TalkSlotFactory(submission=role.submission)
+        freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
+        freeze_schedule(event.wip_schedule, "v2", notify_speakers=False)
+        current_slots = {
+            slot.submission.code: {"id": slot.pk, "room": slot.room_id}
+            for slot in event.current_schedule.talks.select_related("submission")
+        }
+
+    with django_assert_num_queries(21):
+        response = client.get(
+            event.api_urls.submissions
+            + f"?expand=speakers,{slots_expand},speakers.availabilities",
+            follow=True,
+            headers={"Authorization": f"Token {orga_read_token.token}"},
+        )
+
+    assert response.status_code == 200
+    content = response.json()
+    assert content["count"] == item_count
+    room_expanded = slots_expand == "slots.room"
+    assert {
+        result["code"]: [
+            {
+                "id": slot["id"],
+                "room": slot["room"]["id"] if room_expanded else slot["room"],
+            }
+            for slot in result["slots"]
+        ]
+        for result in content["results"]
+    } == {code: [slot] for code, slot in current_slots.items()}
+    assert {
+        result["code"]: [speaker["code"] for speaker in result["speakers"]]
+        for result in content["results"]
+    } == speakers
     assert len(content["results"][0]["speakers"][0]["availabilities"]) == 1
 
 

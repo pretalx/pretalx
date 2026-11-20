@@ -52,8 +52,8 @@ class ScheduleSerializer(ScheduleListSerializer):
             qs = qs.with_sorted_speakers().prefetch_related(
                 "submission__tags", "submission__resources"
             )
-        if serializer := self.get_extra_flex_field("slots", qs):
-            return serializer.data
+        if serializer := self.get_extra_flex_field("slots"):
+            return serializer.to_representation(qs)
         return qs.values_list("pk", flat=True)
 
     class Meta(ScheduleListSerializer.Meta):

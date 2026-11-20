@@ -49,17 +49,37 @@ def test_pretalx_serializer_init_sets_event_from_request(rf):
 
 
 @pytest.mark.django_db
+def test_pretalx_serializer_get_extra_flex_field_not_expanded():
+    request = make_api_request(event=EventFactory())
+    serializer = SubmissionSerializer(context={"request": request})
+
+    assert serializer.get_extra_flex_field("slots") is None
+
+
+@pytest.mark.django_db
 def test_pretalx_serializer_get_extra_flex_field_with_nested_omit():
     submission = SubmissionFactory()
     slot = TalkSlotFactory(submission=submission, is_visible=True)
     request = make_api_request(
-        event=submission.event, data={"expand": "slots", "omit": "slots.submission"}
+        event=submission.event, data={"expand": "slots", "omit": "slots.room"}
     )
-    serializer = SubmissionSerializer(
-        submission, context={"request": request, "schedule": slot.schedule}
-    )
-    data = serializer.data
+    serializer = SubmissionSerializer(context={"request": request})
 
-    assert len(data["slots"]) == 1
-    assert data["slots"][0]["id"] == slot.pk
-    assert "submission" not in data["slots"][0]
+    data = serializer.get_extra_flex_field("slots").to_representation([slot])
+
+    assert len(data) == 1
+    assert data[0]["id"] == slot.pk
+    assert "room" not in data[0]
+
+
+@pytest.mark.django_db
+def test_pretalx_serializer_get_extra_flex_field_builds_once_per_serializer():
+    request = make_api_request(event=EventFactory(), data={"expand": "slots,tags"})
+    serializer = SubmissionSerializer(context={"request": request})
+    other = SubmissionSerializer(context={"request": request})
+
+    slots = serializer.get_extra_flex_field("slots")
+
+    assert serializer.get_extra_flex_field("slots") is slots
+    assert serializer.get_extra_flex_field("tags") is not slots
+    assert other.get_extra_flex_field("slots") is not slots

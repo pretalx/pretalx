@@ -60,8 +60,8 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         # prefetches "submissions" with the visibility-filtered queryset from
         # submissions_for_user, so .all() returns only permitted submissions.
         submissions = obj.submissions.all()
-        if serializer := self.get_extra_flex_field("submissions", submissions):
-            return serializer.data
+        if serializer := self.get_extra_flex_field("submissions"):
+            return serializer.to_representation(submissions)
         return [s.code for s in submissions]
 
     @extend_schema_field(list[int])
@@ -75,8 +75,8 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             [a for a in obj.answers.all() if a.question_id in question_pks],
             key=lambda a: a.question.position,
         )
-        if serializer := self.get_extra_flex_field("answers", answers):
-            return serializer.data
+        if serializer := self.get_extra_flex_field("answers"):
+            return serializer.to_representation(answers)
         return [a.pk for a in answers]
 
     def update(self, instance, validated_data):

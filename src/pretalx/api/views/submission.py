@@ -51,6 +51,7 @@ from pretalx.submission.domain.queries.question import questions_for_user
 from pretalx.submission.domain.queries.speaker import speakers_for_user
 from pretalx.submission.domain.queries.submission import (
     annotate_submission_signup_status,
+    current_slots_prefetch,
     signed_up_submission_codes,
     sorted_speakers_prefetch,
     submissions_for_user,
@@ -249,7 +250,6 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             return context
         context["questions"] = questions_for_user(self.event, self.request.user)
         context["speakers"] = self.speakers_for_user
-        context["schedule"] = self.event.current_schedule
         context["public_slots"] = not self.has_perm("delete")
         context["public_resources"] = not self.is_orga
         context["public_tags"] = not self.is_orga
@@ -264,7 +264,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         prefetches = [
             sorted_speakers_prefetch(),
             Prefetch("answers", queryset=Answer.objects.select_related("question")),
-            "slots",
+            current_slots_prefetch(self.event),
             "tags",
             "resources",
         ]
@@ -284,9 +284,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             .prefetch_related(*prefetches)
             .order_by("code")
         )
-        fields = self.check_expanded_fields("slots.room")
-        expand_prefetches = [field.replace(".", "__") for field in fields]
-        expand_prefetches += self.answer_prefetches("answers")
+        expand_prefetches = self.answer_prefetches("answers")
         expand_prefetches += self.answer_prefetches("speakers.answers")
         if expand_prefetches:
             queryset = queryset.prefetch_related(*expand_prefetches)

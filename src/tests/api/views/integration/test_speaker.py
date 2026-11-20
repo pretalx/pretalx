@@ -233,7 +233,7 @@ def test_speaker_list_orga(
             speaker__event=event,
         )
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(13):
         response = client.get(
             event.api_urls.speakers,
             follow=True,
@@ -295,6 +295,7 @@ def test_speaker_list_expand_submissions_query_count(
             variant=QuestionVariant.STRING,
             active=True,
         )
+        expected = {}
         for _ in range(item_count):
             role = SpeakerRoleFactory(
                 submission__event=event,
@@ -304,10 +305,14 @@ def test_speaker_list_expand_submissions_query_count(
             second_role = SpeakerRoleFactory(
                 speaker=role.speaker, submission__event=event
             )
+            expected[role.speaker.code] = {
+                role.submission.code,
+                second_role.submission.code,
+            }
             for submission in (role.submission, second_role.submission):
                 AnswerFactory(question=question, submission=submission, speaker=None)
 
-    with django_assert_num_queries(18):
+    with django_assert_num_queries(17):
         response = client.get(
             event.api_urls.speakers + "?expand=submissions",
             follow=True,
@@ -317,6 +322,10 @@ def test_speaker_list_expand_submissions_query_count(
     assert response.status_code == 200
     content = response.json()
     assert content["count"] == item_count
+    assert {
+        result["code"]: {submission["code"] for submission in result["submissions"]}
+        for result in content["results"]
+    } == expected
     submissions = content["results"][0]["submissions"]
     assert len(submissions) == 2
     assert all(len(submission["answers"]) == 1 for submission in submissions)
@@ -337,7 +346,7 @@ def test_speaker_list_availabilities_query_count(
             )
             AvailabilityFactory(event=event, person=role.speaker)
 
-    with django_assert_num_queries(15):
+    with django_assert_num_queries(14):
         response = client.get(
             event.api_urls.speakers,
             follow=True,
@@ -401,9 +410,9 @@ def test_speaker_expand_answers(client, orga_read_token, event, speaker_on_event
 @pytest.mark.parametrize(
     ("expand", "expected_queries"),
     (
-        ("answers", 15),
-        ("answers,answers.question", 17),
-        ("answers.question.tracks", 17),
+        ("answers", 14),
+        ("answers,answers.question", 16),
+        ("answers.question.tracks", 16),
     ),
 )
 def test_speaker_list_expand_answers_question_query_count(

@@ -137,7 +137,6 @@ def test_submissionviewset_get_serializer_context(event, organiser_user, submiss
 
     assert list(orga_context["questions"]) == []
     assert list(orga_context["speakers"]) == list(submission.speakers.all())
-    assert orga_context["schedule"] == event.current_schedule
     assert orga_context["public_slots"] is False
     assert orga_context["public_resources"] is False
     assert orga_context["public_tags"] is False

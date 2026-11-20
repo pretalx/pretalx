@@ -95,7 +95,7 @@ def test_team_list_returns_organiser_teams(
         )
     headers = {"Authorization": f"Token {orga_read_token.token}"}
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(13):
         response = client.get(_team_url(event.organiser), follow=True, headers=headers)
     searched = client.get(
         _team_url(event.organiser) + "?q=Unique+Searchable",

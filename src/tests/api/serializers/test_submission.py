@@ -17,9 +17,10 @@ from pretalx.api.serializers.submission import (
     TagSerializer,
     TrackSerializer,
 )
+from pretalx.submission.domain.queries.submission import current_slots_prefetch
 from pretalx.submission.domain.review import update_review_score
 from pretalx.submission.enums import AttendeeSignupStates
-from pretalx.submission.models import QuestionTarget, SubmissionStates
+from pretalx.submission.models import QuestionTarget, Submission, SubmissionStates
 from tests.factories import (
     AnswerFactory,
     AttendeeSignupFactory,
@@ -454,10 +455,10 @@ def test_submission_serializer_fields():
     submission = SubmissionFactory()
     request = make_api_request(submission.event)
     base = SubmissionSerializer(
-        submission, context={"request": request, "questions": [], "schedule": None}
+        submission, context={"request": request, "questions": []}
     ).data
     orga = SubmissionOrgaSerializer(
-        submission, context={"request": request, "questions": [], "schedule": None}
+        submission, context={"request": request, "questions": []}
     ).data
 
     assert set(base.keys()) == {
@@ -557,17 +558,26 @@ def test_submission_serializer_get_answers_filters_by_submission_questions():
 def test_submission_serializer_get_slots_filters_by_schedule_and_visibility(
     public_slots, include_hidden
 ):
-    submission = SubmissionFactory()
-    event = submission.event
-    visible_slot = TalkSlotFactory(submission=submission, is_visible=True)
+    unloaded = SubmissionFactory()
+    event = unloaded.event
+    schedule = ScheduleFactory(event=event, version="v1")
+    visible_slot = TalkSlotFactory(
+        submission=unloaded, schedule=schedule, is_visible=True
+    )
     hidden_slot = TalkSlotFactory(
-        submission=submission, is_visible=False, schedule=visible_slot.schedule
+        submission=unloaded, schedule=schedule, is_visible=False
     )
-    TalkSlotFactory(
-        submission=submission, schedule=ScheduleFactory(event=event), is_visible=True
+    TalkSlotFactory(submission=unloaded, is_visible=True)
+    submission = (
+        Submission.objects.with_display_data()
+        .prefetch_related(current_slots_prefetch(event))
+        .get(pk=unloaded.pk)
     )
-    context = {"schedule": visible_slot.schedule, "public_slots": public_slots}
+    context = {"public_slots": public_slots}
 
+    without_prefetch = SubmissionSerializer(
+        unloaded, context={"request": make_api_request(event), **context}
+    ).data["slots"]
     pks = SubmissionSerializer(
         submission, context={"request": make_api_request(event), **context}
     ).data["slots"]
@@ -584,6 +594,7 @@ def test_submission_serializer_get_slots_filters_by_schedule_and_visibility(
         expected.add(hidden_slot.pk)
     assert set(pks) == expected
     assert {slot["id"] for slot in expanded} == expected
+    assert without_prefetch == []
 
 
 @pytest.mark.parametrize(
@@ -631,7 +642,7 @@ def test_submission_invitation_serializer_data_and_orga_invitations():
     invitation = SubmissionInvitationFactory(
         submission=submission, email="invited@example.com"
     )
-    context = {"questions": [], "schedule": None}
+    context = {"questions": []}
 
     invitation_data = SubmissionInvitationSerializer(
         invitation, context={"request": make_api_request(event)}
