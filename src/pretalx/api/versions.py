@@ -59,6 +59,6 @@ def get_api_version_from_request(request):
 
     if request.auth and not request.auth.version:
         request.auth.version = api_version
-        request.auth.save()
+        request.auth.save(update_fields=["version"])
 
     return api_version
