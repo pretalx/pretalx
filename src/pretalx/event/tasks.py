@@ -16,11 +16,7 @@ def task_periodic_event_services(event_slug):
             Event.objects.filter(slug=event_slug)
             .select_related("cfp")
             .prefetch_related(
-                "_settings_objects",
-                "submissions__slots",
-                "schedules",
-                "review_phases",
-                "score_categories",
+                "_settings_objects", "schedules", "review_phases", "score_categories"
             )
             .first()
         )

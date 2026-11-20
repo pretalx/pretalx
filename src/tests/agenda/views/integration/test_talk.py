@@ -78,7 +78,7 @@ def test_talk_view_default_rendering(
         submission.description = "Test description for the talk"
         submission.save()
 
-    with django_assert_num_queries(15):
+    with django_assert_num_queries(14):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -181,7 +181,7 @@ def test_talk_view_shows_room_neighbours_and_parallel_sessions(
 ):
     submission = neighbourhood["Main session"]
 
-    with django_assert_num_queries(15):
+    with django_assert_num_queries(14):
         response = client.get(submission.urls.public, follow=True)
 
     content = response.content.decode()
@@ -256,9 +256,9 @@ def test_future_session_offers_ical_and_shows_but_rejects_feedback(
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
     talk_page = client.get(submission.urls.public, follow=True)
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(8):
         feedback_page = client.get(submission.urls.feedback, follow=True)
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(8):
         response = client.post(
             submission.urls.feedback, {"review": "Time traveler!"}, follow=True
         )
@@ -282,7 +282,7 @@ def test_talk_view_404_for_nonpublic_event(client, django_assert_num_queries):
         TalkSlotFactory(submission=submission, is_visible=True)
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
-    with django_assert_num_queries(6):
+    with django_assert_num_queries(5):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 404
@@ -311,7 +311,7 @@ def test_talk_view_orga_can_see_unreleased(
         slot = TalkSlotFactory(submission=submission, is_visible=True)
     client.force_login(organiser_user)
 
-    with django_assert_num_queries(13):
+    with django_assert_num_queries(12):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -338,7 +338,7 @@ def test_talk_view_visibility_by_state_returns_404(
             is_visible=False
         )
 
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(8):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 404
@@ -352,7 +352,7 @@ def test_talk_view_shows_edit_button_for_speaker(
         speaker_user = slot.submission.speakers.select_related("user").first().user
     client.force_login(speaker_user)
 
-    with django_assert_num_queries(17):
+    with django_assert_num_queries(16):
         response = client.get(slot.submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -367,7 +367,7 @@ def test_talk_view_shows_do_not_record_indicator(
         slot.submission.do_not_record = True
         slot.submission.save()
 
-    with django_assert_num_queries(15):
+    with django_assert_num_queries(14):
         response = client.get(slot.submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -377,7 +377,7 @@ def test_talk_view_shows_do_not_record_indicator(
 def test_talk_view_feedback_link_shown_for_past_talk(
     client, django_assert_num_queries, feedback_submission
 ):
-    with django_assert_num_queries(15):
+    with django_assert_num_queries(14):
         response = client.get(feedback_submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -400,7 +400,7 @@ def test_talk_view_recording_iframe_with_plugin(
 
     register_signal_handler(register_recording_provider, handler)
 
-    with django_assert_num_queries(15):
+    with django_assert_num_queries(14):
         response = client.get(slot.submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -434,7 +434,7 @@ def test_talk_view_shows_public_resources_and_tags_only(
             is_public=False,
         )
 
-    with django_assert_num_queries(15):
+    with django_assert_num_queries(14):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -482,7 +482,7 @@ def test_talk_view_context_without_schedule_permission(
         submission.speakers.add(speaker)
     client.force_login(organiser_user)
 
-    with django_assert_num_queries(13):
+    with django_assert_num_queries(12):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -502,7 +502,7 @@ def test_talk_view_speaker_query_count(
         TalkSlotFactory(submission=submission, is_visible=True)
         freeze_schedule(event.wip_schedule, "v1", notify_speakers=False)
 
-    with django_assert_num_queries(15):
+    with django_assert_num_queries(14):
         response = client.get(submission.urls.public, follow=True)
 
     assert response.status_code == 200
@@ -517,7 +517,7 @@ def test_talk_social_media_card_serves_submission_image_or_404(
 ):
     submission = published_talk_slot.submission
 
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(8):
         missing = client.get(submission.urls.social_image, follow=True)
     with scopes_disabled():
         submission.image.save(
@@ -537,7 +537,7 @@ def test_talk_review_view_renders_when_enabled(client, django_assert_num_queries
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         submission.speakers.add(speaker)
 
-    with django_assert_num_queries(11):
+    with django_assert_num_queries(10):
         response = client.get(submission.urls.review, follow=True)
 
     assert response.status_code == 200
@@ -550,7 +550,7 @@ def test_single_ical_view_returns_calendar(
     slot = published_talk_slot
     submission = slot.submission
 
-    with django_assert_num_queries(7):
+    with django_assert_num_queries(6):
         response = client.get(submission.urls.ical, follow=True)
 
     assert response.status_code == 200
@@ -564,7 +564,7 @@ def test_single_ical_view_returns_calendar(
 def test_feedback_view_accessible_for_past_talk(
     client, django_assert_num_queries, feedback_submission
 ):
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(8):
         response = client.get(feedback_submission.urls.feedback, follow=True)
 
     assert response.status_code == 200
@@ -574,7 +574,7 @@ def test_feedback_view_accessible_for_past_talk(
 def test_feedback_view_submit_creates_feedback_and_redirects_to_talk(
     client, django_assert_num_queries, feedback_submission
 ):
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(8):
         response = client.post(
             feedback_submission.urls.feedback, {"review": "Great talk!"}, follow=False
         )
@@ -591,13 +591,13 @@ def test_feedback_view_submit_creates_feedback_and_redirects_to_talk(
 def test_feedback_view_managed_speaker_feedback_is_stored_but_hidden_from_public(
     client, django_assert_num_queries, managed_feedback_submission
 ):
-    with django_assert_num_queries(24):
+    with django_assert_num_queries(22):
         post = client.post(
             managed_feedback_submission.urls.feedback,
             {"review": "Loved it!"},
             follow=True,
         )
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(8):
         response = client.get(managed_feedback_submission.urls.feedback, follow=True)
 
     assert post.status_code == 200
@@ -617,7 +617,7 @@ def test_feedback_view_submit_multiple_speakers_no_auto_assign(
         speaker2 = SpeakerFactory(event=feedback_submission.event)
         feedback_submission.speakers.add(speaker2)
 
-    with django_assert_num_queries(24):
+    with django_assert_num_queries(22):
         response = client.post(
             feedback_submission.urls.feedback, {"review": "Great talks!"}, follow=True
         )
@@ -633,7 +633,7 @@ def test_feedback_view_submit_multiple_speakers_no_auto_assign(
 def test_feedback_view_honeypot_rejects_spam(
     client, django_assert_num_queries, feedback_submission
 ):
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(8):
         response = client.post(
             feedback_submission.urls.feedback,
             {"review": "Buy my stuff!", "subject": "on"},
@@ -653,7 +653,7 @@ def test_feedback_view_speaker_sees_feedback(
         speaker_user = feedback_submission.speakers.select_related("user").first().user
     client.force_login(speaker_user)
 
-    with django_assert_num_queries(12):
+    with django_assert_num_queries(11):
         response = client.get(feedback_submission.urls.feedback)
 
     assert response.status_code == 200

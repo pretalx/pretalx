@@ -43,7 +43,7 @@ from pretalx.submission.rules import is_speaker
 
 class TalkMixin(PermissionRequired):
     permission_required = "submission.view_public_submission"
-    prefetches = ("slots", "resources")
+    prefetches = ("resources",)
 
     def get_queryset(self):
         queryset = (
@@ -222,7 +222,7 @@ class TalkReviewView(TalkView):
         return get_object_or_404(
             Submission.all_objects.filter(event=self.request.event)
             .select_related("event", "submission_type", "track")
-            .prefetch_related("slots", "resources")
+            .prefetch_related("resources")
             .with_sorted_speakers(),
             review_code=self.kwargs["slug"],
             state__in=SubmissionStates.public_review_states,
@@ -238,7 +238,7 @@ class TalkReviewView(TalkView):
 
 
 class SingleICalView(EventPageMixin, TalkMixin, View):
-    prefetches = ("slots",)
+    prefetches = ()
 
     def get(self, request, event, **kwargs):
         code = self.submission.code

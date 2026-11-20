@@ -7,7 +7,7 @@ from django.core import mail as djmail
 from django.utils.timezone import now
 
 from pretalx.event.tasks import task_periodic_event_services
-from tests.factories import EventFactory
+from tests.factories import EventFactory, SubmissionFactory
 from tests.utils import refresh
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -20,9 +20,11 @@ def test_task_periodic_event_services_nonexistent_slug():
 def test_task_periodic_event_services_delegates_to_domain():
     djmail.outbox = []
     event = EventFactory(cfp__deadline=now() - dt.timedelta(hours=1))
+    SubmissionFactory.create_batch(2, event=event)
 
     task_periodic_event_services(event.slug)
 
     event = refresh(event)
     assert len(djmail.outbox) == 1
+    assert "all your 2 proposals" in djmail.outbox[0].body
     assert event.settings.sent_mail_cfp_closed
