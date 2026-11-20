@@ -13,7 +13,6 @@ from django.views.generic import FormView, TemplateView, View
 from django_context_decorator import context
 
 from pretalx.agenda.recording import get_recording
-from pretalx.cfp.views.event import EventPageMixin
 from pretalx.common.exceptions import SubmissionError
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import PermissionRequired, SocialMediaCardMixin
@@ -237,7 +236,8 @@ class TalkReviewView(TalkView):
         return True
 
 
-class SingleICalView(EventPageMixin, TalkMixin, View):
+class SingleICalView(TalkMixin, View):
+    permission_required = "submission.view_ical_submission"
     prefetches = ()
 
     def get(self, request, event, **kwargs):

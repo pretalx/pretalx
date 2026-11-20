@@ -550,7 +550,7 @@ def test_single_ical_view_returns_calendar(
     slot = published_talk_slot
     submission = slot.submission
 
-    with django_assert_num_queries(6):
+    with django_assert_num_queries(8):
         response = client.get(submission.urls.ical, follow=True)
 
     assert response.status_code == 200

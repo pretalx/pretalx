@@ -80,6 +80,11 @@ is_widget_visible = is_agenda_visible | is_widget_always_visible
 
 
 @rules.predicate
+def is_submission_visible_via_widget(user, submission):
+    return is_widget_visible(user, submission.event) and bool(submission.current_slots)
+
+
+@rules.predicate
 def event_uses_feedback(user, event):
     event = getattr(event, "event", event)
     return event and event.get_feature_flag("use_feedback")

@@ -270,6 +270,9 @@ class Submission(GenerateCode, PretalxModel):
             | rules.has_reviewer_access,
             "view_public": agenda_rules.is_agenda_submission_visible
             | rules.orga_can_change_submissions,
+            "view_ical": agenda_rules.is_agenda_submission_visible
+            | rules.orga_can_change_submissions
+            | agenda_rules.is_submission_visible_via_widget,
             "orga_list": rules.orga_can_change_submissions | is_reviewer,
             "orga_update": rules.orga_can_change_submissions,
             "review": rules.has_reviewer_access & rules.can_be_reviewed,
