@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
+import json
 from urllib.parse import urlencode
 
 import pytest
@@ -1324,8 +1325,14 @@ def test_submission_statistics(client, use_tracks):
         sub1 = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
         sub2 = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
         sub3 = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+        sub4 = SubmissionFactory(
+            event=event,
+            state=SubmissionStates.SUBMITTED,
+            pending_state=SubmissionStates.ACCEPTED,
+        )
         logs = [
-            sub.log_action("pretalx.submission.create") for sub in (sub1, sub2, sub3)
+            sub.log_action("pretalx.submission.create")
+            for sub in (sub1, sub2, sub3, sub4)
         ]
         # Move one accepted proposal to another date so the talk timeline has
         # two data points.
@@ -1340,6 +1347,18 @@ def test_submission_statistics(client, use_tracks):
     assert "Proposals by submission date" in content
     assert response.context["talk_timeline_data"] != ""
     assert ("Proposals by track" in content) is use_tracks
+
+    assert json.loads(response.context["talk_state_data"]) == [
+        {"label": "accepted", "value": 2}
+    ]
+    assert json.loads(response.context["talk_pending_state_data"]) == [
+        {"label": "accepted", "value": 3}
+    ]
+    timeline = json.loads(response.context["talk_timeline_data"])
+    pending_timeline = json.loads(response.context["talk_pending_timeline_data"])
+    assert sum(point["y"] for point in pending_timeline) == (
+        sum(point["y"] for point in timeline) + 1
+    )
 
 
 @pytest.mark.parametrize("item_count", (1, 3))

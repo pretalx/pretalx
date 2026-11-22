@@ -5,10 +5,10 @@ const globalData = document.getElementById("global-data")
 const dataMapping = JSON.parse(globalData.dataset.mapping)
 let searchUrl = globalData.dataset.url
 
-const drawTimeline = () => {
+const drawTimeline = (includePending = false) => {
     const dataElements = [
         "submission-timeline-data",
-        "talk-timeline-data",
+        includePending ? "talk-pending-timeline-data" : "talk-timeline-data",
         "total-submission-timeline-data",
     ]
         .map((id) => document.getElementById(id))
@@ -203,8 +203,15 @@ const getChartData = (scope) =>
     }, {})
 const submissionChartData = getChartData("submission")
 const talkChartData = getChartData("talk")
+const talkPendingChartData = getChartData("talk-pending")
+const includePendingGroup = document.getElementById("include-pending-group")
+const includePendingCheckbox = document.getElementById("include-pending")
+const includePending = () => includePendingCheckbox?.checked
 /* generate timeline data. delay to draw the correct size immediately */
-setTimeout(drawTimeline, 10)
+let timelineChart = null
+setTimeout(() => {
+    timelineChart = drawTimeline()
+}, 10)
 
 let charts = []
 
@@ -220,7 +227,11 @@ const showCardHeaders = (element, showTalks) => {
 const drawPieCharts = (showTalks) => {
     charts.forEach((chart) => chart.destroy())
     charts = []
-    const chartData = showTalks ? talkChartData : submissionChartData
+    includePendingGroup?.classList.toggle("d-none", !showTalks)
+    let chartData = submissionChartData
+    if (showTalks) {
+        chartData = includePending() ? talkPendingChartData : talkChartData
+    }
     for (const key of chartTypes) {
         const submissionElement = document.getElementById(`submission-${key}`)
         const talkElement = document.getElementById(`talk-${key}`)
@@ -241,4 +252,11 @@ const showTalks = () =>
 drawPieCharts(showTalks())
 document.querySelectorAll("input[name='stats-toggle']").forEach((input) => {
     input.addEventListener("change", () => drawPieCharts(showTalks()))
+})
+includePendingCheckbox?.addEventListener("change", () => {
+    drawPieCharts(showTalks())
+    if (timelineChart) {
+        timelineChart.destroy()
+        timelineChart = drawTimeline(includePendingCheckbox.checked)
+    }
 })

@@ -1045,6 +1045,16 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
             if submission.state in SubmissionStates.accepted_states
         ]
 
+    @cached_property
+    def projected_accepted_submissions(self):
+        """Proposals that will be sessions once all pending changes are applied."""
+        return [
+            submission
+            for submission in self.submissions
+            if (submission.pending_state or submission.state)
+            in SubmissionStates.accepted_states
+        ]
+
     @context
     def show_submission_types(self):
         return self.request.event.submission_types.count() > 1
@@ -1149,7 +1159,15 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
 
     @context
     def talk_timeline_data(self):
-        talk_ids = [submission.id for submission in self.accepted_submissions]
+        return self._talk_timeline_json(self.accepted_submissions)
+
+    @context
+    def talk_pending_timeline_data(self):
+        """Session timeline data with pending state changes applied."""
+        return self._talk_timeline_json(self.projected_accepted_submissions)
+
+    def _talk_timeline_json(self, submissions):
+        talk_ids = [submission.id for submission in submissions]
         data = Counter(
             log.timestamp.astimezone(self.request.event.tz).date().isoformat()
             for log in ActivityLog.objects.filter(
@@ -1192,6 +1210,37 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
             return serialize_pie_chart_data(
                 Counter(
                     str(submission.track) for submission in self.accepted_submissions
+                )
+            )
+        return ""
+
+    @context
+    def talk_pending_state_data(self):
+        return serialize_pie_chart_data(
+            Counter(
+                str(
+                    SubmissionStates(submission.pending_state or submission.state).label
+                )
+                for submission in self.projected_accepted_submissions
+            )
+        )
+
+    @context
+    def talk_pending_type_data(self):
+        return serialize_pie_chart_data(
+            Counter(
+                str(submission.submission_type)
+                for submission in self.projected_accepted_submissions
+            )
+        )
+
+    @context
+    def talk_pending_track_data(self):
+        if self.request.event.has_active_tracks:
+            return serialize_pie_chart_data(
+                Counter(
+                    str(submission.track)
+                    for submission in self.projected_accepted_submissions
                 )
             )
         return ""

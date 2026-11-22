@@ -386,6 +386,54 @@ def test_serialize_pie_chart_data(counts, expected):
     assert serialize_pie_chart_data(Counter(counts)) == expected
 
 
+def test_submission_stats_projected_accepted_submissions(event):
+    user = make_orga_user(event, can_change_submissions=True)
+    accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    pending_accepted = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.SUBMITTED,
+        pending_state=SubmissionStates.ACCEPTED,
+    )
+    SubmissionFactory(
+        event=event,
+        state=SubmissionStates.ACCEPTED,
+        pending_state=SubmissionStates.REJECTED,
+    )
+    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+
+    request = make_request(event, user=user)
+    view = make_view(SubmissionStats, request)
+
+    assert {s.pk for s in view.projected_accepted_submissions} == {
+        accepted.pk,
+        pending_accepted.pk,
+    }
+
+
+def test_submission_stats_talk_pending_state_data_merges_states(event):
+    user = make_orga_user(event, can_change_submissions=True)
+    SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    SubmissionFactory(
+        event=event,
+        state=SubmissionStates.SUBMITTED,
+        pending_state=SubmissionStates.ACCEPTED,
+    )
+    SubmissionFactory(
+        event=event,
+        state=SubmissionStates.ACCEPTED,
+        pending_state=SubmissionStates.CONFIRMED,
+    )
+
+    request = make_request(event, user=user)
+    view = make_view(SubmissionStats, request)
+
+    assert json.loads(view.talk_pending_state_data()) == [
+        {"label": "accepted", "value": 2},
+        {"label": "confirmed", "value": 1},
+    ]
+    assert json.loads(view.talk_state_data()) == [{"label": "accepted", "value": 2}]
+
+
 def test_submission_stats_data_empty_without_matching_submissions():
     event = EventFactory(feature_flags={"use_tracks": True})
     track = TrackFactory(event=event)
@@ -407,6 +455,10 @@ def test_submission_stats_data_empty_without_matching_submissions():
     assert unaccepted.talk_state_data() == ""
     assert unaccepted.talk_type_data() == ""
     assert unaccepted.talk_track_data() == ""
+    assert unaccepted.talk_pending_state_data() == ""
+    assert unaccepted.talk_pending_type_data() == ""
+    assert unaccepted.talk_pending_track_data() == ""
+    assert unaccepted.talk_pending_timeline_data() == ""
     assert unaccepted.raw_submission_timeline_data is None
     assert unaccepted.submission_timeline_data() == ""
     assert unaccepted.total_submission_timeline_data() == ""

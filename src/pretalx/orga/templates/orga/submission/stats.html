@@ -25,6 +25,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% #page_heading %}
         {% translate "Proposal Statistics" %}
         {% #slot buttons %}
+        <label id="include-pending-group" class="filter-fulltext d-none">
+            <input type="checkbox" id="include-pending">
+            {% translate "Include pending changes" %}
+        </label>
         <div class="filter-tristate" role="radiogroup" aria-label='{% translate "Statistics" %}'>
             <label class="filter-segment">
                 <input type="radio" name="stats-toggle" value="submissions" checked>
@@ -65,6 +69,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 >
                 </div>
                 <div
+                    id="talk-pending-timeline-data"
+                    class="d-none"
+                    data-timeline="{{ talk_pending_timeline_data }}"
+                    data-label="{{ phrases.schedule.sessions }}"
+                >
+                </div>
+                <div
                     id="total-submission-timeline-data"
                     class="d-none"
                     data-timeline="{{ total_submission_timeline_data }}"
@@ -81,6 +92,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <div class="card-header talks d-none">{% translate "Sessions by session type" %}</div>
                 <div id="submission-type-data" class="d-none" data-states="{{ submission_type_data }}"></div>
                 <div id="talk-type-data" class="d-none" data-states="{{ talk_type_data }}"></div>
+                <div id="talk-pending-type-data" class="d-none" data-states="{{ talk_pending_type_data }}"></div>
                 <div id="submission-type" class="pie card-body submissions"></div>
                 <div id="talk-type" class="pie card-body talks d-none"></div>
             </div>
@@ -92,6 +104,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <div class="card-header talks d-none">{% translate "Sessions by track" %}</div>
                 <div id="submission-track-data" class="d-none" data-states="{{ submission_track_data }}"></div>
                 <div id="talk-track-data" class="d-none" data-states="{{ talk_track_data }}"></div>
+                <div id="talk-pending-track-data" class="d-none" data-states="{{ talk_pending_track_data }}"></div>
                 <div id="submission-track" class="pie card-body submissions"></div>
                 <div id="talk-track" class="pie card-body talks d-none"></div>
             </div>
@@ -103,6 +116,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <div class="card-header talks d-none">{% translate "Sessions by state" %}</div>
                 <div id="submission-state-data" class="d-none" data-states="{{ submission_state_data }}"></div>
                 <div id="talk-state-data" class="d-none" data-states="{{ talk_state_data }}"></div>
+                <div id="talk-pending-state-data" class="d-none" data-states="{{ talk_pending_state_data }}"></div>
                 <div id="submission-state" class="pie card-body submissions"></div>
                 <div id="talk-state" class="pie card-body talks d-none"></div>
             </div>
