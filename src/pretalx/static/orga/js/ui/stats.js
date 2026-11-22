@@ -5,6 +5,15 @@ const globalData = document.getElementById("global-data")
 const dataMapping = JSON.parse(globalData.dataset.mapping)
 let searchUrl = globalData.dataset.url
 
+const durationFormats = JSON.parse(globalData.dataset.durationFormats)
+const formatDuration = (minutes) => {
+    if (minutes < 60) return durationFormats.minutes.replace("{n}", minutes)
+    const hours = (minutes / 60).toLocaleString(document.documentElement.lang, {
+        maximumFractionDigits: 1,
+    })
+    return durationFormats.hours.replace("{n}", hours)
+}
+
 const drawTimeline = (includePending = false) => {
     const dataElements = [
         "submission-timeline-data",
@@ -109,6 +118,7 @@ const getPieData = (id) => {
     return {
         series: data.map((e) => e.value),
         labels: data.map((e) => e.label),
+        minutes: data.map((e) => e.minutes),
     }
 }
 
@@ -117,8 +127,16 @@ const drawPieChart = (data, scope, type) => {
     const element = document.getElementById(id)
     const typeMapping = {
         track: "track",
+        "track-duration": "track",
         type: "submission_type",
         state: "state",
+    }
+    const valueDisplay = (index) => {
+        if (type === "duration") {
+            return `${data.series[index]} (${formatDuration(data.minutes[index])})`
+        }
+        if (type === "track-duration") return formatDuration(data.series[index])
+        return data.series[index]
     }
     const options = {
         series: data.series,
@@ -127,20 +145,7 @@ const drawPieChart = (data, scope, type) => {
             width: element.clientWidth - 50,
             redrawOnParentResize: true,
             type: "donut",
-            events: {
-                dataPointSelection: (_event, _chartContext, config) => {
-                    const label = config.w.config.labels[config.dataPointIndex]
-                    const searchValue = dataMapping[type][label]
-                    searchUrl += `&${typeMapping[type]}=${searchValue}`
-                    window.location.href = searchUrl
-                },
-                dataPointMouseEnter: () => {
-                    element.style.cursor = "pointer"
-                },
-                dataPointMouseLeave: () => {
-                    element.style.cursor = "inherit"
-                },
-            },
+            events: {},
         },
         dataLabels: {
             enabled: false,
@@ -148,7 +153,7 @@ const drawPieChart = (data, scope, type) => {
         legend: {
             formatter: (val, opts) => {
                 if (val.length > 15) val = `${val.slice(0, 15)}…`
-                return `${escapeHtml(val)} - ${opts.w.globals.series[opts.seriesIndex]}`
+                return `${escapeHtml(val)} - ${valueDisplay(opts.seriesIndex)}`
             },
         },
         responsive: [
@@ -185,16 +190,54 @@ const drawPieChart = (data, scope, type) => {
             enabled: false,
         },
     }
+    // Add click handlers for filterable chart types (track, track-duration, type, state).
+    // Duration charts are non-clickable because they have no corresponding filter.
+    const filterType = type === "track-duration" ? "track" : type
+    if (typeMapping[filterType]) {
+        options.chart.events = {
+            dataPointSelection: (_event, _chartContext, config) => {
+                const label = config.w.config.labels[config.dataPointIndex]
+                const searchValue = dataMapping[filterType][label]
+                searchUrl += `&${typeMapping[filterType]}=${searchValue}`
+                window.location.href = searchUrl
+            },
+            dataPointMouseEnter: () => {
+                element.style.cursor = "pointer"
+            },
+            dataPointMouseLeave: () => {
+                element.style.cursor = "inherit"
+            },
+        }
+    }
+    // Add donut centre "Total" label for duration-based charts.
+    // Shows total count + time for duration charts, or total time for track-duration.
+    if (type === "duration" || type === "track-duration") {
+        const sum = (values) => values.reduce((a, b) => a + b, 0)
+        options.plotOptions.pie.donut.labels.total = {
+            show: true,
+            label: durationFormats.total,
+            formatter: () =>
+                type === "duration"
+                    ? `${sum(data.series)} (${formatDuration(sum(data.minutes))})`
+                    : formatDuration(sum(data.series)),
+        }
+    }
+    // Format the centre hover value for track-duration to show time instead of raw minutes
+    if (type === "track-duration") {
+        options.plotOptions.pie.donut.labels.value = {
+            formatter: (val) => formatDuration(Number(val)),
+        }
+    }
 
     const chart = new ApexCharts(element, options)
     chart.render()
     return chart
 }
 
-const chartTypes = ["state"]
+const chartTypes = ["state", "duration"]
 if (dataMapping.type && Object.keys(dataMapping.type).length > 1)
     chartTypes.push("type")
-if (dataMapping.track) chartTypes.push("track")
+if (dataMapping.track) chartTypes.push("track", "track-duration")
 const getChartData = (scope) =>
     chartTypes.reduce((result, item) => {
         const data = getPieData(`${scope}-${item}-data`)

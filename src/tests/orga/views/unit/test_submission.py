@@ -23,6 +23,8 @@ from pretalx.orga.views.submission import (
     SubmissionStateChange,
     SubmissionStats,
     TagView,
+    _duration_json,
+    _track_duration_json,
     serialize_pie_chart_data,
 )
 from pretalx.schedule.domain.release import freeze_schedule
@@ -336,6 +338,10 @@ def test_submission_stats_data_without_tracks(event):
     ]
     assert json.loads(view.submission_type_data()) == [{"label": "Keynote", "value": 2}]
     assert view.submission_track_data() == ""
+    assert view.submission_track_duration_data() == ""
+    assert json.loads(view.submission_duration_data()) == [
+        {"label": "30 min", "value": 2, "minutes": 60}
+    ]
     assert json.loads(view.talk_state_data()) == [{"label": "accepted", "value": 1}]
     assert json.loads(view.talk_type_data()) == [{"label": "Keynote", "value": 1}]
     assert view.talk_track_data() == ""
@@ -445,6 +451,8 @@ def test_submission_stats_data_empty_without_matching_submissions():
     assert empty.submission_state_data == ""
     assert empty.submission_type_data() == ""
     assert empty.submission_track_data() == ""
+    assert empty.submission_duration_data() == ""
+    assert empty.submission_track_duration_data() == ""
     assert empty.submission_timeline_data() == ""
     assert empty.total_submission_timeline_data() == ""
 
@@ -459,9 +467,50 @@ def test_submission_stats_data_empty_without_matching_submissions():
     assert unaccepted.talk_pending_type_data() == ""
     assert unaccepted.talk_pending_track_data() == ""
     assert unaccepted.talk_pending_timeline_data() == ""
+    assert unaccepted.talk_duration_data() == ""
+    assert unaccepted.talk_track_duration_data() == ""
+    assert unaccepted.talk_pending_duration_data() == ""
+    assert unaccepted.talk_pending_track_duration_data() == ""
     assert unaccepted.raw_submission_timeline_data is None
     assert unaccepted.submission_timeline_data() == ""
     assert unaccepted.total_submission_timeline_data() == ""
+
+
+def test_duration_json(event):
+    SubmissionFactory(event=event, duration=None)
+    SubmissionFactory(event=event, duration=None)
+    SubmissionFactory(event=event, duration=45)
+    SubmissionFactory(event=event, duration=10, slot_count=2)
+
+    result = json.loads(
+        _duration_json(
+            list(event.submissions.select_related("track", "submission_type"))
+        )
+    )
+
+    assert result == [
+        {"label": "10 min", "value": 1, "minutes": 20},
+        {"label": "30 min", "value": 2, "minutes": 60},
+        {"label": "45 min", "value": 1, "minutes": 45},
+    ]
+    assert _duration_json([]) == ""
+
+
+def test_track_duration_json(event):
+    track_a = TrackFactory(event=event, name="A")
+    track_b = TrackFactory(event=event, name="B")
+    SubmissionFactory(event=event, track=track_a, duration=None)
+    SubmissionFactory(event=event, track=track_a, duration=15, slot_count=2)
+    SubmissionFactory(event=event, track=track_b, duration=45)
+
+    result = json.loads(
+        _track_duration_json(
+            list(event.submissions.select_related("track", "submission_type"))
+        )
+    )
+
+    assert result == [{"label": "A", "value": 60}, {"label": "B", "value": 45}]
+    assert _track_duration_json([]) == ""
 
 
 def test_tag_view_get_queryset_counts_non_draft_submissions(event):

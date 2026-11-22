@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`orga:submission,2937` Organiser statistics now include proposals by duration and proposal durations by track.
 - :feature:`orga:submission,2937` Organisers can now chose to include pending changes in session statistics.
 - :feature:`orga:submission,2912` Organisers can now filter the session and review lists by whether a session has internal notes.
 - :feature:`orga:submission,2514` If your CfP asks for resources, you can now filter the session and review lists by whether a session has resources. This also allows you to send emails to speakers who have uploaded no resources for their sessions.

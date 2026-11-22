@@ -1360,6 +1360,20 @@ def test_submission_statistics(client, use_tracks):
         sum(point["y"] for point in timeline) + 1
     )
 
+    assert json.loads(response.context["talk_duration_data"]) == [
+        {"label": "30 min", "value": 2, "minutes": 60}
+    ]
+    assert json.loads(response.context["talk_pending_duration_data"]) == [
+        {"label": "30 min", "value": 3, "minutes": 90}
+    ]
+    if use_tracks:
+        pending_track_duration = json.loads(
+            response.context["talk_pending_track_duration_data"]
+        )
+        assert sum(item["value"] for item in pending_track_duration) == 90
+    else:
+        assert response.context["talk_pending_track_duration_data"] == ""
+
 
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_submission_feedback_list_query_count(

@@ -1029,6 +1029,38 @@ def serialize_pie_chart_data(counter):
     return json.dumps(data) if data else ""
 
 
+def _duration_json(submissions):
+    """Proposal counts and summed minutes (taking slot count into account) per effective duration."""
+    counts = Counter()
+    minutes = Counter()
+    for submission in submissions:
+        duration = submission.get_duration()
+        counts[duration] += 1
+        minutes[duration] += duration * submission.slot_count
+    if not counts:
+        return ""
+    return json.dumps(
+        [
+            {
+                "label": _("{n} min").format(n=duration),
+                "value": counts[duration],
+                "minutes": minutes[duration],
+            }
+            for duration in sorted(counts)
+        ]
+    )
+
+
+def _track_duration_json(submissions):
+    """Summed duration per track (in minutes, taking slot count into account)."""
+    counter = Counter()
+    for submission in submissions:
+        counter[str(submission.track)] += (
+            submission.get_duration() * submission.slot_count
+        )
+    return serialize_pie_chart_data(counter)
+
+
 class SubmissionStats(EventPermissionRequired, TemplateView):
     template_name = "orga/submission/stats.html"
     permission_required = "submission.orga_list_submission"
@@ -1244,6 +1276,46 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
                 )
             )
         return ""
+
+    @context
+    def submission_duration_data(self):
+        return _duration_json(self.submissions)
+
+    @context
+    def submission_track_duration_data(self):
+        if self.request.event.has_active_tracks:
+            return _track_duration_json(self.submissions)
+        return ""
+
+    @context
+    def talk_duration_data(self):
+        return _duration_json(self.accepted_submissions)
+
+    @context
+    def talk_track_duration_data(self):
+        if self.request.event.has_active_tracks:
+            return _track_duration_json(self.accepted_submissions)
+        return ""
+
+    @context
+    def talk_pending_duration_data(self):
+        return _duration_json(self.projected_accepted_submissions)
+
+    @context
+    def talk_pending_track_duration_data(self):
+        if self.request.event.has_active_tracks:
+            return _track_duration_json(self.projected_accepted_submissions)
+        return ""
+
+    @context
+    def duration_formats(self):
+        return json.dumps(
+            {
+                "minutes": str(_("{n} min")),
+                "hours": str(_("{n} h")),
+                "total": str(_("Total")),
+            }
+        )
 
 
 class AllFeedbacksList(EventPermissionRequired, OrgaTableMixin, ListView):

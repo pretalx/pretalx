@@ -48,6 +48,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             data-url="{{ request.event.orga_urls.submissions }}?"
             data-mapping="{{ id_mapping }}"
             data-annotations="{{ timeline_annotations }}"
+            data-duration-formats="{{ duration_formats }}"
         >
         </div>
 
@@ -98,6 +99,19 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </div>
         {% endif %}
 
+        {% if submission_duration_data %}
+            <div class="card">
+                <div class="card-header submissions">{% translate "Proposals by duration" %}</div>
+                <div class="card-header talks d-none">{% translate "Sessions by duration" %}</div>
+                <div id="submission-duration-data" class="d-none" data-states="{{ submission_duration_data }}"></div>
+                <div id="talk-duration-data" class="d-none" data-states="{{ talk_duration_data }}"></div>
+                <div id="talk-pending-duration-data" class="d-none" data-states="{{ talk_pending_duration_data }}">
+                </div>
+                <div id="submission-duration" class="pie card-body submissions"></div>
+                <div id="talk-duration" class="pie card-body talks d-none"></div>
+            </div>
+        {% endif %}
+
         {% if submission_track_data and show_tracks %}
             <div class="card">
                 <div class="card-header submissions">{% translate "Proposals by track" %}</div>
@@ -107,6 +121,28 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <div id="talk-pending-track-data" class="d-none" data-states="{{ talk_pending_track_data }}"></div>
                 <div id="submission-track" class="pie card-body submissions"></div>
                 <div id="talk-track" class="pie card-body talks d-none"></div>
+            </div>
+        {% endif %}
+
+        {% if submission_track_duration_data and show_tracks %}
+            <div class="card">
+                <div class="card-header submissions">{% translate "Proposal durations by track" %}</div>
+                <div class="card-header talks d-none">{% translate "Session durations by track" %}</div>
+                <div
+                    id="submission-track-duration-data"
+                    class="d-none"
+                    data-states="{{ submission_track_duration_data }}"
+                >
+                </div>
+                <div id="talk-track-duration-data" class="d-none" data-states="{{ talk_track_duration_data }}"></div>
+                <div
+                    id="talk-pending-track-duration-data"
+                    class="d-none"
+                    data-states="{{ talk_pending_track_duration_data }}"
+                >
+                </div>
+                <div id="submission-track-duration" class="pie card-body submissions"></div>
+                <div id="talk-track-duration" class="pie card-body talks d-none"></div>
             </div>
         {% endif %}
 
