@@ -44,6 +44,17 @@ def test_api_version_without_request_raises_version_exception():
         view.api_version  # noqa: B018 -- cached_property, not a no-op
 
 
+def test_api_version_with_unsupported_header_raises_version_exception():
+    request = make_api_request()
+    request._request.META["HTTP_PRETALX_VERSION"] = "INVALID"
+    view = make_view(RoomViewSet, request)
+
+    with pytest.raises(ApiVersionException) as excinfo:
+        view.api_version  # noqa: B018 -- cached_property, not a no-op
+
+    assert str(excinfo.value.detail) == "Unsupported version: INVALID"
+
+
 @pytest.mark.django_db
 def test_perform_create_rolls_back_when_log_write_fails(event):
     request = make_api_request(event=event, user=UserFactory())

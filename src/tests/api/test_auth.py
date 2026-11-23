@@ -79,10 +79,10 @@ def test_user_token_authentication_rejects_token(token_kwargs, has_team):
     ("stored_version", "version_header", "expected_message"),
     (
         ("LEGACY", None, UNSUPPORTED_VERSION_MESSAGE.format(version="LEGACY")),
-        ("v-nonexistent", None, "Unsupported version: v-nonexistent"),
+        ("v-unknown", None, "Unsupported version: v-unknown"),
         ("v1", "LEGACY", UNSUPPORTED_VERSION_MESSAGE.format(version="LEGACY")),
-        (None, "v-nonexistent", "Unsupported version: v-nonexistent"),
-        ("LEGACY", "v-nonexistent", "Unsupported version: v-nonexistent"),
+        (None, "v-unknown", "Unsupported version: v-unknown"),
+        ("LEGACY", "v-unknown", "Unsupported version: v-unknown"),
     ),
     ids=[
         "removed",

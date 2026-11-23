@@ -10,6 +10,7 @@ from pretalx.agenda.rules import (
     is_agenda_visible,
     is_submission_visible_via_featured,
     is_submission_visible_via_schedule,
+    is_submission_visible_via_widget,
     is_viewable_speaker,
     is_widget_always_visible,
     is_widget_visible,
@@ -214,6 +215,27 @@ def test_is_widget_visible_on_private_event(flag_value, expected):
 
     with scope(event=event):
         assert is_widget_visible(None, event) is expected
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("flag_value", "slot_visible", "expected"),
+    ((True, True, True), (True, False, False), (False, True, False)),
+    ids=["visible_slot", "invisible_slot", "no_flag"],
+)
+def test_is_submission_visible_via_widget(
+    flag_value, slot_visible, expected, published_talk_slot
+):
+    schedule = published_talk_slot.schedule
+    event = schedule.event
+    event.is_public = False
+    event.feature_flags["show_widget_if_not_public"] = flag_value
+    event.save()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    TalkSlotFactory(submission=submission, schedule=schedule, is_visible=slot_visible)
+
+    with scope(event=event):
+        assert is_submission_visible_via_widget(None, submission) is expected
 
 
 @pytest.mark.django_db

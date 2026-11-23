@@ -561,6 +561,26 @@ def test_single_ical_view_returns_calendar(
     assert submission.event.slug in disposition
 
 
+@pytest.mark.parametrize(
+    ("widget_flag", "expected_status"),
+    ((True, 200), (False, 404)),
+    ids=["widget_enabled", "widget_disabled"],
+)
+def test_single_ical_view_on_non_public_event_follows_widget_flag(
+    client, published_talk_slot, widget_flag, expected_status
+):
+    submission = published_talk_slot.submission
+    event = submission.event
+    event.is_public = False
+    event.feature_flags["show_widget_if_not_public"] = widget_flag
+    event.save()
+
+    response = client.get(submission.urls.ical, follow=True)
+
+    assert response.status_code == expected_status
+    assert ("VCALENDAR" in response.content.decode()) is widget_flag
+
+
 def test_feedback_view_accessible_for_past_talk(
     client, django_assert_num_queries, feedback_submission
 ):
