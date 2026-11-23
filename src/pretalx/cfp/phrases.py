@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext_lazy
+from django.utils.translation import ngettext_lazy, pgettext_lazy
 
 from pretalx.common.text.phrases import Phrases
 
@@ -30,6 +30,11 @@ class CfPPhrases(Phrases, app="cfp"):
     )
     submission_not_confirmed = _(
         "This proposal cannot be confirmed at this time – please contact us if you think this is an error."
+    )
+    submission_limit_reached = ngettext_lazy(
+        "You can submit %(limit)s proposal to this event and have reached that limit.",
+        "You can submit up to %(limit)s proposals to this event and have reached that limit.",
+        "limit",
     )
     submission_uneditable = _(
         "This proposal cannot be edited at this time. Please contact the organisers if you need to make changes."

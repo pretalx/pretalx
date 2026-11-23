@@ -16,6 +16,7 @@ from django.views import View
 
 from pretalx.cfp.flow import cfp_session
 from pretalx.cfp.views.event import EventPageMixin
+from pretalx.submission.domain.cfp import submission_limit_message
 from pretalx.submission.models import Submission, SubmissionStates
 
 
@@ -64,6 +65,9 @@ class SubmitWizard(EventPageMixin, View):
             return redirect(
                 reverse("cfp:event.start", kwargs={"event": request.event.slug})
             )
+        if limit_message := submission_limit_message(request.event, request.user):
+            messages.error(request, limit_message)
+            return redirect(request.event.urls.user_submissions)
         step = None
         for step in request.event.cfp_flow.steps:
             if not step.is_applicable(request):
@@ -140,6 +144,12 @@ class SubmitWizard(EventPageMixin, View):
         # We are done, or at least the data checks out. Time to save results.
         try:
             request.event.cfp_flow.steps_dict["user"].done(request)
+            if not draft and (
+                limit_message := submission_limit_message(request.event, request.user)
+            ):
+                cache.delete(lock_key)
+                messages.error(request, limit_message)
+                draft = True
             for step in valid_steps:
                 if step.identifier != "user":
                     step.done(request, draft=draft)

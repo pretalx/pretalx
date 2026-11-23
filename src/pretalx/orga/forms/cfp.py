@@ -92,6 +92,9 @@ class CfPForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
         choices=(("chars", _("Characters")), ("words", _("Words"))),
         widget=SegmentedRadioSelect(),
     )
+    submission_limit = forms.IntegerField(
+        label=_("Maximum proposals per speaker"), required=False, min_value=1
+    )
 
     def __init__(self, *args, event, **kwargs):
         super().__init__(*args, **kwargs)
@@ -128,7 +131,11 @@ class CfPForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
         model = CfP
         fields = ["headline", "text", "opening", "deadline"]
         # These are JSON fields on cfp.settings
-        json_fields = {"show_deadline": "settings", "count_length_in": "settings"}
+        json_fields = {
+            "show_deadline": "settings",
+            "count_length_in": "settings",
+            "submission_limit": "settings",
+        }
 
 
 class CfPFieldConfigForm(PretalxI18nFormMixin, forms.Form):

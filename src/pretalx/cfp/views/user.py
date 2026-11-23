@@ -58,6 +58,7 @@ from pretalx.person.interfaces.forms import (
     UserForm,
 )
 from pretalx.person.models import SpeakerProfile, User
+from pretalx.submission.domain.cfp import submission_limit_message
 from pretalx.submission.domain.invitation import (
     accept_invitation,
     retract_invitation,
@@ -256,6 +257,11 @@ class SubmissionsListView(LoggedInEventPageMixin, ListView):
         for draft in drafts:
             draft.event = self.request.event
         return drafts
+
+    @context
+    @cached_property
+    def submission_limit_message(self):
+        return submission_limit_message(self.request.event, self.request.user)
 
     def get_queryset(self):
         return (
@@ -556,6 +562,11 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
     def can_edit(self):
         return self.object.editable
 
+    @context
+    @cached_property
+    def submission_limit_message(self):
+        return submission_limit_message(self.request.event, self.request.user)
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["event"] = self.request.event
@@ -604,6 +615,10 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
             form.instance.state == SubmissionStates.DRAFT
             and self.request.POST.get("action", "submit") == "dedraft"
         ):
+            if self.submission_limit_message:
+                messages.success(self.request, phrases.base.saved)
+                messages.error(self.request, self.submission_limit_message)
+                return redirect(self.object.urls.user_base)
             url = reverse(
                 "cfp:event.cfp.restart",
                 kwargs={"event": self.request.event.slug, "code": form.instance.code},

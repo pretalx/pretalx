@@ -3,15 +3,25 @@
 import datetime as dt
 
 import pytest
+from django.contrib.auth.models import AnonymousUser
 from django.utils.timezone import now
+from django_scopes import scope, scopes_disabled
 
 from pretalx.submission.domain.cfp import (
     access_code_blocker,
     can_submit_without_access_code,
     cfp_deadlines,
+    submission_limit_message,
     submission_types_by_deadline,
 )
-from tests.factories import EventFactory, SubmissionTypeFactory, TrackFactory
+from pretalx.submission.models import SubmissionStates
+from tests.factories import (
+    EventFactory,
+    SpeakerFactory,
+    SubmissionFactory,
+    SubmissionTypeFactory,
+    TrackFactory,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
@@ -106,3 +116,70 @@ def test_access_code_blocker_tracks(
         TrackFactory(event=event, requires_access_code=requires_access_code)
 
     assert access_code_blocker(event) == expected
+
+
+@pytest.mark.parametrize(
+    ("limit", "states", "expected"),
+    (
+        (None, [SubmissionStates.SUBMITTED] * 3, False),
+        (2, [SubmissionStates.SUBMITTED], False),
+        (2, [SubmissionStates.SUBMITTED, SubmissionStates.REJECTED], True),
+        (2, [SubmissionStates.ACCEPTED, SubmissionStates.CANCELED], True),
+        (
+            2,
+            [
+                SubmissionStates.CONFIRMED,
+                SubmissionStates.WITHDRAWN,
+                SubmissionStates.DRAFT,
+            ],
+            False,
+        ),
+    ),
+    ids=[
+        "no_limit",
+        "below_limit",
+        "rejected_counts",
+        "accepted_and_canceled_count",
+        "withdrawn_and_draft_do_not_count",
+    ],
+)
+def test_submission_limit_message_counts_states(limit, states, expected):
+    event = EventFactory()
+    event.cfp.settings["submission_limit"] = limit
+    event.cfp.save()
+    speaker = SpeakerFactory(event=event)
+
+    with scope(event=event):
+        for state in states:
+            SubmissionFactory(event=event, state=state).speakers.add(speaker)
+        message = submission_limit_message(event, speaker.user)
+
+    assert message == (
+        "You can submit up to 2 proposals to this event and have reached that limit."
+        if expected
+        else None
+    )
+
+
+def test_submission_limit_message_counts_only_own_proposals_in_event():
+    event = EventFactory()
+    event.cfp.settings["submission_limit"] = 1
+    event.cfp.save()
+    speaker = SpeakerFactory(event=event)
+    other_event_speaker = SpeakerFactory(user=speaker.user)
+    with scopes_disabled():
+        SubmissionFactory(event=other_event_speaker.event).speakers.add(
+            other_event_speaker
+        )
+
+    with scope(event=event):
+        co_spoken = SubmissionFactory(event=event)
+        co_spoken.speakers.add(SpeakerFactory(event=event))
+        assert submission_limit_message(event, speaker.user) is None
+        assert submission_limit_message(event, AnonymousUser()) is None
+
+        co_spoken.speakers.add(speaker)
+
+        assert submission_limit_message(event, speaker.user) == (
+            "You can submit 1 proposal to this event and have reached that limit."
+        )
