@@ -3,10 +3,12 @@
 
 from collections import defaultdict
 
+from pretalx.common.text.phrases import phrases
 from pretalx.submission.domain.submission import (
     available_submission_types_for_submitter,
     available_tracks_for_submitter,
 )
+from pretalx.submission.enums import SubmissionStates
 
 
 def submission_types_by_deadline(event):
@@ -40,3 +42,18 @@ def access_code_blocker(event) -> str | None:
 
 def can_submit_without_access_code(event) -> bool:
     return access_code_blocker(event) is None
+
+
+def submission_limit_message(event, user) -> str | None:
+    """Returns an error message if the user may not submit further proposals."""
+    limit = event.cfp.settings.get("submission_limit")
+    if not limit or not user.is_authenticated:
+        return None
+    count = (
+        event.submissions.filter(speakers__user=user)
+        .exclude(state__in=(SubmissionStates.WITHDRAWN, SubmissionStates.DRAFT))
+        .count()
+    )
+    if count < limit:
+        return None
+    return phrases.cfp.submission_limit_reached % {"limit": limit}

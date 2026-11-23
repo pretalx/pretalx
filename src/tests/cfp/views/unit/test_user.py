@@ -82,6 +82,14 @@ def test_submissions_list_view_shows_own_submissions_drafts_and_information(even
     assert list(view.get_queryset()) == [confirmed]
     assert view.drafts == [draft]
     assert list(view.information()) == [visible_info]
+    assert view.submission_limit_message is None
+
+    event.cfp.settings["submission_limit"] = 1
+    event.cfp.save()
+
+    assert make_view(SubmissionsListView, request).submission_limit_message == (
+        "You can submit 1 proposal to this event and have reached that limit."
+    )
 
 
 def test_submissions_edit_view_can_edit_submitted_with_invitations(event):

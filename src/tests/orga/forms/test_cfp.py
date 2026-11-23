@@ -79,6 +79,7 @@ def test_cfp_form_saves_json_fields():
             "text_0": "",
             "show_deadline": True,
             "count_length_in": "words",
+            "submission_limit": "3",
         },
         instance=cfp,
         locales=event.locales,
@@ -90,6 +91,37 @@ def test_cfp_form_saves_json_fields():
 
     assert cfp.settings["show_deadline"] is True
     assert cfp.settings["count_length_in"] == "words"
+    assert cfp.settings["submission_limit"] == 3
+
+
+def test_cfp_form_submission_limit_rejects_zero_and_clears_on_empty():
+    event = EventFactory()
+    cfp = event.cfp
+    cfp.settings["submission_limit"] = 5
+    cfp.save()
+
+    def make_form(value):
+        return CfPForm(
+            data={
+                "headline_0": "Submit",
+                "count_length_in": "chars",
+                "submission_limit": value,
+            },
+            instance=cfp,
+            locales=event.locales,
+            event=event,
+        )
+
+    form = make_form("0")
+    assert not form.is_valid()
+    assert list(form.errors) == ["submission_limit"]
+
+    form = make_form("")
+    assert form.is_valid(), form.errors
+    form.save()
+    cfp.refresh_from_db()
+
+    assert cfp.settings["submission_limit"] is None
 
 
 @pytest.mark.parametrize(

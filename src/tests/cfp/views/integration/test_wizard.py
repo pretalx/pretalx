@@ -559,3 +559,66 @@ def test_wizard_resource_link_preserved_on_back_navigation_without_leaks(client)
     assert "My slides" in content
     assert "https://example.com/slides.pdf" in content
     assert "https://leak.example.com/secret.pdf" not in content
+
+
+def test_wizard_blocked_at_submission_limit(client, cfp_event, cfp_user):
+    access_code = SubmitterAccessCodeFactory(event=cfp_event)
+    speaker = SpeakerFactory(event=cfp_event, user=cfp_user)
+    with scopes_disabled():
+        cfp_event.cfp.settings["submission_limit"] = 1
+        cfp_event.cfp.save()
+        SubmissionFactory(event=cfp_event).speakers.add(speaker)
+        draft = SubmissionFactory(event=cfp_event, state=SubmissionStates.DRAFT)
+        draft.speakers.add(speaker)
+    client.force_login(cfp_user)
+
+    response, url = start_wizard(client, cfp_event, access_code=access_code)
+
+    assert "/me/submissions/" in url
+    assert [str(m) for m in get_messages(response.wsgi_request)] == [
+        "You can submit 1 proposal to this event and have reached that limit."
+    ]
+
+    _, url = get_response_and_url(
+        client, f"/{cfp_event.slug}/submit/restart-{draft.code}/", method="GET"
+    )
+
+    assert "/me/submissions/" in url
+    with scope(event=cfp_event):
+        draft.refresh_from_db()
+    assert draft.state == SubmissionStates.DRAFT
+
+
+def test_wizard_login_during_wizard_checks_submission_limit(
+    client, cfp_event, cfp_user
+):
+    djmail.outbox = []
+    speaker = SpeakerFactory(event=cfp_event, user=cfp_user)
+    with scopes_disabled():
+        cfp_event.cfp.settings["submission_limit"] = 1
+        cfp_event.cfp.save()
+        SubmissionFactory(event=cfp_event).speakers.add(speaker)
+
+    _, info_url = start_wizard(client, cfp_event)
+    _, user_url = get_response_and_url(
+        client, info_url, data=info_data(cfp_event, title="Over the limit")
+    )
+    _, profile_url = get_response_and_url(
+        client,
+        user_url,
+        data={"login_email": cfp_user.email, "login_password": "testpassw0rd!"},
+    )
+    response, final_url = get_response_and_url(
+        client, profile_url, data={"name": "Jane Doe", "biography": "bio"}
+    )
+
+    assert "/me/submissions/" in final_url
+    with scope(event=cfp_event):
+        saved = Submission.all_objects.get(title="Over the limit")
+        assert saved.state == SubmissionStates.DRAFT
+        assert list(saved.speakers.values_list("user", flat=True)) == [cfp_user.pk]
+    assert djmail.outbox == []
+    assert [str(m) for m in get_messages(response.wsgi_request)] == [
+        "You can submit 1 proposal to this event and have reached that limit.",
+        "Your draft was saved. You can continue to edit it as long as the CfP is open.",
+    ]

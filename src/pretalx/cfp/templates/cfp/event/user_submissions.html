@@ -166,10 +166,16 @@ SPDX-FileContributor: akoskaaa
         </div>
         <p>
             {% if request.event.cfp.is_open %}
-                <a
-                    class="btn btn-success btn-lg"
-                    href="{{ request.event.urls.submit }}"
-                >{% translate "Create a new proposal" %}</a>
+                {% if submission_limit_message %}
+                    {% #alert level="info" %}
+                    {{ submission_limit_message }}
+                    {% /alert %}
+                {% else %}
+                    <a
+                        class="btn btn-success btn-lg"
+                        href="{{ request.event.urls.submit }}"
+                    >{% translate "Create a new proposal" %}</a>
+                {% endif %}
             {% endif %}
         </p>
     {% else %}

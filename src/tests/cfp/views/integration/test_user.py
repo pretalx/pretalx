@@ -5,6 +5,7 @@ import re
 from urllib.parse import parse_qs, urlparse
 
 import pytest
+from django.contrib.messages import get_messages
 from django.core import mail as djmail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.timezone import now
@@ -1314,6 +1315,35 @@ def test_submissions_edit_view_dedraft_redirects_to_wizard(client, event):
         response.url
         == f"/{event.slug}/submit/restart-{submission.code}/?access_code={access_code.code}"
     )
+
+
+def test_submissions_edit_view_dedraft_at_submission_limit_keeps_draft(client, event):
+    with scopes_disabled():
+        event.cfp.settings["submission_limit"] = 1
+        event.cfp.save()
+        speaker = SpeakerFactory(event=event)
+        SubmissionFactory(event=event).speakers.add(speaker)
+        draft = SubmissionFactory(
+            event=event, state=SubmissionStates.DRAFT, abstract="Abstract"
+        )
+        draft.speakers.add(speaker)
+    client.force_login(speaker.user)
+
+    response = client.post(
+        draft.urls.user_base,
+        data=_edit_form_data(draft, action="dedraft", title="Changed title"),
+    )
+
+    assert response.status_code == 302
+    assert response.url == draft.urls.user_base
+    assert [str(m) for m in get_messages(response.wsgi_request)] == [
+        "Your changes have been saved.",
+        "You can submit 1 proposal to this event and have reached that limit.",
+    ]
+    with scopes_disabled():
+        draft.refresh_from_db()
+    assert draft.state == SubmissionStates.DRAFT
+    assert draft.title == "Changed title"
 
 
 @pytest.mark.parametrize(
